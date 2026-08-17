@@ -172,6 +172,7 @@ EXPECTED_SEAMS = {
     "anthropic-sanitize",
     "client-attribution",
     "brand-mark",
+    "bootstrap-repo",
 }
 
 
@@ -426,3 +427,35 @@ def test_upstream_default_soul_is_upgradable_in_place() -> None:
     assert is_legacy_template_soul(upstream_soul)
     # Kullanıcının kendi yazdığı bir persona ASLA üzerine yazılmamalı.
     assert not is_legacy_template_soul("You are a grumpy pirate.")
+
+
+# =============================================================================
+# Bootstrap: paketlenmiş uygulama HANGİ depoyu kuruyor
+# =============================================================================
+
+
+def test_bootstrap_installs_the_fool_not_upstream() -> None:
+    """FOOL-SEAM: bootstrap-repo — en sinsi kaçak buydu.
+
+    Paketlenmiş uygulama backend'ini kurmak için bir kurulum betiği indirip
+    çalıştırıyor, o betik de bir depo klonluyor. Bu adresler upstream'de
+    kalırsa uygulama The Fool gibi görünür ama HER KULLANICIYA upstream
+    Hermes kurar — ve markalaşmanın tamamı çalışma anında geri alınır.
+
+    Belirti (gözlendi): bootstrap upstream'i klonluyor, sonra The Fool'un
+    commit'ini checkout etmeye çalışıp ``exit 128`` ile ölüyor.
+    """
+    targets = [
+        "apps/desktop/electron/bootstrap-runner.ts",
+        "apps/desktop/electron/update-remote.ts",
+        "scripts/install.ps1",
+        "scripts/install.sh",
+    ]
+    offenders = []
+    for rel in targets:
+        text = (REPO_ROOT / rel).read_text(encoding="utf-8", errors="replace")
+        if "NousResearch/hermes-agent" in text:
+            offenders.append(rel)
+        assert "zaorenn/thefool-desktop" in text, f"{rel}: fork deposu geçmiyor"
+
+    assert not offenders, f"upstream deposunu kuran dosyalar: {offenders}"

@@ -2,7 +2,7 @@
  * Consume the detached update hand-off's result file (#82328 follow-up).
  *
  * scripts/desktop-update/windows.ps1 runs hidden/detached — the user never sees its
- * console. It writes FOOL_HOME/.hermes-update-result.json on every exit
+ * console. It writes FOOL_HOME/.fool-update-result.json on every exit
  * path; the relaunched Desktop reads it exactly once on boot and surfaces
  * failures (a silent failed update looks identical to "nothing happened",
  * which is how the 2026-08-09 'closed the app then nothing' report was
@@ -13,7 +13,7 @@
  * manual:true results are exempt from the freshness window. They are the
  * durable action-required channel — on a browserless Linux box with no
  * working notifier, the boot dialog is the FIRST and ONLY place the message
- * ever surfaces, and the user may not reopen Hermes within 30 minutes.
+ * ever surfaces, and the user may not reopen The Fool within 30 minutes.
  * Dropping it as stale strands exactly the machine it exists to serve. It is
  * still consumed once (the file is unlinked before any age check), so it
  * cannot resurface on a later boot.
@@ -37,7 +37,7 @@ export interface HandoffResult {
 }
 
 export function handoffResultPath(hermesHome: string): string {
-  return path.join(hermesHome, '.hermes-update-result.json')
+  return path.join(hermesHome, '.fool-update-result.json')
 }
 
 export function readAndConsumeHandoffResult(

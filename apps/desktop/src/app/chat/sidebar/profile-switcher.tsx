@@ -320,7 +320,7 @@ export function ProfileRail() {
 
       {/* Multi-gateway discoverability: a plug pinned beside Manage deep-links
           to Settings → Connections. The registry (local runtime + remote
-          gateways + Hermes Cloud + SSH) is otherwise buried three levels into
+          gateways + The Fool Cloud + SSH) is otherwise buried three levels into
           Settings, and the rail is exactly where a user looks when they wonder
           "how do I get my other machine's agents in here". */}
       <ProfilePill

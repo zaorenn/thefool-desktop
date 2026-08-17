@@ -717,7 +717,7 @@ export interface DesktopConnectionTestResult {
   reachable?: boolean
   sshError?:
     | 'auth-failed'
-    | 'hermes-not-found'
+    | 'fool-not-found'
     | 'host-key-changed'
     | 'timeout'
     | 'unreachable'

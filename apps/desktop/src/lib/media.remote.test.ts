@@ -37,7 +37,7 @@ describe('isRemoteGateway', () => {
 
 describe('filePathFromMediaPath', () => {
   it('passes through a plain path', () => {
-    expect(filePathFromMediaPath('/home/u/.hermes/images/a.png')).toBe('/home/u/.hermes/images/a.png')
+    expect(filePathFromMediaPath('/home/u/.fool/images/a.png')).toBe('/home/u/.fool/images/a.png')
   })
 
   it('decodes a file:// URL with encoded characters', () => {
@@ -84,12 +84,12 @@ describe('mediaGatewayStreamUrl', () => {
 
   it('rewrites gateway-local media to the main-process remote stream proxy', () => {
     $connection.set({ mode: 'remote', baseUrl: 'https://gw', token: 's e/cret' } as never)
-    expect(mediaGatewayStreamUrl('file:///tmp/a b.mp4')).toBe('hermes-media://remote/%2Ftmp%2Fa%20b.mp4')
+    expect(mediaGatewayStreamUrl('file:///tmp/a b.mp4')).toBe('fool-media://remote/%2Ftmp%2Fa%20b.mp4')
   })
 
   it('supports OAuth remotes with no renderer-visible token and scopes pool profiles', () => {
     $connection.set({ authMode: 'oauth', mode: 'remote', profile: 'voice reviewer', token: null } as never)
-    expect(mediaGatewayStreamUrl('/tmp/a.mp4')).toBe('hermes-media://remote/%2Ftmp%2Fa.mp4?profile=voice%20reviewer')
+    expect(mediaGatewayStreamUrl('/tmp/a.mp4')).toBe('fool-media://remote/%2Ftmp%2Fa.mp4?profile=voice%20reviewer')
   })
 })
 
@@ -175,7 +175,7 @@ describe('resolveMediaPlaybackSrc', () => {
     $connection.set({ authMode: 'oauth', mode: 'remote', profile: 'default', token: null } as never)
 
     await expect(resolveMediaPlaybackSrc('/root/outputs/render.mp4')).resolves.toBe(
-      'hermes-media://remote/%2Froot%2Foutputs%2Frender.mp4?profile=default'
+      'fool-media://remote/%2Froot%2Foutputs%2Frender.mp4?profile=default'
     )
   })
 
@@ -184,7 +184,7 @@ describe('resolveMediaPlaybackSrc', () => {
     $connection.set({ mode: 'local' } as never)
 
     await expect(resolveMediaPlaybackSrc('C:\\renders\\demo.mp4')).resolves.toBe(
-      'hermes-media://stream/C%3A%5Crenders%5Cdemo.mp4'
+      'fool-media://stream/C%3A%5Crenders%5Cdemo.mp4'
     )
   })
 })
@@ -210,11 +210,11 @@ describe('gatewayMediaDataUrl', () => {
   })
 
   it('reads gateway media through the desktop fs bridge instead of /api/media roots', async () => {
-    const url = await gatewayMediaDataUrl('/home/u/.hermes/skills/demo/images/a b.png')
+    const url = await gatewayMediaDataUrl('/home/u/.fool/skills/demo/images/a b.png')
 
     expect(url).toBe('data:image/png;base64,ZHVtbXk=')
     expect(api).toHaveBeenCalledWith({
-      path: '/api/fs/read-data-url?path=%2Fhome%2Fu%2F.hermes%2Fskills%2Fdemo%2Fimages%2Fa%20b.png'
+      path: '/api/fs/read-data-url?path=%2Fhome%2Fu%2F.fool%2Fskills%2Fdemo%2Fimages%2Fa%20b.png'
     })
   })
 })

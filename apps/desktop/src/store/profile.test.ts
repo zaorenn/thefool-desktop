@@ -38,13 +38,13 @@ const profile = (name: string, isDefault = false): ProfileInfo => ({
   is_default: isDefault,
   model: null,
   name,
-  path: `/tmp/hermes/${name}`,
+  path: `/tmp/fool/${name}`,
   provider: null,
   skill_count: 0
 })
 
 const remoteConn = (over: Partial<HermesConnection> = {}): HermesConnection =>
-  ({ baseUrl: 'https://hermes-roy.tail.ts.net', mode: 'remote', profile: 'vps-remote', ...over }) as HermesConnection
+  ({ baseUrl: 'https://fool-roy.tail.ts.net', mode: 'remote', profile: 'vps-remote', ...over }) as HermesConnection
 
 const localConn = (over: Partial<HermesConnection> = {}): HermesConnection =>
   ({ baseUrl: '', mode: 'local', profile: 'default', ...over }) as HermesConnection

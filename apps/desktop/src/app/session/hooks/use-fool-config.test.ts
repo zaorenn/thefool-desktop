@@ -18,14 +18,14 @@ import {
   setDefaultReasoningEffort
 } from '@/store/session'
 
-import { useHermesConfig } from './use-hermes-config'
+import { useHermesConfig } from './use-fool-config'
 
 vi.mock('@/hermes', () => ({
   getHermesConfig: vi.fn(),
   getHermesConfigDefaults: vi.fn().mockResolvedValue({})
 }))
 
-const WORKSPACE_CWD_KEY = 'hermes.desktop.workspace-cwd'
+const WORKSPACE_CWD_KEY = 'fool.desktop.workspace-cwd'
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void
@@ -56,7 +56,7 @@ describe('useHermesConfig refreshHermesConfig', () => {
   // composer reseed. The profile default must still be published, because the
   // model picker resolves "the default effort" from it when applying a model's
   // preset — otherwise selecting a model silently downgrades a configured
-  // `agent.reasoning_effort: high` to Hermes' built-in medium.
+  // `agent.reasoning_effort: high` to The Fool' built-in medium.
   it('publishes the profile default effort even when a manual pick blocks the composer reseed', async () => {
     setCurrentModelSource('manual')
     setCurrentReasoningEffort('low')

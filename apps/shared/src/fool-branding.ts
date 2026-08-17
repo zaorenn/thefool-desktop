@@ -12,7 +12,7 @@
  * Buradaki `applyFoolBrand()` bir *kopya* değil bir *dönüşümdür*. i18n
  * kataloğuna tek bir dikişten (FOOL-SEAM: i18n-brand, `src/i18n/catalog.ts`)
  * bağlanır ve tüm dillerdeki metinleri geçerken markalar. Bunun sonucu:
- * upstream yarın "Hermes" içeren 50 yeni metin eklerse, onlar da hiçbir şey
+ * upstream yarın "The Fool" içeren 50 yeni metin eklerse, onlar da hiçbir şey
  * yapmadan The Fool olur. Bakım maliyeti sıfır.
  *
  * @see docs/fool/SEAMS.md
@@ -29,10 +29,10 @@ export const BRAND = {
   /**
    * Ajanın KENDİNİ tanıttığı ad — sistem promptuna giren kimlik.
    * Ürün "The Fool", ajan "Fool Agent"; upstream'deki
-   * "Hermes" / "Hermes Agent" ayrımının karşılığı.
+   * "The Fool" / "Fool Agent" ayrımının karşılığı.
    */
   agent: 'Fool Agent',
-  /** "Nous Research" yerine geçen üretici adı. */
+  /** "Fool Labs" yerine geçen üretici adı. */
   vendor: 'Fool Labs',
   /** Terminal komutu — pyproject `[project.scripts]` ile eşleşmeli. */
   cli: 'fool',
@@ -45,22 +45,22 @@ export const BRAND = {
 } as const
 
 /**
- * Sıra ÖNEMLİ: en uzun/en özel kalıp önce gelmeli, yoksa "Hermes Desktop"
- * daha genel olan "Hermes" kuralı tarafından yenir ve "The Fool Desktop"
+ * Sıra ÖNEMLİ: en uzun/en özel kalıp önce gelmeli, yoksa "The Fool Desktop"
+ * daha genel olan "The Fool" kuralı tarafından yenir ve "The Fool Desktop"
  * yerine "The Fool Desktop" üretilemez.
  *
  * `\b` sınırları sayesinde iç sözleşmeye DOKUNULMAZ — regex'te `_` bir kelime
  * karakteri olduğu için:
  *   FOOL_HOME  → eşleşmez (HERMES'ten sonra `_` var, `\b` yok)
  *   fool_cli   → eşleşmez (aynı sebep)
- *   ~/.hermes    → eşleşir  (`.` kelime karakteri değil) — ve zaten değişmesini
+ *   ~/.fool    → eşleşir  (`.` kelime karakteri değil) — ve zaten değişmesini
  *                  istediğimiz yer burası
  */
 const RULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bHERMES\s+DESKTOP\b/g, BRAND.desktop.toUpperCase()],
   [/\bHERMES\s+AGENT\b/g, BRAND.agent.toUpperCase()],
   [/\bHermes\s+Desktop\b/g, BRAND.desktop],
-  // "Hermes Agent" -> "Fool Agent": ajanın tam adı. Açılış logotype'ı bu
+  // "Fool Agent" -> "Fool Agent": ajanın tam adı. Açılış logotype'ı bu
   // kuraldan GEÇMEZ, doğrudan BRAND.wordmark'tan geliyor (intro.tsx).
   [/\bHermes\s+Agent\b/g, BRAND.agent],
   [/\bNous\s+Research\b/g, BRAND.vendor],
@@ -72,8 +72,8 @@ const RULES: ReadonlyArray<readonly [RegExp, string]> = [
 
 /**
  * Ad "The" içerdiği için ham değiştirme yer yer bozuk İngilizce üretir:
- *   "Restore a Hermes backup"      -> "Restore a The Fool backup"      ✗
- *   "Open the safe Hermes console" -> "Open the safe The Fool console"  ✗
+ *   "Restore a Fool backup"      -> "Restore a Fool backup"      ✗
+ *   "Open the safe Fool console" -> "Open the safe Fool console"  ✗
  *
  * Bir artikel zaten varsa "The" düşer ve ad sıradan bir özel isim gibi davranır.
  * Tek başına geçtiğinde tam ad korunur ("The Fool couldn't start").

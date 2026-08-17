@@ -1710,14 +1710,14 @@ def _reap_unsupervised_gateway_orphans(extra_exclude: set | None = None) -> bool
     # detached gateway on every desktop serve start (#86098, #87001).
     if is_windows():
         try:
-            # The install-time task name is profile-aware (Hermes_Gateway /
-            # Hermes_Gateway_<profile>) — never hardcode it, or the guard is
+            # The install-time task name is profile-aware (Fool_Gateway /
+            # Fool_Gateway_<profile>) — never hardcode it, or the guard is
             # dormant on every standard `hermes gateway install` deployment.
             from fool_cli.gateway_windows import get_task_name
 
             _task_name = get_task_name()
         except Exception:
-            _task_name = "Hermes_Gateway"
+            _task_name = "Fool_Gateway"
         if _windows_scheduled_task_supervises(_task_name):
             return False
 

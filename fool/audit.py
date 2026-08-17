@@ -157,6 +157,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args(argv)
 
+    # Windows konsolu cp1254 gibi dar bir kod sayfasında olabilir ve bulunan
+    # satırlar kutu-çizimi/emoji taşıyabiliyor. Değiştirilemeyen karakterler
+    # aracı çökertmesin — bulgu göstermek, güzel göstermekten önemli.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
+
     findings = scan()
     if not findings:
         print("Temiz — dönüşümsüz yüzeylerde markalanmamış metin yok.")

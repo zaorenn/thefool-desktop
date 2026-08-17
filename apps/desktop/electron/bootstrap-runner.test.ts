@@ -22,7 +22,7 @@ const SCRIPT_NAME = process.platform === 'win32' ? 'install.ps1' : 'install.sh'
 const ZERO_COMMIT = '0000000000000000000000000000000000000000'
 
 function mkTmpHome() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-bootstrap-test-'))
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'fool-bootstrap-test-'))
 }
 
 test('runBootstrap bails immediately when the signal is already aborted', async () => {
@@ -33,10 +33,10 @@ test('runBootstrap bails immediately when the signal is already aborted', async 
 
   const result = await runBootstrap({
     installStamp: null,
-    activeRoot: '/tmp/hermes-runner-test',
+    activeRoot: '/tmp/fool-runner-test',
     sourceRepoRoot: null,
-    hermesHome: '/tmp/hermes-runner-test',
-    logRoot: '/tmp/hermes-runner-test',
+    hermesHome: '/tmp/fool-runner-test',
+    logRoot: '/tmp/fool-runner-test',
     onEvent: ev => events.push(ev),
     abortSignal: controller.signal
   })
@@ -89,9 +89,9 @@ test('fresh bootstrap args include the packaged commit pin', () => {
     buildPosixPinArgs({
       installStamp,
       activeRoot: '/tmp/hermes-agent',
-      hermesHome: '/tmp/hermes'
+      hermesHome: '/tmp/fool'
     }),
-    ['--dir', '/tmp/hermes-agent', '--hermes-home', '/tmp/hermes', '--branch', 'main', '--commit', installStamp.commit]
+    ['--dir', '/tmp/hermes-agent', '--fool-home', '/tmp/fool', '--branch', 'main', '--commit', installStamp.commit]
   )
 })
 
@@ -103,10 +103,10 @@ test('existing-checkout bootstrap args keep branch but skip the packaged commit 
     buildPosixPinArgs({
       installStamp,
       activeRoot: '/tmp/hermes-agent',
-      hermesHome: '/tmp/hermes',
+      hermesHome: '/tmp/fool',
       pinCommit: false
     }),
-    ['--dir', '/tmp/hermes-agent', '--hermes-home', '/tmp/hermes', '--branch', 'main']
+    ['--dir', '/tmp/hermes-agent', '--fool-home', '/tmp/fool', '--branch', 'main']
   )
 })
 
@@ -124,10 +124,10 @@ test('fallback install stamps use an unpinned branch ref', () => {
   assert.deepEqual(
     buildPosixPinArgs({
       installStamp: stamp,
-      activeRoot: '/tmp/hermes',
+      activeRoot: '/tmp/fool',
       hermesHome: '/tmp/home'
     }),
-    ['--dir', '/tmp/hermes', '--hermes-home', '/tmp/home', '--branch', 'main']
+    ['--dir', '/tmp/fool', '--fool-home', '/tmp/home', '--branch', 'main']
   )
 })
 

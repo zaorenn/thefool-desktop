@@ -1,5 +1,5 @@
 /**
- * Canonical Hermes skin — the theme SDK's cross-surface contract.
+ * Canonical The Fool skin — the theme SDK's cross-surface contract.
  *
  * A skin is authored once as YAML in `$FOOL_HOME/skins/<name>.yaml` (or a
  * built-in), resolved by the Python skin engine (`fool_cli/skin_engine.py`),

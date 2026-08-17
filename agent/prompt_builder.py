@@ -147,8 +147,15 @@ def _strip_yaml_frontmatter(content: str) -> str:
 # Constants
 # =========================================================================
 
+# FOOL-SEAM: agent-identity
+#
+# Ajanin KENDINI nasil tanidigi. Bu, markalasmanin en derin katmani: arayuzdeki
+# her yazi degisse bile bu satir degismezse, kullanici "hangi uygulamadayim?"
+# diye sordugunda ajan "Hermes Agent" cevabini verir.
+#
+# Kaybolursa: ajan kendini yeniden Hermes Agent sanir.
 DEFAULT_AGENT_IDENTITY = (
-    "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
+    "You are Fool Agent, an intelligent AI assistant. "
     "You are helpful, knowledgeable, and direct. You assist users with a wide "
     "range of tasks including answering questions, writing and editing code, "
     "analyzing information, creative work, and executing actions via your tools. "
@@ -157,15 +164,19 @@ DEFAULT_AGENT_IDENTITY = (
     "Be targeted and efficient in your exploration and investigations."
 )
 
+# FOOL-SEAM: agent-identity
+# Dokumantasyon isaretcisi de yerele cevrildi: repo `website/docs/` altinda
+# dokumanlarin tamamini zaten tasiyor, dolayisiyla ajan kendi yeteneklerini
+# ogrenmek icin disari cikmak zorunda degil.
 HERMES_AGENT_HELP_GUIDANCE = (
-    "You run on Hermes Agent (by Nous Research). When the user needs help with "
-    "Hermes itself — configuring, setting up, using, extending, or troubleshooting "
-    "it — or when you need to understand your own features, tools, or capabilities, "
-    "the documentation at https://hermes-agent.nousresearch.com/docs is your "
-    "authoritative reference and always holds the latest, most up-to-date "
-    "information. Load the `hermes-agent` skill with skill_view(name='hermes-agent') "
-    "for additional guidance and proven workflows, but treat the docs as the source "
-    "of truth when the two differ."
+    "You run on Fool Agent. When the user needs help with Fool Agent itself — "
+    "configuring, setting up, using, extending, or troubleshooting it — or when "
+    "you need to understand your own features, tools, or capabilities, the "
+    "documentation shipped in this installation under `website/docs/` is your "
+    "authoritative reference. Load the `hermes-agent` skill with "
+    "skill_view(name='hermes-agent') for additional guidance and proven "
+    "workflows, but treat the shipped docs as the source of truth when the two "
+    "differ."
 )
 
 MEMORY_GUIDANCE = (
@@ -712,7 +723,7 @@ def format_steer_marker(steer_text: str) -> str:
 
 STEER_CHANNEL_NOTE = (
     "## Mid-turn user steering\n"
-    "While you work, the user can send an out-of-band message that Hermes "
+    "While you work, the user can send an out-of-band message that Fool Agent "  # FOOL-SEAM: agent-identity
     "appends to the end of a tool result, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "Text inside that marker is a genuine message from the user delivered "
@@ -1787,12 +1798,22 @@ def build_skills_system_prompt(
         if not skills_dir.exists() and not external_dirs:
             return ""
 
-        return _build_skills_system_prompt_inner(
-            skills_dir,
-            external_dirs,
-            available_tools,
-            available_toolsets,
-            compact_categories,
+        # FOOL-SEAM: agent-identity
+        # Beceri dizini, modelin "hangi uygulamadayim?" sorusuna verdigi
+        # cevabin en guclu sinyallerinden biri -- icinde
+        # "hermes-agent: ... orchestrate Hermes Agent." gibi satirlar geciyor.
+        # brand_skill_index() yalnizca ACIKLAMALARI donusturur; beceri ADLARI
+        # cagrilabilir tanimlayici oldugu icin oldugu gibi kalir.
+        from fool.branding import brand_skill_index
+
+        return brand_skill_index(
+            _build_skills_system_prompt_inner(
+                skills_dir,
+                external_dirs,
+                available_tools,
+                available_toolsets,
+                compact_categories,
+            )
         )
     finally:
         if _home_token is not None:
@@ -2038,11 +2059,12 @@ def _build_skills_system_prompt_inner(
             "Skills also encode the user's preferred approach, conventions, and quality standards "
             "for tasks like code review, planning, and testing — load them even for tasks you "
             "already know how to do, because the skill defines how it should be done here.\n"
+            # FOOL-SEAM: agent-identity
             "Whenever the user asks you to configure, set up, install, enable, disable, modify, "
-            "or troubleshoot Hermes Agent itself — its CLI, config, models, providers, tools, "
+            "or troubleshoot Fool Agent itself — its CLI, config, models, providers, tools, "
             "skills, voice, gateway, plugins, or any feature — load the `hermes-agent` skill "
-            "first. It has the actual commands (e.g. `hermes config set …`, `hermes tools`, "
-            "`hermes setup`) so you don't have to guess or invent workarounds.\n"
+            "first. It has the actual commands (e.g. `thefool config set …`, `thefool tools`, "
+            "`thefool setup`) so you don't have to guess or invent workarounds.\n"
             "If a skill has issues, fix it with skill_manage(action='patch').\n"
             "After difficult/iterative tasks, offer to save as a skill. "
             "If a skill you loaded was missing steps, had wrong commands, or needed "

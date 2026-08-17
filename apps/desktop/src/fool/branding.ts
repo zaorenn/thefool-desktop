@@ -21,6 +21,12 @@ export const BRAND = {
   wordmark: 'THE FOOL',
   /** Masaüstü uygulamasının tam adı. */
   desktop: 'The Fool Desktop',
+  /**
+   * Ajanın KENDİNİ tanıttığı ad — sistem promptuna giren kimlik.
+   * Ürün "The Fool", ajan "Fool Agent"; upstream'deki
+   * "Hermes" / "Hermes Agent" ayrımının karşılığı.
+   */
+  agent: 'Fool Agent',
   /** "Nous Research" yerine geçen üretici adı. */
   vendor: 'Fool Labs',
   /** Terminal komutu — pyproject `[project.scripts]` ile eşleşmeli. */
@@ -47,9 +53,11 @@ export const BRAND = {
  */
 const RULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bHERMES\s+DESKTOP\b/g, BRAND.desktop.toUpperCase()],
-  [/\bHERMES\s+AGENT\b/g, BRAND.wordmark],
+  [/\bHERMES\s+AGENT\b/g, BRAND.agent.toUpperCase()],
   [/\bHermes\s+Desktop\b/g, BRAND.desktop],
-  [/\bHermes\s+Agent\b/g, BRAND.name],
+  // "Hermes Agent" -> "Fool Agent": ajanın tam adı. Açılış logotype'ı bu
+  // kuraldan GEÇMEZ, doğrudan BRAND.wordmark'tan geliyor (intro.tsx).
+  [/\bHermes\s+Agent\b/g, BRAND.agent],
   [/\bNous\s+Research\b/g, BRAND.vendor],
   [/\bNous\b/g, BRAND.vendor],
   [/\bHERMES\b/g, BRAND.wordmark],

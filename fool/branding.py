@@ -41,6 +41,11 @@ NAME: Final[str] = "The Fool"
 WORDMARK: Final[str] = "THE FOOL"
 #: Masaüstü uygulamasının tam adı.
 DESKTOP: Final[str] = "The Fool Desktop"
+#: Ajanın KENDİNİ tanıttığı ad. Sistem promptuna giren kimlik budur; kullanıcı
+#: "hangi uygulamayı kullanıyorum?" diye sorduğunda bu cevabı verir.
+#: Ürün adı "The Fool", ajanın adı "Fool Agent" — upstream'deki
+#: "Hermes" / "Hermes Agent" ayrımının karşılığı.
+AGENT: Final[str] = "Fool Agent"
 #: "Nous Research" yerine geçen üretici adı.
 VENDOR: Final[str] = "Fool Labs"
 #: Terminal komutu — pyproject ``[project.scripts]`` ile eşleşmeli.
@@ -65,9 +70,11 @@ REPO_URL: Final[str] = "https://github.com/serhanogurlu/thefool-desktop"
 #: genel olan "Hermes" kuralına yenilir ve "The Fool Desktop" üretilemez.
 _RULES: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
     (re.compile(r"\bHERMES\s+DESKTOP\b"), DESKTOP.upper()),
-    (re.compile(r"\bHERMES\s+AGENT\b"), WORDMARK),
+    (re.compile(r"\bHERMES\s+AGENT\b"), AGENT.upper()),
     (re.compile(r"\bHermes\s+Desktop\b"), DESKTOP),
-    (re.compile(r"\bHermes\s+Agent\b"), NAME),
+    # "Hermes Agent" -> "Fool Agent": ajanin tam adi. Acilis logotype'i bu
+    # kuraldan GECMEZ, dogrudan WORDMARK sabitinden geliyor.
+    (re.compile(r"\bHermes\s+Agent\b"), AGENT),
     (re.compile(r"\bNous\s+Research\b"), VENDOR),
     (re.compile(r"\bNous\b"), VENDOR),
     (re.compile(r"\bHERMES\b"), WORDMARK),
@@ -110,6 +117,74 @@ def brand_text(text: str) -> str:
     for pattern, replacement in _ARTICLE_FIX:
         out = pattern.sub(replacement, out)
     return out
+
+
+#: Beceri dizini satırı — iki biçim:
+#:     ``  <kategori>: <açıklama>``
+#:     ``    - <ad>: <açıklama>``
+#: Baştaki ad, ``skill_view(name='…')`` ile ÇAĞRILAN bir tanımlayıcı —
+#: markalanırsa ajan var olmayan bir beceriyi çağırır. Bu yüzden yalnızca ilk
+#: ``: ``den sonrası dönüştürülür.
+_SKILL_LINE = re.compile(r"^(\s*(?:-\s+)?[A-Za-z0-9._-]+:\s*)(.*)$")
+
+
+def brand_skill_index(text: str) -> str:
+    """Beceri dizinindeki açıklamaları markala, adlara dokunma.
+
+    Sistem promptundaki beceri dizini, modelin "hangi uygulamadayım?" sorusuna
+    verdiği cevabın en güçlü sinyallerinden biri: içinde
+    ``hermes-agent: ... orchestrate Hermes Agent.`` gibi satırlar geçiyor.
+    Açıklamaları markalamak kimliği düzeltir; adları markalamak ise çağrıyı
+    bozar. İkisi ayrı ele alınır.
+    """
+    out = []
+    for line in text.split("\n"):
+        m = _SKILL_LINE.match(line)
+        if m:
+            head, desc = m.group(1), m.group(2)
+            out.append(head + brand_text(desc))
+        else:
+            # Kalıba uymayan satırlara HİÇ dokunma. Serbest metin
+            # ``skill_view(name='hermes-agent')`` gibi çağrılabilir
+            # tanımlayıcılar taşıyabilir; onları bozmaktansa markasız bırakmak
+            # yeğdir.
+            out.append(line)
+    return "\n".join(out)
+
+
+def brand_tool_schemas(tools: Any) -> Any:
+    """Araç şemalarındaki ``description`` alanlarını markala.
+
+    Araç şemaları sistem promptundan ayrı olarak modele gider; içlerinde
+    "Hermes" geçen onlarca açıklama var. Model "hangi uygulamadayım?" sorusuna
+    cevap verirken bunları da okuyor.
+
+    Dokunulan: yalnızca ``description`` (üst seviye ve iç içe parametreler).
+    Dokunulmayan: ``name``, parametre anahtarları, ``enum`` değerleri,
+    ``type`` — bunlar çağrı sözleşmesi. Markalanırlarsa model var olmayan bir
+    aracı çağırır.
+    """
+
+    def walk(node: Any, *, in_properties: bool = False) -> Any:
+        if isinstance(node, dict):
+            out: dict[str, Any] = {}
+            for key, val in node.items():
+                if key == "description" and isinstance(val, str):
+                    out[key] = brand_text(val)
+                elif key in ("name", "enum", "type", "required", "const"):
+                    # Sözleşme: olduğu gibi geçer.
+                    out[key] = val
+                elif key == "properties" and isinstance(val, dict):
+                    # Anahtarlar parametre ADLARI — yalnızca değerlere in.
+                    out[key] = {k: walk(v, in_properties=True) for k, v in val.items()}
+                else:
+                    out[key] = walk(val, in_properties=in_properties)
+            return out
+        if isinstance(node, list):
+            return [walk(v, in_properties=in_properties) for v in node]
+        return node
+
+    return walk(tools)
 
 
 def brand_value(value: Any) -> Any:

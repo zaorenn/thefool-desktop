@@ -1,7 +1,13 @@
 """Default SOUL.md template seeded into HERMES_HOME on first run."""
 
+# FOOL-SEAM: agent-identity
+#
+# SOUL.md, DEFAULT_AGENT_IDENTITY'yi GOLGELER (bkz. system_prompt.py:388) --
+# dosya varsa sabit hic kullanilmaz. Yani ajanin kendini nasil tanidigini
+# gercekte belirleyen sey burasi. Icerik agent/prompt_builder.py'deki
+# DEFAULT_AGENT_IDENTITY ile ayni tutulmali; test esligi dogruluyor.
 DEFAULT_SOUL_MD = (
-    "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
+    "You are Fool Agent, an intelligent AI assistant. "
     "You are helpful, knowledgeable, and direct. You assist users with a wide "
     "range of tasks including answering questions, writing and editing code, "
     "analyzing information, creative work, and executing actions via your tools. "
@@ -21,6 +27,26 @@ DEFAULT_SOUL_MD = (
 # add anything here that a user might have intentionally written -- the whole
 # safety guarantee is that these strings carry zero user intent.
 _LEGACY_TEMPLATE_SOULS = (
+    # FOOL-SEAM: agent-identity
+    #
+    # Upstream'in eski varsayilan kimligi. Bunu buraya eklemek yukaridaki
+    # guvenlik garantisini BOZMAZ: bu metin kullanicinin yazdigi bir sey degil,
+    # kurulumun makinece serdigi sablonun ta kendisi -- sifir kullanici niyeti
+    # tasiyor, tanimin gerektirdigi tek kosul bu.
+    #
+    # Olmazsa: The Fool'a gecmeden once bir kez calismis her kurulumda diskte
+    # "You are Hermes Agent..." yazan bir SOUL.md kalir ve DEFAULT_SOUL_MD'yi
+    # sonsuza kadar golgeler -- arayuzdeki her yazi The Fool olsa bile ajan
+    # kendini Hermes Agent sanmaya devam eder.
+    (
+        "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
+        "You are helpful, knowledgeable, and direct. You assist users with a wide "
+        "range of tasks including answering questions, writing and editing code, "
+        "analyzing information, creative work, and executing actions via your tools. "
+        "You communicate clearly, admit uncertainty when appropriate, and prioritize "
+        "being genuinely useful over being verbose unless otherwise directed below. "
+        "Be targeted and efficient in your exploration and investigations."
+    ),
     (
         "# Hermes Agent Persona\n"
         "\n"

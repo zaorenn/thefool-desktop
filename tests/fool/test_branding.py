@@ -34,8 +34,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
     [
         ("Hermes Desktop is ready", "The Fool Desktop is ready"),
         ("Starting Hermes Desktop…", "Starting The Fool Desktop…"),
-        ("HERMES AGENT", "THE FOOL"),
+        ("HERMES AGENT", "FOOL AGENT"),
         ("Update Hermes", "Update The Fool"),
+        ("Update Hermes Agent", "Update Fool Agent"),
+        ("You are Hermes Agent", "You are Fool Agent"),
         ("Nous Research", "Fool Labs"),
         ("Hermes couldn't start", "The Fool couldn't start"),
         ("edit ~/.hermes/.env", "edit ~/.thefool/.env"),
@@ -129,6 +131,7 @@ def test_python_and_typescript_brand_constants_agree() -> None:
     assert ts["name"] == branding.NAME
     assert ts["wordmark"] == branding.WORDMARK
     assert ts["desktop"] == branding.DESKTOP
+    assert ts["agent"] == branding.AGENT
     assert ts["vendor"] == branding.VENDOR
     assert ts["cli"] == branding.CLI
     assert ts["homeDirName"] == branding.HOME_DIR_NAME
@@ -165,6 +168,9 @@ EXPECTED_SEAMS = {
     "model-catalog",
     "diagnostics-endpoint",
     "nous-account-commands",
+    "agent-identity",
+    "anthropic-sanitize",
+    "client-attribution",
 }
 
 
@@ -311,3 +317,111 @@ def test_no_command_promises_a_plan_we_do_not_have() -> None:
 
     bogus = [c.name for c in COMMAND_REGISTRY if branding.VENDOR in c.description]
     assert not bogus, f"'{branding.VENDOR}' vaadi taşıyan komutlar: {bogus}"
+
+
+# =============================================================================
+# Ajanın kendini tanıması
+# =============================================================================
+
+
+def test_agent_identifies_itself_as_fool_agent() -> None:
+    """Kullanıcı "hangi uygulamayı kullanıyorum?" dediğinde verilen cevap.
+
+    Markalaşmanın en derin katmanı: arayüzdeki her yazı değişse bile bu
+    değişmezse ajan kendini hâlâ Hermes Agent sanır.
+    """
+    from agent.prompt_builder import DEFAULT_AGENT_IDENTITY, HERMES_AGENT_HELP_GUIDANCE
+
+    assert DEFAULT_AGENT_IDENTITY.startswith(f"You are {branding.AGENT},")
+    assert "Hermes" not in DEFAULT_AGENT_IDENTITY
+    assert "Nous Research" not in DEFAULT_AGENT_IDENTITY
+
+    assert branding.AGENT in HERMES_AGENT_HELP_GUIDANCE
+    assert "nousresearch.com" not in HERMES_AGENT_HELP_GUIDANCE
+
+
+def test_anthropic_sanitizer_covers_the_fool_identity() -> None:
+    """Anthropic OAuth ucuna markalı prompt gitmemeli.
+
+    Kimlik "Fool Agent" olduğu için sanitize listesi güncellenmezse
+    upstream'in filtre-kaçınma korumasi sessizce delinir.
+    """
+    src = (REPO_ROOT / "agent/anthropic_adapter.py").read_text(encoding="utf-8")
+    assert f'text.replace("{branding.AGENT}", "Claude Code")' in src
+    assert f'text.replace("{branding.NAME}", "Claude Code")' in src
+
+
+def test_tool_schema_branding_preserves_the_call_contract() -> None:
+    """Açıklamalar markalanır, çağrı sözleşmesi ASLA değişmez.
+
+    Araç adı / parametre anahtarı / enum markalanırsa model var olmayan bir
+    aracı çağırır — sessiz ve teşhisi zor bir bozulma.
+    """
+    sample = [
+        {
+            "type": "function",
+            "function": {
+                "name": "hermes_screenshot",
+                "description": "Otherwise Hermes falls back to a vision model.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "hermes_path": {"type": "string", "description": "Path used by Hermes."},
+                        "mode": {"type": "string", "enum": ["hermes", "fast"]},
+                    },
+                    "required": ["hermes_path"],
+                },
+            },
+        }
+    ]
+    fn = branding.brand_tool_schemas(sample)[0]["function"]
+
+    # Sözleşme aynen durmalı.
+    assert fn["name"] == "hermes_screenshot"
+    assert list(fn["parameters"]["properties"]) == ["hermes_path", "mode"]
+    assert fn["parameters"]["properties"]["mode"]["enum"] == ["hermes", "fast"]
+    assert fn["parameters"]["required"] == ["hermes_path"]
+
+    # Açıklamalar markalanmalı.
+    assert "Hermes" not in fn["description"]
+    assert "Hermes" not in fn["parameters"]["properties"]["hermes_path"]["description"]
+
+
+def test_skill_index_branding_preserves_skill_names() -> None:
+    """Beceri adları ``skill_view(name=…)`` ile çağrılıyor — değişemez."""
+    index = (
+        "  agents: Delegate work to other agents.\n"
+        "    - hermes-agent: Use, configure, and orchestrate Hermes Agent.\n"
+        "    - codex: Delegate coding to OpenAI Codex CLI.\n"
+    )
+    out = branding.brand_skill_index(index)
+
+    assert "- hermes-agent:" in out, "beceri adı korunmalı"
+    assert "orchestrate Fool Agent." in out, "açıklama markalanmalı"
+    assert "- codex:" in out
+
+
+def test_default_soul_matches_the_agent_identity() -> None:
+    """SOUL.md, DEFAULT_AGENT_IDENTITY'yi gölgeler — ikisi ayrışmamalı."""
+    from agent.prompt_builder import DEFAULT_AGENT_IDENTITY
+    from hermes_cli.default_soul import DEFAULT_SOUL_MD
+
+    assert DEFAULT_SOUL_MD == DEFAULT_AGENT_IDENTITY
+
+
+def test_upstream_default_soul_is_upgradable_in_place() -> None:
+    """Hermes'ten gelen makine-serili SOUL.md sessizce kimliği ele geçirmemeli."""
+    from hermes_cli.default_soul import is_legacy_template_soul
+
+    upstream_soul = (
+        "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
+        "You are helpful, knowledgeable, and direct. You assist users with a wide "
+        "range of tasks including answering questions, writing and editing code, "
+        "analyzing information, creative work, and executing actions via your tools. "
+        "You communicate clearly, admit uncertainty when appropriate, and prioritize "
+        "being genuinely useful over being verbose unless otherwise directed below. "
+        "Be targeted and efficient in your exploration and investigations."
+    )
+    assert is_legacy_template_soul(upstream_soul)
+    # Kullanıcının kendi yazdığı bir persona ASLA üzerine yazılmamalı.
+    assert not is_legacy_template_soul("You are a grumpy pirate.")

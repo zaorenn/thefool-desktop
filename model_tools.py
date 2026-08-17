@@ -388,6 +388,23 @@ def get_tool_definitions(
 
     result = _compute_tool_definitions(enabled_toolsets, disabled_toolsets, quiet_mode,
                                        skip_tool_search_assembly=skip_tool_search_assembly)
+
+    # FOOL-SEAM: agent-identity
+    #
+    # Arac semalari sistem promptundan AYRI olarak modele gonderiliyor ve
+    # aciklamalarinda "Hermes" gecen onlarca arac var (ornegin browser
+    # screenshot: "...otherwise Hermes falls back to an auxiliary vision
+    # model..."). Kullanici "hangi uygulamadayim?" diye sordugunda model bu
+    # metinleri de okuyor -- sistem promptu tek basina yetmiyor.
+    #
+    # brand_tool_schemas() yalnizca `description` alanlarini donusturur.
+    # Arac ADLARI ve parametre anahtarlari cagri sozlesmesidir; onlara
+    # dokunulmaz, yoksa model var olmayan bir araci cagirir.
+    #
+    # Cache'ten ONCE uygulaniyor, boylece cache isabetleri de markali doner.
+    from fool.branding import brand_tool_schemas
+
+    result = brand_tool_schemas(result)
     if quiet_mode and cache_key is not None:
         # Cache the freshly-computed list, but hand callers a shallow copy so
         # downstream mutations (e.g. run_agent appending memory/LCM tool

@@ -449,9 +449,15 @@ py-modules = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["agent", "agent.*", "tools", "tools.*", "hermes_cli", "hermes_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*"]
+# FOOL-SEAM: fool-packaging
+# `fool` ve `fool.*` listede olmazsa kurulu venv'de `import fool` patlar ve
+# markalaşmanın tamamı (argparse, banner, komut açıklamaları) çöker.
+include = ["fool", "fool.*", "agent", "agent.*", "tools", "tools.*", "hermes_cli", "hermes_cli.*", "gateway", "gateway.*", "tui_gateway", "tui_gateway.*", "cron", "cron.*", "acp_adapter", "plugins", "plugins.*", "providers", "providers.*"]
 
 [tool.setuptools.package-data]
+# The Fool skin'i ve yerel model varsayılanları wheel'e girmeli; aksi halde
+# kurulumdan sonra crimson tema ve LM Studio ayarları bulunamaz.
+fool = ["skins/*.yaml", "config/*.yaml"]
 hermes_cli = ["observability/schemas/*.json", "data/*.json"]
 # gateway/assets/ ships status_phrases.yaml and the Telegram BotFather
 # screenshot. Without this, sealed venvs (uv2nix) silently lose both —

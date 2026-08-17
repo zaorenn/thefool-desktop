@@ -57,10 +57,32 @@ const RULES: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bhermes\b/g, BRAND.cli]
 ]
 
+/**
+ * Ad "The" içerdiği için ham değiştirme yer yer bozuk İngilizce üretir:
+ *   "Restore a Hermes backup"      -> "Restore a The Fool backup"      ✗
+ *   "Open the safe Hermes console" -> "Open the safe The Fool console"  ✗
+ *
+ * Bir artikel zaten varsa "The" düşer ve ad sıradan bir özel isim gibi davranır.
+ * Tek başına geçtiğinde tam ad korunur ("The Fool couldn't start").
+ *
+ * Pencere bilinçli olarak BİR kelime: iki kelimelik pencere
+ * "a standing goal The Fool works on" ifadesini de yanlışlıkla yakalıyordu —
+ * oradaki artikel ürüne değil "goal" ismine ait.
+ *
+ * Python tarafındaki `_ARTICLE_FIX` ile birebir aynı tutulmalı.
+ */
+const ARTICLE_FIX: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\b(a|an|the|your|my|its|their)\s+((?:\w+\s+){0,1}?)The\s+Fool\b/gi, '$1 $2Fool'],
+  [/\bThe\s+The\s+Fool\b/g, 'The Fool']
+]
+
 /** Tek bir metni markala. Dışarıdan da kullanılabilir (ör. sabit stringler). */
 export function brandText(input: string): string {
   let out = input
   for (const [pattern, replacement] of RULES) {
+    out = out.replace(pattern, replacement)
+  }
+  for (const [pattern, replacement] of ARTICLE_FIX) {
     out = out.replace(pattern, replacement)
   }
   return out

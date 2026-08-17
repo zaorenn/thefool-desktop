@@ -51,12 +51,27 @@ def get_hermes_home_override() -> str | None:
 
 
 def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default The Fool home path.
+
+    FOOL-SEAM: home-dir
+
+    The Fool kendi veri dizinini kullanır. Bu KRİTİK: aynı makinede kurulu bir
+    upstream Hermes varsa, aynı dizini paylaşmak kullanıcının config'ini,
+    oturumlarını ve SOUL.md'sini bozar.
+
+    Karşılığı ``apps/desktop/electron/main.ts`` içindeki ``resolveHermesHome()``.
+    İKİSİ BİRLİKTE değişmeli — ayrışırlarsa masaüstü uygulaması backend'ini
+    bulamaz. ``tests/fool/test_branding.py`` ayrışmayı yakalar.
+
+    Sabit dize bilinçli: ``hermes_constants`` çok erken yükleniyor, buraya
+    ``fool.branding`` importu koymak import sırası riski yaratır. Testler iki
+    değerin eşliğini garanti ediyor.
+    """
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "hermes"
-    return Path.home() / ".hermes"
+        return base / "thefool"
+    return Path.home() / ".thefool"
 
 
 def _hermes_home_from_env() -> Path:

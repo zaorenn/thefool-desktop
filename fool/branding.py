@@ -76,10 +76,38 @@ _RULES: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
 )
 
 
+#: Ad "The" içerdiği için ham değiştirme yer yer bozuk İngilizce üretir:
+#:   "Restore a Hermes backup"      -> "Restore a The Fool backup"     ✗
+#:   "Open the safe Hermes console" -> "Open the safe The Fool console" ✗
+#:
+#: Çözüm: bir artikel (a/an/the/your) zaten varsa "The" düşer ve ad sıradan bir
+#: özel isim gibi davranır ("a Fool backup", "the safe Fool console"). Tek başına
+#: geçtiğinde tam ad korunur ("The Fool couldn't start").
+#:
+#: Araya en fazla BİR sıfat girebilir. Pencere bilinçli olarak dar:
+#:   "the safe The Fool console"          -> yakalanır, düzeltilir   ✓
+#:   "a standing goal The Fool works on"  -> yakalanmaz, tam ad kalır ✓
+#: İki kelimelik pencere ikincisini de yanlışlıkla yakalayıp "goal Fool works
+#: on" üretiyordu — artikel oradaki isme ("goal") aitti, ürüne değil.
+_ARTICLE_FIX: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
+    (
+        re.compile(
+            r"\b(a|an|the|your|my|its|their)\s+((?:\w+\s+){0,1}?)The\s+Fool\b",
+            re.IGNORECASE,
+        ),
+        r"\1 \2Fool",
+    ),
+    # "The The Fool" gibi çift artikel birikmelerini sadeleştir.
+    (re.compile(r"\bThe\s+The\s+Fool\b"), "The Fool"),
+)
+
+
 def brand_text(text: str) -> str:
     """Tek bir metni markala."""
     out = text
     for pattern, replacement in _RULES:
+        out = pattern.sub(replacement, out)
+    for pattern, replacement in _ARTICLE_FIX:
         out = pattern.sub(replacement, out)
     return out
 

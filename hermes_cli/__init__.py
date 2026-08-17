@@ -14,6 +14,14 @@ Provides subcommands for:
 import os
 import sys
 
+# FOOL-SEAM: argparse-brand
+# Tüm --help metinlerini tek noktadan markalar. Bu bir DÖNÜŞÜM: upstream yeni
+# komut/argüman ekledikçe onlar da otomatik kapsanır, bakım gerekmez.
+# Yalnızca yardım metnine dokunur — argüman adları/dest/choices ellenmez.
+from fool.argparse_brand import install as _install_fool_argparse_branding
+
+_install_fool_argparse_branding()
+
 __version__ = "0.20.2"
 __release_date__ = "2026.8.16"
 

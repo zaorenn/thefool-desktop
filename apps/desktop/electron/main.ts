@@ -684,12 +684,17 @@ function resolveHermesHome() {
     }
   }
 
+  // FOOL-SEAM: home-dir
+  // The Fool kendi veri dizinini kullanir. Ayni makinede kurulu bir upstream
+  // Hermes varsa dizini paylasmak kullanicinin config'ini/oturumlarini bozar.
+  // Karsiligi: hermes_constants.py::_get_platform_default_hermes_home().
+  // IKISI BIRLIKTE degismeli, yoksa uygulama backend'ini bulamaz.
   if (IS_WINDOWS && process.env.LOCALAPPDATA) {
-    const localappdata = path.join(process.env.LOCALAPPDATA, 'hermes')
-    const legacy = path.join(app.getPath('home'), '.hermes')
+    const localappdata = path.join(process.env.LOCALAPPDATA, 'thefool')
+    const legacy = path.join(app.getPath('home'), '.thefool')
 
     // Migrate transparently to LOCALAPPDATA, but honour an existing legacy
-    // ~/.hermes setup (no LOCALAPPDATA install yet) so users don't lose state.
+    // ~/.thefool setup (no LOCALAPPDATA install yet) so users don't lose state.
     if (!directoryExists(localappdata) && directoryExists(legacy)) {
       return legacy
     }
@@ -697,7 +702,7 @@ function resolveHermesHome() {
     return localappdata
   }
 
-  return path.join(app.getPath('home'), '.hermes')
+  return path.join(app.getPath('home'), '.thefool')
 }
 
 const HERMES_HOME = resolveHermesHome()

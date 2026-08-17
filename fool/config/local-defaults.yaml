@@ -21,8 +21,9 @@
 model:
   # LM Studio'da yüklü model kimliği (/v1/models ile birebir aynı olmalı).
   default: "qwen/qwen3.5-9b"
-  provider: "custom"
-  base_url: "http://127.0.0.1:1234/v1"
+  # LM Studio birinci sınıf sağlayıcı: base_url gerekmiyor, varsayılanı
+  # zaten http://127.0.0.1:1234/v1. Auth'lu ve auth'suz modda çalışır.
+  provider: "lmstudio"
 
 display:
   # CLI + TUI + masaüstü GUI'yi aynı anda temalar.

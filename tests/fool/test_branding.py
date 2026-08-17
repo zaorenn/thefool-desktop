@@ -67,7 +67,29 @@ def test_no_hermes_survives_in_mixed_ui_text() -> None:
     text = "Hermes Desktop could not reach the Hermes backend. Restart Hermes."
     out = branding.brand_text(text)
     assert "Hermes" not in out
-    assert out.count("The Fool") == 3
+    # Artikelli konumda "The" düşer ("the Fool backend"), tek başına korunur.
+    assert out == "The Fool Desktop could not reach the Fool backend. Restart The Fool."
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        # Artikel varsa ad sıradan özel isim gibi davranır.
+        ("Restore a Hermes backup", "Restore a Fool backup"),
+        ("Open the safe Hermes command console", "Open the safe Fool command console"),
+        ("View your Hermes plan", "View your Fool plan"),
+        # Artikel ürüne ait değilse tam ad korunmalı.
+        (
+            "Set a standing goal Hermes works on across turns",
+            "Set a standing goal The Fool works on across turns",
+        ),
+        # Tek başına: tam ad.
+        ("Hermes could not start", "The Fool could not start"),
+    ],
+)
+def test_article_grammar_is_repaired(source: str, expected: str) -> None:
+    """Ad "The" içerdiği için ham değiştirme bozuk İngilizce üretiyordu."""
+    assert branding.brand_text(source) == expected
 
 
 def test_brand_value_walks_nested_structures() -> None:
@@ -132,6 +154,10 @@ EXPECTED_SEAMS = {
     "cli-scripts",
     "version-banner",
     "command-descriptions",
+    "home-dir",
+    "prog-name",
+    "argparse-brand",
+    "fool-packaging",
 }
 
 
@@ -201,3 +227,40 @@ def test_version_banner_is_branded() -> None:
     label = format_banner_version_label()
     assert label.startswith(branding.NAME)
     assert "Hermes" not in label
+
+
+# =============================================================================
+# Veri dizini: Python <-> Electron
+# =============================================================================
+
+
+def test_python_and_electron_agree_on_data_dir() -> None:
+    """İki taraf ayrışırsa masaüstü uygulaması backend'ini bulamaz.
+
+    Python ``hermes_constants._get_platform_default_hermes_home()`` ve Electron
+    ``main.ts::resolveHermesHome()`` veri dizinini BAĞIMSIZ hesaplıyor. Bu test
+    ikisinin aynı adı kullandığını doğrular.
+    """
+    posix_name = branding.HOME_DIR_NAME           # ".thefool"
+    windows_name = posix_name.lstrip(".")          # "thefool"
+
+    py = (REPO_ROOT / "hermes_constants.py").read_text(encoding="utf-8")
+    assert f'base / "{windows_name}"' in py, "Python Windows yolu ayrışmış"
+    assert f'Path.home() / "{posix_name}"' in py, "Python POSIX yolu ayrışmış"
+
+    ts = (REPO_ROOT / "apps/desktop/electron/main.ts").read_text(encoding="utf-8")
+    assert f"path.join(process.env.LOCALAPPDATA, '{windows_name}')" in ts, (
+        "Electron Windows yolu ayrışmış"
+    )
+    assert f"path.join(app.getPath('home'), '{posix_name}')" in ts, (
+        "Electron POSIX yolu ayrışmış"
+    )
+
+
+def test_the_fool_never_uses_the_upstream_hermes_data_dir() -> None:
+    """Kullanıcının kurulu Hermes verisine dokunmama garantisi."""
+    import hermes_constants
+
+    home = str(hermes_constants.get_hermes_home()).lower().replace("\\", "/")
+    assert not home.endswith("local/hermes")
+    assert not home.endswith("/.hermes")

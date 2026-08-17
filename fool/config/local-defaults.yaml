@@ -8,14 +8,16 @@
 # sağlayıcı olarak destekleniyor (`provider: "lmstudio"`, varsayılan uç
 # http://127.0.0.1:1234/v1). Yani sıfır dikişle çalışıyor.
 #
-# DOĞRULANDI (2026-08-17, bu makinede):
-#   qwen/qwen3.5-9b tool calling YAPIYOR (finish_reason: tool_calls).
-#   Bu kritik: The Fool ajan bir uygulama — dosya düzenliyor, komut
-#   çalıştırıyor. Tool calling olmayan model yalnızca sohbet eder.
+# MODEL SEÇİMİ
+#   qwen/qwen3.5-9b tool calling destekliyor (finish_reason: tool_calls) ve
+#   16 GB VRAM'e rahat sığıyor. Bu kritik: The Fool ajan bir uygulama —
+#   dosya düzenliyor, komut çalıştırıyor. Tool calling desteklemeyen bir
+#   model yalnızca sohbet edebilir, iş yapamaz.
 #
-# DONANIM (bu makine): RTX 4070 Ti SUPER 16 GB VRAM, 32 GB RAM
-#   qwen3.5-9b  → VRAM'e rahat sığar, hızlı, tool calling var  ← VARSAYILAN
-#   gemma-4-e4b → daha hafif alternatif
+#   Daha az VRAM'in varsa gemma-4-e4b gibi daha hafif bir modele geç;
+#   daha fazlası varsa daha büyük bir modelle kalite artar. Modeli
+#   LM Studio'da yükleyip buradaki `default` değerini /v1/models
+#   çıktısındaki kimlikle eşleştirmen yeterli.
 
 model:
   default: "qwen/qwen3.5-9b"

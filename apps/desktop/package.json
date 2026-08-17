@@ -283,7 +283,7 @@
     },
     "linux": {
       "category": "Development",
-      "maintainer": "Fool Labs <serhan.ogurlu@hotmail.com>",
+      "maintainer": "Fool Labs",
       "synopsis": "Native desktop shell for The Fool.",
       "target": [
         "AppImage",

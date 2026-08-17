@@ -1,6 +1,11 @@
 MIT License
 
 Copyright (c) 2025 Nous Research
+Copyright (c) 2026 Fool Labs
+
+This project is a fork of Hermes Agent (https://github.com/NousResearch/hermes-agent).
+The original copyright notice above is retained as the MIT License requires.
+Fool Labs is not affiliated with or endorsed by Nous Research.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

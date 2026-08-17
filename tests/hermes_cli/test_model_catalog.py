@@ -157,7 +157,13 @@ class TestFallbackChain:
         assert result is not None
         assert calls == [self.PRIMARY], "fallback URLs must not be touched on primary success"
 
-    def test_falls_through_to_raw_github_on_primary_failure(self, isolated_home):
+    def test_falls_through_to_fallback_on_primary_failure(self, isolated_home):
+        """The fallback mechanism itself still works when URLs are supplied.
+
+        FOOL-SEAM: model-catalog — The Fool ships with the URL list EMPTY (the
+        catalog travels with the release instead), so the chain must be handed
+        explicit URLs here. The walking logic is upstream's and is unchanged.
+        """
         from hermes_cli import model_catalog
         calls: list[str] = []
 
@@ -168,30 +174,30 @@ class TestFallbackChain:
             return _valid_manifest()
 
         with patch.object(model_catalog, "_fetch_manifest", side_effect=fake_fetch):
-            result = model_catalog._fetch_manifest_with_fallback(self.PRIMARY, 5.0)
+            result = model_catalog._fetch_manifest_with_fallback(
+                self.PRIMARY, 5.0, (self.FALLBACK,)
+            )
 
         assert result is not None
         assert calls == [self.PRIMARY, self.FALLBACK]
 
+    def test_fork_ships_no_catalog_urls_so_no_network_call_happens(self):
+        """FOOL-SEAM: model-catalog — the shipped default must stay empty.
 
-    def test_get_catalog_uses_fallback_chain(self, isolated_home):
-        """End-to-end: ``get_catalog`` routes through the fallback helper so
-        a primary URL failure transparently produces a working catalog."""
+        Upstream fetched the catalog from Nous on every launch. The Fool ships
+        it with the release, so a default ``get_catalog`` path must never touch
+        the network. If someone restores a URL here, this fails loudly.
+        """
         from hermes_cli import model_catalog
-        manifest = _valid_manifest()
-        calls: list[str] = []
 
-        def fake_fetch(url, timeout):
-            calls.append(url)
-            if url == self.PRIMARY:
-                return None
-            return manifest
+        assert model_catalog.DEFAULT_CATALOG_URL == ""
+        assert model_catalog.DEFAULT_CATALOG_FALLBACK_URLS == ()
 
-        with patch.object(model_catalog, "_fetch_manifest", side_effect=fake_fetch):
-            result = model_catalog.get_catalog(force_refresh=True)
+        def explode(url, timeout):  # pragma: no cover — must never run
+            raise AssertionError(f"network fetch attempted: {url!r}")
 
-        assert result == manifest
-        assert self.FALLBACK in calls
+        with patch.object(model_catalog, "_fetch_manifest", side_effect=explode):
+            assert model_catalog._fetch_manifest_with_fallback("", 5.0, ()) is None
 
 
 class TestCuratedAccessors:

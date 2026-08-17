@@ -59,7 +59,7 @@ PROTOCOL: Final[str] = "thefool"
 
 #: Kullanıcının kendi deposu — güncellemeler buradan gelir.
 #: (Henüz yayınlanmadı; yerel çalışırken yalnızca bir yer tutucu.)
-REPO_URL: Final[str] = "https://github.com/serhanogurlu/thefool-desktop"
+REPO_URL: Final[str] = "https://github.com/zaorenn/thefool-desktop"
 
 
 # =============================================================================

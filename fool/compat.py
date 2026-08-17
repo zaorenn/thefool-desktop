@@ -1,6 +1,6 @@
 """Upstream ortam değişkenleri için geriye dönük uyumluluk.
 
-Tam yeniden adlandırma ``HERMES_*`` öneklerini ``THEFOOL_*`` yaptı. Kod tarafı
+Tam yeniden adlandırma ``HERMES_*`` öneklerini ``FOOL_*`` yaptı. Kod tarafı
 tutarlı, ama **kullanıcının kendi makinesindeki ayarlar öyle değil**:
 
 * ``setx HERMES_HOME ...`` ile kalıcı ayarlamış olabilir
@@ -13,7 +13,7 @@ ve hafızası "kaybolmuş" görünür.
 
 Bu modül tek bir kural uygular::
 
-    THEFOOL_X varsa onu kullan, yoksa HERMES_X'e bak.
+    FOOL_X varsa onu kullan, yoksa HERMES_X'e bak.
 
 Yeni ad her zaman kazanır, böylece ikisi birden ayarlıysa davranış belirsiz
 kalmaz.
@@ -25,22 +25,22 @@ import os
 from typing import Final
 
 #: Yeni önek -> eski önek.
-_NEW: Final[str] = "THEFOOL_"
+_NEW: Final[str] = "FOOL_"
 _OLD: Final[str] = "HERMES_"
 
 
 def getenv(name: str, default: str = "") -> str:
-    """``THEFOOL_*`` oku, yoksa ``HERMES_*`` karşılığına düş.
+    """``FOOL_*`` oku, yoksa ``HERMES_*`` karşılığına düş.
 
-    ``name`` yeni adla verilir (``THEFOOL_HOME``). Öneki taşımayan bir ad
+    ``name`` yeni adla verilir (``FOOL_HOME``). Öneki taşımayan bir ad
     verilirse doğrudan okunur.
 
     >>> import os
     >>> os.environ["HERMES_EXAMPLE"] = "eski"
-    >>> getenv("THEFOOL_EXAMPLE")
+    >>> getenv("FOOL_EXAMPLE")
     'eski'
-    >>> os.environ["THEFOOL_EXAMPLE"] = "yeni"
-    >>> getenv("THEFOOL_EXAMPLE")
+    >>> os.environ["FOOL_EXAMPLE"] = "yeni"
+    >>> getenv("FOOL_EXAMPLE")
     'yeni'
     """
     value = os.environ.get(name, "")
@@ -57,7 +57,7 @@ def getenv(name: str, default: str = "") -> str:
 
 
 def legacy_name(name: str) -> str | None:
-    """``THEFOOL_X`` için ``HERMES_X`` döndür; önek yoksa ``None``."""
+    """``FOOL_X`` için ``HERMES_X`` döndür; önek yoksa ``None``."""
     if name.startswith(_NEW):
         return _OLD + name[len(_NEW):]
     return None

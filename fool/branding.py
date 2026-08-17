@@ -49,9 +49,9 @@ AGENT: Final[str] = "Fool Agent"
 #: "Nous Research" yerine geçen üretici adı.
 VENDOR: Final[str] = "Fool Labs"
 #: Terminal komutu — pyproject ``[project.scripts]`` ile eşleşmeli.
-CLI: Final[str] = "thefool"
+CLI: Final[str] = "fool"
 #: Veri dizini adı — ``~/.thefool``.
-HOME_DIR_NAME: Final[str] = ".thefool"
+HOME_DIR_NAME: Final[str] = ".fool"
 #: electron-builder appId.
 APP_ID: Final[str] = "com.thefool.desktop"
 #: Derin bağlantı şeması.

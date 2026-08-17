@@ -173,6 +173,7 @@ EXPECTED_SEAMS = {
     "client-attribution",
     "brand-mark",
     "bootstrap-repo",
+    "env-compat",
 }
 
 
@@ -459,3 +460,40 @@ def test_bootstrap_installs_the_fool_not_upstream() -> None:
         assert "zaorenn/thefool-desktop" in text, f"{rel}: fork deposu geçmiyor"
 
     assert not offenders, f"upstream deposunu kuran dosyalar: {offenders}"
+
+
+# =============================================================================
+# Ortam değişkeni geriye dönük uyumluluğu
+# =============================================================================
+
+
+def test_legacy_hermes_env_still_resolves(monkeypatch: pytest.MonkeyPatch) -> None:
+    """FOOL-SEAM: env-compat — eski ayarlar sessizce yok sayılmamalı.
+
+    Kullanıcı ``setx HERMES_HOME`` yapmış olabilir. Yok sayılırsa uygulama
+    hatasız açılır ama YANLIŞ dizini kullanır — oturumlar ve hafıza kaybolmuş
+    görünür. Teşhisi en zor hata türü.
+    """
+    from fool import compat
+
+    monkeypatch.delenv("THEFOOL_HOME", raising=False)
+    monkeypatch.setenv("HERMES_HOME", r"C:\eski\yol")
+    assert compat.getenv("THEFOOL_HOME") == r"C:\eski\yol"
+
+
+def test_new_env_name_wins_over_legacy(monkeypatch: pytest.MonkeyPatch) -> None:
+    """İkisi birden ayarlıysa davranış belirsiz kalmamalı."""
+    from fool import compat
+
+    monkeypatch.setenv("HERMES_HOME", r"C:\eski")
+    monkeypatch.setenv("THEFOOL_HOME", r"C:\yeni")
+    assert compat.getenv("THEFOOL_HOME") == r"C:\yeni"
+
+
+def test_home_resolution_honours_legacy_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Uçtan uca: gerçek veri dizini çözümlemesi eski değişkeni görüyor mu."""
+    import thefool_constants
+
+    monkeypatch.delenv("THEFOOL_HOME", raising=False)
+    monkeypatch.setenv("HERMES_HOME", r"C:\eski\thefool-home")
+    assert str(thefool_constants._hermes_home_from_env()) == r"C:\eski\thefool-home"

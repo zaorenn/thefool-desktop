@@ -43,11 +43,17 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 #: Çalışma anında marka dönüşümünden GEÇEN yüzeyler. Kaynakta "Hermes" yazması
 #: beklenen ve doğru olan durumdur — dönüşüm zaten hallediyor. Bunları taramak
 #: yüzlerce yanlış pozitif üretir ve aracı kullanılamaz hale getirir.
+#: NOT: bu dosya ``fool/rename.py``'daki ``SELF_EXCLUDE`` listesinde olduğu için
+#: yeniden adlandırmadan ETKİLENMEZ. Bedeli: aşağıdaki yolları elle güncel
+#: tutmak gerekir. Bir modül yeniden adlandırıldığında burada da düzelt, yoksa
+#: tarayıcı var olmayan dizinleri tarar ve sessizce "temiz" der.
 TRANSFORM_COVERED: tuple[str, ...] = (
-    "apps/desktop/src/i18n/",      # applyFoolBrand (FOOL-SEAM: i18n-brand)
-    "hermes_cli/commands.py",      # CommandDef.__post_init__
-    "hermes_cli/_parser.py",       # argparse_brand
-    "hermes_cli/console_engine.py",
+    "apps/desktop/src/i18n/",   # applyFoolBrand  (FOOL-SEAM: i18n-brand)
+    "web/src/i18n/",            # applyFoolBrand  (FOOL-SEAM: web-i18n-brand)
+    "locales/",                 # brand_value     (FOOL-SEAM: locale-brand)
+    "fool_cli/commands.py",     # CommandDef.__post_init__
+    "fool_cli/_parser.py",      # argparse_brand
+    "fool_cli/console_engine.py",
 )
 
 #: Taranan yüzeyler: kullanıcıya DÖNÜŞÜMSÜZ giden metin.
@@ -59,9 +65,7 @@ SURFACES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Güncelleme penceresi", ("scripts/desktop-update/*",)),
     ("Kurulum betikleri", ("scripts/install.sh", "scripts/install.ps1")),
     ("Ajan kimliği ve promptlar", ("agent/prompt_builder.py", "agent/system_prompt.py")),
-    ("CLI banner ve sürüm", ("hermes_cli/banner.py", "hermes_cli/_startup_fast.py")),
-    ("CLI çevirileri", ("locales/*.yaml",)),
-    ("Web panosu", ("web/src/i18n/*.ts",)),
+    ("CLI banner ve sürüm", ("fool_cli/banner.py", "fool_cli/_startup_fast.py")),
 )
 
 #: Marka — YALNIZCA serbest metinde. Kelime sınırları kritik: tanımlayıcıda

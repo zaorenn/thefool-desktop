@@ -18,7 +18,12 @@ import { ru } from "./ru";
 import { hu } from "./hu";
 import { ar } from "./ar";
 
-const TRANSLATIONS: Record<Locale, Translations> = {
+import { applyFoolBrand } from "@fool/shared";
+
+// FOOL-SEAM: web-i18n-brand
+// Web panosunun ceviri katalogu da marka donusumunden gecer. Masaustundeki
+// ile AYNI donusum (@fool/shared) -- iki yuzeyin ayrismamasi icin tek kaynak.
+const TRANSLATIONS: Record<Locale, Translations> = applyFoolBrand({
   en,
   zh,
   "zh-hant": zhHant,
@@ -36,7 +41,7 @@ const TRANSLATIONS: Record<Locale, Translations> = {
   ru,
   hu,
   ar,
-};
+});
 
 // Locales whose script flows right-to-left. Consumed by the provider to set the
 // document direction so Tailwind's logical utilities (ms-/me-, ps-/pe-) flip.

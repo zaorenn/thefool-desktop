@@ -118,8 +118,13 @@ def test_brand_value_walks_nested_structures() -> None:
 
 
 def _read_ts_brand() -> dict[str, str]:
-    """``branding.ts`` içindeki ``BRAND`` nesnesini kabaca ayrıştır."""
-    ts = (REPO_ROOT / "apps/desktop/src/fool/branding.ts").read_text(encoding="utf-8")
+    """``fool-branding.ts`` içindeki ``BRAND`` nesnesini kabaca ayrıştır.
+
+    Tanım ``apps/shared`` altında: aynı dönüşümü hem masaüstü uygulaması hem
+    web panosu kullanıyor (FOOL-SEAM: shared-branding). Masaüstündeki
+    ``src/fool/branding.ts`` artık yalnızca yeniden dışa aktarım.
+    """
+    ts = (REPO_ROOT / "apps/shared/src/fool-branding.ts").read_text(encoding="utf-8")
     block = re.search(r"export const BRAND = \{(.*?)\} as const", ts, re.DOTALL)
     assert block, "branding.ts içinde BRAND bloğu bulunamadı"
     return dict(re.findall(r"(\w+):\s*'([^']*)'", block.group(1)))
@@ -174,6 +179,9 @@ EXPECTED_SEAMS = {
     "brand-mark",
     "bootstrap-repo",
     "env-compat",
+    "locale-brand",
+    "web-i18n-brand",
+    "shared-branding",
 }
 
 

@@ -172,6 +172,16 @@ def _load_catalog(lang: str) -> dict[str, str]:
 
     flat: dict[str, str] = {}
     _flatten_into(raw, "", flat)
+
+    # FOOL-SEAM: locale-brand
+    # CLI/gateway cevirileri (17 dil) markalanir. Masaustu i18n'inde oldugu
+    # gibi bu bir KOPYA degil bir DONUSUM: upstream yeni metin ekledikce
+    # onlar da otomatik markalanir, ceviri dosyalarina hic dokunulmaz.
+    # Yukleme aninda ve cache'ten ONCE calisir, boylece her okuma markali.
+    from fool.branding import brand_value
+
+    flat = brand_value(flat)
+
     with _catalog_lock:
         _catalog_cache[lang] = flat
     return flat

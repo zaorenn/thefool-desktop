@@ -271,7 +271,7 @@ function Show-ProgressWindow {
             $mute = [System.Drawing.ColorTranslator]::FromHtml("#A8A8A8")
         }
         $form = New-Object System.Windows.Forms.Form
-        $form.Text = "Hermes"
+        $form.Text = "The Fool"
         $form.FormBorderStyle = "FixedSingle"
         $form.MaximizeBox = $false
         $form.MinimizeBox = $false
@@ -285,13 +285,13 @@ function Show-ProgressWindow {
         $bar.MarqueeAnimationSpeed = 30
         $bar.SetBounds(60, 128, 160, 8)
         $title = New-Object System.Windows.Forms.Label
-        $title.Text = "Updating Hermes"
+        $title.Text = "Updating The Fool"
         $title.Font = New-Object System.Drawing.Font("Segoe UI Semibold", 12)
         $title.ForeColor = $fore
         $title.TextAlign = "MiddleCenter"
         $title.SetBounds(16, 156, 248, 28)
         $sub = New-Object System.Windows.Forms.Label
-        $sub.Text = "Hermes will open once done."
+        $sub.Text = "The Fool will open once done."
         $sub.Font = New-Object System.Drawing.Font("Segoe UI", 9)
         $sub.ForeColor = $mute
         $sub.TextAlign = "TopCenter"
@@ -333,7 +333,7 @@ function Show-ErrorFinale([string]$Message) {
         $ui = $script:Ui
         $ui.Bar.Visible = $false
         $ui.Title.Text = "Failed to update"
-        $ui.Sub.Text = "Run `"hermes debug share`" in a terminal to send a report."
+        $ui.Sub.Text = "Run `"thefool debug share`" in a terminal to send a report."
         $close = New-Object System.Windows.Forms.Button
         $close.Text = "Close"
         $close.SetBounds(100, 252, 80, 28)

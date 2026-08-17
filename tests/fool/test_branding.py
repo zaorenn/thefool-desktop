@@ -158,6 +158,9 @@ EXPECTED_SEAMS = {
     "prog-name",
     "argparse-brand",
     "fool-packaging",
+    "html-title",
+    "bot-display-name",
+    "bot-handle",
 }
 
 

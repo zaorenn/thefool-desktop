@@ -2122,14 +2122,20 @@ function mergeMultiSourceRoster(local, union) {
 /** The @handle users tag a bot with. Multi-source rosters precompute the
  *  handle (bare name, or name-device when the profile exists on several
  *  registered sources) — prefer it when present. The primary profile's
- *  callable alias is 'hermes' — the mention middleware resolves it back to
- *  'default' — so the word 'default' never surfaces in the UI. */
+ *  callable alias is 'thefool' — the mention middleware resolves it back to
+ *  'default' — so the word 'default' never surfaces in the UI.
+ *
+ *  FOOL-SEAM: bot-handle
+ *  Bu yalnizca gorunen bir etiket degil, CAGRILABILIR bir takma ad. Asagidaki
+ *  mention cozucusuyle birlikte degismek zorunda; ayrisirlarsa kullanicinin
+ *  yazdigi @thefool hicbir bota cozulmez. Eski @hermes de kabul edilmeye
+ *  devam ediyor (geriye donuk uyumluluk). */
 function botHandle(name, bot) {
   if (bot?.handle && bot.handle !== name) {
     return bot.handle
   }
 
-  return (name || '').trim().toLowerCase() === 'default' ? 'hermes' : name
+  return (name || '').trim().toLowerCase() === 'default' ? 'thefool' : name
 }
 
 function showsHandle(name, meta, bot) {
@@ -2263,10 +2269,15 @@ function displayName(bot, meta) {
   }
 
   // The primary profile is literally named "default" — as a bot identity
-  // that reads like nobody bothered. Present it as Hermes (the agent it is)
+  // that reads like nobody bothered. Present it as The Fool (the agent it is)
   // unless the user gives it a real title.
+  //
+  // FOOL-SEAM: bot-display-name
+  // Sabit dize: bu bir eklenti dosyasi, yalnizca @hermes/plugin-sdk'ye
+  // baglanmasi gerekiyor; uygulama ici modul importu eklemek eklenti
+  // sozlesmesini bozar. Test esligi dogruluyor.
   if ((bot.name || '').trim().toLowerCase() === 'default' && !bot.title) {
-    return 'Hermes'
+    return 'The Fool'
   }
 
   const raw = (bot.title || bot.name || '').replace(/[-_]+/g, ' ').trim()
@@ -6897,7 +6908,14 @@ export default {
           for (const match of prose.matchAll(/(^|\s)@([a-z0-9][a-z0-9_-]*)/gi)) {
             let name = match[2].toLowerCase()
 
-            if (name === 'hermes' && !names.includes('hermes') && names.includes('default')) {
+            // FOOL-SEAM: bot-handle
+            // botHandle() ile birlikte degismeli. 'hermes' eski kurulumlardan
+            // gelen mesajlar icin kabul edilmeye devam ediyor.
+            if (
+              (name === 'thefool' || name === 'hermes') &&
+              !names.includes(name) &&
+              names.includes('default')
+            ) {
               name = 'default'
             }
 

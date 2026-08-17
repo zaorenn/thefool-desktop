@@ -26,7 +26,7 @@ _TIER1_SAMPLE = {
     "TELEGRAM_BOT_TOKEN": "bot-token",
     "SLACK_APP_TOKEN": "xapp-secret",
     "MODAL_TOKEN_SECRET": "modal-secret",
-    "HERMES_DASHBOARD_SESSION_TOKEN": "dash-secret",
+    "THEFOOL_DASHBOARD_SESSION_TOKEN": "dash-secret",
 }
 
 _PROVIDER_SAMPLE = {
@@ -148,21 +148,21 @@ class TestDelegatedChildMarker:
             os.environ,
             {
                 **_SAFE_SAMPLE,
-                "HERMES_KANBAN_TASK": "t_parent",
-                "HERMES_KANBAN_RUN_ID": "123",
-                "HERMES_KANBAN_DB": "/tmp/parent-kanban.db",
-                "HERMES_KANBAN_WORKSPACE": "/tmp/parent-workspace",
+                "THEFOOL_KANBAN_TASK": "t_parent",
+                "THEFOOL_KANBAN_RUN_ID": "123",
+                "THEFOOL_KANBAN_DB": "/tmp/parent-kanban.db",
+                "THEFOOL_KANBAN_WORKSPACE": "/tmp/parent-workspace",
             },
             clear=True,
         ):
             with delegated_child_context():
                 env = hermes_subprocess_env(inherit_credentials=True)
 
-        assert env["HERMES_DELEGATED_CHILD_CONTEXT"] == "1"
-        assert "HERMES_KANBAN_TASK" not in env
-        assert "HERMES_KANBAN_RUN_ID" not in env
-        assert "HERMES_KANBAN_DB" not in env
-        assert "HERMES_KANBAN_WORKSPACE" not in env
+        assert env["THEFOOL_DELEGATED_CHILD_CONTEXT"] == "1"
+        assert "THEFOOL_KANBAN_TASK" not in env
+        assert "THEFOOL_KANBAN_RUN_ID" not in env
+        assert "THEFOOL_KANBAN_DB" not in env
+        assert "THEFOOL_KANBAN_WORKSPACE" not in env
         assert env["MY_APP_VAR"] == "keep-me"
 
 

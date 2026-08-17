@@ -125,7 +125,7 @@ def _base_subprocess_env() -> dict:
 def _read_browser_cfg() -> dict:
     """Return the ``browser:`` config section, or {} on any failure."""
     try:
-        from hermes_cli.config import cfg_get, read_raw_config
+        from thefool_cli.config import cfg_get, read_raw_config
 
         cfg = cfg_get(read_raw_config(), "browser", default={})
         return cfg if isinstance(cfg, dict) else {}
@@ -226,7 +226,7 @@ def default_downgrade_notice() -> Optional[str]:
         if _find_cli() is not None:
             return None
 
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         stamp = Path(get_hermes_home()) / "cache" / _NOTICE_STAMP_NAME
         try:
@@ -250,10 +250,10 @@ def default_downgrade_notice() -> Optional[str]:
 
 
 def _managed_bin_dir() -> Optional[str]:
-    """Hermes' own bin dir ($HERMES_HOME/bin) — where install.sh puts uv/uvx
+    """Hermes' own bin dir ($THEFOOL_HOME/bin) — where install.sh puts uv/uvx
     and where install_cli() links the browser-use binary."""
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         return str(Path(get_hermes_home()) / "bin")
     except Exception as e:  # pragma: no cover — defensive
@@ -281,7 +281,7 @@ def _user_local_bin_dir() -> Optional[str]:
 def _find_cli() -> Optional[List[str]]:
     """Locate the browser-use CLI, or None when it can't be run.
 
-    MANAGED-FIRST resolution: Hermes' own ``$HERMES_HOME/bin`` copy — the
+    MANAGED-FIRST resolution: Hermes' own ``$THEFOOL_HOME/bin`` copy — the
     one every browser backend selection installs and updates via
     ``install_cli()`` — always wins, so all sessions drive one canonical,
     Hermes-controlled binary. PATH and the user-level tool dir
@@ -308,8 +308,8 @@ def install_cli(timeout_s: int = 600) -> Tuple[bool, str]:
     """Install the browser-use CLI persistently via ``uv tool install``.
 
     Resolution order for uv: Hermes' managed uv (bootstrapped on demand via
-    ``hermes_cli.managed_uv.ensure_uv``) → uv on PATH. The binary is linked
-    into ``$HERMES_HOME/bin`` (``UV_TOOL_BIN_DIR``) so ``_find_cli()``
+    ``thefool_cli.managed_uv.ensure_uv``) → uv on PATH. The binary is linked
+    into ``$THEFOOL_HOME/bin`` (``UV_TOOL_BIN_DIR``) so ``_find_cli()``
     resolves it for every profile without touching the user's PATH.
 
     Returns ``(ok, message)`` — never raises.
@@ -327,7 +327,7 @@ def install_cli(timeout_s: int = 600) -> Tuple[bool, str]:
 
     uv_bin: Optional[str] = None
     try:
-        from hermes_cli.managed_uv import ensure_uv
+        from thefool_cli.managed_uv import ensure_uv
 
         uv_bin = str(ensure_uv() or "") or None
     except Exception as e:
@@ -387,7 +387,7 @@ def _workspace_dir(task_id: Optional[str]) -> Optional[str]:
     try:
         from pathlib import Path
 
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         safe = _TASK_ID_SAFE_RE.sub("_", str(task_id or "default"))[:80] or "default"
         path = Path(get_hermes_home()) / "cache" / "browser-use" / "workspace" / safe
@@ -618,7 +618,7 @@ def browser_exec(
     popen_extra: dict = {}
     if os.name == "nt":
         try:
-            from hermes_cli._subprocess_compat import windows_hide_flags
+            from thefool_cli._subprocess_compat import windows_hide_flags
 
             popen_extra["creationflags"] = windows_hide_flags()
             _si = subprocess.STARTUPINFO()

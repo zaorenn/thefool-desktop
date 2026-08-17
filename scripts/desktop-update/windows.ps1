@@ -2,7 +2,7 @@
 #
 # WHY THIS EXISTS (the frozen-binary problem): the Desktop's Update button
 # used to hand off exclusively to the staged Tauri binary
-# (%HERMES_HOME%\hermes-setup.exe). That binary has no self-update path --
+# (%THEFOOL_HOME%\hermes-setup.exe). That binary has no self-update path --
 # copy_self_to_hermes_home deliberately no-ops during --update -- so every
 # updater-side fix (cache refresh #67369, marker self-adopt #74782, straggler
 # handling) only reaches users when a new installer is built, signed, and
@@ -19,7 +19,7 @@
 # CONTRACT (keep in sync with apps/desktop/electron/main.ts):
 #   cmd /d /s /c start "" /min powershell -NoProfile -ExecutionPolicy Bypass
 #     -File scripts\desktop-update\windows.ps1
-#     -InstallRoot <path>   repo checkout (HERMES_HOME\hermes-agent)
+#     -InstallRoot <path>   repo checkout (THEFOOL_HOME\hermes-agent)
 #     -Branch <ref>         branch to update against
 #     -DesktopPid <pid>     the Electron main process to wait out
 #     [-RelaunchExe <path>] Hermes.exe to start when done (omit = no relaunch)
@@ -33,9 +33,9 @@
 # .hermes-update-result.json for the relaunched Desktop to surface, and
 # relaunches the Desktop so the user is never left stranded.
 #
-# Marker: we claim HERMES_HOME\.hermes-update-in-progress with OUR pid as
+# Marker: we claim THEFOOL_HOME\.hermes-update-in-progress with OUR pid as
 # step 0 (the wrapper cmd.exe pid the Desktop saw is useless -- it exits
-# immediately). hermes_cli/update_lock.py's ancestry rule lets our
+# immediately). thefool_cli/update_lock.py's ancestry rule lets our
 # `hermes update` child adopt the claim; electron/update-marker.ts parks a
 # relaunched Desktop on it. Cleanup only removes the marker while WE still
 # own it (a handoff partner that rewrote it keeps its claim).
@@ -589,8 +589,8 @@ $finalMsg = "update did not complete"
 # Manual QA for the Edge shell without a checkout or a real update. Exits
 # before the marker/desktop/venv machinery — touches nothing. Off Windows
 # (or without Edge) the loopback server still starts and the URL prints, so
-# the page can be QA'd in any browser; HERMES_SELFTEST_FAIL=1 exercises the
-# error state, HERMES_SELFTEST_HOLD_SECONDS delays the terminal event.
+# the page can be QA'd in any browser; THEFOOL_SELFTEST_FAIL=1 exercises the
+# error state, THEFOOL_SELFTEST_HOLD_SECONDS delays the terminal event.
 if ($SelfTestUi) {
     New-Item -ItemType Directory -Path $LogDir -Force -ErrorAction SilentlyContinue | Out-Null
     Show-ProgressWindow
@@ -605,9 +605,9 @@ if ($SelfTestUi) {
     }
     Write-HandoffLog "SELF-TEST: shim simulation (no update will run)"
     $hold = 6
-    if ($env:HERMES_SELFTEST_HOLD_SECONDS) { $hold = [int]$env:HERMES_SELFTEST_HOLD_SECONDS }
+    if ($env:THEFOOL_SELFTEST_HOLD_SECONDS) { $hold = [int]$env:THEFOOL_SELFTEST_HOLD_SECONDS }
     Start-Sleep -Seconds $hold
-    if ($env:HERMES_SELFTEST_FAIL) {
+    if ($env:THEFOOL_SELFTEST_FAIL) {
         Show-ErrorFinale "self-test error state"
     } else {
         Close-ProgressWindow
@@ -711,7 +711,7 @@ try {
     # never reached and apps/desktop/release is left missing -- an install whose
     # Start Menu shortcut points at a Hermes.exe that no longer exists.
     #
-    # Running the same code as `python.exe -m hermes_cli.main update` puts the
+    # Running the same code as `python.exe -m thefool_cli.main update` puts the
     # inherited handles on python.exe, which uv never has to replace.
     #
     # posix.sh is deliberately left alone: unlinking a running executable is
@@ -723,7 +723,7 @@ try {
         Write-HandoffLog $finalMsg
         exit $finalCode
     }
-    $updateArgs = @("-m", "hermes_cli.main", "update", "--yes", "--gateway", "--force", "--branch", $Branch)
+    $updateArgs = @("-m", "thefool_cli.main", "update", "--yes", "--gateway", "--force", "--branch", $Branch)
     Write-HandoffLog ("running: python " + ($updateArgs -join " "))
     $res = Invoke-HermesStep $pythonExe $updateArgs "update"
     Write-HandoffLog "hermes update exit code: $($res.Code)"
@@ -744,7 +744,7 @@ try {
     $desktopBuildFailed = $false
     if ($res.Code -eq 0 -and $res.Output -match "Desktop build failed") {
         Write-HandoffLog "hermes update reported a desktop build failure (non-fatal there, fatal here); retrying build"
-        $rebuild = Invoke-HermesStep $pythonExe @("-m", "hermes_cli.main", "desktop", "--force-build", "--build-only") "rebuild"
+        $rebuild = Invoke-HermesStep $pythonExe @("-m", "thefool_cli.main", "desktop", "--force-build", "--build-only") "rebuild"
         Write-HandoffLog "desktop rebuild exit code: $($rebuild.Code)"
         if ($rebuild.Code -ne 0) { $desktopBuildFailed = $true }
     }

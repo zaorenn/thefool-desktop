@@ -103,7 +103,7 @@ def _normalize_env_dict(env: dict | None) -> dict[str, str]:
 def _load_hermes_env_vars() -> dict[str, str]:
     """Load ~/.hermes/.env values without failing Docker command execution."""
     try:
-        from hermes_cli.config import load_env
+        from thefool_cli.config import load_env
 
         return load_env() or {}
     except Exception:
@@ -138,7 +138,7 @@ def _get_active_profile_name() -> str:
     same process don't retroactively relabel running containers.
     """
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from thefool_cli.profiles import get_active_profile_name
 
         return get_active_profile_name() or "default"
     except Exception:
@@ -278,7 +278,7 @@ def find_docker() -> Optional[str]:
     """Locate the docker (or podman) CLI binary.
 
     Resolution order:
-    1. ``HERMES_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
+    1. ``THEFOOL_DOCKER_BINARY`` env var — explicit override (e.g. ``/usr/bin/podman``)
     2. ``docker`` on PATH via ``shutil.which``
     3. ``podman`` on PATH via ``shutil.which``
     4. Well-known macOS Docker Desktop install locations
@@ -290,10 +290,10 @@ def find_docker() -> Optional[str]:
         return _docker_executable
 
     # 1. Explicit override via env var (e.g. for Podman on immutable distros)
-    override = os.getenv("HERMES_DOCKER_BINARY")
+    override = os.getenv("THEFOOL_DOCKER_BINARY")
     if override and os.path.isfile(override) and os.access(override, os.X_OK):
         _docker_executable = override
-        logger.info("Using HERMES_DOCKER_BINARY override: %s", override)
+        logger.info("Using THEFOOL_DOCKER_BINARY override: %s", override)
         return override
 
     # 2. docker on PATH
@@ -404,7 +404,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
       (extends docker's ``-v`` argv list)
     * ``env_overrides`` — env vars to set on container creation: ``HTTPS_PROXY``,
       ``HTTP_PROXY``, ``NO_PROXY`` (loopback only), Python/Node/curl CA-bundle
-      paths, and one ``HERMES_PROXY_TOKEN_<NAME>`` per minted mapping
+      paths, and one ``THEFOOL_PROXY_TOKEN_<NAME>`` per minted mapping
     * ``host_args`` — extra ``--add-host`` flags so the container can reach the
       host-side proxy (Linux needs ``host.docker.internal:host-gateway``;
       Docker Desktop populates this automatically on macOS/Windows)
@@ -421,7 +421,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
     # proxy enforcement.  We let unexpected exceptions propagate so the
     # docker backend visibly fails rather than degrading silently.
     try:
-        from hermes_cli.config import load_config
+        from thefool_cli.config import load_config
         from agent.proxy_sources import iron_proxy as ip
     except ImportError as exc:
         logger.debug("Egress proxy plumbing unavailable: %s", exc)
@@ -529,7 +529,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
         # --max-old-space-size=4096), not clobber it.  The append-merge
         # happens in DockerEnvironment._merge_node_options below.
         # For the agent inside the sandbox to identify itself as proxy-aware.
-        "HERMES_EGRESS_PROXY": "1",
+        "THEFOOL_EGRESS_PROXY": "1",
         # Sentinel that DockerEnvironment uses to do the NODE_OPTIONS
         # append-merge.  Stripped from the final env before docker run.
         "_HERMES_EGRESS_NODE_OPTIONS_APPEND": "--use-openssl-ca",
@@ -539,11 +539,11 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
     # names so existing SDKs and provider clients work unchanged inside the
     # sandbox.  Alias env names (e.g. GOOGLE_API_KEY for GEMINI_API_KEY)
     # receive the same token so SDKs reading either name authenticate
-    # through the proxy.  Keep the HERMES_PROXY_TOKEN_* aliases for
+    # through the proxy.  Keep the THEFOOL_PROXY_TOKEN_* aliases for
     # diagnostics.
     for m in mappings:
         env_overrides[m.real_env_name] = m.proxy_token
-        env_overrides[f"HERMES_PROXY_TOKEN_{m.real_env_name}"] = m.proxy_token
+        env_overrides[f"THEFOOL_PROXY_TOKEN_{m.real_env_name}"] = m.proxy_token
         for alias in getattr(m, "alias_env_names", ()) or ():
             env_overrides[alias] = m.proxy_token
 
@@ -578,7 +578,7 @@ def _egress_reuse_fingerprint(
 def _egress_enforce_on_docker(default: bool = True) -> bool:
     """Read proxy.enforce_on_docker with fail-safe defaulting."""
     try:
-        from hermes_cli.config import load_config as _load_cfg
+        from thefool_cli.config import load_config as _load_cfg
 
         return bool((_load_cfg().get("proxy") or {}).get("enforce_on_docker", default))
     except (ImportError, OSError):
@@ -1139,7 +1139,7 @@ class DockerEnvironment(BaseEnvironment):
         # - When the user override is identical to the egress value, no-op.
         if egress_env_overrides:
             try:
-                from hermes_cli.config import load_config as _load_cfg_for_collision
+                from thefool_cli.config import load_config as _load_cfg_for_collision
                 _proxy_cfg = (_load_cfg_for_collision().get("proxy") or {})
             except (ImportError, OSError):
                 _proxy_cfg = {}
@@ -1218,7 +1218,7 @@ class DockerEnvironment(BaseEnvironment):
         # opt out).  In both cases the collision check above has already
         # surfaced any disagreement.
         try:
-            from hermes_cli.config import load_config as _load_cfg_for_precedence
+            from thefool_cli.config import load_config as _load_cfg_for_precedence
             _enforce_egress_merge = bool(
                 (_load_cfg_for_precedence().get("proxy") or {})
                 .get("enforce_on_docker", True)

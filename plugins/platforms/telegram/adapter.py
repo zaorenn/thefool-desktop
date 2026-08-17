@@ -768,7 +768,7 @@ class TelegramAdapter(BasePlatformAdapter):
         )
         # Buffer rapid/album photo updates so Telegram image bursts are handled
         # as a single MessageEvent instead of self-interrupting multiple turns.
-        self._media_batch_delay_seconds = env_float("HERMES_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS", 0.8)
+        self._media_batch_delay_seconds = env_float("THEFOOL_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS", 0.8)
         self._pending_photo_batches: Dict[str, MessageEvent] = {}
         self._pending_photo_batch_tasks: Dict[str, asyncio.Task] = {}
         self._media_group_events: Dict[str, MessageEvent] = {}
@@ -781,13 +781,13 @@ class TelegramAdapter(BasePlatformAdapter):
         # in ~180ms.  All bounds are conservative for Telegram's
         # ~1 edit/s flood envelope.
         self._text_batch_delay_seconds = self._env_float_clamped(
-            "HERMES_TELEGRAM_TEXT_BATCH_DELAY_SECONDS",
+            "THEFOOL_TELEGRAM_TEXT_BATCH_DELAY_SECONDS",
             0.3,
             min_value=0.08,
             max_value=2.0,
         )
         self._text_batch_split_delay_seconds = self._env_float_clamped(
-            "HERMES_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS",
+            "THEFOOL_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS",
             1.0,
             min_value=self._text_batch_delay_seconds,
             max_value=4.0,
@@ -3756,7 +3756,7 @@ class TelegramAdapter(BasePlatformAdapter):
     ) -> None:
         """Save a newly created thread_id back into config.yaml so it persists across restarts."""
         try:
-            from hermes_constants import get_hermes_home
+            from thefool_constants import get_hermes_home
             config_path = get_hermes_home() / "config.yaml"
             if not config_path.exists():
                 logger.warning("[%s] Config file not found at %s, cannot persist thread_id", self.name, config_path)
@@ -3806,7 +3806,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 changed = True
 
             if changed:
-                from hermes_cli.config import atomic_config_write
+                from thefool_cli.config import atomic_config_write
 
                 atomic_config_write(
                     config_path,
@@ -3957,7 +3957,7 @@ class TelegramAdapter(BasePlatformAdapter):
                     BotCommandScopeAllGroupChats,
                     BotCommandScopeDefault,
                 )
-                from hermes_cli.commands import telegram_menu_commands, telegram_menu_max_commands
+                from thefool_cli.commands import telegram_menu_commands, telegram_menu_max_commands
                 if not self._bot:
                     return
                 # Telegram allows up to 100 commands but has an undocumented
@@ -4033,7 +4033,7 @@ class TelegramAdapter(BasePlatformAdapter):
         if handler is None:
             return
         try:
-            from hermes_cli.lifecycle import has_hook
+            from thefool_cli.lifecycle import has_hook
 
             if not has_hook("gateway_platform_event"):
                 return
@@ -4316,11 +4316,11 @@ class TelegramAdapter(BasePlatformAdapter):
                     return default
 
             request_kwargs = {
-                "connection_pool_size": _env_int("HERMES_TELEGRAM_HTTP_POOL_SIZE", 512),
-                "pool_timeout": _env_float("HERMES_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0),
-                "connect_timeout": _env_float("HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0),
-                "read_timeout": _env_float("HERMES_TELEGRAM_HTTP_READ_TIMEOUT", 20.0),
-                "write_timeout": _env_float("HERMES_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0),
+                "connection_pool_size": _env_int("THEFOOL_TELEGRAM_HTTP_POOL_SIZE", 512),
+                "pool_timeout": _env_float("THEFOOL_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0),
+                "connect_timeout": _env_float("THEFOOL_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0),
+                "read_timeout": _env_float("THEFOOL_TELEGRAM_HTTP_READ_TIMEOUT", 20.0),
+                "write_timeout": _env_float("THEFOOL_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0),
                 # Not a duplicate of write_timeout: PTB routes any request
                 # carrying files to media_write_timeout instead, so the line
                 # above never applied to an upload and every upload was pinned
@@ -4375,7 +4375,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 return kwargs
 
             disable_fallback = (
-                os.getenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "")
+                os.getenv("THEFOOL_TELEGRAM_DISABLE_FALLBACK_IPS", "")
                 .strip()
                 .lower()
                 in {"1", "true", "yes", "on"}
@@ -4385,7 +4385,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 fallback_ips = []
             if not fallback_ips and not disable_fallback:
                 discovery_timeout = self._env_float_clamped(
-                    "HERMES_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT",
+                    "THEFOOL_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT",
                     5.0,
                     min_value=0.0,
                 )
@@ -4479,7 +4479,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # Each attempt is capped by _init_timeout so a single unreachable
             # fallback-IP chain can't block startup indefinitely.
             _max_connect = 8
-            _init_timeout = _env_float("HERMES_TELEGRAM_INIT_TIMEOUT", 30.0)
+            _init_timeout = _env_float("THEFOOL_TELEGRAM_INIT_TIMEOUT", 30.0)
             # Total watchdog: ensure the entire connect loop has an upper bound
             # even if the retry loop itself silently stalls (#67498). This is
             # the per-attempt timeout PLUS generous margins between attempts so
@@ -4501,8 +4501,8 @@ class TelegramAdapter(BasePlatformAdapter):
                             f"({_init_timeout:.0f}s each) — total connect watchdog "
                             f"deadline ({_init_timeout * _max_connect + 120.0:.0f}s) exceeded. "
                             f"Check network connectivity to api.telegram.org "
-                            f"or set HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT / "
-                            f"HERMES_TELEGRAM_INIT_TIMEOUT to a lower value."
+                            f"or set THEFOOL_TELEGRAM_HTTP_CONNECT_TIMEOUT / "
+                            f"THEFOOL_TELEGRAM_INIT_TIMEOUT to a lower value."
                         )
                     logger.warning(
                         "[%s] Connecting to Telegram (attempt %d/%d)…",
@@ -4533,7 +4533,7 @@ class TelegramAdapter(BasePlatformAdapter):
                         raise OSError(
                             f"Telegram initialization timed out after {_max_connect} attempts "
                             f"({_init_timeout:.0f}s each). Check network connectivity to api.telegram.org "
-                            f"or set HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT to a lower value."
+                            f"or set THEFOOL_TELEGRAM_HTTP_CONNECT_TIMEOUT to a lower value."
                         )
                 except OSError as init_err:
                     rebuild_app = True
@@ -6366,7 +6366,7 @@ class TelegramAdapter(BasePlatformAdapter):
             return SendResult(success=False, error="Not connected")
 
         try:
-            from hermes_cli.providers import get_label
+            from thefool_cli.providers import get_label
         except ImportError:
             def get_label(slug):
                 return slug
@@ -6555,7 +6555,7 @@ class TelegramAdapter(BasePlatformAdapter):
         so all surfaces stay consistent.
         """
         try:
-            from hermes_cli.models import group_providers
+            from thefool_cli.models import group_providers
         except Exception:
             group_providers = None
 
@@ -6659,7 +6659,7 @@ class TelegramAdapter(BasePlatformAdapter):
             return
 
         try:
-            from hermes_cli.providers import get_label
+            from thefool_cli.providers import get_label
         except ImportError:
             def get_label(slug):
                 return slug
@@ -6840,7 +6840,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 return
 
             try:
-                from hermes_cli.model_selection_guards import combined_selection_warning
+                from thefool_cli.model_selection_guards import combined_selection_warning
 
                 # Pricing lookup can hit models.dev / a /models endpoint on a
                 # cache miss — keep it off the event loop.
@@ -6905,7 +6905,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # --- Provider group selected: show member providers ---
             group_id = data[4:]
             try:
-                from hermes_cli.models import PROVIDER_GROUPS
+                from thefool_cli.models import PROVIDER_GROUPS
                 _label, _desc, member_slugs = PROVIDER_GROUPS.get(group_id, ("", "", []))
             except Exception:
                 _label, member_slugs = "", []
@@ -7378,7 +7378,7 @@ class TelegramAdapter(BasePlatformAdapter):
             pass  # non-fatal if edit fails
         # Write the response file
         try:
-            from hermes_constants import get_hermes_home
+            from thefool_constants import get_hermes_home
             home = get_hermes_home()
             response_path = home / ".update_response"
             tmp = response_path.with_suffix(".tmp")
@@ -9476,7 +9476,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 if chat_id in self._forum_command_registered:
                     return
                 from telegram import BotCommand, BotCommandScopeChat
-                from hermes_cli.commands import telegram_menu_commands, telegram_menu_max_commands
+                from thefool_cli.commands import telegram_menu_commands, telegram_menu_max_commands
                 menu_commands, _ = telegram_menu_commands(max_commands=telegram_menu_max_commands())
                 bot_commands = [BotCommand(name, desc) for name, desc in menu_commands]
                 await self._bot.set_my_commands(bot_commands, scope=BotCommandScopeChat(chat_id=chat_id))
@@ -10208,7 +10208,7 @@ class TelegramAdapter(BasePlatformAdapter):
         try:
             # Canonical loader: behavioral read (dm_topics routing) now honors
             # managed-scope overlay + ${VAR} expansion like every other read.
-            from hermes_cli.config import load_config_readonly
+            from thefool_cli.config import load_config_readonly
             config = load_config_readonly()
 
             dm_topics = (
@@ -10624,7 +10624,7 @@ class TelegramAdapter(BasePlatformAdapter):
 # replace the per-platform core touchpoints (the Platform.TELEGRAM branch in
 # gateway/run.py, the telegram_cfg YAML→env/extra block in gateway/config.py,
 # the _setup_telegram wizard + _PLATFORMS["telegram"] static dict in
-# hermes_cli/{setup,gateway}.py, and the _send_telegram dispatch in
+# thefool_cli/{setup,gateway}.py, and the _send_telegram dispatch in
 # tools/send_message_tool.py).  Telegram uses the generic token connected
 # check, so no is_connected override is needed.
 # ──────────────────────────────────────────────────────────────────────────
@@ -10635,7 +10635,7 @@ def _resolve_notifications_mode() -> str:
     config.yaml display.platforms.telegram.notifications, defaulting to
     'important'.  Mirrors the post-construction logic that used to live in
     gateway/run.py::_create_adapter()."""
-    mode = os.getenv("HERMES_TELEGRAM_NOTIFICATIONS", "")
+    mode = os.getenv("THEFOOL_TELEGRAM_NOTIFICATIONS", "")
     if not mode:
         try:
             from gateway.config import load_gateway_config
@@ -10679,7 +10679,7 @@ def _is_connected(config) -> bool:
     """
     token = getattr(config, "token", None)
     if not token:
-        import hermes_cli.gateway as gateway_mod
+        import thefool_cli.gateway as gateway_mod
         token = gateway_mod.get_env_value("TELEGRAM_BOT_TOKEN") or ""
     return bool(str(token).strip())
 
@@ -10727,9 +10727,9 @@ def interactive_setup() -> None:
     Delegates to the existing CLI setup helpers (managed-bot QR onboarding,
     token validation, allowlist capture) via lazy import so the full wizard
     behavior is preserved without duplicating ~150 lines. Replaces the
-    _PLATFORMS["telegram"] static dict dispatch in hermes_cli/gateway.py.
+    _PLATFORMS["telegram"] static dict dispatch in thefool_cli/gateway.py.
     """
-    from hermes_cli import setup as _setup_mod
+    from thefool_cli import setup as _setup_mod
     _setup_mod._setup_telegram()
 
 

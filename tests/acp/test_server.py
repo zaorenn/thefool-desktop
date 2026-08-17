@@ -39,10 +39,10 @@ from acp_adapter.auth import TERMINAL_SETUP_AUTH_METHOD_ID
 from acp_adapter.server import (
     ACP_MAX_MODELS_PER_PROVIDER,
     HermesACPAgent,
-    HERMES_VERSION,
+    THEFOOL_VERSION,
 )
 from acp_adapter.session import SessionManager
-from hermes_state import SessionDB
+from thefool_state import SessionDB
 
 
 @pytest.fixture()
@@ -208,8 +208,8 @@ class TestSessionOps:
         }
 
         with (
-            patch("hermes_cli.inventory.load_picker_context", return_value=picker_context),
-            patch("hermes_cli.inventory.build_models_payload", return_value=payload) as build_payload,
+            patch("thefool_cli.inventory.load_picker_context", return_value=picker_context),
+            patch("thefool_cli.inventory.build_models_payload", return_value=payload) as build_payload,
         ):
             resp = await acp_agent.new_session(cwd="/tmp")
 
@@ -414,10 +414,10 @@ class TestPrompt:
         """The ACP prompt path must bridge the session id into child subprocesses.
 
         Regression: ``set_session_vars`` was called with ``session_key`` only,
-        leaving the ``HERMES_SESSION_ID`` ContextVar bound to the explicit ""
+        leaving the ``THEFOOL_SESSION_ID`` ContextVar bound to the explicit ""
         default. Once the session-context machinery is engaged, that empty value
         is authoritative — so ``_make_run_env`` handed child subprocesses an
-        empty ``HERMES_SESSION_ID`` instead of the session's own id.
+        empty ``THEFOOL_SESSION_ID`` instead of the session's own id.
         """
         from tools.environments.local import _make_run_env
 
@@ -428,7 +428,7 @@ class TestPrompt:
 
         def _run(*args, **kwargs):
             # Runs inside the session context copy set up by prompt().
-            captured["child"] = _make_run_env({}).get("HERMES_SESSION_ID")
+            captured["child"] = _make_run_env({}).get("THEFOOL_SESSION_ID")
             return {"final_response": "ok", "messages": []}
 
         state.agent.run_conversation = _run

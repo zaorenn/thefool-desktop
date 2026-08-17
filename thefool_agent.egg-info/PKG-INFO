@@ -1,0 +1,307 @@
+Metadata-Version: 2.4
+Name: thefool-agent
+Version: 0.20.2
+Summary: The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere
+Author: Nous Research
+License-Expression: MIT
+Requires-Python: <3.14,>=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: openai==2.24.0
+Requires-Dist: certifi==2026.5.20
+Requires-Dist: python-dotenv==1.2.2
+Requires-Dist: fire==0.7.1
+Requires-Dist: httpx[socks]==0.28.1
+Requires-Dist: rich==14.3.3
+Requires-Dist: tenacity==9.1.4
+Requires-Dist: pyyaml==6.0.3
+Requires-Dist: ruamel.yaml==0.18.17
+Requires-Dist: requests==2.33.0
+Requires-Dist: jinja2==3.1.6
+Requires-Dist: pydantic==2.13.4
+Requires-Dist: prompt_toolkit==3.0.52
+Requires-Dist: croniter==6.0.0
+Requires-Dist: packaging==26.0
+Requires-Dist: Markdown==3.10.2
+Requires-Dist: PyJWT[crypto]==2.13.0
+Requires-Dist: urllib3<3,>=2.7.0
+Requires-Dist: cryptography==50.0.0
+Requires-Dist: tzdata==2025.3; sys_platform == "win32"
+Requires-Dist: psutil==7.2.2
+Requires-Dist: websockets==15.0.1
+Requires-Dist: pathspec==1.1.1
+Requires-Dist: fastapi<1,>=0.104.0
+Requires-Dist: uvicorn[standard]<1,>=0.24.0
+Requires-Dist: python-multipart<1,>=0.0.9
+Requires-Dist: ptyprocess<1,>=0.7.0; sys_platform != "win32"
+Requires-Dist: pywinpty<3,>=2.0.0; sys_platform == "win32"
+Requires-Dist: pywin32<312,>=306; sys_platform == "win32"
+Requires-Dist: Pillow==12.3.0
+Requires-Dist: concurrent-log-handler==0.9.29; sys_platform == "win32"
+Requires-Dist: nemo-relay<0.8,>=0.7.1; (sys_platform == "darwin" and platform_machine == "arm64") or (sys_platform == "linux" and platform_machine == "x86_64" and "android" not in platform_release) or (sys_platform == "linux" and platform_machine == "aarch64" and "android" not in platform_release) or (sys_platform == "win32" and platform_machine == "AMD64") or (sys_platform == "win32" and platform_machine == "ARM64")
+Provides-Extra: anthropic
+Requires-Dist: anthropic==0.87.0; extra == "anthropic"
+Provides-Extra: exa
+Requires-Dist: exa-py==2.10.2; extra == "exa"
+Provides-Extra: firecrawl
+Requires-Dist: firecrawl-py==4.17.0; extra == "firecrawl"
+Provides-Extra: parallel-web
+Requires-Dist: parallel-web==0.4.2; extra == "parallel-web"
+Provides-Extra: fal
+Requires-Dist: fal-client==0.13.1; extra == "fal"
+Provides-Extra: edge-tts
+Requires-Dist: edge-tts==7.2.7; extra == "edge-tts"
+Provides-Extra: modal
+Requires-Dist: modal==1.3.4; extra == "modal"
+Provides-Extra: daytona
+Requires-Dist: daytona==0.155.0; extra == "daytona"
+Provides-Extra: vercel
+Requires-Dist: vercel==0.7.2; extra == "vercel"
+Provides-Extra: hindsight
+Requires-Dist: hindsight-client==0.6.1; extra == "hindsight"
+Provides-Extra: dev
+Requires-Dist: debugpy==1.8.20; extra == "dev"
+Requires-Dist: pytest==9.1.1; extra == "dev"
+Requires-Dist: pytest-asyncio==1.3.0; extra == "dev"
+Requires-Dist: mcp==2.0.0; extra == "dev"
+Requires-Dist: httpx2==2.7.0; extra == "dev"
+Requires-Dist: starlette==1.3.1; extra == "dev"
+Requires-Dist: ty==0.0.21; extra == "dev"
+Requires-Dist: ruff==0.15.10; extra == "dev"
+Requires-Dist: setuptools==83.0.0; extra == "dev"
+Provides-Extra: messaging
+Requires-Dist: python-telegram-bot[webhooks]==22.8; extra == "messaging"
+Requires-Dist: discord.py[voice]==2.7.1; extra == "messaging"
+Requires-Dist: aiohttp==3.14.3; extra == "messaging"
+Requires-Dist: brotlicffi==1.2.0.1; extra == "messaging"
+Requires-Dist: slack-bolt==1.30.0; extra == "messaging"
+Requires-Dist: slack-sdk==3.43.0; extra == "messaging"
+Requires-Dist: qrcode==7.4.2; extra == "messaging"
+Provides-Extra: cron
+Provides-Extra: slack
+Requires-Dist: slack-bolt==1.30.0; extra == "slack"
+Requires-Dist: slack-sdk==3.43.0; extra == "slack"
+Requires-Dist: aiohttp==3.14.3; extra == "slack"
+Provides-Extra: matrix
+Requires-Dist: mautrix[encryption]==0.21.1; extra == "matrix"
+Requires-Dist: aiosqlite==0.22.1; extra == "matrix"
+Requires-Dist: asyncpg==0.31.0; extra == "matrix"
+Requires-Dist: aiohttp-socks==0.11.0; extra == "matrix"
+Requires-Dist: aiohttp==3.14.3; extra == "matrix"
+Provides-Extra: wecom
+Requires-Dist: defusedxml==0.7.1; extra == "wecom"
+Provides-Extra: tts-premium
+Requires-Dist: elevenlabs==1.59.0; extra == "tts-premium"
+Provides-Extra: voice
+Requires-Dist: faster-whisper==1.2.1; extra == "voice"
+Requires-Dist: sounddevice==0.5.5; extra == "voice"
+Requires-Dist: numpy==2.4.3; extra == "voice"
+Provides-Extra: wake
+Requires-Dist: openwakeword==0.6.0; extra == "wake"
+Requires-Dist: onnxruntime==1.27.0; extra == "wake"
+Requires-Dist: sherpa-onnx==1.13.4; extra == "wake"
+Requires-Dist: sentencepiece==0.2.2; extra == "wake"
+Requires-Dist: pvporcupine==4.0.3; extra == "wake"
+Requires-Dist: sounddevice==0.5.5; extra == "wake"
+Requires-Dist: numpy==2.4.3; extra == "wake"
+Requires-Dist: ai-edge-litert==2.1.6; platform_system == "Darwin" and extra == "wake"
+Provides-Extra: honcho
+Requires-Dist: honcho-ai==2.2.0; extra == "honcho"
+Provides-Extra: supermemory
+Requires-Dist: supermemory==3.50.0; extra == "supermemory"
+Provides-Extra: mem0
+Requires-Dist: mem0ai==2.0.10; extra == "mem0"
+Provides-Extra: vision
+Provides-Extra: pty
+Provides-Extra: mcp
+Requires-Dist: mcp==2.0.0; extra == "mcp"
+Requires-Dist: httpx2==2.7.0; extra == "mcp"
+Requires-Dist: starlette==1.3.1; extra == "mcp"
+Provides-Extra: nemo-relay
+Provides-Extra: homeassistant
+Requires-Dist: aiohttp==3.14.3; extra == "homeassistant"
+Provides-Extra: sms
+Requires-Dist: aiohttp==3.14.3; extra == "sms"
+Provides-Extra: teams
+Requires-Dist: microsoft-teams-apps==2.0.13.4; extra == "teams"
+Requires-Dist: aiohttp==3.14.3; extra == "teams"
+Provides-Extra: computer-use
+Requires-Dist: mcp==2.0.0; extra == "computer-use"
+Requires-Dist: httpx2==2.7.0; extra == "computer-use"
+Requires-Dist: starlette==1.3.1; extra == "computer-use"
+Provides-Extra: acp
+Requires-Dist: agent-client-protocol==0.9.0; extra == "acp"
+Provides-Extra: mistral
+Requires-Dist: mistralai==2.4.8; extra == "mistral"
+Provides-Extra: otlp
+Requires-Dist: opentelemetry-sdk==1.39.1; extra == "otlp"
+Requires-Dist: opentelemetry-exporter-otlp-proto-http==1.39.1; extra == "otlp"
+Provides-Extra: bedrock
+Requires-Dist: boto3==1.42.89; extra == "bedrock"
+Provides-Extra: vertex
+Requires-Dist: google-auth==2.55.1; extra == "vertex"
+Provides-Extra: azure-identity
+Requires-Dist: azure-identity==1.25.3; extra == "azure-identity"
+Provides-Extra: termux
+Requires-Dist: python-telegram-bot[webhooks]==22.8; extra == "termux"
+Requires-Dist: hermes-agent[cron]; extra == "termux"
+Requires-Dist: hermes-agent[mcp]; extra == "termux"
+Requires-Dist: hermes-agent[honcho]; extra == "termux"
+Requires-Dist: hermes-agent[acp]; extra == "termux"
+Provides-Extra: termux-all
+Requires-Dist: hermes-agent[termux]; extra == "termux-all"
+Requires-Dist: hermes-agent[google]; extra == "termux-all"
+Requires-Dist: hermes-agent[homeassistant]; extra == "termux-all"
+Requires-Dist: hermes-agent[sms]; extra == "termux-all"
+Requires-Dist: hermes-agent[web]; extra == "termux-all"
+Requires-Dist: hermes-agent[pty]; extra == "termux-all"
+Provides-Extra: dingtalk
+Requires-Dist: dingtalk-stream==0.24.3; extra == "dingtalk"
+Requires-Dist: alibabacloud-dingtalk==2.2.42; extra == "dingtalk"
+Requires-Dist: qrcode==7.4.2; extra == "dingtalk"
+Provides-Extra: feishu
+Requires-Dist: lark-oapi==1.6.8; extra == "feishu"
+Requires-Dist: qrcode==7.4.2; extra == "feishu"
+Provides-Extra: google
+Requires-Dist: google-api-python-client==2.194.0; extra == "google"
+Requires-Dist: google-auth==2.55.1; extra == "google"
+Requires-Dist: google-auth-oauthlib==1.3.1; extra == "google"
+Requires-Dist: google-auth-httplib2==0.3.1; extra == "google"
+Requires-Dist: httplib2==0.32.0; extra == "google"
+Requires-Dist: pyasn1==0.6.4; extra == "google"
+Provides-Extra: youtube
+Requires-Dist: youtube-transcript-api==1.2.4; extra == "youtube"
+Provides-Extra: web
+Requires-Dist: fastapi==0.133.1; extra == "web"
+Requires-Dist: uvicorn[standard]==0.41.0; extra == "web"
+Requires-Dist: starlette==1.3.1; extra == "web"
+Requires-Dist: python-multipart==0.0.32; extra == "web"
+Provides-Extra: all
+Requires-Dist: hermes-agent[cron]; extra == "all"
+Requires-Dist: hermes-agent[pty]; extra == "all"
+Requires-Dist: hermes-agent[mcp]; extra == "all"
+Requires-Dist: hermes-agent[homeassistant]; extra == "all"
+Requires-Dist: hermes-agent[sms]; extra == "all"
+Requires-Dist: hermes-agent[acp]; extra == "all"
+Requires-Dist: hermes-agent[google]; extra == "all"
+Requires-Dist: hermes-agent[web]; extra == "all"
+Requires-Dist: hermes-agent[youtube]; extra == "all"
+Dynamic: license-file
+
+<p align="center">
+  <img src="apps/desktop/assets/icon.png" alt="The Fool" width="128">
+</p>
+
+<h1 align="center">The Fool</h1>
+
+<p align="center">
+  <em>A local-first AI agent — desktop app, CLI, and TUI.</em>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-C41E3A?style=for-the-badge" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Local--first-LM%20Studio-C41E3A?style=for-the-badge" alt="Local-first">
+</p>
+
+---
+
+## What this is
+
+The Fool is a **fork of [Hermes Agent](https://github.com/NousResearch/hermes-agent)**
+by Nous Research, rebranded and reconfigured to run entirely on your own machine.
+
+It keeps everything that makes the upstream agent good — the tool-calling loop,
+the skill-learning system, persistent memory, session search, the desktop app,
+the TUI — and changes three things:
+
+1. **Local by default.** The model runs on your hardware through
+   [LM Studio](https://lmstudio.ai). No account, no credits, no per-token cost.
+2. **No phone-home.** The model catalog ships with the release instead of being
+   fetched on every launch. Diagnostics upload is off — your logs stay on your
+   machine.
+3. **Its own identity.** Separate app id, separate data directory, its own
+   update channel. It can sit next to an upstream Hermes install without
+   touching its config, sessions, or memory.
+
+Remote providers still work. Point it at OpenRouter, Anthropic, OpenAI or any
+OpenAI-compatible endpoint whenever you want more capability than local weights
+give you — the whole provider layer is intact.
+
+## Requirements
+
+- [LM Studio](https://lmstudio.ai) with a **tool-calling capable** model loaded.
+  This matters: The Fool edits files and runs commands. A model without tool
+  calling can only chat.
+- Python 3.11–3.13, Node 22+
+- ~16 GB VRAM for a comfortable 9B-class model (less works, with a smaller model)
+
+## Quick start
+
+```bash
+git clone https://github.com/zaorenn/thefool-desktop.git
+cd thefool-desktop
+
+uv venv .venv --python 3.13
+uv pip install --python .venv -e ".[dev]"
+npm install
+
+# CLI
+.venv/Scripts/thefool --help
+
+# Desktop app
+npm run dev --workspace apps/desktop
+```
+
+Point it at your local model in `~/.thefool/config.yaml`:
+
+```yaml
+model:
+  default: "qwen/qwen3.5-9b"   # must match LM Studio's /v1/models id
+  provider: "lmstudio"
+display:
+  skin: "the-fool"
+```
+
+> `npm install` — **without** `--workspace`. A workspace-scoped install prunes
+> other workspaces' packages and silently breaks the build. See
+> [docs/fool/DEVELOPMENT.md](docs/fool/DEVELOPMENT.md).
+
+## How the fork stays maintainable
+
+Forks usually die by drifting: the rebrand touches everything, every upstream
+merge conflicts everywhere, merging stops, and the fork rots.
+
+The Fool is built so that doesn't happen. Nearly all of its code lives in
+directories upstream doesn't know about (`fool/`, `apps/desktop/src/fool/`),
+where a merge conflict is impossible. Upstream files carry a small, counted set
+of **seams**, each marked `FOOL-SEAM:` and covered by a test that fails loudly
+if a merge ever swallows one.
+
+Most of the branding isn't a set of edited strings — it's a *transform* applied
+at load time to the i18n catalog, argparse help, command descriptions, skill
+descriptions and tool schemas. When upstream adds new text, it gets rebranded
+automatically. Maintenance cost stays flat.
+
+```bash
+git fetch upstream
+git merge upstream/main
+python -m pytest tests/fool/ -q     # seam + branding guards
+```
+
+Details: [ARCHITECTURE.md](docs/fool/ARCHITECTURE.md) ·
+[SEAMS.md](docs/fool/SEAMS.md) · [RELEASE.md](docs/fool/RELEASE.md)
+
+## Credit
+
+The Fool exists because [Hermes Agent](https://github.com/NousResearch/hermes-agent)
+is MIT-licensed and genuinely well built. The agent loop, skill system, memory
+architecture and desktop shell are Nous Research's work. This fork changes the
+name, the surface and the defaults — not the engineering underneath.
+
+**This project is not affiliated with or endorsed by Nous Research.**
+For the original, go upstream — it's excellent.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Upstream copyright is retained alongside this
+fork's own.

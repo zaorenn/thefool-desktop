@@ -6,7 +6,7 @@ description: "如何为 Hermes Agent 构建模型提供商（推理后端）插�
 
 # 构建模型提供商插件
 
-模型提供商插件声明一个推理后端——兼容 OpenAI 的端点、Anthropic Messages 服务器、Codex 风格的 Responses API，或 Bedrock 原生接口——Hermes 可通过这些后端路由 `AIAgent` 调用。每个内置提供商（OpenRouter、Anthropic、GMI、DeepSeek、Nvidia……）都以此类插件形式提供。第三方可通过在 `$HERMES_HOME/plugins/model-providers/` 下放置一个目录来添加自己的提供商，无需对仓库做任何修改。
+模型提供商插件声明一个推理后端——兼容 OpenAI 的端点、Anthropic Messages 服务器、Codex 风格的 Responses API，或 Bedrock 原生接口——Hermes 可通过这些后端路由 `AIAgent` 调用。每个内置提供商（OpenRouter、Anthropic、GMI、DeepSeek、Nvidia……）都以此类插件形式提供。第三方可通过在 `$THEFOOL_HOME/plugins/model-providers/` 下放置一个目录来添加自己的提供商，无需对仓库做任何修改。
 
 :::tip
 模型提供商插件是**提供商插件**的第三种类型。其他两种分别是 [Memory Provider 插件](/developer-guide/memory-provider-plugin)（跨会话知识）和 [Context Engine 插件](/developer-guide/context-engine-plugin)（上下文压缩策略）。三者均遵循相同的"放入目录、声明 profile、无需编辑仓库"模式。
@@ -17,10 +17,10 @@ description: "如何为 Hermes Agent 构建模型提供商（推理后端）插�
 `providers/__init__.py._discover_providers()` 在任何代码首次调用 `get_provider_profile()` 或 `list_providers()` 时懒加载执行。发现顺序：
 
 1. **内置插件** — `<repo>/plugins/model-providers/<name>/` — 随 Hermes 一同发布
-2. **用户插件** — `$HERMES_HOME/plugins/model-providers/<name>/` — 放入任意目录；后续会话无需重启即可生效
+2. **用户插件** — `$THEFOOL_HOME/plugins/model-providers/<name>/` — 放入任意目录；后续会话无需重启即可生效
 3. **旧版单文件** — `<repo>/providers/<name>.py` — 为树外可编辑安装提供向后兼容
 
-**同名用户插件会覆盖内置插件**，因为 `register_provider()` 采用后写者优先策略。放入 `$HERMES_HOME/plugins/model-providers/gmi/` 目录即可替换内置 GMI profile，无需修改仓库。
+**同名用户插件会覆盖内置插件**，因为 `register_provider()` 采用后写者优先策略。放入 `$THEFOOL_HOME/plugins/model-providers/gmi/` 目录即可替换内置 GMI profile，无需修改仓库。
 
 ## 目录结构
 
@@ -73,14 +73,14 @@ author: Your Name
 
 | 集成点 | 位置 | 获得的能力 |
 |---|---|---|
-| 凭据解析 | `hermes_cli/auth.py` | `PROVIDER_REGISTRY["acme-inference"]` 从 profile 填充 |
-| `--provider` CLI 标志 | `hermes_cli/main.py` | 接受 `acme-inference` |
-| `hermes model` 选择器 | `hermes_cli/models.py` | 出现在 `CANONICAL_PROVIDERS` 中，从 `{base_url}/models` 获取模型列表 |
-| `hermes doctor` | `hermes_cli/doctor.py` | 对 `ACME_API_KEY` 及 `{base_url}/models` 进行健康检查 |
-| `hermes setup` | `hermes_cli/config.py` | `ACME_API_KEY` 出现在 `OPTIONAL_ENV_VARS` 和设置向导中 |
+| 凭据解析 | `thefool_cli/auth.py` | `PROVIDER_REGISTRY["acme-inference"]` 从 profile 填充 |
+| `--provider` CLI 标志 | `thefool_cli/main.py` | 接受 `acme-inference` |
+| `hermes model` 选择器 | `thefool_cli/models.py` | 出现在 `CANONICAL_PROVIDERS` 中，从 `{base_url}/models` 获取模型列表 |
+| `hermes doctor` | `thefool_cli/doctor.py` | 对 `ACME_API_KEY` 及 `{base_url}/models` 进行健康检查 |
+| `hermes setup` | `thefool_cli/config.py` | `ACME_API_KEY` 出现在 `OPTIONAL_ENV_VARS` 和设置向导中 |
 | URL 反向映射 | `agent/model_metadata.py` | 主机名 → 提供商名称，用于自动检测 |
 | 辅助模型 | `agent/auxiliary_client.py` | 使用 `default_aux_model` 进行压缩/摘要 |
-| 运行时解析 | `hermes_cli/runtime_provider.py` | 返回正确的 `base_url`、`api_key`、`api_mode` |
+| 运行时解析 | `thefool_cli/runtime_provider.py` | 返回正确的 `base_url`、`api_key`、`api_mode` |
 | 传输层 | `agent/transports/chat_completions.py` | Profile 路径通过 `prepare_messages` / `build_extra_body` / `build_api_kwargs_extras` 生成 kwargs |
 
 ## ProviderProfile 字段
@@ -221,12 +221,12 @@ for p in list_providers():
 
 ## 测试你的插件
 
-将 `HERMES_HOME` 指向临时目录，避免污染真实配置：
+将 `THEFOOL_HOME` 指向临时目录，避免污染真实配置：
 
 ```bash
-export HERMES_HOME=/tmp/hermes-plugin-test
-mkdir -p $HERMES_HOME/plugins/model-providers/my-provider
-cat > $HERMES_HOME/plugins/model-providers/my-provider/__init__.py <<'EOF'
+export THEFOOL_HOME=/tmp/hermes-plugin-test
+mkdir -p $THEFOOL_HOME/plugins/model-providers/my-provider
+cat > $THEFOOL_HOME/plugins/model-providers/my-provider/__init__.py <<'EOF'
 from providers import register_provider
 from providers.base import ProviderProfile
 register_provider(ProviderProfile(
@@ -243,7 +243,7 @@ hermes -z "hello" --provider my-provider -m some-model
 
 ## 通用 PluginManager 集成
 
-通用 `PluginManager`（即 `hermes plugins` 操作的对象）**能看到**模型提供商插件，但不会导入它们——`providers/__init__.py` 负责管理其生命周期。Manager 记录 manifest 用于自省，并按 `kind: model-provider` 分类。当你将一个未标记的用户插件放入 `$HERMES_HOME/plugins/`，而该插件恰好调用了带 `ProviderProfile` 的 `register_provider`，Manager 会通过源码文本启发式检测自动将其归类为 `kind: model-provider`——因此即使没有 `plugin.yaml`，插件仍能正确路由。
+通用 `PluginManager`（即 `hermes plugins` 操作的对象）**能看到**模型提供商插件，但不会导入它们——`providers/__init__.py` 负责管理其生命周期。Manager 记录 manifest 用于自省，并按 `kind: model-provider` 分类。当你将一个未标记的用户插件放入 `$THEFOOL_HOME/plugins/`，而该插件恰好调用了带 `ProviderProfile` 的 `register_provider`，Manager 会通过源码文本启发式检测自动将其归类为 `kind: model-provider`——因此即使没有 `plugin.yaml`，插件仍能正确路由。
 
 ## 通过 pip 分发
 

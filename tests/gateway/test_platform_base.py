@@ -405,7 +405,7 @@ class TestExtensionlessMediaDelivery:
             "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (str(root),),
         )
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("THEFOOL_MEDIA_DELIVERY_STRICT", raising=False)
 
     def test_extensionless_media_extracted_when_file_validates(self, tmp_path, monkeypatch):
         root = tmp_path / "output"
@@ -436,7 +436,7 @@ class TestUniversalMediaEgress:
             "gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS",
             (str(root),),
         )
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("THEFOOL_MEDIA_DELIVERY_STRICT", raising=False)
 
     @pytest.mark.parametrize("name", [
         "script.py", "server.log", "notes.weirdext", "app.ts", "run.sh",
@@ -479,11 +479,11 @@ class TestMediaDeliveryPathValidation:
         # recency window + denylist). Force strict on so they keep
         # exercising the legacy path even though the public default
         # flipped to off in 2026-05.
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("THEFOOL_MEDIA_DELIVERY_STRICT", "1")
         # Disable recency-based trust by default so the original allowlist
         # tests continue to exercise the strict-allowlist path. Tests that
         # specifically cover recency trust re-enable it themselves.
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("THEFOOL_MEDIA_TRUST_RECENT_FILES", "0")
 
 
     def test_rejects_symlink_escape_from_safe_root(self, tmp_path, monkeypatch):
@@ -522,8 +522,8 @@ class TestMediaDeliveryPathValidation:
     ):
         """Strict mode trusts durable attachments without trusting scratch."""
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_KANBAN_HOME", str(tmp_path / "hermes"))
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("THEFOOL_KANBAN_HOME", str(tmp_path / "hermes"))
+        monkeypatch.setenv("THEFOOL_MEDIA_TRUST_RECENT_FILES", "0")
         board_root = tmp_path / "hermes" / "kanban" / "boards" / "research"
         board_root.mkdir(parents=True)
         (board_root / "kanban.db").touch()
@@ -549,9 +549,9 @@ class TestMediaDeliveryPathValidation:
         ~/.ssh, ~/.aws, etc.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.delenv("THEFOOL_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.setenv("THEFOOL_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("THEFOOL_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         # Simulate $HOME so ~/.ssh resolves into our tmp dir.
         fake_home = tmp_path / "home"
@@ -583,8 +583,8 @@ class TestMediaDeliveryDefaultMode:
         )
         # Pin strict OFF — the public default. Tests that exercise the
         # strict path live in TestMediaDeliveryPathValidation.
-        monkeypatch.delenv("HERMES_MEDIA_DELIVERY_STRICT", raising=False)
-        monkeypatch.delenv("HERMES_MEDIA_ALLOW_DIRS", raising=False)
+        monkeypatch.delenv("THEFOOL_MEDIA_DELIVERY_STRICT", raising=False)
+        monkeypatch.delenv("THEFOOL_MEDIA_ALLOW_DIRS", raising=False)
 
     def test_accepts_stale_file_outside_allowlist(self, tmp_path, monkeypatch):
         """The motivating case — agent says ``MEDIA:/home/user/notes.md``
@@ -636,7 +636,7 @@ class TestMediaDeliveryDefaultMode:
 
 
     def test_denylist_blocks_google_token_default_mode(self, tmp_path, monkeypatch):
-        """Integration credentials at the HERMES_HOME root (google_token.json)
+        """Integration credentials at the THEFOOL_HOME root (google_token.json)
         must never be deliverable, even though they aren't the historically
         enumerated .env/auth.json/config.yaml files. Regression for a
         refreshed google_token.json being auto-attached to a Slack reply
@@ -663,8 +663,8 @@ class TestMediaDeliveryDefaultMode:
         accidentally re-introducing the rejected whole-tree deny.
         """
         self._patch_roots(monkeypatch)  # strict mode on
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_SECONDS", "600")
+        monkeypatch.setenv("THEFOOL_MEDIA_TRUST_RECENT_FILES", "1")
+        monkeypatch.setenv("THEFOOL_MEDIA_TRUST_RECENT_SECONDS", "600")
 
         fake_home = tmp_path / "home"
         hermes_dir = fake_home / ".hermes"
@@ -678,13 +678,13 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(artifact)) == str(artifact.resolve())
 
     def test_strict_mode_envvar_restores_legacy_behavior(self, tmp_path, monkeypatch):
-        """Setting HERMES_MEDIA_DELIVERY_STRICT=1 reactivates the older
+        """Setting THEFOOL_MEDIA_DELIVERY_STRICT=1 reactivates the older
         allowlist+recency logic. A stale file outside the allowlist is
         rejected.
         """
         self._patch_roots(monkeypatch)
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "1")
-        monkeypatch.setenv("HERMES_MEDIA_TRUST_RECENT_FILES", "0")
+        monkeypatch.setenv("THEFOOL_MEDIA_DELIVERY_STRICT", "1")
+        monkeypatch.setenv("THEFOOL_MEDIA_TRUST_RECENT_FILES", "0")
 
         stale = tmp_path / "old.pdf"
         stale.write_bytes(b"%PDF-1.4")
@@ -721,7 +721,7 @@ class TestMediaDeliveryDefaultMode:
 
 
     def test_profile_scoped_cache_delivers_under_symlinked_root(self, tmp_path, monkeypatch):
-        """Reopened #31733: a profile gateway whose HERMES_HOME is symlinked
+        """Reopened #31733: a profile gateway whose THEFOOL_HOME is symlinked
         under a denied prefix (e.g. /opt/data -> /root/.hermes) emits
         profile-scoped paths (``<root>/profiles/<name>/cache/images/x.png``)
         that resolve under ``/root``. ``$HOME`` is NOT that prefix, so the
@@ -885,7 +885,7 @@ class TestDockerContainerMediaPathTranslation:
         cache.mkdir(parents=True)
         media = cache / "generated.png"
         media.write_bytes(b"\x89PNG\r\n\x1a\n")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
         monkeypatch.setenv("TERMINAL_ENV", "docker")
         monkeypatch.delenv("TERMINAL_DOCKER_VOLUMES", raising=False)
 
@@ -905,7 +905,7 @@ class TestDockerContainerMediaPathTranslation:
         (secret / "auth.json").write_text('{"token": "SECRET"}')
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
         monkeypatch.setenv("TERMINAL_ENV", "docker")
         monkeypatch.setenv("TERMINAL_CONTAINER_PERSISTENT", "true")
         monkeypatch.setenv("TERMINAL_SANDBOX_DIR", str(sandbox))
@@ -1038,9 +1038,9 @@ class TestGetHumanDelay:
 
     def test_natural_mode_ignores_malformed_custom_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "natural",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "THEFOOL_HUMAN_DELAY_MODE": "natural",
+            "THEFOOL_HUMAN_DELAY_MIN_MS": "oops",
+            "THEFOOL_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             delay = BasePlatformAdapter._get_human_delay()
@@ -1049,9 +1049,9 @@ class TestGetHumanDelay:
 
     def test_custom_mode_tolerates_malformed_env_vars(self):
         env = {
-            "HERMES_HUMAN_DELAY_MODE": "custom",
-            "HERMES_HUMAN_DELAY_MIN_MS": "oops",
-            "HERMES_HUMAN_DELAY_MAX_MS": "still-bad",
+            "THEFOOL_HUMAN_DELAY_MODE": "custom",
+            "THEFOOL_HUMAN_DELAY_MIN_MS": "oops",
+            "THEFOOL_HUMAN_DELAY_MAX_MS": "still-bad",
         }
         with patch.dict(os.environ, env):
             # falls back to the custom-mode defaults instead of crashing
@@ -1149,8 +1149,8 @@ class TestMediaDeliveryDiagnosability:
     def test_rejected_path_appears_in_log(self, tmp_path, caplog):
         outside = tmp_path / "outside.ogg"
         outside.write_bytes(b"OggS")
-        with patch.dict(os.environ, {"HERMES_MEDIA_DELIVERY_STRICT": "1",
-                                     "HERMES_MEDIA_TRUST_RECENT_FILES": "0"}), \
+        with patch.dict(os.environ, {"THEFOOL_MEDIA_DELIVERY_STRICT": "1",
+                                     "THEFOOL_MEDIA_TRUST_RECENT_FILES": "0"}), \
                 patch("gateway.platforms.base.MEDIA_DELIVERY_SAFE_ROOTS", ()):
             with caplog.at_level("WARNING"):
                 out = BasePlatformAdapter.filter_media_delivery_paths([(str(outside), False)])
@@ -1162,7 +1162,7 @@ class TestMediaDeliveryDiagnosability:
         """One crafted ~\\x00 path must not drop every other attachment."""
         good = tmp_path / "good.png"
         good.write_bytes(b"\x89PNG")
-        monkeypatch.setenv("HERMES_MEDIA_DELIVERY_STRICT", "0")
+        monkeypatch.setenv("THEFOOL_MEDIA_DELIVERY_STRICT", "0")
         out = BasePlatformAdapter.filter_media_delivery_paths([
             ("~\x00evil.png", False),
             (str(good), False),

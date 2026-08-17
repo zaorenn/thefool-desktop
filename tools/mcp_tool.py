@@ -166,7 +166,7 @@ def _get_mcp_stderr_log() -> Any:
         if _mcp_stderr_log_fh is not None:
             return _mcp_stderr_log_fh
         try:
-            from hermes_constants import get_hermes_home
+            from thefool_constants import get_hermes_home
             log_dir = get_hermes_home() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             log_path = log_dir / "mcp-stderr.log"
@@ -687,7 +687,7 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     in every MCP server's ``env:`` block.
     """
     try:
-        from hermes_cli.env_loader import get_secret_source
+        from thefool_cli.env_loader import get_secret_source
     except Exception:  # pragma: no cover — early bootstrap/import fallback
         get_secret_source = None
     env = {}
@@ -975,7 +975,7 @@ def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
         elif resolved_command in {"npx", "npm", "node"}:
             hermes_home = os.path.expanduser(
                 os.getenv(
-                    "HERMES_HOME", os.path.join(os.path.expanduser("~"), ".hermes")
+                    "THEFOOL_HOME", os.path.join(os.path.expanduser("~"), ".hermes")
                 )
             )
             candidates = [
@@ -1325,7 +1325,7 @@ def _unwrap_exception_group(exc: BaseException) -> BaseException:
     unwrap to surface the real cause (e.g. ``BrokenPipeError`` on a dead
     stdio pipe, "401 Unauthorized" on an auth failure).
 
-    Adapted from :func:`hermes_cli.mcp_config._unwrap_exception_group` with
+    Adapted from :func:`thefool_cli.mcp_config._unwrap_exception_group` with
     two extra behaviours needed on the runtime path:
 
     - **Fatal leaves re-raise.** A ``KeyboardInterrupt`` / ``SystemExit``
@@ -1565,7 +1565,7 @@ def _resolve_identity_header(server_name: str, config: dict):
             return None
         return (name.strip(), value)
     if value_from == "profile":
-        from hermes_cli.profiles import get_active_profile_name
+        from thefool_cli.profiles import get_active_profile_name
         return (name.strip(), get_active_profile_name())
     logger.warning(
         "MCP server '%s': identity_header value_from must be 'static' or "
@@ -2252,7 +2252,7 @@ class ElicitationHandler:
         # normalizes the answer to one of accept / decline / cancel.
         #
         # The recv-loop task that fires this callback does NOT inherit
-        # the agent's contextvars (HERMES_SESSION_PLATFORM etc.). When
+        # the agent's contextvars (THEFOOL_SESSION_PLATFORM etc.). When
         # the MCP tool wrapper captured the agent's context onto
         # owner._pending_call_context we replay it here via
         # contextvars.Context.run so the gateway-platform detection in
@@ -2380,7 +2380,7 @@ class MCPServerTask:
         # contextvars snapshot of the agent task that's currently in
         # session.call_tool(). The MCP recv loop dispatches incoming
         # elicitation/create requests on a SEPARATE asyncio task whose
-        # context doesn't inherit HERMES_SESSION_PLATFORM, so the
+        # context doesn't inherit THEFOOL_SESSION_PLATFORM, so the
         # elicitation handler has no way to detect the gateway session
         # that triggered the call. Capturing the agent's context here
         # and replaying it inside the elicitation callback restores
@@ -2582,7 +2582,7 @@ class MCPServerTask:
         """Build a ``logging_callback`` for ``ClientSession``.
 
         Routes MCP ``notifications/message`` log notifications from the
-        server into Hermes' logging (agent.log via hermes_logging), tagged
+        server into Hermes' logging (agent.log via thefool_logging), tagged
         with the server name.  Without this, the SDK's default callback
         silently discards them, so server-side warnings/errors during a
         tool call were invisible.  Port of anomalyco/opencode#34529.
@@ -5046,7 +5046,7 @@ def _try_acquire_mcp_discovery_lock() -> Any:
     """
     global _MCP_DISCOVERY_LOCK_PATH
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
         if _MCP_DISCOVERY_LOCK_PATH is None:
             _MCP_DISCOVERY_LOCK_PATH = str(
                 get_hermes_home() / ".mcp-discovery.lock"
@@ -5209,7 +5209,7 @@ def _ensure_mcp_loop():
 
 
 def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
-    """Carry the caller's context-local HERMES_HOME override into ``coro``.
+    """Carry the caller's context-local THEFOOL_HOME override into ``coro``.
 
     Returns ``coro`` unchanged when no override is active. Otherwise wraps
     it so the override is set inside the coroutine's own (task-local)
@@ -5217,7 +5217,7 @@ def _wrap_with_home_override(coro: "Coroutine") -> "Coroutine":
     carrying different scopes don't interfere.
     """
     try:
-        from hermes_constants import (
+        from thefool_constants import (
             get_hermes_home_override,
             reset_hermes_home_override,
             set_hermes_home_override,
@@ -5283,7 +5283,7 @@ def _run_on_mcp_loop(coro_or_factory, timeout: float = 30):
 
     coro = coro_or_factory() if callable(coro_or_factory) else coro_or_factory
 
-    # Propagate the context-local HERMES_HOME override onto the MCP loop.
+    # Propagate the context-local THEFOOL_HOME override onto the MCP loop.
     # Tasks scheduled via run_coroutine_threadsafe are created INSIDE the
     # loop thread, so they copy the loop thread's context — not the
     # scheduling thread's. A per-request profile scope (the dashboard's
@@ -5431,7 +5431,7 @@ def _warn_hidden_whitespace(server_name: str, config: dict) -> List[str]:
 def _filter_suspicious_mcp_servers(servers: Dict[str, dict]) -> Dict[str, dict]:
     """Drop exfiltration-shaped MCP configs before any stdio spawn path."""
     try:
-        from hermes_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
+        from thefool_cli.mcp_security import validate_mcp_server_entry as _validate_mcp_server_entry
     except Exception:
         _validate_mcp_server_entry: Callable[[str, dict[str, Any]], list[str]] | None = None
 
@@ -5467,10 +5467,10 @@ def _load_mcp_config() -> Dict[str, dict]:
     ``os.environ`` (which includes ``~/.hermes/.env`` loaded at startup).
     """
     try:
-        from hermes_cli.config import load_config
+        from thefool_cli.config import load_config
         from utils import env_var_enabled as _env_enabled
 
-        if _env_enabled("HERMES_SAFE_MODE"):
+        if _env_enabled("THEFOOL_SAFE_MODE"):
             return {}
         config = load_config()
         servers = config.get("mcp_servers")
@@ -5478,7 +5478,7 @@ def _load_mcp_config() -> Dict[str, dict]:
             servers = {}
         # Ensure .env vars are available for interpolation
         try:
-            from hermes_cli.env_loader import load_hermes_dotenv
+            from thefool_cli.env_loader import load_hermes_dotenv
             load_hermes_dotenv()
         except Exception:
             pass
@@ -5489,7 +5489,7 @@ def _load_mcp_config() -> Dict[str, dict]:
                 _warn_hidden_whitespace(name, interpolated)
                 safe_servers[name] = interpolated
         try:
-            from hermes_cli.plugins import discover_plugins, get_plugin_manager
+            from thefool_cli.plugins import discover_plugins, get_plugin_manager
 
             discover_plugins()
             portable = get_plugin_manager().get_portable_mcp_servers()

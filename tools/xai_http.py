@@ -45,7 +45,7 @@ def has_xai_credentials() -> bool:
         if (get_secret("XAI_API_KEY", "") or "").strip():
             return True
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         auth_path = get_hermes_home() / "auth.json"
         if not auth_path.exists():
@@ -79,12 +79,12 @@ def has_xai_credentials() -> bool:
 def get_env_value(name: str, default=None):
     """Read ``name`` from ``~/.hermes/.env`` first, then ``os.environ``.
 
-    Wraps :func:`hermes_cli.config.get_env_value` so tests can patch
+    Wraps :func:`thefool_cli.config.get_env_value` so tests can patch
     ``tools.xai_http.get_env_value`` to inject dotenv-only secrets into the
     xAI credential resolver.
     """
     try:
-        from hermes_cli.config import get_env_value as _hermes_get_env_value
+        from thefool_cli.config import get_env_value as _hermes_get_env_value
     except ImportError:
         return os.environ.get(name, default)
 
@@ -95,7 +95,7 @@ def get_env_value(name: str, default=None):
 def hermes_xai_user_agent() -> str:
     """Return a stable Hermes-specific User-Agent for xAI HTTP calls."""
     try:
-        from hermes_cli import __version__
+        from thefool_cli import __version__
     except Exception:
         __version__ = "unknown"
     return f"Hermes-Agent/{__version__}"
@@ -114,7 +114,7 @@ def hermes_xai_default_headers() -> Dict[str, str]:
 def _load_config_section(section_name: str) -> Dict[str, Any]:
     """Return a top-level Hermes config section as a dict, or empty."""
     try:
-        from hermes_cli.config import load_config
+        from thefool_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get(section_name) if isinstance(cfg, dict) else None
@@ -241,7 +241,7 @@ def maybe_mark_xai_storage_notice_seen(section_name: str) -> Optional[str]:
     if not notice:
         return None
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         marker_dir = get_hermes_home() / "state"
         marker_dir.mkdir(parents=True, exist_ok=True)
@@ -274,19 +274,19 @@ def _resolve_explicit_xai_api_key() -> str:
 def _resolve_explicit_xai_base_url(default: str = "https://api.x.ai/v1") -> str:
     """Base URL for the explicit-API-key path.
 
-    Honors ``HERMES_XAI_BASE_URL`` then ``XAI_BASE_URL`` (the same override
+    Honors ``THEFOOL_XAI_BASE_URL`` then ``XAI_BASE_URL`` (the same override
     pair the OAuth branch reads) and pins the origin with
-    :func:`hermes_cli.auth._xai_validate_inference_base_url` so a tampered
+    :func:`thefool_cli.auth._xai_validate_inference_base_url` so a tampered
     env override can't exfiltrate the bearer; on rejection it falls back to
     the default rather than raising.
     """
     override = str(
-        get_env_value("HERMES_XAI_BASE_URL")
+        get_env_value("THEFOOL_XAI_BASE_URL")
         or get_env_value("XAI_BASE_URL")
         or ""
     ).strip().rstrip("/")
     try:
-        import hermes_cli.auth as auth_mod
+        import thefool_cli.auth as auth_mod
 
         return auth_mod._xai_validate_inference_base_url(override, fallback=default)
     except Exception:  # pragma: no cover — auth is in-repo
@@ -302,7 +302,7 @@ def resolve_xai_http_credentials(
     """Resolve bearer credentials for direct xAI HTTP endpoints.
 
     Prefers Hermes-managed xAI OAuth credentials when available, then falls back
-    to ``XAI_API_KEY`` resolved via ``hermes_cli.config.get_env_value`` so keys
+    to ``XAI_API_KEY`` resolved via ``thefool_cli.config.get_env_value`` so keys
     stored in ``~/.hermes/.env`` (the standard Hermes location) are honored —
     not just ones already exported into ``os.environ``. This keeps direct xAI
     endpoints (images, TTS, STT, etc.) aligned with the main runtime auth model
@@ -316,7 +316,7 @@ def resolve_xai_http_credentials(
     (#87045). The key is read through
     :func:`tools.tool_backend_helpers.resolve_provider_secret` so profile
     secret scoping is identical to the fallback branch, and the base URL
-    honors ``HERMES_XAI_BASE_URL`` / ``XAI_BASE_URL`` behind the same
+    honors ``THEFOOL_XAI_BASE_URL`` / ``XAI_BASE_URL`` behind the same
     origin-pinning validation as the OAuth branch.
 
     Set ``force_refresh=True`` to perform an unconditional OAuth refresh.
@@ -335,7 +335,7 @@ def resolve_xai_http_credentials(
 
     try:
         from agent.credential_pool import load_pool
-        import hermes_cli.auth as auth_mod
+        import thefool_cli.auth as auth_mod
 
         pool = load_pool("xai-oauth")
         entry = (
@@ -358,7 +358,7 @@ def resolve_xai_http_credentials(
             or auth_mod.DEFAULT_XAI_OAUTH_BASE_URL
         ).strip().rstrip("/")
         override_base_url = str(
-            get_env_value("HERMES_XAI_BASE_URL")
+            get_env_value("THEFOOL_XAI_BASE_URL")
             or get_env_value("XAI_BASE_URL")
             or ""
         ).strip().rstrip("/")

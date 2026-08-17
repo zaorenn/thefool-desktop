@@ -105,7 +105,7 @@ Text strings used throughout the CLI interface.
 |-----|------|-------------|---------|
 | `tool_prefix` | string | Character prefixed to tool output lines in the CLI | `┊` |
 | `tool_emojis` | dict | Per-tool emoji overrides for spinners and progress (`{tool_name: emoji}`) | `{}` |
-| `banner_logo` | string | Rich-markup ASCII art logo (replaces the default HERMES_AGENT banner) | `""` |
+| `banner_logo` | string | Rich-markup ASCII art logo (replaces the default THEFOOL_AGENT banner) | `""` |
 | `banner_hero` | string | Rich-markup hero art (replaces the default caduceus art) | `""` |
 
 ## Custom skins
@@ -259,11 +259,11 @@ npm start
 6. Click **Save** to write the skin YAML to `~/.hermes/skins/`.
 7. Click **Activate** to set it as the current skin (updates `display.skin` in `config.yaml`).
 
-Hermes Mod respects the `HERMES_HOME` environment variable, so it works with [profiles](/user-guide/profiles) too.
+Hermes Mod respects the `THEFOOL_HOME` environment variable, so it works with [profiles](/user-guide/profiles) too.
 
 ## Operational notes
 
-- Built-in skins load from `hermes_cli/skin_engine.py`.
+- Built-in skins load from `thefool_cli/skin_engine.py`.
 - Unknown skins automatically fall back to `default`.
 - `/skin` updates the active CLI theme immediately for the current session.
 - User skins in `~/.hermes/skins/` take precedence over built-in skins with the same name.

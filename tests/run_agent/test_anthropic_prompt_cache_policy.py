@@ -277,9 +277,9 @@ class TestThirdPartyAnthropicGateway:
                 """
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
         # load_config's cache is keyed by resolved config path, so pointing
-        # HERMES_HOME at a fresh tempdir needs no cache invalidation.
+        # THEFOOL_HOME at a fresh tempdir needs no cache invalidation.
         agent = _make_agent(
             provider="custom:anthropic-proxy",
             base_url="https://gateway.example.com/anthropic",

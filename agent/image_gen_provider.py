@@ -234,8 +234,8 @@ def normalize_reference_images(value: Any) -> Optional[List[str]]:
 
 
 def _images_cache_dir() -> Path:
-    """Return ``$HERMES_HOME/cache/images/``, creating parents as needed."""
-    from hermes_constants import get_hermes_home
+    """Return ``$THEFOOL_HOME/cache/images/``, creating parents as needed."""
+    from thefool_constants import get_hermes_home
 
     path = get_hermes_home() / "cache" / "images"
     path.mkdir(parents=True, exist_ok=True)
@@ -248,7 +248,7 @@ def save_b64_image(
     prefix: str = "image",
     extension: str = "png",
 ) -> Path:
-    """Decode base64 image data and write it under ``$HERMES_HOME/cache/images/``.
+    """Decode base64 image data and write it under ``$THEFOOL_HOME/cache/images/``.
 
     Returns the absolute :class:`Path` to the saved file.
 
@@ -282,7 +282,7 @@ def save_url_image(
     timeout: float = 60.0,
     max_bytes: int = 25 * 1024 * 1024,
 ) -> Path:
-    """Download an image URL and write it under ``$HERMES_HOME/cache/images/``.
+    """Download an image URL and write it under ``$THEFOOL_HOME/cache/images/``.
 
     Used by providers (xAI, fallback OpenAI) whose API returns an *ephemeral*
     URL instead of inline base64 — those URLs frequently expire before a

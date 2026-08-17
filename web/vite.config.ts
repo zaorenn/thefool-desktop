@@ -3,11 +3,11 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-const BACKEND = process.env.HERMES_DASHBOARD_URL ?? "http://127.0.0.1:9119";
+const BACKEND = process.env.THEFOOL_DASHBOARD_URL ?? "http://127.0.0.1:9119";
 
 /**
  * In production the Python `hermes dashboard` server injects a one-shot
- * session token into `index.html` (see `hermes_cli/web_server.py`). The
+ * session token into `index.html` (see `thefool_cli/web_server.py`). The
  * Vite dev server serves its own `index.html`, so unless we forward that
  * token, every protected `/api/*` call 401s.
  *
@@ -49,7 +49,7 @@ function hermesDevToken(): Plugin {
       } catch (err) {
         console.warn(
           `[hermes] Dashboard at ${BACKEND} unreachable — ` +
-            `start it with \`hermes dashboard\` or set HERMES_DASHBOARD_URL. ` +
+            `start it with \`hermes dashboard\` or set THEFOOL_DASHBOARD_URL. ` +
             `(${(err as Error).message})`,
         );
       }
@@ -62,7 +62,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@hermes/shared": path.resolve(__dirname, "../apps/shared/src"),
+      "@thefool/shared": path.resolve(__dirname, "../apps/shared/src"),
     },
     // When @nous-research/ui is symlinked via `file:../../design-language`,
     // Node's module resolution would pick up shared deps from
@@ -84,7 +84,7 @@ export default defineConfig({
     ],
   },
   build: {
-    outDir: "../hermes_cli/web_dist",
+    outDir: "../thefool_cli/web_dist",
     emptyOutDir: true,
     // Shell stays a bit over Vite's 500 kB default after vendor splits;
     // page/xterm chunks load on demand. Keep a modest ceiling so a true

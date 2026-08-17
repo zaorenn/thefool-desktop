@@ -33,7 +33,7 @@ from gateway.whatsapp_identity import (
     expand_whatsapp_aliases,
     normalize_whatsapp_identifier,
 )
-from hermes_constants import (
+from thefool_constants import (
     get_default_hermes_root,
     get_hermes_dir,
     get_hermes_home,
@@ -156,7 +156,7 @@ def _read_allowlist_env(env_var: str) -> str:
     admin endpoints) keep the legacy ``os.getenv`` read.
 
     TODO(profile-secrets): the grant mirror below still WRITES through
-    ``hermes_cli.config.save_env_value`` / ``remove_env_value``, which target
+    ``thefool_cli.config.save_env_value`` / ``remove_env_value``, which target
     the root ``.env`` — those writes need a profile-aware counterpart before
     pairing grants can be mirrored correctly under multiplexing.
     """
@@ -192,7 +192,7 @@ def _sync_allowlist_add(platform: str, user_id: str) -> None:
         return  # Already covered.
     ids.append(str(user_id))
     try:
-        from hermes_cli.config import save_env_value
+        from thefool_cli.config import save_env_value
 
         save_env_value(env_var, ",".join(ids))
     except Exception:
@@ -316,7 +316,7 @@ def _sync_allowlist_remove(platform: str, user_id: str) -> None:
     if len(remaining) == len(ids):
         return  # Not present.
     try:
-        from hermes_cli.config import save_env_value, remove_env_value
+        from thefool_cli.config import save_env_value, remove_env_value
 
         if remaining:
             save_env_value(env_var, ",".join(remaining))
@@ -340,8 +340,8 @@ def _load_json_file(path: Path) -> dict:
 def _merge_pairing_dir(active_dir: Path, alternate_dir: Path) -> None:
     """Merge split legacy/new pairing data into the active PairingStore dir.
 
-    Older installs use ``{HERMES_HOME}/pairing`` while newer code/docs may
-    write ``{HERMES_HOME}/platforms/pairing``. If both directories exist, the
+    Older installs use ``{THEFOOL_HOME}/pairing`` while newer code/docs may
+    write ``{THEFOOL_HOME}/platforms/pairing``. If both directories exist, the
     gateway must not silently ignore approved users sitting in the inactive
     location; otherwise already-paired Feishu users get asked for a fresh code.
     """
@@ -412,14 +412,14 @@ class PairingStore:
       - _rate_limits.json         : rate limit tracking
 
     When constructed with ``profile="<name>"``, storage resolves from that
-    profile's own HERMES_HOME using the same legacy/consolidated layout rules
+    profile's own THEFOOL_HOME using the same legacy/consolidated layout rules
     as ``hermes -p <name> pairing ...``. This keeps multiplex gateways and
     profile-scoped CLI approvals on one whitelist. Without a profile, storage
-    is the global pairing directory for the current HERMES_HOME.
+    is the global pairing directory for the current THEFOOL_HOME.
     """
 
     def __init__(self, profile: Optional[str] = None):
-        # Resolve storage directory lazily — tests use a temp HERMES_HOME
+        # Resolve storage directory lazily — tests use a temp THEFOOL_HOME
         # and PairingStore may be constructed before the env is set.
         if profile:
             root = get_default_hermes_root()

@@ -6,7 +6,7 @@ first profile's workspace_id and bearer into one shared client, so every
 later profile's memory landed in the first profile's workspace.
 
 The tests drive the REAL resolution chain — HonchoClientConfig.from_global_config
-against real honcho.json files under temp HERMES_HOMEs, with the same
+against real honcho.json files under temp THEFOOL_HOMEs, with the same
 ContextVar override the gateway multiplexer / dashboard use — and assert
 client identity, not internals.
 
@@ -21,7 +21,7 @@ import threading
 import pytest
 
 import plugins.memory.honcho.client as client_mod
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from thefool_constants import reset_hermes_home_override, set_hermes_home_override
 from plugins.memory.honcho.client import (
     HonchoClientConfig,
     get_honcho_client,
@@ -152,8 +152,8 @@ class TestBackgroundThreadIsolation:
         assert box["client"].kwargs["api_key"] == "key-b"
 
     def test_spawn_context_thread_sees_profile_override(self, tmp_path):
-        """spawn_context_thread must carry the caller's HERMES_HOME override."""
-        from hermes_constants import get_hermes_home
+        """spawn_context_thread must carry the caller's THEFOOL_HOME override."""
+        from thefool_constants import get_hermes_home
         from plugins.memory.honcho.client import spawn_context_thread
 
         home_b = tmp_path / "profiles" / "b"
@@ -176,7 +176,7 @@ class TestBackgroundThreadIsolation:
     def test_plain_thread_does_not_see_override(self, tmp_path):
         """Control: documents WHY propagation is needed — a plain thread
         resolves the process home, not the caller's profile override."""
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         home_b = tmp_path / "profiles" / "b"
         home_b.mkdir(parents=True)

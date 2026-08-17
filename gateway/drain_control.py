@@ -15,7 +15,7 @@ share one definition and can never disagree.
 
 Contract (presence-based, mirroring ``.restart_notify.json``):
 
-  * begin-drain  → write ``{HERMES_HOME}/.drain_request.json`` with
+  * begin-drain  → write ``{THEFOOL_HOME}/.drain_request.json`` with
     ``{"action": "drain", "requested_at": <iso>, "principal": <str>,
     "epoch": <instantiation-epoch>, "suppress_notification": <bool>}``.
   * cancel-drain → remove the marker.
@@ -25,7 +25,7 @@ Contract (presence-based, mirroring ``.restart_notify.json``):
     marker from a *prior* instantiation) means "not draining" (revert to
     ``running`` if we had flipped it).
 
-Why the epoch (NS-570). ``HERMES_HOME`` is a **durable** store — on Hermes
+Why the epoch (NS-570). ``THEFOOL_HOME`` is a **durable** store — on Hermes
 Cloud it is a persistent Fly volume (``/opt/data``). A begin-drain marker
 written there *survives a machine restart*. But the disruptive lifecycle
 actions a drain protects (auto-update / image migrate / env edit / profile
@@ -70,7 +70,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_constants import get_hermes_home
+from thefool_constants import get_hermes_home
 from utils import atomic_json_write
 
 _log = logging.getLogger(__name__)
@@ -156,7 +156,7 @@ def current_instantiation_epoch() -> str:
 
 
 def drain_request_path(home: Optional[Path] = None) -> Path:
-    """Absolute path to the drain-request marker, respecting HERMES_HOME."""
+    """Absolute path to the drain-request marker, respecting THEFOOL_HOME."""
     base = home if home is not None else get_hermes_home()
     return Path(base) / _DRAIN_REQUEST_FILENAME
 
@@ -175,7 +175,7 @@ def write_drain_request(
     needs longer than :data:`DRAIN_REQUEST_MAX_AGE_SECONDS`.
 
     Stamps the marker with :func:`current_instantiation_epoch` so a marker that
-    later survives a machine restart on the durable HERMES_HOME volume can be
+    later survives a machine restart on the durable THEFOOL_HOME volume can be
     recognised as stale and ignored (NS-570).
 
     ``suppress_notification`` is a generic "be quiet on the shutdown that ends
@@ -302,7 +302,7 @@ def drain_requested(*, home: Optional[Path] = None) -> bool:
     """True iff a begin-drain marker for THIS instantiation is present.
 
     A marker whose ``epoch`` does not match the current instantiation epoch is
-    treated as absent: it survived a container/VM restart (HERMES_HOME is a
+    treated as absent: it survived a container/VM restart (THEFOOL_HOME is a
     durable Fly volume on Hermes Cloud) and the lifecycle action that triggered
     the drain has already completed — honouring it would wedge the
     freshly-restarted gateway in ``draining`` (NS-570). A marker whose
@@ -328,7 +328,7 @@ def drain_notification_suppressed(*, home: Optional[Path] = None) -> bool:
     "Active" means exactly what :func:`drain_requested` means — a marker present
     AND stamped with the current instantiation epoch AND not past its max-age.
     A stale (other-epoch) marker that survived a machine restart on the durable
-    HERMES_HOME volume, or an expired same-epoch orphan (#85433), is
+    THEFOOL_HOME volume, or an expired same-epoch orphan (#85433), is
     ignored here just as it is for drain state (NS-570): we must never let an
     orphaned marker's flag silence a *fresh* gateway's legitimate shutdown
     broadcast.

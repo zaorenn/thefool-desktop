@@ -77,7 +77,7 @@ async function revealPluginsDir() {
 }
 
 // Agent plugins live under the BACKEND's hermes home (profile-aware), so the
-// path comes from the gateway — not from the renderer's local HERMES_HOME.
+// path comes from the gateway — not from the renderer's local THEFOOL_HOME.
 // Callers gate on a local connection: openDir mkdir-creates the path, which
 // must never happen for a directory that belongs to a remote box.
 async function revealAgentPluginsDir(request: GatewayRequest) {

@@ -103,6 +103,23 @@ SKIP_DIRS: frozenset[str] = frozenset({
     ".venv", "venv", ".mypy_cache", ".pytest_cache", ".ruff_cache",
 })
 
+#: KENDİNİ DIŞLA — bu araçların kaynağı dönüşüme TABİ DEĞİL.
+#:
+#: İlk çalıştırmada bu koruma yoktu ve araç kendi tablosunu yedi:
+#:     ("hermes_state_portability", "thefool_state_portability")
+#: satırı
+#:     ("thefool_state_portability", "thefool_state_portability")
+#: oldu — yani boş bir işleme dönüştü. Araç çalışıyor görünmeye devam eder ama
+#: modül yeniden adlandırmalarını artık yapmaz; upstream birleştirme akışı
+#: sessizce çöker.
+#:
+#: ``fool/`` dönüşümü TANIMLAYAN taraf; dönüşülen taraf değil.
+SELF_EXCLUDE: frozenset[str] = frozenset({
+    "fool/rename.py",
+    "fool/audit.py",
+    "fool/branding.py",
+})
+
 
 @dataclass
 class Plan:
@@ -187,6 +204,8 @@ def _iter_files(root: Path) -> list[Path]:
             continue
         parts = Path(rel).parts
         if any(p in SKIP_DIRS for p in parts):
+            continue
+        if rel.replace("\\", "/") in SELF_EXCLUDE:
             continue
         files.append(root / rel)
     return files

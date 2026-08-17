@@ -109,8 +109,8 @@ chunk'lar diskten geliyor.
 .venv/Scripts/python.exe -m pytest tests/fool/ -q
 
 # Upstream testleri
-.venv/Scripts/python.exe -m pytest tests/hermes_cli/ -q \
-  --ignore=tests/hermes_cli/test_doctor_journal_modes.py
+.venv/Scripts/python.exe -m pytest tests/thefool_cli/ -q \
+  --ignore=tests/thefool_cli/test_doctor_journal_modes.py
 ```
 
 `test_doctor_journal_modes.py` Windows'ta **upstream'de de** toplanamıyor

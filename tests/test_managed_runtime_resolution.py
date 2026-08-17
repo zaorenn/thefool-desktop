@@ -1,7 +1,7 @@
 """Guard: Hermes-owned subprocesses must not resolve managed runtimes by bare PATH.
 
-Hermes installs runtimes for itself — ``uv`` at ``$HERMES_HOME/bin/uv``, Node at
-``$HERMES_HOME/node``. Neither directory is on the ambient PATH of an arbitrary
+Hermes installs runtimes for itself — ``uv`` at ``$THEFOOL_HOME/bin/uv``, Node at
+``$THEFOOL_HOME/node``. Neither directory is on the ambient PATH of an arbitrary
 process, so ``shutil.which("uv")`` / ``shutil.which("node")`` in Hermes's own
 code has two failure modes:
 
@@ -32,7 +32,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-# Runtimes Hermes provisions into HERMES_HOME and must therefore resolve
+# Runtimes Hermes provisions into THEFOOL_HOME and must therefore resolve
 # through a managed-aware helper rather than PATH.
 _MANAGED_COMMANDS = frozenset({"uv", "node", "npm", "npx"})
 
@@ -62,32 +62,32 @@ _ALLOWED: dict[tuple[str, str], str] = {
         "can only run what is on that subshell's PATH, which local.py populates "
         "with the managed dirs — so PATH is the correct question to ask here."
     ),
-    ("hermes_cli/update_cmd.py", "uv"): (
+    ("thefool_cli/update_cmd.py", "uv"): (
         "Termux fallback: a pkg-installed uv lands on PATH but not in the "
         "managed bin dir, and it is checked only after resolve_uv() misses."
     ),
-    ("hermes_cli/update_cmd.py", "npm"): (
+    ("thefool_cli/update_cmd.py", "npm"): (
         "WSL diagnostic: deliberately inspects what PATH resolves so it can "
         "warn that the only reachable npm is the Windows one."
     ),
     ("tools/lazy_deps.py", "uv"): (
         "Fallback after resolve_uv(), plus the except-branch for the "
-        "hermes_cli import guard."
+        "thefool_cli import guard."
     ),
     ("tools/browser_use_cli.py", "uv"): (
         "install_cli()'s fallback after ensure_uv() misses — a user-installed "
         "uv on PATH is a legitimate last rung before giving up with install "
         "guidance."
     ),
-    ("hermes_cli/gateway.py", "node"): (
+    ("thefool_cli/gateway.py", "node"): (
         "Fallback rung of _append_node_dir_for_service(), after the managed "
         "dirs from iter_hermes_node_dirs() are already appended."
     ),
-    ("hermes_cli/main.py", "node"): (
+    ("thefool_cli/main.py", "node"): (
         "_ensure_tui_node()'s idempotence gate: the question really is 'is "
         "node already discoverable on PATH', before bootstrapping one."
     ),
-    ("hermes_cli/main.py", "npm"): (
+    ("thefool_cli/main.py", "npm"): (
         "Same _ensure_tui_node() gate as node."
     ),
     ("tools/browser_tool.py", "npx"): (
@@ -160,13 +160,13 @@ def test_no_unreviewed_bare_managed_runtime_lookups():
     assert not unexpected, (
         "Bare PATH lookup for a Hermes-managed runtime.\n\n"
         + "\n".join(f"  {rel}:{lineno}  which({cmd!r})" for rel, cmd, lineno in unexpected)
-        + "\n\n$HERMES_HOME/bin (uv) and $HERMES_HOME/node are not on an "
+        + "\n\n$THEFOOL_HOME/bin (uv) and $THEFOOL_HOME/node are not on an "
         "arbitrary process's PATH, so this resolves a system copy — or nothing "
         "— on an install that has a managed one.\n"
         "Use instead:\n"
         "  uv       -> managed_uv.resolve_uv() (lookup) or ensure_uv() (may install)\n"
-        "  node/npm -> hermes_constants.find_node_executable()\n"
-        "  PATH env -> hermes_constants.iter_hermes_node_dirs()\n"
+        "  node/npm -> thefool_constants.find_node_executable()\n"
+        "  PATH env -> thefool_constants.iter_hermes_node_dirs()\n"
         "If PATH really is the right question, add the site to _ALLOWED with a "
         "reason."
     )
@@ -195,13 +195,13 @@ def test_allowlist_has_no_stale_entries():
 )
 def test_managed_node_helpers_exist(helper):
     """The alternatives this guard points contributors at must be importable."""
-    import hermes_constants
+    import thefool_constants
 
-    assert callable(getattr(hermes_constants, helper))
+    assert callable(getattr(thefool_constants, helper))
 
 
 def test_managed_uv_helpers_exist():
-    from hermes_cli.managed_uv import ensure_uv, managed_uv_path, resolve_uv
+    from thefool_cli.managed_uv import ensure_uv, managed_uv_path, resolve_uv
 
     assert callable(resolve_uv)
     assert callable(ensure_uv)

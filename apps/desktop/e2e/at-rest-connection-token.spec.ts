@@ -14,7 +14,7 @@
  *   1. ABSENT FROM DISK. After the app has been configured with a remote
  *      gateway token, the token's plaintext value must not appear anywhere in
  *      `connection.json`, in any sibling file the app writes under userData,
- *      or in HERMES_HOME (logs included).
+ *      or in THEFOOL_HOME (logs included).
  *   2. STILL FUNCTIONAL. After a restart, the app must still be able to USE
  *      that credential — it decrypts the stored blob and puts the exact
  *      original token on the wire.
@@ -370,8 +370,8 @@ function expectOwnerOnlyMode(filePath: string, why: string): void {
  */
 async function launchAgainst(sandbox: Sandbox): Promise<{ app: ElectronApplication; page: Page }> {
   const env = buildAppEnv(sandbox, {
-    HERMES_DESKTOP_APP_NAME: STABLE_APP_NAME,
-    HERMES_DESKTOP_BOOT_FAKE_ERROR: 'E2E at-rest storage spec: local backend intentionally not started',
+    THEFOOL_DESKTOP_APP_NAME: STABLE_APP_NAME,
+    THEFOOL_DESKTOP_BOOT_FAKE_ERROR: 'E2E at-rest storage spec: local backend intentionally not started',
   })
 
   const { app, page } = await launchDesktop(env)
@@ -597,14 +597,14 @@ test.describe('remote gateway session token at rest', () => {
     ).toEqual([])
 
     // …and not in any sibling file the app writes alongside it, nor in
-    // HERMES_HOME (desktop.log lives there).
+    // THEFOOL_HOME (desktop.log lives there).
     expect(
       scanTreeForSecret(userDataDir, needles),
       'the gateway session token leaked into a userData file',
     ).toEqual([])
     expect(
       scanTreeForSecret(sandbox.hermesHome, needles),
-      'the gateway session token leaked into a HERMES_HOME file (logs included)',
+      'the gateway session token leaked into a THEFOOL_HOME file (logs included)',
     ).toEqual([])
 
     if (!capability.available) {

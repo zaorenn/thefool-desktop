@@ -16,7 +16,7 @@
  * itself here as the delegate so tile UI stays dependency-light.
  */
 
-import { registryBackendScopeKey } from '@hermes/shared'
+import { registryBackendScopeKey } from '@thefool/shared'
 import { atom, computed } from 'nanostores'
 
 import type { ClientSessionState } from '@/app/types'

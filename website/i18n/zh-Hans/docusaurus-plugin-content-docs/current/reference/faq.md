@@ -103,7 +103,7 @@ Hermes 会将端点、提供商和 base URL 持久化到 `config.yaml`，重启�
 :::
 
 :::tip 本地模型超时问题
-Hermes 会自动检测本地端点并放宽流式传输超时（读取超时从 120s 提升至 1800s，禁用停滞流检测）。如果在非常大的上下文下仍然超时，请在 `.env` 中设置 `HERMES_STREAM_READ_TIMEOUT=1800`。详情请参阅[本地 LLM 指南](../guides/local-llm-on-mac.md#timeouts)。
+Hermes 会自动检测本地端点并放宽流式传输超时（读取超时从 120s 提升至 1800s，禁用停滞流检测）。如果在非常大的上下文下仍然超时，请在 `.env` 中设置 `THEFOOL_STREAM_READ_TIMEOUT=1800`。详情请参阅[本地 LLM 指南](../guides/local-llm-on-mac.md#timeouts)。
 :::
 
 ### 费用是多少？
@@ -288,7 +288,7 @@ hermes config set OPENROUTER_API_KEY sk-or-v1-xxxxxxxxxxxx
 hermes model
 
 # 设置有效的模型
-hermes config set HERMES_MODEL anthropic/claude-opus-4.7
+hermes config set THEFOOL_MODEL anthropic/claude-opus-4.7
 
 # 或按会话指定
 hermes chat --model openrouter/meta-llama/llama-3.1-70b-instruct
@@ -616,9 +616,9 @@ hermes chat
 
 ## Profiles（配置文件）
 
-### Profiles 与直接设置 HERMES_HOME 有何不同？
+### Profiles 与直接设置 THEFOOL_HOME 有何不同？
 
-Profiles 是构建在 `HERMES_HOME` 之上的托管层。您*可以*在每次命令前手动设置 `HERMES_HOME=/some/path`，但 profiles 会为您处理所有底层工作：创建目录结构、生成 shell 别名（`hermes-work`）、在 `~/.hermes/active_profile` 中跟踪活动 profile，以及自动跨所有 profiles 同步技能更新。它们还与 tab 补全集成，让您无需记忆路径。
+Profiles 是构建在 `THEFOOL_HOME` 之上的托管层。您*可以*在每次命令前手动设置 `THEFOOL_HOME=/some/path`，但 profiles 会为您处理所有底层工作：创建目录结构、生成 shell 别名（`hermes-work`）、在 `~/.hermes/active_profile` 中跟踪活动 profile，以及自动跨所有 profiles 同步技能更新。它们还与 tab 补全集成，让您无需记忆路径。
 
 ### 两个 profiles 可以共享同一个 bot token 吗？
 

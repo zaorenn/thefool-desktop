@@ -14,7 +14,7 @@ so no individual source can get it wrong:
 * provenance: which source supplied every applied var
 
 The single entry point for startup is :func:`apply_all`, called from
-``hermes_cli.env_loader._apply_external_secret_sources()``.
+``thefool_cli.env_loader._apply_external_secret_sources()``.
 
 Plugins register additional sources via
 ``PluginContext.register_secret_source()`` which lands in
@@ -44,7 +44,7 @@ from agent.secret_sources.base import (
     reset_source_environment,
     set_source_environment,
 )
-from hermes_constants import hermes_home_key
+from thefool_constants import hermes_home_key
 
 logger = logging.getLogger(__name__)
 
@@ -388,14 +388,14 @@ def _ordered_enabled_sources(
 def _active_profile_name(home_path: Optional[Path]) -> str:
     """Best-effort active profile name for profile-scoped secret aliases.
 
-    A named profile's HERMES_HOME is ``~/.hermes/profiles/<name>``; the
+    A named profile's THEFOOL_HOME is ``~/.hermes/profiles/<name>``; the
     default profile (``~/.hermes``) returns "".
     """
     if home_path is not None:
         resolved = Path(home_path)
         if resolved.parent.name == "profiles" and resolved.name:
             return resolved.name
-    for env_name in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
+    for env_name in ("THEFOOL_PROFILE_NAME", "THEFOOL_PROFILE"):
         value = os.environ.get(env_name, "").strip()
         if value and value != "default":
             return value

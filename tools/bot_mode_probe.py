@@ -145,10 +145,10 @@ def get_bot_mode_protocol_section(home: str | os.PathLike | None = None, *, forc
     """Cached probe entry point — one filesystem pass per (process, home).
 
     ``home`` should be the AGENT'S OWN resolved home (session-db derived),
-    not the ambient HERMES_HOME — build threads can lose the ContextVar
+    not the ambient THEFOOL_HOME — build threads can lose the ContextVar
     override and the env var would then name the wrong profile.
     """
-    resolved = str(home) if home else (os.getenv("HERMES_HOME") or os.path.expanduser("~/.hermes"))
+    resolved = str(home) if home else (os.getenv("THEFOOL_HOME") or os.path.expanduser("~/.hermes"))
     with _lock:
         if force_refresh or resolved not in _cached:
             try:
@@ -188,13 +188,13 @@ def capability_fingerprint(home: str | os.PathLike | None = None) -> str:
     import hashlib
     import json
 
-    resolved = Path(str(home) if home else (os.getenv("HERMES_HOME") or os.path.expanduser("~/.hermes")))
+    resolved = Path(str(home) if home else (os.getenv("THEFOOL_HOME") or os.path.expanduser("~/.hermes")))
     surface: dict = {}
     try:
         # Canonical loader (managed overlay + env expansion + normalization),
         # scoped to the bot's home via the override the loaders already honor.
-        from hermes_cli.config import load_config_readonly
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from thefool_cli.config import load_config_readonly
+        from thefool_constants import reset_hermes_home_override, set_hermes_home_override
 
         token = set_hermes_home_override(str(resolved))
         try:

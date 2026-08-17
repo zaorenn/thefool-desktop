@@ -27,7 +27,7 @@ Original body.
 
 @pytest.fixture
 def ledger_env(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME + skills dir for skill_manage and the ledger."""
+    """Isolated THEFOOL_HOME + skills dir for skill_manage and the ledger."""
     from agent import skill_utils
     from tools import skill_ledger, skill_manager_tool, skill_usage
 
@@ -122,7 +122,7 @@ def test_foreground_patch_is_ledgered_as_agent(ledger_env):
 
 
 def test_rollback_refuses_paths_outside_hermes_home(ledger_env):
-    """A hand-edited ledger entry pointing outside HERMES_HOME must not
+    """A hand-edited ledger entry pointing outside THEFOOL_HOME must not
     become a write-anywhere primitive."""
     from tools import skill_ledger
 
@@ -305,7 +305,7 @@ def test_config_gate_off_no_ledger_writes(ledger_env, monkeypatch):
     from tools import skill_ledger
     from tools.skill_manager_tool import skill_manage
 
-    import hermes_cli.config as _cfg
+    import thefool_cli.config as _cfg
 
     monkeypatch.setattr(_cfg, "load_config", lambda *a, **k: {"skills": {"ledger": False}})
 

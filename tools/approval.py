@@ -24,7 +24,7 @@ import time
 import unicodedata
 import uuid
 from typing import Optional
-from hermes_cli.config import cfg_get
+from thefool_cli.config import cfg_get
 
 from tools.interrupt import is_interrupted
 from utils import env_var_enabled, is_truthy_value
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # Freeze YOLO mode at module import time. Reading os.environ on every call
 # would allow any skill running inside the process to set this variable and
 # instantly bypass all approval checks — a prompt-injection escalation path.
-_YOLO_MODE_FROZEN: bool = is_truthy_value(os.getenv("HERMES_YOLO_MODE", ""))
+_YOLO_MODE_FROZEN: bool = is_truthy_value(os.getenv("THEFOOL_YOLO_MODE", ""))
 
 # Per-thread/per-task gateway session identity.
 # Gateway runs agent turns concurrently in executor threads, so reading a
@@ -65,13 +65,13 @@ _approval_session_id: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 # Interactive-CLI flag. Concurrent ACP sessions run on a shared
 # ThreadPoolExecutor (acp_adapter/server.py), so mutating the process-global
-# os.environ["HERMES_INTERACTIVE"] races: one session's restore in `finally`
+# os.environ["THEFOOL_INTERACTIVE"] races: one session's restore in `finally`
 # can clobber another session's set mid-run, dropping it onto the
 # non-interactive auto-approve path so a dangerous command executes without
 # the approval callback firing (GHSA-96vc-wcxf-jjff). A contextvar is
 # thread/task-local, so each executor worker (or asyncio task) sees only its
 # own value. None = unset → fall back to the env var for legacy
-# single-threaded CLI callers that still export HERMES_INTERACTIVE.
+# single-threaded CLI callers that still export THEFOOL_INTERACTIVE.
 _hermes_interactive_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
     "hermes_interactive",
     default=None,
@@ -81,9 +81,9 @@ _hermes_interactive_ctx: contextvars.ContextVar[Optional[str]] = contextvars.Con
 def set_hermes_interactive_context(interactive: bool) -> contextvars.Token:
     """Bind interactive mode for the current context (thread or asyncio task).
 
-    Use this instead of mutating ``os.environ["HERMES_INTERACTIVE"]`` from
+    Use this instead of mutating ``os.environ["THEFOOL_INTERACTIVE"]`` from
     concurrent executor threads. When unset (default), interactive detection
-    falls back to the ``HERMES_INTERACTIVE`` env var for legacy callers.
+    falls back to the ``THEFOOL_INTERACTIVE`` env var for legacy callers.
     """
     return _hermes_interactive_ctx.set("1" if interactive else "")
 
@@ -97,12 +97,12 @@ def _is_interactive_cli() -> bool:
     """True when running an interactive CLI/ACP session.
 
     Prefers the context-local flag (set by concurrent ACP sessions) and falls
-    back to the ``HERMES_INTERACTIVE`` env var for single-threaded callers.
+    back to the ``THEFOOL_INTERACTIVE`` env var for single-threaded callers.
     """
     ctx_val = _hermes_interactive_ctx.get()
     if ctx_val is not None:
         return is_truthy_value(ctx_val)
-    return env_var_enabled("HERMES_INTERACTIVE")
+    return env_var_enabled("THEFOOL_INTERACTIVE")
 
 
 def _fire_approval_hook(hook_name: str, **kwargs) -> None:
@@ -116,7 +116,7 @@ def _fire_approval_hook(hook_name: str, **kwargs) -> None:
     pre_approval_request, post_approval_response.
     """
     try:
-        from hermes_cli.lifecycle import invoke_hook
+        from thefool_cli.lifecycle import invoke_hook
     except Exception:
         # Plugin system not available in this execution context
         # (e.g. bare tool-only imports, minimal test environments).
@@ -236,7 +236,7 @@ def get_current_session_key(default: str = "default") -> str:
     if session_key:
         return session_key
     from gateway.session_context import get_session_env
-    return get_session_env("HERMES_SESSION_KEY", default)
+    return get_session_env("THEFOOL_SESSION_KEY", default)
 
 
 def _get_session_platform() -> str:
@@ -244,9 +244,9 @@ def _get_session_platform() -> str:
     try:
         from gateway.session_context import get_session_env
 
-        return get_session_env("HERMES_SESSION_PLATFORM", "") or ""
+        return get_session_env("THEFOOL_SESSION_PLATFORM", "") or ""
     except Exception:
-        return os.getenv("HERMES_SESSION_PLATFORM", "") or ""
+        return os.getenv("THEFOOL_SESSION_PLATFORM", "") or ""
 
 
 def _is_cron_approval_context() -> bool:
@@ -260,16 +260,16 @@ def _is_cron_approval_context() -> bool:
     try:
         from gateway.session_context import get_session_env
 
-        return is_truthy_value(get_session_env("HERMES_CRON_SESSION", ""))
+        return is_truthy_value(get_session_env("THEFOOL_CRON_SESSION", ""))
     except Exception:
-        return env_var_enabled("HERMES_CRON_SESSION")
+        return env_var_enabled("THEFOOL_CRON_SESSION")
 
 
 def _is_single_query_approval_context() -> bool:
     """True when the current approval decision is from a single-query (-q) session.
 
     ``hermes chat -q "..."`` runs one turn and exits with no user waiting to
-    answer approval prompts, but it still exports ``HERMES_INTERACTIVE=1`` so
+    answer approval prompts, but it still exports ``THEFOOL_INTERACTIVE=1`` so
     interactive sudo password prompts can be driven from stdin. Without an
     explicit marker, ``_is_interactive_cli()`` would report True and the gate
     would wait the full approval timeout for a human who never comes — failing
@@ -285,20 +285,20 @@ def _is_single_query_approval_context() -> bool:
     try:
         from gateway.session_context import get_session_env
 
-        return is_truthy_value(get_session_env("HERMES_SINGLE_QUERY_SESSION", ""))
+        return is_truthy_value(get_session_env("THEFOOL_SINGLE_QUERY_SESSION", ""))
     except Exception:
-        return env_var_enabled("HERMES_SINGLE_QUERY_SESSION")
+        return env_var_enabled("THEFOOL_SINGLE_QUERY_SESSION")
 
 
 def _is_gateway_approval_context() -> bool:
     """True when this call is inside a gateway/API session.
 
-    Legacy gateway integrations set HERMES_GATEWAY_SESSION in process env.
-    Newer concurrent gateway paths bind HERMES_SESSION_PLATFORM via
+    Legacy gateway integrations set THEFOOL_GATEWAY_SESSION in process env.
+    Newer concurrent gateway paths bind THEFOOL_SESSION_PLATFORM via
     contextvars so approval mode does not depend on process-global flags.
 
     Cron jobs are NEVER gateway-approval contexts even when they originate
-    from a gateway platform (cron binds HERMES_SESSION_PLATFORM via
+    from a gateway platform (cron binds THEFOOL_SESSION_PLATFORM via
     contextvars for delivery routing). Cron approvals are governed by
     ``approvals.cron_mode`` config, not interactive resolve — letting cron
     fall through to the gateway branch would submit a pending approval
@@ -306,7 +306,7 @@ def _is_gateway_approval_context() -> bool:
     """
     if _is_cron_approval_context():
         return False
-    if env_var_enabled("HERMES_GATEWAY_SESSION"):
+    if env_var_enabled("THEFOOL_GATEWAY_SESSION"):
         return True
     return bool(_get_session_platform())
 
@@ -334,7 +334,7 @@ def _should_fall_through_to_cli_approval(
 ) -> bool:
     """Prefer the classic CLI Dangerous Command panel over silent pending.
 
-    ``HERMES_EXEC_ASK`` (and sometimes a session platform marker) can leak into
+    ``THEFOOL_EXEC_ASK`` (and sometimes a session platform marker) can leak into
     an interactive CLI process — most commonly via ``import gateway.run``, which
     historically set ask-mode as a module-level side effect. Without a gateway
     notify listener, the ask/gateway branch used to return ``pending_approval``
@@ -343,12 +343,12 @@ def _should_fall_through_to_cli_approval(
     return bool(is_cli and approval_callback is not None and notify_cb is None)
 
 # Sensitive write targets that should trigger approval even when referenced
-# via shell expansions like $HOME or $HERMES_HOME, or by the resolved absolute
+# via shell expansions like $HOME or $THEFOOL_HOME, or by the resolved absolute
 # active profile home path such as /home/hermes/.hermes/config.yaml. The
 # resolved-absolute form is folded into the ~/.hermes/ patterns at detection
 # time by _normalize_command_for_detection() — see the rewrite step there — so
 # these static patterns stay free of any import-time path snapshot (which would
-# go stale when HERMES_HOME is set after this module is imported, e.g. under the
+# go stale when THEFOOL_HOME is set after this module is imported, e.g. under the
 # hermetic test conftest or any deferred-profile-resolution path).
 _SSH_SENSITIVE_PATH = r'(?:~|\$home|\$\{home\})/\.ssh(?:/|$)'
 _HERMES_ENV_PATH = (
@@ -363,7 +363,7 @@ _HERMES_ENV_PATH = (
 # and immediately bypass the gate). Pair the write_file/patch deny (file_tools
 # _check_sensitive_path) with terminal-side coverage so `sed -i`, `tee`, `>`,
 # `cp`, etc. targeting it are gated too — otherwise the deny is unpaired
-# theater. Mirrors _HERMES_ENV_PATH; matches the HERMES_HOME override form as
+# theater. Mirrors _HERMES_ENV_PATH; matches the THEFOOL_HOME override form as
 # well as ~/.hermes/.
 _HERMES_CONFIG_PATH = (
     r'(?:~\/\.hermes/|'
@@ -683,7 +683,7 @@ def _save_blocked_payload(command: str) -> Optional[str]:
     back to the manual write_file recipe).
     """
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
         import time as _time
         import uuid as _uuid
         script_dir = get_hermes_home() / "cache" / "blocked-scripts"
@@ -1159,7 +1159,7 @@ def _normalize_command_for_detection(command: str) -> str:
     # ~/ and ~/.hermes/ forms so static user-sensitive patterns catch
     # /home/alice/.bashrc and C:\Users\alice\.bashrc the same way they catch
     # ~/.bashrc. Resolve at detection time (not via an import-time snapshot) so
-    # it tracks HOME / HERMES_HOME even when those are set after this module is
+    # it tracks HOME / THEFOOL_HOME even when those are set after this module is
     # imported — as the hermetic test conftest and profile/session launchers do.
     #
     # This MUST run before the backslash-escape strip below: on Windows the home
@@ -1211,7 +1211,7 @@ def _home_prefix_fold_regex(path: str):
     required (``+``), so a bare home with no path under it is not folded.
 
     Returns ``None`` for an unset or degenerate path — one with fewer than two
-    components below the root — so a stray HOME / HERMES_HOME such as ``/``,
+    components below the root — so a stray HOME / THEFOOL_HOME such as ``/``,
     ``C:\\`` or ``""`` cannot rewrite unrelated filesystem prefixes. Cached
     because the resolved home is stable across calls on this hot path.
     """
@@ -1278,17 +1278,17 @@ def _rewrite_resolved_user_home(command: str) -> str:
 def _rewrite_resolved_hermes_home(command: str) -> str:
     """Rewrite the resolved absolute Hermes home prefix to ``~/.hermes/``.
 
-    Resolves the active ``HERMES_HOME`` at call time (and its symlink-resolved
+    Resolves the active ``THEFOOL_HOME`` at call time (and its symlink-resolved
     form) and folds an occurrence of ``<home>/`` in *command* into
     ``~/.hermes/`` so the static ``_HERMES_CONFIG_PATH`` / ``_HERMES_ENV_PATH``
     patterns match. In Docker and gateway deployments the agent often references
     the resolved absolute path directly (e.g. ``sed -i ...
     /home/hermes/.hermes/config.yaml``) rather than ``~``, ``$HOME``, or
-    ``$HERMES_HOME``. Matches both POSIX and Windows separators. No-op when the
+    ``$THEFOOL_HOME``. Matches both POSIX and Windows separators. No-op when the
     path can't be resolved or doesn't appear.
     """
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
         home = get_hermes_home().expanduser()
         candidates = [
             str(home),
@@ -2935,7 +2935,7 @@ def load_permanent_allowlist() -> set:
     patterns added via 'always' in a previous session.
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from thefool_cli.config import load_config_readonly
         config = load_config_readonly()
         patterns = set(config.get("command_allowlist", []) or [])
         if patterns:
@@ -2949,7 +2949,7 @@ def load_permanent_allowlist() -> set:
 def save_permanent_allowlist(patterns: set):
     """Save permanently allowed command patterns to config."""
     try:
-        from hermes_cli.config import load_config, save_config
+        from thefool_cli.config import load_config, save_config
         config = load_config()
         config["command_allowlist"] = list(patterns)
         save_config(config)
@@ -3055,7 +3055,7 @@ def _prompt_dangerous_approval_inner(command: str, description: str,
         # tests, sshd, etc.).
         pass
 
-    os.environ["HERMES_SPINNER_PAUSE"] = "1"
+    os.environ["THEFOOL_SPINNER_PAUSE"] = "1"
     try:
         # Resolve the active UI language once per prompt so we don't re-read
         # config/YAML inside the retry loop below.
@@ -3133,8 +3133,8 @@ def _prompt_dangerous_approval_inner(command: str, description: str,
         print("\n" + t("approval.cancelled"))
         return "deny"
     finally:
-        if "HERMES_SPINNER_PAUSE" in os.environ:
-            del os.environ["HERMES_SPINNER_PAUSE"]
+        if "THEFOOL_SPINNER_PAUSE" in os.environ:
+            del os.environ["THEFOOL_SPINNER_PAUSE"]
         print()
         sys.stdout.flush()
 
@@ -3176,7 +3176,7 @@ def _get_approval_config() -> dict:
     callers must not mutate it or any nested structure.
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from thefool_cli.config import load_config_readonly
         config = load_config_readonly()
         return config.get("approvals", {}) or {}
     except Exception as e:
@@ -3195,7 +3195,7 @@ def is_approval_bypass_active_for_session(session_key: str) -> bool:
 
     Collapses the canonical three-source bypass check used across the codebase
     into one place:
-      - process-scoped ``--yolo`` / ``HERMES_YOLO_MODE`` (frozen at import time
+      - process-scoped ``--yolo`` / ``THEFOOL_YOLO_MODE`` (frozen at import time
         so a mid-process skill can't flip it — a prompt-injection escalation
         path; see ``_YOLO_MODE_FROZEN`` above),
       - the session-scoped gateway ``/yolo`` toggle,
@@ -3235,7 +3235,7 @@ def _get_approval_timeout() -> int:
 def _get_cron_approval_mode() -> str:
     """Read the cron approval mode from config. Returns 'deny' or 'approve'."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from thefool_cli.config import load_config_readonly
         config = load_config_readonly()
         mode = str(cfg_get(config, "approvals", "cron_mode", default="deny")).lower().strip()
         if mode in {"approve", "off", "allow", "yes"}:
@@ -3248,7 +3248,7 @@ def _get_cron_approval_mode() -> str:
 def _get_single_query_approval_mode() -> str:
     """Read the single-query (-q) approval mode from config. Returns 'deny' or 'approve'."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from thefool_cli.config import load_config_readonly
         config = load_config_readonly()
         mode = str(cfg_get(config, "approvals", "single_query_mode", default="deny")).lower().strip()
         if mode in {"approve", "off", "allow", "yes"}:
@@ -3455,7 +3455,7 @@ def _run_approval_gate(
             auto-approve warning (identifies command vs plugin origin).
         fail_closed_when_no_human: When True, a non-interactive non-gateway
             context that is NOT a cron session (e.g. a bare script with
-            HERMES_INTERACTIVE unset) BLOCKS instead of auto-approving. The
+            THEFOOL_INTERACTIVE unset) BLOCKS instead of auto-approving. The
             dangerous-command path keeps its historical fail-open default
             (False); the plugin-escalation path opts in to fail-closed so a
             plugin-flagged action never runs ungated without a human.
@@ -3481,7 +3481,7 @@ def _run_approval_gate(
     is_cli = _is_interactive_cli()
     is_gateway = _is_gateway_approval_context()
 
-    # Single-query (-q) sessions export HERMES_INTERACTIVE=1 but have no user
+    # Single-query (-q) sessions export THEFOOL_INTERACTIVE=1 but have no user
     # to answer approval prompts — an unanswered prompt just waits the full
     # timeout then fails closed. Treat them as a deterministic non-interactive
     # context governed by approvals.single_query_mode (mirrors cron below).
@@ -3526,8 +3526,8 @@ def _run_approval_gate(
             # command path keeps the historical fail-open default.)
             logger.warning(
                 "%s (pattern: %s): %s — no interactive user/gateway present; "
-                "BLOCKED (fail-closed). Set HERMES_INTERACTIVE or "
-                "HERMES_GATEWAY_SESSION to answer the prompt.",
+                "BLOCKED (fail-closed). Set THEFOOL_INTERACTIVE or "
+                "THEFOOL_GATEWAY_SESSION to answer the prompt.",
                 autoapprove_log_prefix, pattern_key, description,
             )
             return {
@@ -3540,13 +3540,13 @@ def _run_approval_gate(
                 "description": description,
             }
         logger.warning(
-            "%s (pattern: %s): %s — set HERMES_INTERACTIVE or "
-            "HERMES_GATEWAY_SESSION to require approval.",
+            "%s (pattern: %s): %s — set THEFOOL_INTERACTIVE or "
+            "THEFOOL_GATEWAY_SESSION to require approval.",
             autoapprove_log_prefix, pattern_key, description,
         )
         return {"approved": True, "message": None}
 
-    if is_gateway or env_var_enabled("HERMES_EXEC_ASK"):
+    if is_gateway or env_var_enabled("THEFOOL_EXEC_ASK"):
         # Interactive gateway round-trip when a notify callback is
         # registered for this session (Discord/Telegram/Slack embed +
         # buttons, same mechanism as check_dangerous_command). Blocks the
@@ -3614,7 +3614,7 @@ def _run_approval_gate(
 
         # No notify callback: interactive CLI with a panel callback should
         # still prompt locally instead of queuing a pending approval nobody
-        # can see (HERMES_EXEC_ASK / platform-marker leaks into CLI).
+        # can see (THEFOOL_EXEC_ASK / platform-marker leaks into CLI).
         if not _should_fall_through_to_cli_approval(
             is_cli=is_cli,
             approval_callback=approval_callback,
@@ -3833,7 +3833,7 @@ def request_tool_approval(
 
     Non-interactive contexts: cron jobs honor ``approvals.cron_mode`` (parity
     with dangerous commands); any OTHER non-interactive non-gateway context
-    (a bare script with no ``HERMES_INTERACTIVE``) fails CLOSED — a plugin-
+    (a bare script with no ``THEFOOL_INTERACTIVE``) fails CLOSED — a plugin-
     flagged action never runs ungated without a human.
     """
     description = reason or f"Plugin requires approval for {tool_name}"
@@ -3918,7 +3918,7 @@ def _format_tirith_description(tirith_result: dict) -> str:
 
 def get_plugin_manager():
     """Lazy plugin-manager seam used by tests and early tool-only imports."""
-    from hermes_cli.plugins import discover_plugins, get_plugin_manager as _get_manager
+    from thefool_cli.plugins import discover_plugins, get_plugin_manager as _get_manager
 
     # Approval can be imported before model_tools, whose import normally
     # triggers general plugin discovery. Ensure an explicitly selected
@@ -3931,7 +3931,7 @@ def get_plugin_manager():
 def _get_approval_transport_config() -> tuple[str, str | None]:
     """Return explicitly selected transport and fail-closed fallback mode."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from thefool_cli.config import load_config_readonly
 
         config = load_config_readonly() or {}
         approval_config = ((config.get("security") or {}).get("approval") or {})
@@ -3978,7 +3978,7 @@ def _present_with_selected_transport(
 
     try:
         from agent.redact import redact_sensitive_text
-        from hermes_cli.approval_transport import ApprovalRequest, invoke_approval_transport
+        from thefool_cli.approval_transport import ApprovalRequest, invoke_approval_transport
 
         timeout_seconds = _get_approval_timeout()
         request = ApprovalRequest.create(
@@ -4399,16 +4399,16 @@ def check_all_command_guards(command: str, env_type: str,
     approval_callback = _resolve_cli_approval_callback(approval_callback)
     is_cli = _is_interactive_cli()
     is_gateway = _is_gateway_approval_context()
-    is_ask = env_var_enabled("HERMES_EXEC_ASK")
+    is_ask = env_var_enabled("THEFOOL_EXEC_ASK")
 
-    # Single-query (-q) sessions export HERMES_INTERACTIVE=1 but have no user
+    # Single-query (-q) sessions export THEFOOL_INTERACTIVE=1 but have no user
     # to answer approval prompts — an unanswered prompt just waits the full
     # timeout then fails closed. Treat them as a deterministic non-interactive
     # context governed by approvals.single_query_mode (mirrors cron below).
     if _is_single_query_approval_context():
         is_cli = False
         is_gateway = False
-        # HERMES_EXEC_ASK routes through the gateway decision loop (no human
+        # THEFOOL_EXEC_ASK routes through the gateway decision loop (no human
         # either here) — ignore it so single_query_mode actually takes effect.
         is_ask = False
 
@@ -4462,7 +4462,7 @@ def check_all_command_guards(command: str, env_type: str,
                     # the cron branch below, see #20733).
                     _sq_fail_open = True  # safe default if config is unreadable
                     try:
-                        from hermes_cli.config import load_config_readonly as _load_cfg
+                        from thefool_cli.config import load_config_readonly as _load_cfg
                         _sec = (_load_cfg() or {}).get("security", {}) or {}
                         if _sec.get("tirith_enabled", True):
                             _sq_fail_open = _sec.get("tirith_fail_open", True)
@@ -4527,7 +4527,7 @@ def check_all_command_guards(command: str, env_type: str,
                     # fail-closed synthesis in the main flow below; see #20733).
                     _cron_fail_open = True  # safe default if config is unreadable
                     try:
-                        from hermes_cli.config import load_config_readonly as _load_cfg
+                        from thefool_cli.config import load_config_readonly as _load_cfg
                         _sec = (_load_cfg() or {}).get("security", {}) or {}
                         if _sec.get("tirith_enabled", True):
                             _cron_fail_open = _sec.get("tirith_fail_open", True)
@@ -4565,7 +4565,7 @@ def check_all_command_guards(command: str, env_type: str,
         # normal approval flow.  Fixes #20733.
         _tirith_fail_open = True  # safe default if config is unreadable
         try:
-            from hermes_cli.config import load_config_readonly as _load_cfg
+            from thefool_cli.config import load_config_readonly as _load_cfg
             _sec = (_load_cfg() or {}).get("security", {}) or {}
             _tirith_enabled = _sec.get("tirith_enabled", True)
             if _tirith_enabled:
@@ -5024,7 +5024,7 @@ def check_execute_code_guard(code: str, env_type: str,
         return {"approved": True, "message": None}
 
     is_gateway = _is_gateway_approval_context()
-    is_ask = env_var_enabled("HERMES_EXEC_ASK")
+    is_ask = env_var_enabled("THEFOOL_EXEC_ASK")
 
     # Single-query (-q): no user is present to approve arbitrary code. Mirrors
     # the cron branch below so the -q escape-hatch no longer auto-approves.
@@ -5072,7 +5072,7 @@ def check_execute_code_guard(code: str, env_type: str,
     #     (context now propagates into the RPC thread, #33057); a whole-script
     #     prompt would fire on every execute_code call.
     #   * Local non-interactive non-gateway: documented limitation above.
-    # Ask-mode (HERMES_EXEC_ASK) still takes this path even when INTERACTIVE
+    # Ask-mode (THEFOOL_EXEC_ASK) still takes this path even when INTERACTIVE
     # is also set — that combination is how gateway/smart tests and messaging
     # ask-mode drive whole-script approval. Terminal-command CLI leaks are
     # handled in check_all_command_guards via the CLI callback fall-through.

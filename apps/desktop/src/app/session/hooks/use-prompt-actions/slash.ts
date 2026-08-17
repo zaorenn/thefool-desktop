@@ -1,4 +1,4 @@
-import { skillInvocationText } from '@hermes/shared'
+import { skillInvocationText } from '@thefool/shared'
 import { type MutableRefObject, useCallback, useRef } from 'react'
 
 import { getProfiles } from '@/hermes'
@@ -69,7 +69,7 @@ import {
 
 // Manual compression is LLM-bound and routinely outlives the desktop's 30s
 // default WS request timeout on large sessions — give it the TUI client's
-// 120s RPC budget (HERMES_TUI_RPC_TIMEOUT_MS default) instead.
+// 120s RPC budget (THEFOOL_TUI_RPC_TIMEOUT_MS default) instead.
 const SESSION_COMPRESS_TIMEOUT_MS = 120_000
 const WAKE_START_TIMEOUT_MS = 180_000
 

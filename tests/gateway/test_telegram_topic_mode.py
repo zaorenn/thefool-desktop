@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from hermes_state import SessionDB
+from thefool_state import SessionDB
 from gateway.config import GatewayConfig, HomeChannel, Platform, PlatformConfig
 from gateway.platforms.base import MessageEvent
 from gateway.session import SessionEntry, SessionSource, build_session_key
@@ -125,7 +125,7 @@ def _make_runner(session_db=None):
     runner._pending_model_notes = {}
     # Gateway holds the async facade; the slash handlers await it.
     if session_db is not None:
-        from hermes_state import AsyncSessionDB
+        from thefool_state import AsyncSessionDB
         session_db = AsyncSessionDB(session_db)
     runner._session_db = session_db
     runner._reasoning_config = None
@@ -305,11 +305,11 @@ async def test_group_new_keeps_existing_reset_semantics_when_dm_topic_mode_enabl
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "***"}
     )
-    # /new appends a random tip from hermes_cli.tips; one tip's text contains
+    # /new appends a random tip from thefool_cli.tips; one tip's text contains
     # the phrase "parallel work", which collides with the negative assertion
     # below (observed as a 1-in-N CI flake). Pin the tip.
     monkeypatch.setattr(
-        "hermes_cli.tips.get_random_tip", lambda: "pinned tip for test"
+        "thefool_cli.tips.get_random_tip", lambda: "pinned tip for test"
     )
 
     result = await runner._handle_message(_make_group_event("/new", thread_id="555"))

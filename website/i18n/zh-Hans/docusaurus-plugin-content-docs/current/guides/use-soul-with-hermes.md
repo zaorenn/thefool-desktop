@@ -50,7 +50,7 @@ Hermes 目前仅使用当前实例的全局 SOUL 文件：
 如果你使用自定义主目录运行 Hermes，路径变为：
 
 ```text
-$HERMES_HOME/SOUL.md
+$THEFOOL_HOME/SOUL.md
 ```
 
 ## 首次运行行为
@@ -65,7 +65,7 @@ $HERMES_HOME/SOUL.md
 
 ## Hermes 如何使用它
 
-Hermes 启动会话时，会从 `HERMES_HOME` 读取 `SOUL.md`，扫描其中的提示词注入（prompt-injection）模式，必要时进行截断，并将其作为 **Agent 身份标识**——系统提示词中的第 1 个槽位。这意味着 `SOUL.md` 会完全替换内置的默认身份文本。
+Hermes 启动会话时，会从 `THEFOOL_HOME` 读取 `SOUL.md`，扫描其中的提示词注入（prompt-injection）模式，必要时进行截断，并将其作为 **Agent 身份标识**——系统提示词中的第 1 个槽位。这意味着 `SOUL.md` 会完全替换内置的默认身份文本。
 
 如果 `SOUL.md` 缺失、为空或无法加载，Hermes 将回退到内置的默认身份。
 
@@ -238,7 +238,7 @@ vim ~/.hermes/SOUL.md
 ### 我编辑了 SOUL.md，但 Hermes 听起来还是一样
 
 检查：
-- 你编辑的是 `~/.hermes/SOUL.md` 或 `$HERMES_HOME/SOUL.md`
+- 你编辑的是 `~/.hermes/SOUL.md` 或 `$THEFOOL_HOME/SOUL.md`
 - 而不是某个仓库本地的 `SOUL.md`
 - 文件不为空
 - 编辑后已重启会话

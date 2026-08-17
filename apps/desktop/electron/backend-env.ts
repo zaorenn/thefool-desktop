@@ -66,12 +66,12 @@ function appendUniquePathEntries(entries, { delimiter = path.delimiter } = {}) {
  * There are two on-disk layouts. `scripts/install.ps1` unpacks portable Node
  * straight into `%LOCALAPPDATA%\hermes\node` (node.exe at the root, no `bin\`);
  * `scripts/install.sh` and the node-bootstrap helper use the POSIX
- * `$HERMES_HOME/node/bin`. Emit BOTH on every platform so mixed and migrated
+ * `$THEFOOL_HOME/node/bin`. Emit BOTH on every platform so mixed and migrated
  * installs resolve, leading with the layout native to the current platform.
  *
  * This is the single source of truth for the ordering rule on the Node side —
  * `main.ts` imports it rather than keeping its own copy. Mirrors
- * `iter_hermes_node_dirs()` in hermes_constants.py, which the Electron main
+ * `iter_hermes_node_dirs()` in thefool_constants.py, which the Electron main
  * process cannot import.
  */
 function hermesManagedNodePathEntries(
@@ -134,7 +134,7 @@ function buildDesktopBackendEnv({
     PYTHONPATH: appendUniquePathEntries([...pythonPathEntries, currentPythonPath], { delimiter }),
     // Force PEP 540 UTF-8 mode in the spawned Python backend so its stdio and
     // subprocess defaults are UTF-8 even on non-UTF-8 Windows locales (GBK,
-    // cp1252, ...). hermes_bootstrap sets this inside the child too, but only
+    // cp1252, ...). thefool_bootstrap sets this inside the child too, but only
     // after import — anything emitted earlier (interpreter startup errors,
     // pre-bootstrap tracebacks) still decodes with the locale default without
     // this. User's explicit setting wins. Re-port of PR #56499 (echoriver89).

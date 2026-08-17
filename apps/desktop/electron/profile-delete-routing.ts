@@ -63,7 +63,7 @@ export interface ProfileDeleteDecisionDeps {
  * Process-local barrier for profile deletion. Electron IPC handlers run
  * concurrently, so tearing down a pooled backend is not enough by itself: a
  * renderer reconnect can enter ensureBackend() while the DELETE request is
- * still removing the profile and recreate its HERMES_HOME.
+ * still removing the profile and recreate its THEFOOL_HOME.
  *
  * Counts instead of a Set keep overlapping requests for the same profile
  * blocked until the last request releases its lease.

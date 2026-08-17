@@ -23,7 +23,7 @@ from agent.secret_scope import (
     reset_secret_scope,
     set_secret_scope,
 )
-from hermes_constants import (
+from thefool_constants import (
     DEFAULT_INDICATOR_STYLE,
     INDICATOR_STYLES,
     get_hermes_home,
@@ -31,7 +31,7 @@ from hermes_constants import (
     reset_hermes_home_override,
     set_hermes_home_override,
 )
-from hermes_cli.env_loader import load_hermes_dotenv
+from thefool_cli.env_loader import load_hermes_dotenv
 from utils import is_truthy_value
 from tools.environments.local import hermes_subprocess_env
 from agent.replay_cleanup import sanitize_replay_history
@@ -132,7 +132,7 @@ def _thread_panic_hook(args):
 threading.excepthook = _thread_panic_hook
 
 try:
-    from hermes_cli.banner import prefetch_update_check
+    from thefool_cli.banner import prefetch_update_check
 
     prefetch_update_check()
 except Exception:
@@ -156,7 +156,7 @@ _cfg_mtime: float | None = None
 _cfg_path = None
 _session_resume_lock = threading.Lock()
 try:
-    _slash_timeout = float(os.environ.get("HERMES_TUI_SLASH_TIMEOUT_S") or "45")
+    _slash_timeout = float(os.environ.get("THEFOOL_TUI_SLASH_TIMEOUT_S") or "45")
 except (ValueError, TypeError):
     _slash_timeout = 45.0
 _SLASH_WORKER_TIMEOUT_S = max(5.0, _slash_timeout)
@@ -173,7 +173,7 @@ _SLASH_WORKER_TIMEOUT_S = max(5.0, _slash_timeout)
 # Set to 0 to disable (park forever, pre-fix behaviour).
 try:
     _ws_orphan_reap_grace = float(
-        os.environ.get("HERMES_TUI_WS_ORPHAN_REAP_GRACE_S") or "20"
+        os.environ.get("THEFOOL_TUI_WS_ORPHAN_REAP_GRACE_S") or "20"
     )
 except (ValueError, TypeError):
     _ws_orphan_reap_grace = 20.0
@@ -325,7 +325,7 @@ _LONG_HANDLERS = frozenset(
 
 try:
     _rpc_pool_workers = max(
-        2, int(os.environ.get("HERMES_TUI_RPC_POOL_WORKERS") or "8")
+        2, int(os.environ.get("THEFOOL_TUI_RPC_POOL_WORKERS") or "8")
     )
 except (ValueError, TypeError):
     _rpc_pool_workers = 8
@@ -378,7 +378,7 @@ def _prepend_tool_paths(env: dict[str, str]) -> dict[str, str]:
     resolution policy for the Browser Use CLI."""
     managed_bin = ""
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         managed_bin = str(Path(get_hermes_home()) / "bin")
     except Exception:
@@ -413,21 +413,21 @@ class _SlashWorker:
             argv += ["--model", model]
 
         self._closed = False
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from thefool_cli._subprocess_compat import windows_hide_flags
 
         # slash_worker runs the Hermes agent → needs provider credentials.
         # Tier-1 secrets (gateway/GitHub/infra) are still stripped (#29157).
         # Global-remote / multi-profile sessions: the worker must resolve
         # config/skills/state against the session's profile home, not the
-        # gateway's launch HERMES_HOME (#40677). The override goes through the
+        # gateway's launch THEFOOL_HOME (#40677). The override goes through the
         # build_subprocess_env factory's `extra` (applied last, always wins)
-        # instead of a hand-rolled env["HERMES_HOME"] assignment.
+        # instead of a hand-rolled env["THEFOOL_HOME"] assignment.
         from tools.environments.local import build_subprocess_env
         env = build_subprocess_env(
             hermes_subprocess_env(inherit_credentials=True),
             scrub_secrets=False,
             inherit_profile_home=False,  # base already carries the HOME contract
-            extra={"HERMES_HOME": str(profile_home)} if profile_home else None,
+            extra={"THEFOOL_HOME": str(profile_home)} if profile_home else None,
         )
         # Prepend the Hermes venv bin dir and the user-local bin dir to PATH so
         # slash_worker child processes can resolve Hermes-managed CLIs
@@ -561,7 +561,7 @@ def _notify_session_boundary(
 ) -> None:
     """Fire session lifecycle hooks with CLI parity."""
     try:
-        from hermes_cli.lifecycle import finalize_session, invoke_hook
+        from thefool_cli.lifecycle import finalize_session, invoke_hook
 
         if event_type == "on_session_finalize":
             finalize_session(
@@ -585,7 +585,7 @@ def _claim_active_session_slot(
     surface: str = "tui",
 ) -> tuple[Any, str | None]:
     try:
-        from hermes_cli.active_sessions import try_acquire_active_session
+        from thefool_cli.active_sessions import try_acquire_active_session
 
         return try_acquire_active_session(
             session_id=session_key,
@@ -649,7 +649,7 @@ def _transfer_active_session_slot(
     if lease is None:
         return True
     try:
-        from hermes_cli.active_sessions import transfer_active_session
+        from thefool_cli.active_sessions import transfer_active_session
 
         if transfer_active_session(
             lease,
@@ -783,7 +783,7 @@ def _finalize_session(session: dict | None, end_reason: str = "tui_close") -> No
     # the user Ctrl‑C's mid‑turn.
     if agent is not None:
         try:
-            from hermes_cli.lifecycle import invoke_hook
+            from thefool_cli.lifecycle import invoke_hook
 
             invoke_hook(
                 "on_session_end",
@@ -1215,7 +1215,7 @@ def _shutdown_sessions() -> None:
 # hours-scale because last_active freezes during a long turn and on passive
 # viewing — running/pending/starting/live-transport are hard exemptions instead.
 try:
-    _SESSION_TTL_S = float(os.environ.get("HERMES_TUI_SESSION_TTL_S") or 6 * 3600)
+    _SESSION_TTL_S = float(os.environ.get("THEFOOL_TUI_SESSION_TTL_S") or 6 * 3600)
 except (TypeError, ValueError):
     _SESSION_TTL_S = float(6 * 3600)
 _SESSION_TTL_S = max(0.0, _SESSION_TTL_S)
@@ -1269,7 +1269,7 @@ def _reap_idle_sessions() -> None:
     # Calling trim_memory here ensures every reaper scan (default every 5 min)
     # returns releasable pages, preventing unbounded RSS growth over days/weeks.
     try:
-        from hermes_cli.mem_trim import trim_memory
+        from thefool_cli.mem_trim import trim_memory
 
         trim_memory(reason="idle reaper periodic trim")
     except Exception as exc:
@@ -1283,7 +1283,7 @@ def _reap_idle_sessions() -> None:
 def _reclaim_orphaned_leases() -> None:
     """Hand the registry the lease ids we still own so it can drop the rest."""
     try:
-        from hermes_cli.active_sessions import release_orphaned_leases
+        from thefool_cli.active_sessions import release_orphaned_leases
 
         with _sessions_lock:
             live = {
@@ -1307,7 +1307,7 @@ def _reclaim_orphaned_leases() -> None:
 # mid-build / live-transport one. 0/null disables.
 def _max_live_sessions() -> int:
     try:
-        from hermes_cli.active_sessions import coerce_max_concurrent_sessions
+        from thefool_cli.active_sessions import coerce_max_concurrent_sessions
 
         cfg = _load_cfg() or {}
         raw = cfg.get("max_live_sessions")
@@ -1399,7 +1399,7 @@ _start_idle_reaper()
 def _get_db():
     global _db, _db_error
     if _db is None:
-        from hermes_state import SessionDB
+        from thefool_state import SessionDB
 
         try:
             _db = SessionDB()
@@ -1428,7 +1428,7 @@ def _db_for_profile(profile: str | None = None):
     if profile_home is None:
         return _get_db(), False
     try:
-        from hermes_state import SessionDB
+        from thefool_state import SessionDB
 
         return SessionDB(db_path=Path(profile_home) / "state.db"), True
     except Exception as exc:
@@ -1508,7 +1508,7 @@ def _db_unavailable_error(rid, *, code: int):
 # One dashboard normally serves its launch profile. But the desktop's app-global
 # remote mode points every profile at this single backend, so resume/prompt must
 # be able to act on ANOTHER local profile's state.db + home. The desktop passes
-# ``profile`` on those calls; we open that profile's db and bind its HERMES_HOME
+# ``profile`` on those calls; we open that profile's db and bind its THEFOOL_HOME
 # (a ContextVar override) for the duration of the call so config/skills/model and
 # message persistence all resolve to the right profile. Omitted/own profile → the
 # launch profile (unchanged for single-profile and per-profile-remote setups).
@@ -1518,7 +1518,7 @@ def _profile_home(profile: str | None) -> Path | None:
     if not name:
         return None
     try:
-        from hermes_cli import profiles as profiles_mod
+        from thefool_cli import profiles as profiles_mod
 
         home = Path(profiles_mod.get_profile_dir(name))
     except Exception:
@@ -1530,7 +1530,7 @@ def _profile_home(profile: str | None) -> Path | None:
 
 
 def _profile_scoped(handler):
-    """Bind ``params['profile']``'s HERMES_HOME around a pet RPC handler.
+    """Bind ``params['profile']``'s THEFOOL_HOME around a pet RPC handler.
 
     Pets are per-profile: ``display.pet.*`` lives in the profile's config.yaml and
     sprites install under its ``pets/`` dir (both resolve via ``get_hermes_home``).
@@ -1588,7 +1588,7 @@ def _profile_configured_cwd(profile_home: Path | None) -> str | None:
     if profile_home is None:
         return None
     try:
-        from hermes_cli.config import _expand_env_vars, read_user_config_raw
+        from thefool_cli.config import _expand_env_vars, read_user_config_raw
 
         p = Path(profile_home) / "config.yaml"
         if not p.exists():
@@ -1717,7 +1717,7 @@ _compute_host_supervisor_lock = threading.Lock()
 
 
 def _inside_compute_host_child() -> bool:
-    return os.environ.get("HERMES_COMPUTE_HOST_CHILD") == "1"
+    return os.environ.get("THEFOOL_COMPUTE_HOST_CHILD") == "1"
 
 
 def _turn_isolation_enabled(cfg: dict | None = None) -> bool:
@@ -2315,7 +2315,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
                         return
             tokens = _set_session_context(key)
             # Build against the session's profile (global-remote): bind its
-            # HERMES_HOME so config/skills/model resolve to it, and hand the
+            # THEFOOL_HOME so config/skills/model resolve to it, and hand the
             # agent that profile's db so turns persist to the right state.db.
             session_db = None
             if profile_home:
@@ -2327,7 +2327,7 @@ def _start_agent_build(sid: str, session: dict) -> None:
                 except Exception:
                     pass
                 try:
-                    from hermes_state import SessionDB
+                    from thefool_state import SessionDB
 
                     # DEDICATED handle — ours until _transfer_db_to_agent hands
                     # it to the built agent in the finally below. Every path
@@ -2922,7 +2922,7 @@ def _ensure_session_db_row(session: dict) -> None:
     # unified list mis-tags it, and resume 404s ("session not found").
     profile_home = session.get("profile_home")
     if profile_home:
-        from hermes_state import SessionDB
+        from thefool_state import SessionDB
 
         try:
             db = SessionDB(db_path=Path(profile_home) / "state.db")
@@ -2967,7 +2967,7 @@ def _ensure_session_db_row(session: dict) -> None:
     # start (matches _runtime_model_config's normalization).
     if str(model_config.get("provider") or "").strip().lower() == "custom":
         try:
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from thefool_cli.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(
                 base_url=model_config.get("base_url") or None,
@@ -3019,7 +3019,7 @@ def _ensure_session_db_row(session: dict) -> None:
         # Disk-full is not a soft failure: if we swallow it here, prompt.submit
         # returns {"status":"streaming"} and the user's message vanishes with
         # no toast. Re-raise so the submit handler can return a real RPC error.
-        from hermes_state import is_disk_full_error
+        from thefool_state import is_disk_full_error
 
         if is_disk_full_error(exc):
             raise
@@ -3088,7 +3088,7 @@ def _persist_branch_seed(session: dict) -> None:
             )
             session["_branch_seed_persisted"] = True
         except Exception as exc:
-            from hermes_state import is_disk_full_error
+            from thefool_state import is_disk_full_error
 
             if is_disk_full_error(exc):
                 raise
@@ -3107,7 +3107,7 @@ def _session_db(session: dict):
     db, close_db = None, False
     profile_home = session.get("profile_home")
     if profile_home:
-        from hermes_state import SessionDB
+        from thefool_state import SessionDB
 
         try:
             db, close_db = SessionDB(db_path=Path(profile_home) / "state.db"), True
@@ -3204,7 +3204,7 @@ def _persist_session_cwd_and_schedule_git_meta(
 
 
 def _set_session_cwd(session: dict, cwd: str) -> str:
-    from hermes_constants import translate_cwd_for_wsl_backend
+    from thefool_constants import translate_cwd_for_wsl_backend
 
     cwd = translate_cwd_for_wsl_backend(str(cwd))
     resolved = os.path.abspath(os.path.expanduser(cwd))
@@ -3251,7 +3251,7 @@ def _load_dashboard_process_isolation_config(cfg: dict | None = None) -> dict[st
 
     ``_load_cfg()`` intentionally returns the user ``config.yaml`` plus the
     managed overlay and ``${VAR}`` expansion; it does not deep-merge
-    ``hermes_cli.config.DEFAULT_CONFIG``. Keep
+    ``thefool_cli.config.DEFAULT_CONFIG``. Keep
     the Phase-0 defaults here so dashboard runtime and the REST editor's
     DEFAULT_CONFIG-backed schema cannot drift.
     """
@@ -3300,7 +3300,7 @@ def _load_cfg_raw() -> dict:
             if _cfg_cache is not None and _cfg_mtime == mtime and _cfg_path == p:
                 return copy.deepcopy(_cfg_cache)
         if p.exists():
-            from hermes_cli.config import read_user_config_raw
+            from thefool_cli.config import read_user_config_raw
             data = read_user_config_raw(p)
         else:
             data = {}
@@ -3323,7 +3323,7 @@ def _load_cfg() -> dict:
 
     Delegates the disk read to :func:`_load_cfg_raw` (shared cache), then
     applies the same read-side pipeline as the canonical
-    ``hermes_cli.config.load_config_readonly`` — managed-scope overlay and
+    ``thefool_cli.config.load_config_readonly`` — managed-scope overlay and
     ``${ENV_VAR}`` expansion — minus the DEFAULT_CONFIG merge (callers here
     treat a missing key as "unset" and apply their own defaults; merging
     would also break ``_load_cfg() == {}`` sentinels). Do NOT pass the
@@ -3333,7 +3333,7 @@ def _load_cfg() -> dict:
     """
     cfg = _apply_managed(_load_cfg_raw())
     try:
-        from hermes_cli.config import _expand_env_vars
+        from thefool_cli.config import _expand_env_vars
 
         expanded = _expand_env_vars(cfg)
         if isinstance(expanded, dict):
@@ -3347,12 +3347,12 @@ def _apply_managed(cfg: dict) -> dict:
     """Overlay administrator-pinned managed-scope values on a config dict.
 
     The TUI/desktop backend builds config independently of
-    hermes_cli.config.load_config, so without this a managed skin / reasoning_effort
+    thefool_cli.config.load_config, so without this a managed skin / reasoning_effort
     / service_tier / provider_routing would be silently ignored here. Read-side
     only — the raw user config is what gets cached and saved. Fail-open.
     """
     try:
-        from hermes_cli import managed_scope
+        from thefool_cli import managed_scope
 
         return managed_scope.apply_managed_overlay(cfg if isinstance(cfg, dict) else {})
     except Exception:
@@ -3415,11 +3415,11 @@ def _set_session_context(
         resolved = cwd if cwd is not None else _cwd_for_session_key(session_key)
         source = _resolve_session_platform()
         # Derive the live conversation id so terminal/execute_code subprocesses
-        # can read HERMES_SESSION_ID. Without this, set_session_vars leaves the
+        # can read THEFOOL_SESSION_ID. Without this, set_session_vars leaves the
         # session-id contextvar as "" (explicitly empty), and the subprocess-env
         # bridge treats that as authoritative — NOT falling back to os.environ —
         # so every command in a dashboard/TUI/web session saw an empty
-        # HERMES_SESSION_ID even though agent_init set it via
+        # THEFOOL_SESSION_ID even though agent_init set it via
         # set_current_session_id(). Prefer the agent's durable session_id, then
         # fall back to the session_key (matching the id derivation used at
         # session-finalize), so an identified session is never left blank.
@@ -3457,9 +3457,9 @@ def _clear_session_context(tokens: list) -> None:
 
 def _enable_gateway_prompts() -> None:
     """Route approvals through gateway callbacks instead of CLI input()."""
-    os.environ["HERMES_GATEWAY_SESSION"] = "1"
-    os.environ["HERMES_EXEC_ASK"] = "1"
-    os.environ["HERMES_INTERACTIVE"] = "1"
+    os.environ["THEFOOL_GATEWAY_SESSION"] = "1"
+    os.environ["THEFOOL_EXEC_ASK"] = "1"
+    os.environ["THEFOOL_INTERACTIVE"] = "1"
 
 
 # ── Blocking prompt factory ──────────────────────────────────────────
@@ -3546,7 +3546,7 @@ def _clear_pending(sid: str | None = None) -> None:
 
 def resolve_skin() -> dict:
     try:
-        from hermes_cli.skin_engine import init_skin_from_config, get_active_skin
+        from thefool_cli.skin_engine import init_skin_from_config, get_active_skin
 
         init_skin_from_config(_load_cfg())
         skin = get_active_skin()
@@ -3818,8 +3818,8 @@ def _ensure_skin_watcher() -> None:
 
 def _resolve_model() -> str:
     env = (
-        os.environ.get("HERMES_MODEL", "")
-        or os.environ.get("HERMES_INFERENCE_MODEL", "")
+        os.environ.get("THEFOOL_MODEL", "")
+        or os.environ.get("THEFOOL_INFERENCE_MODEL", "")
     ).strip()
     if env:
         return env
@@ -3832,7 +3832,7 @@ def _resolve_model() -> str:
     # default (catalog-labeled, cache-only read), never an expensive Anthropic
     # flagship the user didn't pick.
     try:
-        from hermes_cli.models import get_preferred_silent_default_model
+        from thefool_cli.models import get_preferred_silent_default_model
 
         return get_preferred_silent_default_model()
     except Exception:
@@ -3849,17 +3849,17 @@ def _resolve_session_platform() -> str:
     TUI-only slash commands (``/reload-mcp``, …) to chat-panel users.
 
     Resolution:
-      * ``HERMES_DESKTOP=1`` and ``HERMES_DESKTOP_TERMINAL`` unset → "desktop"
+      * ``THEFOOL_DESKTOP=1`` and ``THEFOOL_DESKTOP_TERMINAL`` unset → "desktop"
         (the chat-panel backend — a graphical React surface, not a terminal).
-      * ``HERMES_DESKTOP_TERMINAL=1`` → "tui"
+      * ``THEFOOL_DESKTOP_TERMINAL=1`` → "tui"
         (``hermes --tui`` running in the desktop's embedded terminal pane;
         it IS a TUI, just embedded. The clarifier attached to the tui hint
         in system_prompt.py tells the agent about the embedding.)
       * neither set → "tui"
         (standalone ``hermes --tui``.)
     """
-    if is_truthy_value(os.environ.get("HERMES_DESKTOP")) and not is_truthy_value(
-        os.environ.get("HERMES_DESKTOP_TERMINAL")
+    if is_truthy_value(os.environ.get("THEFOOL_DESKTOP")) and not is_truthy_value(
+        os.environ.get("THEFOOL_DESKTOP_TERMINAL")
     ):
         return "desktop"
     return "tui"
@@ -3885,8 +3885,8 @@ def _resolve_agent_platform(source: str | None) -> str:
 def _config_model_target() -> tuple[str, str]:
     """(model, provider) currently selected by config.yaml — and ONLY config.
 
-    Unlike `_resolve_model()`, this never reads HERMES_MODEL /
-    HERMES_INFERENCE_MODEL. Those env vars are a launch-scoped seed
+    Unlike `_resolve_model()`, this never reads THEFOOL_MODEL /
+    THEFOOL_INFERENCE_MODEL. Those env vars are a launch-scoped seed
     (`hermes --tui -m <model>`, hosted-instance provisioning); if they
     fed the per-turn sync, the seed would be replayed as a /model switch
     and persisted globally, or would pin the session so dashboard/CLI
@@ -3902,8 +3902,8 @@ def _config_model_target() -> tuple[str, str]:
             provider = ""
     elif isinstance(cfg_model, str):
         model = cfg_model.strip()
-    # No fallback to _resolve_model() here: that reads HERMES_MODEL /
-    # HERMES_INFERENCE_MODEL, which `hermes --tui -m <model>` sets as a
+    # No fallback to _resolve_model() here: that reads THEFOOL_MODEL /
+    # THEFOOL_INFERENCE_MODEL, which `hermes --tui -m <model>` sets as a
     # session-scoped seed for THIS launch. When config.yaml has no
     # model.default (custom-provider-only setups), falling back to the env
     # seed made the per-turn sync treat the -m flag as "the configured
@@ -3916,19 +3916,19 @@ def _config_model_target() -> tuple[str, str]:
 
 def _resolve_startup_runtime() -> tuple[str, str | None]:
     model = _resolve_model()
-    explicit_provider = os.environ.get("HERMES_TUI_PROVIDER", "").strip()
+    explicit_provider = os.environ.get("THEFOOL_TUI_PROVIDER", "").strip()
     if explicit_provider:
         return model, explicit_provider
 
     explicit_model = (
-        os.environ.get("HERMES_MODEL", "")
-        or os.environ.get("HERMES_INFERENCE_MODEL", "")
+        os.environ.get("THEFOOL_MODEL", "")
+        or os.environ.get("THEFOOL_INFERENCE_MODEL", "")
     ).strip()
     if not explicit_model:
         return model, None
 
     try:
-        from hermes_cli.models import detect_static_provider_for_model
+        from thefool_cli.models import detect_static_provider_for_model
 
         cfg = _load_cfg().get("model") or {}
         current_provider = (
@@ -3937,7 +3937,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
                 if isinstance(cfg, dict)
                 else ""
             )
-            or os.environ.get("HERMES_INFERENCE_PROVIDER", "").strip().lower()
+            or os.environ.get("THEFOOL_INFERENCE_PROVIDER", "").strip().lower()
             or "auto"
         )
         detected = detect_static_provider_for_model(explicit_model, current_provider)
@@ -3958,7 +3958,7 @@ def _resolve_startup_runtime() -> tuple[str, str | None]:
 # ``billing_provider="openrouter"``; dropping it forces resume to the current
 # global model (e.g. a custom endpoint), which is the wrong provider for the
 # stored model. See #57588.
-from hermes_state import _BARE_BILLING_PROVIDERS
+from thefool_state import _BARE_BILLING_PROVIDERS
 
 
 def _stored_session_runtime_overrides(row: dict | None) -> dict:
@@ -4018,7 +4018,7 @@ def _stored_session_runtime_overrides(row: dict | None) -> dict:
     if provider.strip().lower() == "custom":
         healed = None
         try:
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from thefool_cli.runtime_provider import canonical_custom_identity
 
             healed = canonical_custom_identity(
                 base_url=base_url or None, model=model or None
@@ -4081,7 +4081,7 @@ def _runtime_model_config(agent, existing: dict | None = None) -> dict:
             # bare "custom" with no base_url was persisted verbatim and routed
             # to OpenRouter with no key on the next resume).
             try:
-                from hermes_cli.runtime_provider import (
+                from thefool_cli.runtime_provider import (
                     canonical_custom_identity,
                 )
 
@@ -4168,7 +4168,7 @@ def _persist_live_session_system_prompt(session: dict | None) -> None:
     if db is None or not hasattr(db, "update_system_prompt"):
         return
 
-    # Re-bind HERMES_HOME to the session's profile so load_soul_md() and
+    # Re-bind THEFOOL_HOME to the session's profile so load_soul_md() and
     # build_skills_system_prompt() resolve to the correct profile.  Without
     # this, _start_agent_build's finally block has already reset the
     # override and the rebuilt prompt silently uses the root profile's
@@ -4317,7 +4317,7 @@ def _load_approval_mode() -> str:
     Previously this re-read the config raw via ``_load_cfg`` +
     ``_deep_merge(DEFAULT_CONFIG, ...)`` and normalized locally, which
     could disagree with the gate's own view of the mode (e.g. the
-    canonical ``hermes_cli.config.load_config`` path applies managed-scope
+    canonical ``thefool_cli.config.load_config`` path applies managed-scope
     overlays and ``${VAR}`` env expansion that the TUI's raw YAML read did
     not fully mirror).
     """
@@ -4385,11 +4385,11 @@ def _load_reasoning_config(model: str = "") -> dict | None:
     """Load reasoning effort from config.yaml, respecting per-model overrides.
 
     Thin wrapper over the shared chokepoint
-    :func:`hermes_constants.resolve_reasoning_config` (per-model override >
+    :func:`thefool_constants.resolve_reasoning_config` (per-model override >
     global ``agent.reasoning_effort``; YAML boolean False = disabled).
     Closes #21256.
     """
-    from hermes_constants import resolve_reasoning_config
+    from thefool_constants import resolve_reasoning_config
 
     return resolve_reasoning_config(_load_cfg(), model)
 
@@ -4444,7 +4444,7 @@ def _load_memory_notifications() -> str:
 
 
 def _load_tool_progress_mode() -> str:
-    env = os.environ.get("HERMES_TUI_TOOL_PROGRESS", "").strip().lower()
+    env = os.environ.get("THEFOOL_TUI_TOOL_PROGRESS", "").strip().lower()
     if env in {"off", "new", "all", "verbose"}:
         return env
     raw = (_load_cfg().get("display") or {}).get("tool_progress", "all")
@@ -4466,7 +4466,7 @@ def _gui_surface_toolsets(platform: str) -> set[str]:
     ``platform`` is the SESSION's source (``session.create``'s ``source``
     field), never a process env var. The desktop app is a client: it can be
     driving a local, SSH, URL, or cloud backend, and only the local/SSH spawn
-    paths run with ``HERMES_DESKTOP=1``. Keying GUI capability off that env var
+    paths run with ``THEFOOL_DESKTOP=1``. Keying GUI capability off that env var
     silently stripped every pane/browser tool from URL and cloud gateways while
     the same backend told the model it was "chatting inside the Hermes desktop
     app". See the surface-capability rule in AGENTS.md.
@@ -4481,7 +4481,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
     session_platform = platform or _resolve_session_platform()
     explicit = [
         item.strip()
-        for item in os.environ.get("HERMES_TUI_TOOLSETS", "").split(",")
+        for item in os.environ.get("THEFOOL_TUI_TOOLSETS", "").split(",")
         if item.strip()
     ]
     cfg = None
@@ -4518,7 +4518,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
 
         if unresolved:
             try:
-                from hermes_cli.plugins import discover_plugins
+                from thefool_cli.plugins import discover_plugins
 
                 discover_plugins()
                 plugin_valid = [name for name in unresolved if validate_toolset(name)]
@@ -4533,7 +4533,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
             ignored = [name for name in explicit if name not in {"all", "*"}]
             if ignored:
                 print(
-                    "[tui] HERMES_TUI_TOOLSETS=all enables every toolset; "
+                    "[tui] THEFOOL_TUI_TOOLSETS=all enables every toolset; "
                     f"ignoring additional entries: {', '.join(ignored)}",
                     file=sys.stderr,
                     flush=True,
@@ -4546,8 +4546,8 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
         mcp_names: set[str] = set()
         mcp_disabled: set[str] = set()
         try:
-            from hermes_cli.config import read_raw_config
-            from hermes_cli.tools_config import _parse_enabled_flag
+            from thefool_cli.config import read_raw_config
+            from thefool_cli.tools_config import _parse_enabled_flag
 
             raw_cfg = read_raw_config()
             mcp_servers = (
@@ -4577,13 +4577,13 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
 
         if unknown:
             print(
-                f"[tui] ignoring unknown HERMES_TUI_TOOLSETS entries: {', '.join(unknown)}",
+                f"[tui] ignoring unknown THEFOOL_TUI_TOOLSETS entries: {', '.join(unknown)}",
                 file=sys.stderr,
                 flush=True,
             )
         if disabled:
             print(
-                "[tui] ignoring disabled MCP servers in HERMES_TUI_TOOLSETS "
+                "[tui] ignoring disabled MCP servers in THEFOOL_TUI_TOOLSETS "
                 "(set enabled: true in config.yaml to use): "
                 f"{', '.join(disabled)}",
                 file=sys.stderr,
@@ -4594,12 +4594,12 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
             return valid
 
         fallback_notice = (
-            "[tui] no valid HERMES_TUI_TOOLSETS entries; using configured CLI toolsets"
+            "[tui] no valid THEFOOL_TUI_TOOLSETS entries; using configured CLI toolsets"
         )
 
     try:
-        from hermes_cli.config import load_config
-        from hermes_cli.tools_config import _get_platform_tools
+        from thefool_cli.config import load_config
+        from thefool_cli.tools_config import _get_platform_tools
 
         cfg = cfg if cfg is not None else load_config()
 
@@ -4624,7 +4624,7 @@ def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
     except Exception:
         if fallback_notice is not None:
             print(
-                "[tui] no valid HERMES_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets",
+                "[tui] no valid THEFOOL_TUI_TOOLSETS entries and configured CLI toolsets could not be loaded; enabling all toolsets",
                 file=sys.stderr,
                 flush=True,
             )
@@ -4746,14 +4746,14 @@ def _apply_model_switch(
     parsed_flags: Any | None = None,
     persist_override: bool | None = None,
 ) -> dict:
-    from hermes_cli.model_switch import (
+    from thefool_cli.model_switch import (
         parse_model_switch_args,
         resolve_persist_behavior,
         switch_model,
         MODEL_SWITCH_ERR_ONCE_WITH_GLOBAL,
         MODEL_SWITCH_ERROR_TEXT,
     )
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from thefool_cli.runtime_provider import resolve_runtime_provider
 
     if parsed_flags is None:
         parsed_flags = parse_model_switch_args(raw_input)
@@ -4818,7 +4818,7 @@ def _apply_model_switch(
     custom_provs = None
     cfg = None
     try:
-        from hermes_cli.config import get_compatible_custom_providers, load_config
+        from thefool_cli.config import get_compatible_custom_providers, load_config
 
         cfg = load_config()
         user_provs = cfg.get("providers")
@@ -4844,7 +4844,7 @@ def _apply_model_switch(
 
     if agent:
         try:
-            from hermes_cli.context_switch_guard import merge_preflight_compression_warning
+            from thefool_cli.context_switch_guard import merge_preflight_compression_warning
 
             _cfg_ctx = None
             if isinstance(cfg, dict):
@@ -4863,7 +4863,7 @@ def _apply_model_switch(
 
     if not confirm_expensive_model:
         try:
-            from hermes_cli.model_selection_guards import combined_selection_warning
+            from thefool_cli.model_selection_guards import combined_selection_warning
 
             warning = combined_selection_warning(
                 result.new_model,
@@ -4923,8 +4923,8 @@ def _apply_model_switch(
     # session (e.g. /new via _reset_session_agent, or resume) re-derives the
     # user's chosen model/provider instead of falling back to global config.
     #
-    # We deliberately do NOT write process-global env vars (HERMES_MODEL /
-    # HERMES_INFERENCE_MODEL / HERMES_TUI_PROVIDER / HERMES_INFERENCE_PROVIDER)
+    # We deliberately do NOT write process-global env vars (THEFOOL_MODEL /
+    # THEFOOL_INFERENCE_MODEL / THEFOOL_TUI_PROVIDER / THEFOOL_INFERENCE_PROVIDER)
     # here. The desktop backend hosts every same-profile session in ONE process,
     # so mutating os.environ on a /model switch leaked the new model/provider
     # into every OTHER live session's next agent rebuild — switching the model
@@ -5130,7 +5130,7 @@ def _compress_session_history(
         finalize_context_engine_compression_notification,
     )
     from agent.model_metadata import estimate_request_tokens_rough
-    from hermes_cli.partial_compress import (
+    from thefool_cli.partial_compress import (
         parse_partial_compress_args,
         rejoin_compressed_head_and_tail,
         split_history_for_partial_compress,
@@ -5381,8 +5381,8 @@ def _get_usage(agent) -> dict:
     except Exception:
         pass
     # Dev-only live credits-spent readout (L0 usage-aware-credits). Gated on
-    # HERMES_DEV_CREDITS so the payload stays clean when the flag is off.
-    if is_truthy_value(os.environ.get("HERMES_DEV_CREDITS")):
+    # THEFOOL_DEV_CREDITS so the payload stays clean when the flag is off.
+    if is_truthy_value(os.environ.get("THEFOOL_DEV_CREDITS")):
         try:
             spent = agent.get_credits_spent_micros()
             if spent is not None:
@@ -5430,7 +5430,7 @@ def _probe_config_health(cfg: dict) -> str:
         personality = str(display_cfg.get("personality", "") or "").strip().lower()
         if personality and personality not in {"default", "none", "neutral"}:
             try:
-                from hermes_cli.personality import available_personalities
+                from thefool_cli.personality import available_personalities
 
                 if personality not in available_personalities(cfg):
                     warnings.append(
@@ -5446,7 +5446,7 @@ def _probe_config_health(cfg: dict) -> str:
 
 def _current_profile_name() -> str:
     try:
-        from hermes_cli.profiles import get_active_profile_name
+        from thefool_cli.profiles import get_active_profile_name
 
         return get_active_profile_name() or "default"
     except Exception:
@@ -5488,7 +5488,7 @@ def _project_info_for_cwd(cwd: str) -> dict | None:
     if not str(cwd or "").strip():
         return None
     try:
-        from hermes_cli import projects_db as pdb
+        from thefool_cli import projects_db as pdb
 
         with pdb.connect_closing() as conn:
             project = pdb.project_for_path(conn, cwd)
@@ -5601,7 +5601,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
         else _current_profile_name(),
     }
     try:
-        from hermes_cli import __version__, __release_date__
+        from thefool_cli import __version__, __release_date__
 
         info["version"] = __version__
         info["release_date"] = __release_date__
@@ -5620,7 +5620,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
         except Exception:
             pass
         try:
-            from hermes_cli.banner import get_available_skills
+            from thefool_cli.banner import get_available_skills
 
             info["skills"] = get_available_skills()
         except Exception:
@@ -5640,8 +5640,8 @@ def _session_info(agent, session: dict | None = None) -> dict:
     except Exception:
         pass
     try:
-        from hermes_cli.banner import get_update_result
-        from hermes_cli.config import recommended_update_command
+        from thefool_cli.banner import get_update_result
+        from thefool_cli.config import recommended_update_command
 
         info["update_behind"] = get_update_result(timeout=0.5)
         info["update_command"] = recommended_update_command()
@@ -6321,7 +6321,7 @@ def _wire_callbacks(sid: str):
                 "skipped": True,
                 "message": "skipped",
             }
-        from hermes_cli.config import save_env_value_secure
+        from thefool_cli.config import save_env_value_secure
 
         return {
             **save_env_value_secure(env_var, val),
@@ -6333,15 +6333,15 @@ def _wire_callbacks(sid: str):
 
 
 def _render_personality_prompt(value) -> str:
-    """Delegates to hermes_cli.personality (single owner of rendering)."""
-    from hermes_cli.personality import render_personality_prompt
+    """Delegates to thefool_cli.personality (single owner of rendering)."""
+    from thefool_cli.personality import render_personality_prompt
 
     return render_personality_prompt(value)
 
 
 def _available_personalities(cfg: dict | None = None) -> dict:
-    """Built-ins + user overrides, via hermes_cli.personality (single owner)."""
-    from hermes_cli.personality import available_personalities
+    """Built-ins + user overrides, via thefool_cli.personality (single owner)."""
+    from thefool_cli.personality import available_personalities
 
     if cfg is None:
         cfg = _load_cfg()
@@ -6351,12 +6351,12 @@ def _available_personalities(cfg: dict | None = None) -> dict:
 def _validate_personality(value: str, cfg: dict | None = None) -> tuple[str, str]:
     """Resolve a requested personality against _available_personalities.
 
-    Same contract as hermes_cli.personality.resolve_personality — (name,
+    Same contract as thefool_cli.personality.resolve_personality — (name,
     prompt) or ValueError — but resolves through the module-level
     _available_personalities so tests (and future gateway-side overrides)
     keep a single patch point.
     """
-    from hermes_cli.personality import normalize_personality_name
+    from thefool_cli.personality import normalize_personality_name
 
     name = normalize_personality_name(value)
     if not name:
@@ -6373,9 +6373,9 @@ def _validate_personality(value: str, cfg: dict | None = None) -> tuple[str, str
 def _prompt_text(value) -> str:
     """Normalize config prompt values from YAML before handing them to AIAgent.
 
-    Delegates to hermes_cli.personality (single owner).
+    Delegates to thefool_cli.personality (single owner).
     """
-    from hermes_cli.personality import prompt_text
+    from thefool_cli.personality import prompt_text
 
     return prompt_text(value)
 
@@ -6437,7 +6437,7 @@ def _apply_personality_to_session(
 
 def _cfg_max_turns(cfg: dict, default: int) -> int:
     try:
-        env_max = int(os.environ.get("HERMES_TUI_MAX_TURNS", "") or 0)
+        env_max = int(os.environ.get("THEFOOL_TUI_MAX_TURNS", "") or 0)
         if env_max > 0:
             return env_max
     except (TypeError, ValueError):
@@ -6447,7 +6447,7 @@ def _cfg_max_turns(cfg: dict, default: int) -> int:
 
 
 def _parse_tui_skills_env() -> list[str]:
-    raw = os.environ.get("HERMES_TUI_SKILLS", "")
+    raw = os.environ.get("THEFOOL_TUI_SKILLS", "")
     skills: list[str] = []
     seen: set[str] = set()
     for part in raw.replace("\n", ",").split(","):
@@ -6467,7 +6467,7 @@ def _load_fallback_model():
     order, with legacy ``fallback_model`` entries merged in afterwards
     (deduped on provider/model/base_url).
     """
-    from hermes_cli.fallback_config import get_fallback_chain
+    from thefool_cli.fallback_config import get_fallback_chain
 
     return get_fallback_chain(_load_cfg())
 
@@ -6783,8 +6783,8 @@ def _resolve_runtime_with_fallback(
     into a different runtime. ``used_fallback`` remains explicit rather than
     overloading a nullable model as control flow.
     """
-    from hermes_cli.auth import AuthError
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from thefool_cli.auth import AuthError
+    from thefool_cli.runtime_provider import resolve_runtime_provider
 
     kwargs = resolve_kwargs or {}
     try:
@@ -6803,7 +6803,7 @@ def _resolve_runtime_with_fallback(
             if not fb_provider or not fb_model:
                 continue
             try:
-                from hermes_cli.fallback_config import resolve_entry_api_key
+                from thefool_cli.fallback_config import resolve_entry_api_key
 
                 fb_kwargs: dict = {
                     "requested": fb_provider,
@@ -6855,10 +6855,10 @@ def _make_agent(
     # dead server can't freeze the shell.  The agent snapshots its tool list
     # once here and never re-reads it, so briefly wait for in-flight discovery
     # to land before building — bounded, so a slow/dead server still can't
-    # block. Dashboard /api/ws uses hermes_cli.mcp_startup; TUI stdio keeps
+    # block. Dashboard /api/ws uses thefool_cli.mcp_startup; TUI stdio keeps
     # its existing tui_gateway.entry-owned thread.
     try:
-        from hermes_cli.mcp_startup import wait_for_mcp_discovery
+        from thefool_cli.mcp_startup import wait_for_mcp_discovery
 
         wait_for_mcp_discovery()
     except Exception:
@@ -6871,7 +6871,7 @@ def _make_agent(
         pass
 
     cfg = _load_cfg()
-    from hermes_cli.config import resolve_ephemeral_system_prompt_from_config
+    from thefool_cli.config import resolve_ephemeral_system_prompt_from_config
 
     system_prompt = resolve_ephemeral_system_prompt_from_config(cfg)
     startup_skills = _parse_tui_skills_env()
@@ -6923,7 +6923,7 @@ def _make_agent(
             # the entry identity from the persisted base_url, falling back to
             # the configured provider when the override carries no base_url
             # (the recurring Desktop/TUI regression vector).
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from thefool_cli.runtime_provider import canonical_custom_identity
 
             recovered = canonical_custom_identity(
                 base_url=override_base_url or None, model=model or None
@@ -7008,10 +7008,10 @@ def _make_agent(
         session_id=session_id or key,
         session_db=session_db if session_db is not None else _get_db(),
         ephemeral_system_prompt=system_prompt or None,
-        checkpoints_enabled=is_truthy_value(os.environ.get("HERMES_TUI_CHECKPOINTS")),
-        pass_session_id=is_truthy_value(os.environ.get("HERMES_TUI_PASS_SESSION_ID")),
-        skip_context_files=is_truthy_value(os.environ.get("HERMES_IGNORE_RULES")),
-        skip_memory=is_truthy_value(os.environ.get("HERMES_IGNORE_RULES")),
+        checkpoints_enabled=is_truthy_value(os.environ.get("THEFOOL_TUI_CHECKPOINTS")),
+        pass_session_id=is_truthy_value(os.environ.get("THEFOOL_TUI_PASS_SESSION_ID")),
+        skip_context_files=is_truthy_value(os.environ.get("THEFOOL_IGNORE_RULES")),
+        skip_memory=is_truthy_value(os.environ.get("THEFOOL_IGNORE_RULES")),
         fallback_model=_load_fallback_model(),
         **_agent_cbs(sid),
     )
@@ -7050,7 +7050,7 @@ def _init_session(
             "tool_progress_mode": _load_tool_progress_mode(),
             "edit_snapshots": {},
             "tool_started_at": {},
-            # Profile-scoped HERMES_HOME for app-global remote mode; None =
+            # Profile-scoped THEFOOL_HOME for app-global remote mode; None =
             # launch profile. SessionBranch copies the parent's value so the
             # child stays on the same state.db.
             "profile_home": profile_home,
@@ -7067,7 +7067,7 @@ def _init_session(
         db = session_db
     elif profile_home:
         try:
-            from hermes_state import SessionDB
+            from thefool_state import SessionDB
 
             db = SessionDB(db_path=Path(profile_home) / "state.db")
             _init_owns_db = True
@@ -7204,7 +7204,7 @@ def _build_image_ref_message(user_text: str, image_paths: list[str]) -> str:
 def _build_persist_message_with_image_refs(user_text: str, image_paths: list[str]) -> str:
     """Build the clean, UI-recognizable version of the user's message for
     persisting to session history. Uses ``@image:<path>`` directives — the
-    format the desktop client (directive-text.tsx / HERMES_DIRECTIVE_RE)
+    format the desktop client (directive-text.tsx / THEFOOL_DIRECTIVE_RE)
     actually parses and renders as an image — unlike
     ``_build_image_ref_message``, which embeds an
     ``image_url:`` hint meant only for the model and must never be
@@ -7759,7 +7759,7 @@ def _auto_continue_config() -> tuple[bool, float, int]:
 
 
 def _session_home(session: dict) -> Path:
-    """The HERMES_HOME the session's durable state lives in (profile-aware)."""
+    """The THEFOOL_HOME the session's durable state lives in (profile-aware)."""
     profile_home = session.get("profile_home")
     return Path(profile_home) if profile_home else Path(_hermes_home)
 
@@ -8889,7 +8889,7 @@ def _pet_config_scale() -> float:
     from agent.pet import constants
 
     try:
-        from hermes_cli.config import load_config
+        from thefool_cli.config import load_config
 
         cfg = load_config()
         display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
@@ -8947,7 +8947,7 @@ def _pet_active_selection():
     from agent.pet import constants, store
 
     try:
-        from hermes_cli.config import load_config
+        from thefool_cli.config import load_config
 
         cfg = load_config()
         display = cfg.get("display", {}) if isinstance(cfg.get("display"), dict) else {}
@@ -8985,7 +8985,7 @@ def _pet_state_rows(spritesheet) -> list[str]:
 
 def _pet_gen_root():
     """Profile-scoped staging dir for in-progress generation drafts."""
-    from hermes_constants import get_hermes_home
+    from thefool_constants import get_hermes_home
 
     root = get_hermes_home() / "cache" / "pet-gen"
     root.mkdir(parents=True, exist_ok=True)
@@ -9037,7 +9037,7 @@ _PET_REFERENCE_MIME_EXT = {
 try:
     _PET_REFERENCE_MAX_BYTES = max(
         1,
-        int(os.environ.get("HERMES_PET_REFERENCE_MAX_BYTES") or str(16 * 1024 * 1024)),
+        int(os.environ.get("THEFOOL_PET_REFERENCE_MAX_BYTES") or str(16 * 1024 * 1024)),
     )
 except (TypeError, ValueError):
     _PET_REFERENCE_MAX_BYTES = 16 * 1024 * 1024
@@ -9106,12 +9106,12 @@ def _pet_cancel_release(token: str) -> None:
 # Ink side can branch on the typed billing error code (insufficient_scope,
 # rate_limited, no_payment_method, …) to render the right affordance instead of
 # landing in a generic catch. The data-building lives in the shared core
-# (agent/billing_view.py + hermes_cli/nous_billing.py) — same as /topup.
+# (agent/billing_view.py + thefool_cli/nous_billing.py) — same as /topup.
 
 
 def _serialize_billing_error(exc) -> dict:
     """Map a BillingError into the result.error envelope the TUI branches on."""
-    from hermes_cli.nous_billing import (
+    from thefool_cli.nous_billing import (
         BillingRemoteSpendingRevoked,
         BillingScopeRequired,
         BillingSessionRevoked,
@@ -9407,12 +9407,12 @@ def _serialize_subscription_preview(p) -> dict:
 # from the event stream).  On turn-complete it posts the final tree here;
 # /replay and /replay-diff fetch past snapshots by session_id + filename.
 #
-# Layout:  $HERMES_HOME/spawn-trees/<session_id>/<timestamp>.json
+# Layout:  $THEFOOL_HOME/spawn-trees/<session_id>/<timestamp>.json
 # Each file contains { session_id, started_at, finished_at, subagents: [...] }.
 
 
 def _spawn_trees_root():
-    from hermes_constants import get_hermes_home
+    from thefool_constants import get_hermes_home
 
     root = get_hermes_home() / "spawn-trees"
     root.mkdir(parents=True, exist_ok=True)
@@ -9656,7 +9656,7 @@ def _maybe_fire_tui_loop_tick(sid: str, session: dict) -> None:
     in the turn dispatcher completes the tick.
     """
     try:
-        from hermes_cli.loops import LoopManager, goal_blocks_loop_tick
+        from thefool_cli.loops import LoopManager, goal_blocks_loop_tick
     except Exception:
         return
 
@@ -9791,7 +9791,7 @@ def _collect_kanban_notifications(session: dict) -> list:
     """Claim unseen terminal kanban events for this TUI session's subscriptions.
 
     ``kanban_create`` auto-subscribes TUI/desktop sessions with
-    ``platform="tui"`` and ``chat_id=HERMES_SESSION_KEY`` (see
+    ``platform="tui"`` and ``chat_id=THEFOOL_SESSION_KEY`` (see
     tools/kanban_tools.py ``_maybe_auto_subscribe``). The gateway notifier
     can't deliver those — there is no "tui" messaging adapter — so this
     poller is the delivery path for them (issue #59890). Uses the same
@@ -9805,7 +9805,7 @@ def _collect_kanban_notifications(session: dict) -> list:
     if not session_key or session.get("_finalized"):
         return []
     try:
-        from hermes_cli import kanban_db as _kb
+        from thefool_cli import kanban_db as _kb
     except Exception:
         return []
     texts: list = []
@@ -9817,7 +9817,7 @@ def _collect_kanban_notifications(session: dict) -> list:
         except Exception:
             return []
     # Poll each resolved DB path once — multiple slugs can point at the same
-    # DB when HERMES_KANBAN_DB pins the board path (same guard as the gateway
+    # DB when THEFOOL_KANBAN_DB pins the board path (same guard as the gateway
     # notifier).
     seen_db_paths: set = set()
     for board_meta in boards:
@@ -10233,7 +10233,7 @@ _desktop_ui_wired = False
 def _wire_desktop_ui() -> None:
     """Bridge desktop-only tools (open_preview, focus_pane) to renderer events.
 
-    Idempotent. The tool hands back the turn's ``HERMES_UI_SESSION_ID`` as
+    Idempotent. The tool hands back the turn's ``THEFOOL_UI_SESSION_ID`` as
     ``sid`` so the event routes to the window that asked (``_emit`` /
     ``write_json`` is ``_stdout_lock``-guarded, so calling it from the tool's
     thread is safe)."""
@@ -10347,7 +10347,7 @@ def _plan_goal_compression_recovery(
             session.pop(_GOAL_COMPRESSION_RECOVERY_ATTEMPTS, None)
         return None, None
 
-    from hermes_cli.goals import GoalManager
+    from thefool_cli.goals import GoalManager
 
     sid_key = str(session.get("session_key") or "")
     if not sid_key:
@@ -10537,7 +10537,7 @@ def _run_prompt_submit(
         agent = session["agent"]
         approval_token = None
         session_tokens = []
-        home_token = None  # per-turn HERMES_HOME override for a resumed remote profile
+        home_token = None  # per-turn THEFOOL_HOME override for a resumed remote profile
         secret_token = None
         goal_followup = None  # set by the post-turn goal hook below
         result = None  # turn outcome; read after the finally for leftover /steer
@@ -10656,7 +10656,7 @@ def _run_prompt_submit(
                         decide_image_input_mode,
                         build_native_content_parts,
                     )
-                    from hermes_cli.config import load_config as _tui_load_config
+                    from thefool_cli.config import load_config as _tui_load_config
 
                     _cfg = _tui_load_config()
                     _provider, _model = _active_image_routing_identity(agent)
@@ -10733,7 +10733,7 @@ def _run_prompt_submit(
                         if is_audio_output_active():
                             return False
                         try:
-                            from hermes_cli.voice import is_continuous_active
+                            from thefool_cli.voice import is_continuous_active
 
                             return not is_continuous_active()
                         except Exception:
@@ -11084,7 +11084,7 @@ def _run_prompt_submit(
                 result, status, raw
             ):
                 try:
-                    from hermes_cli.goals import GoalManager
+                    from thefool_cli.goals import GoalManager
 
                     sid_key = session.get("session_key") or ""
                     if sid_key:
@@ -11099,7 +11099,7 @@ def _run_prompt_submit(
                         )
                         if goal_mgr.is_active():
                             try:
-                                from hermes_cli.goals import gather_background_processes as _gather_bg
+                                from thefool_cli.goals import gather_background_processes as _gather_bg
                                 _bg_procs = _gather_bg()
                             except Exception:
                                 _bg_procs = None
@@ -11132,7 +11132,7 @@ def _run_prompt_submit(
             # --until judge, --times / max_ticks caps, next-tick schedule.
             if status == "complete":
                 try:
-                    from hermes_cli.loops import LoopManager
+                    from thefool_cli.loops import LoopManager
 
                     loop_sid_key = session.get("session_key") or ""
                     if loop_sid_key:
@@ -11196,7 +11196,7 @@ def _run_prompt_submit(
                         target=_speak_text_with_barge, args=(spoken,), daemon=True
                     ).start()
                 except ImportError:
-                    logger.warning("voice TTS skipped: hermes_cli.voice unavailable")
+                    logger.warning("voice TTS skipped: thefool_cli.voice unavailable")
                 except Exception as e:
                     logger.warning("voice TTS dispatch failed: %s", e)
         except Exception as e:
@@ -11245,10 +11245,10 @@ def _run_prompt_submit(
             if isinstance(local_run_kwargs, dict):
                 local_run_kwargs.clear()
 
-            # Run while any profile-specific HERMES_HOME override is still active
+            # Run while any profile-specific THEFOOL_HOME override is still active
             # so context.memory_trim is resolved from the session's own config.
             try:
-                from hermes_cli.mem_trim import trim_memory
+                from thefool_cli.mem_trim import trim_memory
 
                 trim_memory(reason="tui turn completion")
             except Exception:
@@ -11508,7 +11508,7 @@ def _session_images_dir(session: dict) -> Path:
     """Resolve the uploads ``images/`` dir against the session's effective home.
 
     Attach RPCs (``image.attach_bytes``, ``clipboard.paste``, ``pdf.attach``)
-    run BEFORE ``prompt.submit`` installs the session's profile HERMES_HOME
+    run BEFORE ``prompt.submit`` installs the session's profile THEFOOL_HOME
     override, so ``get_hermes_home()`` here would return the gateway's launch
     home. In a multi-profile / root-gateway deployment that writes the upload to
     the launch home's ``images/`` while the sandbox mount and the vision host-
@@ -11585,7 +11585,7 @@ def _desktop_attachment_dir(session: dict) -> Path:
 
     Anchored on the session profile's ``attachments/`` dir (same rule as
     ``_session_images_dir``): ``file.attach`` runs BEFORE ``prompt.submit``
-    installs the session's profile HERMES_HOME override, while the docker/ssh
+    installs the session's profile THEFOOL_HOME override, while the docker/ssh
     sandbox mounts are resolved against the *session profile's* home at run
     time — so the staged file must land where the bind mount points, or the
     container can never see it (#76577). ``attachments/`` is registered in
@@ -11735,7 +11735,7 @@ def _(rid, params: dict) -> dict:
             if not value:
                 return _err(rid, 4002, "model value required")
             if session:
-                from hermes_cli.model_switch import parse_model_switch_args
+                from thefool_cli.model_switch import parse_model_switch_args
 
                 # A live swap can't run in-place while a turn streams:
                 # agent.switch_model() mutates self.model / self.provider /
@@ -11851,7 +11851,7 @@ def _(rid, params: dict) -> dict:
 
         overrides = None
         if nv == "fast":
-            from hermes_cli.models import resolve_fast_mode_overrides
+            from thefool_cli.models import resolve_fast_mode_overrides
 
             if agent is not None:
                 target_model = getattr(agent, "model", None)
@@ -11949,7 +11949,7 @@ def _(rid, params: dict) -> dict:
         # pins tool_progress to "off" (the same value /verbose off uses) after
         # stashing the configured mode, and disabling it restores that mode.
         # Nothing about the request payload changes.
-        from hermes_cli.focus_view import (
+        from thefool_cli.focus_view import (
             FOCUS_TOOL_PROGRESS_MODE,
             normalize_tool_progress_mode,
             resolve_focus_arg,
@@ -12088,13 +12088,13 @@ def _(rid, params: dict) -> dict:
                         _session_info(agent, session),
                     )
             else:
-                current = is_truthy_value(os.environ.get("HERMES_YOLO_MODE"))
+                current = is_truthy_value(os.environ.get("THEFOOL_YOLO_MODE"))
                 enable = _resolve_toggle(current)
                 if enable:
-                    os.environ["HERMES_YOLO_MODE"] = "1"
+                    os.environ["THEFOOL_YOLO_MODE"] = "1"
                     nv = "1"
                 else:
-                    os.environ.pop("HERMES_YOLO_MODE", None)
+                    os.environ.pop("THEFOOL_YOLO_MODE", None)
                     nv = "0"
             return _ok(rid, {"key": key, "value": nv, "scope": "session"})
         except Exception as e:
@@ -12102,7 +12102,7 @@ def _(rid, params: dict) -> dict:
 
     if key == "reasoning":
         try:
-            from hermes_constants import parse_reasoning_effort
+            from thefool_constants import parse_reasoning_effort
 
             arg = str(value or "").strip().lower()
             scope = str(params.get("scope") or "").strip().lower()
@@ -12393,9 +12393,9 @@ def _(rid, params: dict) -> dict:
                 sid_key = params.get("session_id", "")
                 pname, new_prompt = _validate_personality(str(value or ""), cfg)
                 # Personality text is an in-session overlay. Persistence goes
-                # through hermes_cli.personality (single owner) and never
+                # through thefool_cli.personality (single owner) and never
                 # touches the user-owned global system prompt.
-                from hermes_cli.personality import persist_personality
+                from thefool_cli.personality import persist_personality
 
                 persist_personality(pname)
                 nv = str(value or "none")
@@ -12439,7 +12439,7 @@ class _NoProject(Exception):
 
 
 def _projects_payload(conn) -> dict:
-    from hermes_cli import projects_db as pdb
+    from thefool_cli import projects_db as pdb
 
     return {
         "projects": [p.to_dict() for p in pdb.list_projects(conn, include_archived=True)],
@@ -12459,7 +12459,7 @@ def _projects_method(name: str):
         @method(name)
         def handler(rid, params: dict) -> dict:
             try:
-                from hermes_cli import projects_db as pdb
+                from thefool_cli import projects_db as pdb
 
                 with pdb.connect_closing() as conn:
                     return fn(rid, params, pdb, conn)
@@ -12600,13 +12600,13 @@ def _non_workspace_dirs() -> set[str]:
 
 def _is_repo_junk(root: str) -> bool:
     """A git root we never auto-surface as a project: a non-workspace dir (see
-    :func:`_non_workspace_dirs`) or anything under HERMES_HOME (~/.hermes by
+    :func:`_non_workspace_dirs`) or anything under THEFOOL_HOME (~/.hermes by
     default) — config/sessions/skills, not a workspace. User-created projects
     pointing there are still honored."""
     if not root:
         return True
 
-    from hermes_constants import get_hermes_home
+    from thefool_constants import get_hermes_home
 
     real = os.path.realpath(root)
     hermes_home = os.path.realpath(str(get_hermes_home()))
@@ -12622,15 +12622,15 @@ def _is_session_cwd_junk(cwd: str) -> bool:
     """A non-git cwd that should stay in flat Recents rather than auto-group.
 
     Unlike discovered git roots, an explicitly selected descendant of
-    HERMES_HOME may be an intentional prose/data workspace. The pre-Projects
+    THEFOOL_HOME may be an intentional prose/data workspace. The pre-Projects
     desktop surfaced every such cwd, so exclude only the broad defaults that
-    would create catch-all projects: HERMES_HOME itself and the dirs in
+    would create catch-all projects: THEFOOL_HOME itself and the dirs in
     :func:`_non_workspace_dirs`.
     """
     if not cwd:
         return True
 
-    from hermes_constants import get_hermes_home
+    from thefool_constants import get_hermes_home
 
     real = os.path.normcase(os.path.realpath(cwd))
     hermes_home = os.path.normcase(os.path.realpath(str(get_hermes_home())))
@@ -12639,7 +12639,7 @@ def _is_session_cwd_junk(cwd: str) -> bool:
 
 def _repo_discovery_policy(raw: dict | None = None) -> dict:
     """Return the effective, profile-local Desktop repository scan policy."""
-    from hermes_cli.config import DEFAULT_CONFIG
+    from thefool_cli.config import DEFAULT_CONFIG
 
     defaults = DEFAULT_CONFIG["desktop"]
     source = raw if isinstance(raw, dict) else (_load_cfg().get("desktop") or {})
@@ -12688,7 +12688,7 @@ def _repo_discovery_policy_key(policy: dict) -> str:
 
 
 def _repo_discovery_policy_is_default(policy: dict) -> bool:
-    from hermes_cli.config import DEFAULT_CONFIG
+    from thefool_cli.config import DEFAULT_CONFIG
 
     return _repo_discovery_policy_key(policy) == _repo_discovery_policy_key(
         _repo_discovery_policy(DEFAULT_CONFIG["desktop"])
@@ -12754,7 +12754,7 @@ def _discover_repos_payload(
     # Filesystem-scanned roots from the cache (may have zero sessions). Reuse the
     # caller's projects.db connection when given, else open a short-lived one.
     try:
-        from hermes_cli import projects_db as pdb
+        from thefool_cli import projects_db as pdb
 
         def _read(c) -> None:
             for entry in pdb.list_discovered_repos(c):
@@ -12859,7 +12859,7 @@ def _project_tree_inputs(
     # skips the discovery warm-up below).
     git_probe.warm_roots(s["cwd"] for s in sessions if s.get("cwd"))
 
-    from hermes_cli import projects_db as pdb
+    from thefool_cli import projects_db as pdb
 
     policy = _repo_discovery_policy()
     policy_key = _repo_discovery_policy_key(policy)
@@ -13190,7 +13190,7 @@ def _cli_exec_blocked(argv: list[str]) -> str | None:
 
 def _resolve_name(name: str) -> str:
     try:
-        from hermes_cli.commands import resolve_command
+        from thefool_cli.commands import resolve_command
 
         r = resolve_command(name)
         return r.name if r else name
@@ -13249,7 +13249,7 @@ def _list_repo_files(root: str) -> list[str]:
             return cached[1]
 
     files: list[str] = []
-    from hermes_cli._subprocess_compat import windows_hide_flags
+    from thefool_cli._subprocess_compat import windows_hide_flags
 
     _creationflags = windows_hide_flags()
     try:
@@ -13498,14 +13498,14 @@ def _details_completions(text: str) -> list[dict] | None:
 
 def _model_picker_context(agent):
     """Layer live session state onto config without losing custom identity."""
-    from hermes_cli.inventory import load_picker_context
+    from thefool_cli.inventory import load_picker_context
 
     ctx = load_picker_context()
     provider = getattr(agent, "provider", "") if agent else ""
     base_url = getattr(agent, "base_url", "") if agent else ""
     if str(provider or "").strip().lower() == "custom":
         try:
-            from hermes_cli.runtime_provider import canonical_custom_identity
+            from thefool_cli.runtime_provider import canonical_custom_identity
 
             provider = (
                 canonical_custom_identity(
@@ -13702,7 +13702,7 @@ def _format_live_tools_output(session: dict) -> str:
 
 def _format_live_help_output() -> str:
     try:
-        from hermes_cli.commands import COMMANDS_BY_CATEGORY
+        from thefool_cli.commands import COMMANDS_BY_CATEGORY
 
         lines = ["Available commands:", ""]
         for category, commands in COMMANDS_BY_CATEGORY.items():
@@ -13836,7 +13836,7 @@ def _mirror_slash_side_effects(sid: str, session: dict, command: str) -> str:
             # Persist through the single owner so this surface can never
             # drift from the others (the old TUI slash path applied the
             # overlay in-session but skipped persistence entirely).
-            from hermes_cli.personality import persist_personality
+            from thefool_cli.personality import persist_personality
 
             persist_personality(pname)
             _apply_personality_to_session(sid, session, new_prompt, pname)
@@ -13973,18 +13973,18 @@ def _voice_mode_enabled() -> bool:
     avoids the TUI auto-starting in REC the next time the user opens it
     just because they happened to enable voice in a prior session.
     """
-    return os.environ.get("HERMES_VOICE", "").strip() == "1"
+    return os.environ.get("THEFOOL_VOICE", "").strip() == "1"
 
 
 def _voice_tts_enabled() -> bool:
     """Whether agent replies should be spoken back via TTS (runtime only)."""
-    return os.environ.get("HERMES_VOICE_TTS", "").strip() == "1"
+    return os.environ.get("THEFOOL_VOICE_TTS", "").strip() == "1"
 
 
 def _any_session_running() -> bool:
     """True while any session's agent turn is in flight.
 
-    Registered as the voice busy-probe (``hermes_cli.voice.set_voice_busy_probe``)
+    Registered as the voice busy-probe (``thefool_cli.voice.set_voice_busy_probe``)
     so silent capture cycles during a long agent turn don't count toward the
     no-speech limit — the user is correctly quiet while the agent works.
     Voice is process-global (one microphone), so any running session holds.
@@ -14227,10 +14227,10 @@ def _full_duplex_listener() -> None:
                     # Bare stop phrase — in EITHER phase the user means
                     # "stop everything": the turn was already interrupted /
                     # TTS cut at trip time; now end the voice chat.
-                    os.environ["HERMES_VOICE"] = "0"
-                    os.environ["HERMES_VOICE_TTS"] = "0"
+                    os.environ["THEFOOL_VOICE"] = "0"
+                    os.environ["THEFOOL_VOICE_TTS"] = "0"
                     try:
-                        from hermes_cli.voice import stop_continuous
+                        from thefool_cli.voice import stop_continuous
 
                         stop_continuous()
                     except Exception:
@@ -14251,7 +14251,7 @@ def _full_duplex_listener() -> None:
 
 
 def _speak_text_with_barge(text: str) -> None:
-    """Speak *text* via hermes_cli.voice.speak_text with spoken barge-in.
+    """Speak *text* via thefool_cli.voice.speak_text with spoken barge-in.
 
     The fallback whole-reply path (streaming couldn't start) and the
     ``voice.tts`` RPC previously called ``speak_text`` bare — speech over
@@ -14260,7 +14260,7 @@ def _speak_text_with_barge(text: str) -> None:
     ``_fd_speak_pipelines`` so the listener can cut the private stop event
     on a playback trip and keeps listening while this speak is pending.
     """
-    from hermes_cli.voice import speak_text
+    from thefool_cli.voice import speak_text
 
     stop = threading.Event()
     done = threading.Event()
@@ -14782,7 +14782,7 @@ def _(rid, params: dict) -> dict:
         # Runtime-only flag (CLI parity) — no _write_config_key, so the
         # next TUI launch starts with voice OFF instead of auto-REC from a
         # persisted stale toggle.
-        os.environ["HERMES_VOICE"] = "1" if enabled else "0"
+        os.environ["THEFOOL_VOICE"] = "1" if enabled else "0"
 
         stop_hint = ""
         if enabled:
@@ -14800,7 +14800,7 @@ def _(rid, params: dict) -> dict:
             # Disabling the mode must tear the continuous loop down; the
             # loop holds the microphone and would otherwise keep running.
             try:
-                from hermes_cli.voice import stop_continuous
+                from thefool_cli.voice import stop_continuous
 
                 stop_continuous()
             except ImportError:
@@ -14810,7 +14810,7 @@ def _(rid, params: dict) -> dict:
 
             # Clear TTS so it can be toggled independently after voice is off,
             # and silence any in-flight streaming speech.
-            os.environ["HERMES_VOICE_TTS"] = "0"
+            os.environ["THEFOOL_VOICE_TTS"] = "0"
             _tts_stream_stop(user_barge=False)
 
         return _ok(
@@ -14828,7 +14828,7 @@ def _(rid, params: dict) -> dict:
             return _err(rid, 4014, "enable voice mode first: /voice on")
         new_value = not _voice_tts_enabled()
         # Runtime-only flag (CLI parity) — see voice.toggle on/off above.
-        os.environ["HERMES_VOICE_TTS"] = "1" if new_value else "0"
+        os.environ["THEFOOL_VOICE_TTS"] = "1" if new_value else "0"
         if not new_value:
             _tts_stream_stop(user_barge=False)
         # Include ``record_key`` on every branch so a /voice tts toggle
@@ -14877,7 +14877,7 @@ def _(rid, params: dict) -> dict:
                 global _voice_event_sid, _voice_wake_owner
                 _voice_event_sid = params.get("session_id") or _voice_event_sid
 
-            from hermes_cli.voice import start_continuous
+            from thefool_cli.voice import start_continuous
 
             # Register the agent-busy probe so the shared voice wrapper can
             # hold the no-speech counter during long agent turns (item:
@@ -14885,7 +14885,7 @@ def _(rid, params: dict) -> dict:
             # re-register on every start; older wrappers without the setter
             # are tolerated.
             try:
-                from hermes_cli.voice import set_voice_busy_probe
+                from thefool_cli.voice import set_voice_busy_probe
 
                 set_voice_busy_probe(_any_session_running)
             except Exception:
@@ -14941,8 +14941,8 @@ def _(rid, params: dict) -> dict:
                 # (TUI, desktop) end the conversation instead of treating
                 # it as a no-speech timeout. The continuous loop has
                 # already halted before this callback fires.
-                os.environ["HERMES_VOICE"] = "0"
-                os.environ["HERMES_VOICE_TTS"] = "0"
+                os.environ["THEFOOL_VOICE"] = "0"
+                os.environ["THEFOOL_VOICE_TTS"] = "0"
                 try:
                     _tts_stream_stop(user_barge=False)
                 except Exception:
@@ -14984,7 +14984,7 @@ def _(rid, params: dict) -> dict:
         with _voice_sid_lock:
             _voice_event_sid = params.get("session_id") or _voice_event_sid
 
-        from hermes_cli.voice import stop_continuous
+        from thefool_cli.voice import stop_continuous
 
         stop_continuous(force_transcribe=True)
         _resume_voice_wake()
@@ -15009,7 +15009,7 @@ def _(rid, params: dict) -> dict:
     try:
         # Import check up front so a missing voice module still returns the
         # documented 5026 instead of failing silently in the thread.
-        import hermes_cli.voice  # noqa: F401
+        import thefool_cli.voice  # noqa: F401
 
         threading.Thread(
             target=_speak_text_with_barge, args=(text,), daemon=True
@@ -15052,7 +15052,7 @@ def _resolve_browser_cdp_url() -> str:
     if env_url:
         return env_url
     try:
-        from hermes_cli.config import read_raw_config
+        from thefool_cli.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {}) if isinstance(cfg, dict) else {}
@@ -15111,7 +15111,7 @@ def _normalize_cdp_url(parsed) -> str:
 
 
 def _failure_messages(url: str, port: int, system: str) -> list[str]:
-    from hermes_cli.browser_connect import manual_chrome_debug_command
+    from thefool_cli.browser_connect import manual_chrome_debug_command
 
     command = manual_chrome_debug_command(port, system)
     hint = (
@@ -15132,7 +15132,7 @@ def _failure_messages(url: str, port: int, system: str) -> list[str]:
 def _browser_connect(rid, params: dict) -> dict:
     import platform
 
-    from hermes_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
+    from thefool_cli.browser_connect import DEFAULT_BROWSER_CDP_URL
     from tools.browser_tool import cleanup_all_browsers
     from urllib.parse import urlparse
 
@@ -15187,7 +15187,7 @@ def _browser_connect(rid, params: dict) -> dict:
             except OSError as e:
                 return _err(rid, 5031, f"could not reach browser CDP at {url}: {e}")
         elif _is_default_local_cdp(parsed):
-            from hermes_cli.browser_connect import (
+            from thefool_cli.browser_connect import (
                 discover_local_cdp_url,
                 find_free_debug_port,
                 launch_chrome_debug,

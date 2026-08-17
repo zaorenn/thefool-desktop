@@ -14,8 +14,8 @@ import uuid
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional
 
-from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from thefool_constants import get_hermes_home
+from thefool_time import now as _hermes_now
 
 # Optional test override. Production resolves the path at transaction time so
 # dashboard operations that temporarily enter another profile cannot leak that
@@ -34,7 +34,7 @@ def _connect() -> sqlite3.Connection:
 
 
 def _initialize_schema(conn: sqlite3.Connection) -> None:
-    from hermes_state import apply_wal_with_fallback
+    from thefool_state import apply_wal_with_fallback
 
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA busy_timeout=5000")

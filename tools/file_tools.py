@@ -36,14 +36,14 @@ def _expand_tilde(path: str) -> str:
 
     In-process file tools share the gateway process's HOME, which may differ
     from the profile-specific HOME that interactive CLI sessions use.  This
-    mirrors ``hermes_constants.get_subprocess_home()`` so that ``~`` resolves
+    mirrors ``thefool_constants.get_subprocess_home()`` so that ``~`` resolves
     consistently regardless of whether the tool runs interactively or inside a
     gateway-driven cron job (#48552).
     """
     if not path or "~" not in path:
         return path
     try:
-        from hermes_constants import get_subprocess_home
+        from thefool_constants import get_subprocess_home
 
         home = get_subprocess_home()
     except Exception:
@@ -77,7 +77,7 @@ def _get_max_read_chars() -> int:
     if _max_read_chars_cached is not None:
         return _max_read_chars_cached
     try:
-        from hermes_cli.config import load_config
+        from thefool_cli.config import load_config
         cfg = load_config()
         val = cfg.get("file_read_max_chars")
         if isinstance(val, (int, float)) and val > 0:
@@ -667,7 +667,7 @@ def _get_hermes_config_resolved() -> str | None:
         return _hermes_config_resolved
     _hermes_config_resolved_loaded = True
     try:
-        from hermes_cli.config import get_config_path
+        from thefool_cli.config import get_config_path
         _hermes_config_resolved = str(get_config_path().resolve())
     except Exception:
         try:
@@ -744,7 +744,7 @@ def _get_real_hermes_home() -> str | None:
         return _real_hermes_home_cached
     _real_hermes_home_loaded = True
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
         _real_hermes_home_cached = os.path.realpath(str(get_hermes_home()))
     except Exception:
         try:
@@ -768,7 +768,7 @@ def _protected_instruction_config() -> tuple[bool, list[str]]:
           protected_instruction_extra_patterns: []  # fnmatch on basename
     """
     try:
-        from hermes_cli.config import load_config, cfg_get
+        from thefool_cli.config import load_config, cfg_get
         cfg = load_config()
         enabled = cfg_get(cfg, "security", "protected_instruction_files",
                           default=True)
@@ -1768,9 +1768,9 @@ def read_file_tool(path: str, offset: int = 1, limit: int = 2000, task_id: str =
 
         # ── Hermes internal path guard ────────────────────────────────
         # Prevent prompt injection via catalog or hub metadata files,
-        # and block credential stores under HERMES_HOME.  Pass the
+        # and block credential stores under THEFOOL_HOME.  Pass the
         # already-resolved path so a relative-path read against
-        # TERMINAL_CWD == HERMES_HOME (e.g. "auth.json") still hits the
+        # TERMINAL_CWD == THEFOOL_HOME (e.g. "auth.json") still hits the
         # denylist — get_read_block_error's own resolve() runs against
         # the Python process cwd, which can differ.
         block_error = get_read_block_error(str(_resolved))

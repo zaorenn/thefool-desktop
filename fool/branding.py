@@ -18,8 +18,8 @@ Sözleşmeye dokunulmaz
 Regex'te ``_`` bir kelime karakteri olduğu için ``\\b`` sınırları iç sözleşmeyi
 kendiliğinden korur::
 
-    HERMES_HOME  -> eşleşmez   (env değişkeni sağlam kalır)
-    hermes_cli   -> eşleşmez   (modül adı sağlam kalır)
+    THEFOOL_HOME  -> eşleşmez   (env değişkeni sağlam kalır)
+    thefool_cli   -> eşleşmez   (modül adı sağlam kalır)
     ~/.hermes    -> eşleşir    (kullanıcıya görünen yol; değişmesini istiyoruz)
 
 @see docs/fool/SEAMS.md

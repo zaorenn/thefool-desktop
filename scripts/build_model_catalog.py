@@ -30,10 +30,10 @@ from datetime import datetime, timezone
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 
-# Ensure HERMES_HOME is set for imports that touch it at module level.
-os.environ.setdefault("HERMES_HOME", os.path.join(os.path.expanduser("~"), ".hermes"))
+# Ensure THEFOOL_HOME is set for imports that touch it at module level.
+os.environ.setdefault("THEFOOL_HOME", os.path.join(os.path.expanduser("~"), ".hermes"))
 
-from hermes_cli.models import (  # noqa: E402
+from thefool_cli.models import (  # noqa: E402
     OPENROUTER_MODELS,
     PREFERRED_SILENT_DEFAULT_MODEL,
     _PROVIDER_MODELS,

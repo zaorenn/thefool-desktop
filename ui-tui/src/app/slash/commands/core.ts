@@ -1,4 +1,4 @@
-import { forceRedraw, type MouseTrackingMode } from '@hermes/ink'
+import { forceRedraw, type MouseTrackingMode } from '@thefool/ink'
 
 import { DASHBOARD_TUI_MODE, NO_CONFIRM_DESTRUCTIVE } from '../../../config/env.js'
 import { dailyFortune, randomFortune } from '../../../content/fortunes.js'
@@ -393,7 +393,7 @@ export const coreCommands: SlashCommand[] = [
         if (text) {
           return sys(`copied ${text.length} characters`)
         } else {
-          return sys('clipboard copy failed — try HERMES_TUI_FORCE_OSC52=1 to force the escape sequence')
+          return sys('clipboard copy failed — try THEFOOL_TUI_FORCE_OSC52=1 to force the escape sequence')
         }
       }
 

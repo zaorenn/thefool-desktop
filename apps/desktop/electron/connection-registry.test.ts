@@ -78,7 +78,7 @@ test('uniqueLabel counts up (never "X 2 2") and clamps long candidates', () => {
 
 // --- backendScopeKey (composite pool keys) ---
 
-// The electron and @hermes/shared implementations MUST stay byte-identical —
+// The electron and @thefool/shared implementations MUST stay byte-identical —
 // the renderer keys its socket registry with the shared copy while the main
 // process keys the backend pool with this one. This contract test is the
 // enforcement (see the NOTE on backendScopeKey).
@@ -86,7 +86,7 @@ test('backendScopeKey: electron and shared implementations agree everywhere', as
   // Non-literal specifier on purpose: tsconfig.electron.json's project
   // boundary excludes apps/shared sources, but vitest resolves the workspace
   // package fine at runtime — which is exactly what this test needs.
-  const shared = (await import(String('@hermes/shared'))) as {
+  const shared = (await import(String('@thefool/shared'))) as {
     backendScopeKey: typeof backendScopeKey
     backendScopePrefix: typeof backendScopePrefix
     LOCAL_CONNECTION_ID: string

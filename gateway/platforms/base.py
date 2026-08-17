@@ -194,7 +194,7 @@ def build_auto_tts_output_path(platform) -> str:
     """Return a unique temp output path for gateway auto-TTS synthesis.
 
     Platform-awareness lives HERE (the caller knows its platform), not in the
-    TTS tool's ``HERMES_SESSION_PLATFORM`` contextvar — that contextvar is
+    TTS tool's ``THEFOOL_SESSION_PLATFORM`` contextvar — that contextvar is
     cleared by ``_clear_session_env`` before the post-handler auto-TTS block
     in ``BasePlatformAdapter`` runs, so relying on it always produced MP3
     (#57049, #36685). Platforms whose native voice bubbles require Ogg/Opus
@@ -578,7 +578,7 @@ sys.path.insert(0, str(_Path(__file__).resolve().parents[2]))
 
 from gateway.config import Platform, PlatformConfig
 from gateway.session import SessionSource, build_session_key
-from hermes_constants import get_default_hermes_root, get_hermes_dir, get_hermes_home
+from thefool_constants import get_default_hermes_root, get_hermes_dir, get_hermes_home
 
 if TYPE_CHECKING:
     from agent.display import ToolPreview
@@ -763,7 +763,7 @@ def get_inbound_media_max_bytes() -> int:
     unreadable — falls back to the default.
     """
     try:
-        from hermes_cli.config import load_config_readonly as _load_config
+        from thefool_cli.config import load_config_readonly as _load_config
         cfg = _load_config()  # read-only: .get() only, never mutated
     except Exception:
         return DEFAULT_INBOUND_MEDIA_MAX_BYTES
@@ -1177,16 +1177,16 @@ _CACHE_DIR_IMPORT_DEFAULTS = {
 
 _HERMES_HOME = get_hermes_home()
 _HERMES_ROOT = get_default_hermes_root()
-MEDIA_DELIVERY_ALLOW_DIRS_ENV = "HERMES_MEDIA_ALLOW_DIRS"
-MEDIA_DELIVERY_TRUST_RECENT_ENV = "HERMES_MEDIA_TRUST_RECENT_FILES"
-MEDIA_DELIVERY_TRUST_RECENT_SECONDS_ENV = "HERMES_MEDIA_TRUST_RECENT_SECONDS"
+MEDIA_DELIVERY_ALLOW_DIRS_ENV = "THEFOOL_MEDIA_ALLOW_DIRS"
+MEDIA_DELIVERY_TRUST_RECENT_ENV = "THEFOOL_MEDIA_TRUST_RECENT_FILES"
+MEDIA_DELIVERY_TRUST_RECENT_SECONDS_ENV = "THEFOOL_MEDIA_TRUST_RECENT_SECONDS"
 # Strict mode toggles the original allowlist+recency path-validation behavior.
 # Off by default — symmetric with inbound (we accept any document type the
 # user uploads), and with the denylist still blocking obvious credential /
 # system paths. Operators running public-facing gateways where prompt
 # injection from one user could exfiltrate the host's secrets to that same
 # user should set this to true.
-MEDIA_DELIVERY_STRICT_ENV = "HERMES_MEDIA_DELIVERY_STRICT"
+MEDIA_DELIVERY_STRICT_ENV = "THEFOOL_MEDIA_DELIVERY_STRICT"
 MEDIA_DELIVERY_SAFE_ROOTS = (
     IMAGE_CACHE_DIR,
     AUDIO_CACHE_DIR,
@@ -1267,12 +1267,12 @@ def _profile_cache_roots() -> List[Path]:
 
     Profile gateways write generated artifacts to
     ``<root>/profiles/<name>/cache/{images,audio,...}``. The static safe-roots
-    list only covers the *active* HERMES_HOME's cache, so a gateway running at
-    the root (e.g. ``HERMES_HOME=/opt/data``) while the model emits a
+    list only covers the *active* THEFOOL_HOME's cache, so a gateway running at
+    the root (e.g. ``THEFOOL_HOME=/opt/data``) while the model emits a
     profile-scoped path silently fails delivery. Enumerated dynamically at
     check time so profiles created after startup are covered, and so the
     resolved profile path is allowlisted *before* the ``/root`` system denylist
-    is consulted (which otherwise wins when HERMES_HOME is symlinked under a
+    is consulted (which otherwise wins when THEFOOL_HOME is symlinked under a
     denied prefix and $HOME is not that prefix). See issue #31733.
     """
     roots: List[Path] = []
@@ -1289,10 +1289,10 @@ def _profile_cache_roots() -> List[Path]:
 
 def _kanban_attachment_roots() -> List[Path]:
     """Return durable Kanban attachment roots without importing kanban_db."""
-    override = os.environ.get("HERMES_KANBAN_ATTACHMENTS_ROOT", "").strip()
+    override = os.environ.get("THEFOOL_KANBAN_ATTACHMENTS_ROOT", "").strip()
     if override:
         return [Path(override).expanduser()]
-    home_override = os.environ.get("HERMES_KANBAN_HOME", "").strip()
+    home_override = os.environ.get("THEFOOL_KANBAN_HOME", "").strip()
     root = Path(home_override).expanduser() if home_override else _HERMES_ROOT
     roots = [root / "kanban" / "attachments"]
     boards_root = root / "kanban" / "boards"
@@ -1371,7 +1371,7 @@ def _media_delivery_denied_paths() -> List[Path]:
     # validate_media_delivery_path, so generated media still delivers).
     #
     # These are the per-file credential / secret stores that live at the
-    # HERMES_HOME root. The set mirrors the canonical read guard in
+    # THEFOOL_HOME root. The set mirrors the canonical read guard in
     # agent/file_safety.py (get_read_block_error / build_write_denied_*) so the
     # delivery (read/exfil) side can't trail the write side: a credential the
     # agent is forbidden to write or read must also never be auto-attached to a
@@ -1692,9 +1692,9 @@ def validate_media_delivery_path(path: str) -> Optional[str]:
     back any file that isn't a credential.
 
     Strict mode (opt-in via ``gateway.strict`` in ``config.yaml`` or
-    ``HERMES_MEDIA_DELIVERY_STRICT=1``): the file MUST live under a
+    ``THEFOOL_MEDIA_DELIVERY_STRICT=1``): the file MUST live under a
     Hermes-managed cache, under an operator-allowlisted root
-    (``HERMES_MEDIA_ALLOW_DIRS``), or be freshly produced inside the
+    (``THEFOOL_MEDIA_ALLOW_DIRS``), or be freshly produced inside the
     configured recency window. Suitable for public-facing bots where
     prompt injection from one user shouldn't be able to exfiltrate the
     host's secrets to that same user.
@@ -2944,7 +2944,7 @@ class BasePlatformAdapter(ABC):
     # the watcher/drain loops). False for stateless request/response adapters
     # (the API server): every route closes its channel when the turn ends, so
     # there is nowhere to push a later completion. The gateway propagates this
-    # into the ``HERMES_SESSION_ASYNC_DELIVERY`` contextvar at session-bind
+    # into the ``THEFOOL_SESSION_ASYNC_DELIVERY`` contextvar at session-bind
     # time; tools read it via ``async_delivery_supported()`` and refuse to make
     # a delivery promise they can't keep. A new stateless adapter only needs to
     # set this to False to stay correct-by-default.
@@ -3037,7 +3037,7 @@ class BasePlatformAdapter(ABC):
         # the event loop can GC the detached handler before it finishes — the
         # exact "handler killed mid-flight" class we are fixing (#81335).
         self._detached_fatal_tasks: set = set()
-        # Cross-HERMES_HOME token takeover is armed by GatewayRunner only for
+        # Cross-THEFOOL_HOME token takeover is armed by GatewayRunner only for
         # an adapter's initial connect during an explicit ``gateway run
         # --replace`` startup.  Ordinary starts and every reconnect fail safe
         # through the existing retryable conflict path.
@@ -3060,14 +3060,14 @@ class BasePlatformAdapter(ABC):
         # pre-sync read matches the single-knob default rather than silently
         # queueing.
         self._busy_text_mode: str = (
-            os.environ.get("HERMES_GATEWAY_BUSY_TEXT_MODE", "interrupt").strip().lower()
+            os.environ.get("THEFOOL_GATEWAY_BUSY_TEXT_MODE", "interrupt").strip().lower()
             or "interrupt"
         )
         self._busy_text_debounce_seconds: float = _float_env(
-            "HERMES_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", 0.35
+            "THEFOOL_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", 0.35
         )
         self._busy_text_hard_cap_seconds: float = _float_env(
-            "HERMES_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", 1.0
+            "THEFOOL_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", 1.0
         )
         self._text_debounce: dict[str, TextDebounceState] = {}
         # Background message-processing tasks spawned by handle_message().
@@ -3527,7 +3527,7 @@ class BasePlatformAdapter(ABC):
     def _acquire_platform_lock(self, scope: str, identity: str, resource_desc: str) -> bool:
         """Acquire a scoped lock for this adapter. Returns True on success.
 
-        A live cross-HERMES_HOME holder may be replaced only when the runner
+        A live cross-THEFOOL_HOME holder may be replaced only when the runner
         explicitly arms this adapter for its initial ``--replace`` connect.
         The status module validates PID/start-time/home ownership, places the
         marker in the target's home, and performs the bounded termination.
@@ -4031,7 +4031,7 @@ class BasePlatformAdapter(ABC):
         auto-deletion.  Non-fatal if config is unreadable.
         """
         try:
-            from hermes_cli.config import load_config_readonly as _load_config
+            from thefool_cli.config import load_config_readonly as _load_config
         except Exception:
             return 0
         try:
@@ -6042,7 +6042,7 @@ class BasePlatformAdapter(ABC):
             # session lifecycle and its cleanup races with the running task
             # (see PR #4926).
             cmd = event.get_command()
-            from hermes_cli.commands import (
+            from thefool_cli.commands import (
                 is_interrupt_then_dispatch,
                 should_bypass_active_session,
             )
@@ -6202,11 +6202,11 @@ class BasePlatformAdapter(ABC):
         Return a random delay in seconds for human-like response pacing.
 
         Reads from env vars:
-          HERMES_HUMAN_DELAY_MODE: "off" (default) | "natural" | "custom"
-          HERMES_HUMAN_DELAY_MIN_MS: minimum delay in ms (default 800, custom mode)
-          HERMES_HUMAN_DELAY_MAX_MS: maximum delay in ms (default 2500, custom mode)
+          THEFOOL_HUMAN_DELAY_MODE: "off" (default) | "natural" | "custom"
+          THEFOOL_HUMAN_DELAY_MIN_MS: minimum delay in ms (default 800, custom mode)
+          THEFOOL_HUMAN_DELAY_MAX_MS: maximum delay in ms (default 2500, custom mode)
         """
-        mode = os.getenv("HERMES_HUMAN_DELAY_MODE", "off").lower()
+        mode = os.getenv("THEFOOL_HUMAN_DELAY_MODE", "off").lower()
         if mode == "off":
             return 0.0
         if mode == "natural":
@@ -6214,11 +6214,11 @@ class BasePlatformAdapter(ABC):
             return random.uniform(min_ms / 1000.0, max_ms / 1000.0)
         # custom mode — tolerate malformed env vars instead of crashing.
         try:
-            min_ms = int(os.getenv("HERMES_HUMAN_DELAY_MIN_MS", "800"))
+            min_ms = int(os.getenv("THEFOOL_HUMAN_DELAY_MIN_MS", "800"))
         except (TypeError, ValueError):
             min_ms = 800
         try:
-            max_ms = int(os.getenv("HERMES_HUMAN_DELAY_MAX_MS", "2500"))
+            max_ms = int(os.getenv("THEFOOL_HUMAN_DELAY_MAX_MS", "2500"))
         except (TypeError, ValueError):
             max_ms = 2500
         return random.uniform(min_ms / 1000.0, max_ms / 1000.0)
@@ -6419,7 +6419,7 @@ class BasePlatformAdapter(ABC):
                             if not speech_text:
                                 raise ValueError("Empty text after markdown cleanup")
                             # Pass an explicit platform-aware output path: the
-                            # HERMES_SESSION_PLATFORM contextvar the tool would
+                            # THEFOOL_SESSION_PLATFORM contextvar the tool would
                             # otherwise consult is already cleared by the time
                             # this post-handler block runs, which silently
                             # produced MP3 (audio attachment, not a native
@@ -7070,7 +7070,7 @@ class BasePlatformAdapter(ABC):
         resolves the matching profile from guild/chat/thread and stamps it on
         ``source.profile``. Downstream code (``_resolve_profile_home_for_source``
         in run.py) reads that field to enter ``_profile_runtime_scope`` for
-        per-profile HERMES_HOME isolation.
+        per-profile THEFOOL_HOME isolation.
         """
         # Normalize empty topic to None
         if chat_topic is not None and not chat_topic.strip():

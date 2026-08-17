@@ -34,7 +34,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Optional
 
-from hermes_constants import hermes_home_key
+from thefool_constants import hermes_home_key
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +240,7 @@ class PlatformRegistry:
         self._lock = threading.RLock()
         # Process-global registrations (for example the built-in relay).
         self._entries: dict[str, PlatformEntry] = {}
-        # Plugin adapters are isolated per resolved HERMES_HOME and overlay the
+        # Plugin adapters are isolated per resolved THEFOOL_HOME and overlay the
         # process-global entries for lookups in that profile's runtime scope.
         self._scoped_entries: dict[str, dict[str, PlatformEntry]] = {}
         # Deferred platform loaders: name -> zero-arg callable that imports the

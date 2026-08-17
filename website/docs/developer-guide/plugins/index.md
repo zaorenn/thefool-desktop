@@ -28,7 +28,7 @@ Hermes has several distinct pluggable interfaces — some use Python `register_*
 | A **secret-manager backend** (vault / password manager / OS keystore) | [Secret Source Plugins](/developer-guide/secret-source-plugin) |
 | A **dashboard OIDC/auth provider** | [Web Dashboard — custom providers](/user-guide/features/web-dashboard#custom-providers) — `ctx.register_dashboard_auth_provider()` |
 | A **TTS backend** (any CLI — Piper, VoxCPM, Kokoro, voice cloning, …) | [TTS custom command providers](/user-guide/features/tts#custom-command-providers) — config-driven, no Python needed |
-| An **STT backend** (custom whisper / ASR CLI) | [Voice Message Transcription](/user-guide/features/tts#voice-message-transcription-stt) — set `HERMES_LOCAL_STT_COMMAND` to an argv-tokenized template |
+| An **STT backend** (custom whisper / ASR CLI) | [Voice Message Transcription](/user-guide/features/tts#voice-message-transcription-stt) — set `THEFOOL_LOCAL_STT_COMMAND` to an argv-tokenized template |
 | **External tools via MCP** (filesystem, GitHub, Linear, any MCP server) | [MCP](/user-guide/features/mcp) — declare `mcp_servers.<name>` in `config.yaml` |
 | **Gateway event hooks** (fire on startup, session events, commands) | [Event Hooks](/user-guide/features/hooks#gateway-event-hooks) — drop `HOOK.yaml` + `handler.py` into `~/.hermes/hooks/<name>/` |
 | **Shell hooks** (run a shell command on events) | [Shell Hooks](/user-guide/features/hooks#shell-hooks) — declare under `hooks:` in `config.yaml` |
@@ -158,7 +158,7 @@ or resumable sessions. In practice, additive aliases and adapters are preferred
 to removal.
 
 Hermes enforces this contract with frozen external-plugin fixtures discovered
-from an isolated `HERMES_HOME`. Those tests load and invoke the plugin through
+from an isolated `THEFOOL_HOME`. Those tests load and invoke the plugin through
 `PluginManager`; they assert real registration and callback outcomes rather
 than internal symbol lists or source-code shape.
 
@@ -191,7 +191,7 @@ registered tools/hooks. Pass `--ci` to exit non-zero on an error:
 hermes plugins doctor . --ci
 ```
 
-Doctor uses a temporary `HERMES_HOME`, restores plugin registration state after
+Doctor uses a temporary `THEFOOL_HOME`, restores plugin registration state after
 the check, and blocks direct Python socket connections to catch accidental
 network access while registration runs. This is not a sandbox: plugin code still
 executes in-process with the current user's permissions and can spawn subprocesses,
@@ -247,7 +247,7 @@ def register(ctx):
 
 Known capability ids: `tools.override`, `llm.provider_override`,
 `llm.model_override`, `llm.agent_id_override`, `llm.profile_override`,
-`llm.task_override` (see `hermes_cli/plugin_capabilities.py` for the
+`llm.task_override` (see `thefool_cli/plugin_capabilities.py` for the
 canonical registry). Unknown ids are ignored. The older per-capability
 config keys (`plugins.entries.<id>.allow_tool_override`, …) still work but
 are deprecated — declare capabilities instead so users get a single,
@@ -565,7 +565,7 @@ Windows-safe namespace. Malformed existing state is reported and preserved.
 
 Config and state have different owners: settings are user-visible behavior in
 `config.yaml`, while state is plugin-owned runtime data under
-`<HERMES_HOME>/plugin-data/`. Neither API exposes another plugin's namespace.
+`<THEFOOL_HOME>/plugin-data/`. Neither API exposes another plugin's namespace.
 
 ## Step 6: Test it
 
@@ -598,10 +598,10 @@ Plugins (1):
 
 ### Debugging plugin discovery
 
-If your plugin doesn't show up — or shows up but isn't loading — set `HERMES_PLUGINS_DEBUG=1` to get verbose discovery logs on stderr:
+If your plugin doesn't show up — or shows up but isn't loading — set `THEFOOL_PLUGINS_DEBUG=1` to get verbose discovery logs on stderr:
 
 ```bash
-HERMES_PLUGINS_DEBUG=1 hermes plugins list
+THEFOOL_PLUGINS_DEBUG=1 hermes plugins list
 ```
 
 You'll see, for every plugin source (bundled, user, project, entry-points):
@@ -945,7 +945,7 @@ Any non-None, non-empty return with a `"context"` key (or a plain non-empty stri
 
 #### Oversized-context spill
 
-Per-hook context is capped at `10,000` characters by default. Anything above the cap is written to `$HERMES_HOME/hook_outputs/<session_id>/<uuid>.txt` and replaced with a head/tail preview plus the saved path. The model can read the full content via `read_file` or `terminal` if it genuinely needs it. This keeps a runaway plugin from inflating every subsequent turn's prompt and blowing out the prompt cache prefix. Tune in `config.yaml`:
+Per-hook context is capped at `10,000` characters by default. Anything above the cap is written to `$THEFOOL_HOME/hook_outputs/<session_id>/<uuid>.txt` and replaced with a head/tail preview plus the saved path. The model can read the full content via `read_file` or `terminal` if it genuinely needs it. This keeps a runaway plugin from inflating every subsequent turn's prompt and blowing out the prompt cache prefix. Tune in `config.yaml`:
 
 ```yaml
 hooks:
@@ -954,7 +954,7 @@ hooks:
     max_chars: 10000       # default; set higher to opt out of spilling
     preview_head: 500      # chars shown at the top of the preview
     preview_tail: 500      # chars shown at the bottom of the preview
-    # directory: null      # default: $HERMES_HOME/hook_outputs
+    # directory: null      # default: $THEFOOL_HOME/hook_outputs
 ```
 
 #### How injection works
@@ -1055,7 +1055,7 @@ def register(ctx):
     ctx.register_middleware("tool_request", cap_find_output)
 ```
 
-The canonical list of kinds is `VALID_MIDDLEWARE` in `hermes_cli/middleware.py`:
+The canonical list of kinds is `VALID_MIDDLEWARE` in `thefool_cli/middleware.py`:
 
 | Kind | Receives | Return contract |
 |------|----------|-----------------|
@@ -1205,7 +1205,7 @@ This is the public, stable interface for tool dispatch from plugin commands. Plu
 
 `ctx._cli_ref` is only populated in an **interactive CLI** session. It is `None` in the gateway, in non-interactive `hermes chat -q` runs, and in **kanban-spawned worker sessions** — so any plugin logic that reaches through `_cli_ref` silently no-ops in exactly those contexts. Two stable, session-agnostic APIs cover what hooks actually need:
 
-- **`ctx.profile_name`** — the active profile name (e.g. `"default"`, or the assignee profile in a kanban worker). Derived from `HERMES_HOME`, so it works everywhere with no `_cli_ref` dependency.
+- **`ctx.profile_name`** — the active profile name (e.g. `"default"`, or the assignee profile in a kanban worker). Derived from `THEFOOL_HOME`, so it works everywhere with no `_cli_ref` dependency.
 - **`ctx.dispatch_tool(name, args)`** — invoke any registered tool (built-in or plugin), including the `kanban_*` tools, `delegate_task`, `terminal`, `read_file`, etc. Works from hook callbacks regardless of which process the hook fires in.
 
 Together these let a kanban lifecycle hook observe a transition and act on the board without touching framework internals:
@@ -1545,7 +1545,7 @@ tts:
       voice_compatible: true
 ```
 
-For STT, point `HERMES_LOCAL_STT_COMMAND` at an argv-tokenized template. It runs without implicit shell interpretation; wrap it in `sh -c`, `cmd /c`, or PowerShell explicitly if the trusted local command requires shell syntax. Supported placeholders: `{input_path}`, `{output_path}`, `{format}`, `{voice}`, `{model}`, `{speed}` (TTS); `{input_path}`, `{output_dir}`, `{language}`, `{model}` (STT). Any path-interacting CLI is automatically a plugin.
+For STT, point `THEFOOL_LOCAL_STT_COMMAND` at an argv-tokenized template. It runs without implicit shell interpretation; wrap it in `sh -c`, `cmd /c`, or PowerShell explicitly if the trusted local command requires shell syntax. Supported placeholders: `{input_path}`, `{output_path}`, `{format}`, `{voice}`, `{model}`, `{speed}` (TTS); `{input_path}`, `{output_dir}`, `{language}`, `{model}` (STT). Any path-interacting CLI is automatically a plugin.
 
 **Full guides:** [TTS custom command providers](/user-guide/features/tts#custom-command-providers) · [STT](/user-guide/features/tts#voice-message-transcription-stt).
 

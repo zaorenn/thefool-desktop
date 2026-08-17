@@ -9,7 +9,7 @@ always missed, so cmd_peers fell back to "(not set)" and leaked the raw
 malformed key into the AI-peer column.
 
 These tests drive the real cmd_peers / _all_profile_host_configs against
-a real honcho.json (temp HERMES_HOME, no network).
+a real honcho.json (temp THEFOOL_HOME, no network).
 """
 import io
 import json
@@ -54,7 +54,7 @@ class TestAllProfileHostConfigs:
         """The lookup key must be profile_host_key()'s underscore form —
         the same one honcho sync/enable/status and the runtime write to."""
         monkeypatch.setattr(
-            "hermes_cli.profiles.list_profiles",
+            "thefool_cli.profiles.list_profiles",
             lambda: [SimpleNamespace(name="default"), SimpleNamespace(name="work")],
         )
         rows = honcho_cli._all_profile_host_configs()
@@ -68,7 +68,7 @@ class TestAllProfileHostConfigs:
         resolve — profile_host_key maps 'my.profile' -> 'hermes_my_profile';
         the inline dot form never could."""
         monkeypatch.setattr(
-            "hermes_cli.profiles.list_profiles",
+            "thefool_cli.profiles.list_profiles",
             lambda: [SimpleNamespace(name="default"),
                      SimpleNamespace(name="my.profile")],
         )
@@ -87,7 +87,7 @@ class TestAllProfileHostConfigs:
         cfg["hosts"]["hermes.work"] = {"peerName": "carol", "aiPeer": "hermes"}
         path.write_text(json.dumps(cfg))
         monkeypatch.setattr(
-            "hermes_cli.profiles.list_profiles",
+            "thefool_cli.profiles.list_profiles",
             lambda: [SimpleNamespace(name="default"), SimpleNamespace(name="work")],
         )
         rows = honcho_cli._all_profile_host_configs()
@@ -101,7 +101,7 @@ class TestCmdPeers:
         """Issue #76414's visible symptom: the AI-peer column showed the
         raw malformed key 'hermes.work' (or '(not set)')."""
         monkeypatch.setattr(
-            "hermes_cli.profiles.list_profiles",
+            "thefool_cli.profiles.list_profiles",
             lambda: [SimpleNamespace(name="default"), SimpleNamespace(name="work")],
         )
         out = _peers_output(SimpleNamespace())
@@ -116,7 +116,7 @@ class TestCmdPeers:
         """A profile with no host block still falls back to the top-level
         peerName and the (well-formed) host key — not a crash or a leak."""
         monkeypatch.setattr(
-            "hermes_cli.profiles.list_profiles",
+            "thefool_cli.profiles.list_profiles",
             lambda: [SimpleNamespace(name="default"), SimpleNamespace(name="new")],
         )
         out = _peers_output(SimpleNamespace())

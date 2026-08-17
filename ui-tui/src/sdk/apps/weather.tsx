@@ -1,4 +1,4 @@
-import { Box, Text } from '@hermes/ink'
+import { Box, Text } from '@thefool/ink'
 
 import { ShimmerRows } from '../../components/loaders.js'
 import { Dialog } from '../../components/overlay.js'

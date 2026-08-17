@@ -49,10 +49,10 @@ const APP = (() => {
   }
 })()
 
-// Default HERMES_HOME for non-sandboxed runs -- matches main.ts's
+// Default THEFOOL_HOME for non-sandboxed runs -- matches main.ts's
 // resolveHermesHome(). On Windows it's %LOCALAPPDATA%\hermes; elsewhere
 // it's ~/.hermes. The fresh-install sandbox launchFresh() sets its own
-// HERMES_HOME and never touches this.
+// THEFOOL_HOME and never touches this.
 const DEFAULT_HERMES_HOME = (() => {
   if (PLATFORM === 'win32' && process.env.LOCALAPPDATA) {
     return path.join(process.env.LOCALAPPDATA, 'hermes')
@@ -115,7 +115,7 @@ function ensurePlatformBuilds() {
 }
 
 function ensurePackagedApp() {
-  if (process.env.HERMES_DESKTOP_SKIP_BUILD === '1' && exists(APP.binary)) {
+  if (process.env.THEFOOL_DESKTOP_SKIP_BUILD === '1' && exists(APP.binary)) {
     return
   }
 
@@ -162,7 +162,7 @@ function ensureDmg() {
   if (PLATFORM !== 'darwin') {
     die('DMG mode is macOS-only; on Windows use the `nsis` mode instead.')
   }
-  if (process.env.HERMES_DESKTOP_SKIP_BUILD === '1' && exists(resolveDmgPath())) {
+  if (process.env.THEFOOL_DESKTOP_SKIP_BUILD === '1' && exists(resolveDmgPath())) {
     return
   }
   run('npm', ['run', 'dist:mac:dmg'])
@@ -172,7 +172,7 @@ function ensureNsis() {
   if (PLATFORM !== 'win32') {
     die('NSIS mode is win32-only; on macOS use the `dmg` mode instead.')
   }
-  if (process.env.HERMES_DESKTOP_SKIP_BUILD === '1' && resolveNsisPath()) {
+  if (process.env.THEFOOL_DESKTOP_SKIP_BUILD === '1' && resolveNsisPath()) {
     return
   }
   run('npm', ['run', 'dist:win:nsis'])
@@ -256,13 +256,13 @@ function launchFresh() {
     env[key] = value
   }
 
-  env.HERMES_DESKTOP_CWD = cwd
-  env.HERMES_DESKTOP_IGNORE_EXISTING = '1'
-  env.HERMES_DESKTOP_TEST_MODE = 'fresh-install'
-  env.HERMES_DESKTOP_USER_DATA_DIR = userDataDir
-  env.HERMES_HOME = hermesHome
-  delete env.HERMES_DESKTOP_HERMES
-  delete env.HERMES_DESKTOP_HERMES_ROOT
+  env.THEFOOL_DESKTOP_CWD = cwd
+  env.THEFOOL_DESKTOP_IGNORE_EXISTING = '1'
+  env.THEFOOL_DESKTOP_TEST_MODE = 'fresh-install'
+  env.THEFOOL_DESKTOP_USER_DATA_DIR = userDataDir
+  env.THEFOOL_HOME = hermesHome
+  delete env.THEFOOL_DESKTOP_HERMES
+  delete env.THEFOOL_DESKTOP_HERMES_ROOT
 
   const child = spawn(APP.binary, [], {
     cwd: os.homedir(),
@@ -275,7 +275,7 @@ function launchFresh() {
   console.log('\nFresh install sandbox:')
   console.log(`  root: ${sandbox}`)
   console.log(`  electron userData: ${userDataDir}`)
-  console.log(`  HERMES_HOME: ${hermesHome}`)
+  console.log(`  THEFOOL_HOME: ${hermesHome}`)
   console.log(`  cwd: ${cwd}`)
 
   return { runtimeRoot: path.join(hermesHome, 'hermes-agent', 'venv') }
@@ -296,9 +296,9 @@ function validateBundle() {
   }
 
   // Negative assertion: the OLD fat-installer factory payload must NOT be
-  // present anymore. If a stray ship of hermes_cli sneaks back in we want
+  // present anymore. If a stray ship of thefool_cli sneaks back in we want
   // to fail loudly rather than re-introduce the 400MB delta we just removed.
-  const staleFactoryMarker = path.join(APP.resourcesPath, 'hermes-agent', 'hermes_cli', 'main.py')
+  const staleFactoryMarker = path.join(APP.resourcesPath, 'hermes-agent', 'thefool_cli', 'main.py')
   if (exists(staleFactoryMarker)) {
     die(
       `Thin-installer regression: factory-payload file should NOT be in the package: ${staleFactoryMarker}`
@@ -400,13 +400,13 @@ function printArtifacts(options = {}) {
 function help() {
   console.log(`Usage:
   npm run test:desktop:existing  # build packaged app, launch with normal PATH/existing Hermes
-  npm run test:desktop:fresh     # build packaged app, launch with temp userData + HERMES_HOME
+  npm run test:desktop:fresh     # build packaged app, launch with temp userData + THEFOOL_HOME
   npm run test:desktop:dmg       # (macOS only) build DMG and open it
   npm run test:desktop:nsis      # (win32 only) build NSIS installer
   npm run test:desktop:all       # build installer, validate app payload, print paths
 
 Fast rerun (skip rebuild if the packaged app already exists):
-  HERMES_DESKTOP_SKIP_BUILD=1 npm run test:desktop:fresh
+  THEFOOL_DESKTOP_SKIP_BUILD=1 npm run test:desktop:fresh
 `)
 }
 

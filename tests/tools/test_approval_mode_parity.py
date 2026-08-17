@@ -35,7 +35,7 @@ import pytest
 def hermes_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("THEFOOL_HOME", str(home))
     return home
 
 
@@ -44,8 +44,8 @@ def tui_server():
     with patch.dict(
         "sys.modules",
         {
-            "hermes_cli.env_loader": MagicMock(),
-            "hermes_cli.banner": MagicMock(),
+            "thefool_cli.env_loader": MagicMock(),
+            "thefool_cli.banner": MagicMock(),
         },
     ):
         yield importlib.import_module("tui_gateway.server")

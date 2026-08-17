@@ -69,7 +69,7 @@ source ~/.bashrc   # or source ~/.zshrc
 ### 2. Run Quick Setup
 
 ```bash
-hermes setup
+fool setup
 ```
 
 Select **Quick Setup**. Hermes opens a browser tab and waits for you to finish the next steps.

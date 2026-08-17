@@ -1784,7 +1784,7 @@ registry.register(
         skills=args.get("skills"),
         # model / provider / base_url are intentionally NOT read from the
         # agent's arguments: per-job inference pins are user-owned (dashboard,
-        # `hermes cron create/edit --model`, or hand-edited jobs). The agent
+        # `fool cron create/edit --model`, or hand-edited jobs). The agent
         # must not be able to point unattended spend at a different model.
         # Programmatic callers of cronjob() itself retain the parameters.
         reason=args.get("reason"),

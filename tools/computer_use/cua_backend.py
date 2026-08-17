@@ -454,7 +454,7 @@ def _empty_discovery_reason() -> str:
             "`fool computer-use doctor`"
         )
     return (
-        "window discovery returned no windows; run `hermes computer-use "
+        "window discovery returned no windows; run `fool computer-use "
         "doctor` (display reachability, AX capability)"
     )
 
@@ -1296,7 +1296,7 @@ def cua_driver_install_hint() -> str:
         )
     return (
         "cua-driver is not installed. Install with one of:\n"
-        "  hermes computer-use install\n"
+        "  fool computer-use install\n"
         "Or run the upstream installer directly:\n"
         f"{installer}\n"
         "Or run `fool tools` and enable the Computer Use toolset to install it automatically."

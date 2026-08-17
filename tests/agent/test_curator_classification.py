@@ -509,7 +509,7 @@ def test_rename_summary_mixed_consolidation_and_pruning(curator_env):
 
 
 # ---------------------------------------------------------------------------
-# Pin hint — surfaces `hermes curator pin <umbrella>` in the rename block so
+# Pin hint — surfaces `fool curator pin <umbrella>` in the rename block so
 # users learn the command exists at the moment they care (a consolidation
 # just landed against their library). The hint is gated on having at least
 # one umbrella destination — pruned-only runs skip it.

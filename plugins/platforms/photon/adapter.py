@@ -216,7 +216,7 @@ _FFFC_WAIT_SECONDS = 15.0  # Timeout for waiting on an attachment after a U+FFFC
 # Resolution is deliberately NOT done at import time: resolve_sidecar_dir()
 # probes the filesystem (touch/unlink) and may mirror files to the data
 # volume — side effects that must not fire just because something imported
-# this module (hermes status, test collection, plugin discovery).
+# this module (fool status, test collection, plugin discovery).
 from .sidecar_paths import dir_writable as _dir_writable, resolve_sidecar_dir
 
 # Tests monkeypatch these module globals directly; the accessors below
@@ -448,7 +448,7 @@ def check_requirements() -> bool:
             return True
         # DEBUG (not WARNING): this is the normal pre-setup state.
         # check_fn() is called from multiple hot paths in the core
-        # (load_gateway_config, hermes status, GET /api/status polling) —
+        # (load_gateway_config, fool status, GET /api/status polling) —
         # WARNING here would spam logs on every probe for unconfigured photon.
         npm_error = ""
         try:

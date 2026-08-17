@@ -95,7 +95,7 @@ class TestDriftAlertOnce:
         assert "host running hermes" in blob
         # The single alert must carry the complete supported remediation
         # command — the generic summarizer's 180-char truncation must not eat it.
-        assert "hermes cron edit drift-once-test" in deliveries[0]
+        assert "fool cron edit drift-once-test" in deliveries[0]
         assert "cronjob action=update" not in deliveries[0]
         assert "[drift_skip" not in deliveries[0]
 

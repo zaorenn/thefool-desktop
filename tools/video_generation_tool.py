@@ -12,7 +12,7 @@ video generation provider. Mirrors the ``image_generate`` design:
 - Each provider lives under ``plugins/video_gen/<name>/``.
 
 The tool itself is intentionally backend-agnostic and ships **no in-tree
-provider** — turn on a backend by enabling a plugin (``hermes plugins
+provider** — turn on a backend by enabling a plugin (``fool plugins
 enable video_gen/<name>``) and selecting it in ``fool tools`` → Video
 Generation.
 

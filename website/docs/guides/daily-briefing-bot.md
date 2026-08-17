@@ -11,7 +11,7 @@ In this tutorial, you'll build a personal briefing bot that wakes up every morni
 By the end, you'll have a fully automated workflow combining **web search**, **cron scheduling**, **delegation**, and **messaging delivery** — no code required.
 
 :::tip
-This recipe hits web search, summarization, and optional TTS — all bundled in a Portal subscription. The fastest setup is `hermes setup --portal`. See [Nous Portal](/integrations/nous-portal).
+This recipe hits web search, summarization, and optional TTS — all bundled in a Portal subscription. The fastest setup is `fool setup --portal`. See [Nous Portal](/integrations/nous-portal).
 :::
 
 ## What We're Building
@@ -33,10 +33,10 @@ Before starting, make sure you have:
 - **Hermes Agent installed** — see the [Installation guide](/getting-started/installation)
 - **Gateway running** — the gateway daemon handles cron execution:
   ```bash
-  hermes gateway install   # Install as a user service
-  sudo hermes gateway install --system   # Linux servers: boot-time system service
+  fool gateway install   # Install as a user service
+  sudo fool gateway install --system   # Linux servers: boot-time system service
   # or
-  hermes gateway           # Run in foreground
+  fool gateway           # Run in foreground
   ```
 - **Firecrawl API key** — set `FIRECRAWL_API_KEY` in your environment for web search
 - **Messaging configured** (optional but recommended) — [Telegram](/user-guide/messaging/telegram) or Discord set up with a home channel
@@ -215,7 +215,7 @@ In chat:
 
 Or from the terminal:
 ```bash
-hermes cron list
+fool cron list
 ```
 
 You'll see output like:
@@ -246,15 +246,15 @@ Hermes will use `cronjob(action="list")` to find it and `cronjob(action="remove"
 Make sure the scheduler is actually running:
 
 ```bash
-hermes cron status
+fool cron status
 ```
 
 If the gateway isn't running, your jobs won't execute. Install it as a background service for reliability:
 
 ```bash
-hermes gateway install
+fool gateway install
 # or on Linux servers
-sudo hermes gateway install --system
+sudo fool gateway install --system
 ```
 
 ## Going Further

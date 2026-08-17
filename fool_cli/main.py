@@ -4,7 +4,7 @@ Hermes CLI - Main entry point.
 
 Usage:
     hermes                     # Interactive chat (default)
-    hermes chat                # Interactive chat
+    fool chat                # Interactive chat
     fool gateway             # Run gateway in foreground
     fool gateway start       # Start gateway as service
     fool gateway stop        # Stop gateway service
@@ -13,10 +13,10 @@ Usage:
     fool gateway uninstall   # Uninstall gateway service
     fool setup               # Interactive setup wizard
     hermes logout              # Clear stored authentication
-    hermes status              # Show status of all components
-    hermes cron                # Manage cron jobs
-    hermes cron list           # List cron jobs
-    hermes cron status         # Check if cron scheduler is running
+    fool status              # Show status of all components
+    fool cron                # Manage cron jobs
+    fool cron list           # List cron jobs
+    fool cron status         # Check if cron scheduler is running
     fool doctor              # Check configuration and dependencies
     hermes honcho setup                    # Configure Honcho AI memory integration
     hermes honcho status                   # Show Honcho config and connection status
@@ -36,9 +36,9 @@ Usage:
     hermes honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
     fool version             Show version
     fool update              Update to latest version
-    hermes uninstall           Uninstall Hermes Agent
-    hermes acp                 Run as an ACP server for editor integration
-    hermes sessions browse     Interactive session picker with search
+    fool uninstall           Uninstall Hermes Agent
+    fool acp                 Run as an ACP server for editor integration
+    fool sessions browse     Interactive session picker with search
 
     hermes claw migrate --dry-run  # Preview migration without changes
 """
@@ -523,7 +523,7 @@ def _apply_profile_override() -> None:
     profile_index = None
 
     def _inside_mcp_add_args(index: int) -> bool:
-        """True once argv reaches `hermes mcp add ... --args <command argv>`.
+        """True once argv reaches `fool mcp add ... --args <command argv>`.
 
         ``mcp add --args`` is command-argv passthrough. Flags after that point
         belong to the child MCP command (for example Docker MCP Toolkit's
@@ -10209,7 +10209,7 @@ def cmd_profile(args):
                 if collision:
                     print(f"\n⚠ Cannot create alias '{name}' — {collision}")
                     print(
-                        f"  Choose a custom alias:  hermes profile alias {name} --name <custom>"
+                        f"  Choose a custom alias:  fool profile alias {name} --name <custom>"
                     )
                     print(f"  Or access via flag:     hermes -p {name} chat")
                 else:
@@ -10398,7 +10398,7 @@ def cmd_profile(args):
             print(f"Distribution: {dist_name}@{dist_version or '?'}")
             if dist_source:
                 print(f"Installed from: {dist_source}")
-            print(f"  (run `hermes profile info {name}` for full manifest)")
+            print(f"  (run `fool profile info {name}` for full manifest)")
         if alias_name:
             is_windows = sys.platform == "win32"
             wrapper = _get_wrapper_dir() / (f"{alias_name}.bat" if is_windows else alias_name)
@@ -12837,27 +12837,27 @@ def main():
                     if override:
                         print(
                             "    Update the binary selected by FOOL_CUA_DRIVER_CMD, or unset "
-                            "the override and run: hermes computer-use install --upgrade"
+                            "the override and run: fool computer-use install --upgrade"
                         )
                     else:
-                        print("    Run: hermes computer-use install")
+                        print("    Run: fool computer-use install")
                     return 1
                 try:
                     st = cua_driver_update_check()
                     if st and st.get("update_available"):
                         latest = st.get("latest_version") or "?"
                         print(f"  ⬆ Update available: cua-driver {latest}.")
-                        print("    Run: hermes computer-use install --upgrade")
+                        print("    Run: fool computer-use install --upgrade")
                     elif st:
                         print("  ✓ Up to date.")
                     else:
                         # Older driver (no check-update verb) or offline.
-                        print("  Refresh to latest: hermes computer-use install --upgrade")
+                        print("  Refresh to latest: fool computer-use install --upgrade")
                 except Exception:
-                    print("  Refresh to latest: hermes computer-use install --upgrade")
+                    print("  Refresh to latest: fool computer-use install --upgrade")
                 return 0
             print("cua-driver: not installed")
-            print("  Run: hermes computer-use install")
+            print("  Run: fool computer-use install")
             return 1
         if action == "doctor":
             from tools.computer_use.doctor import run_doctor
@@ -12883,7 +12883,7 @@ def main():
                     print(f"Computer Use is not supported on {st['platform']}.")
                     sys.exit(1)
                 if not st["installed"]:
-                    print("cua-driver: not installed. Run: hermes computer-use install")
+                    print("cua-driver: not installed. Run: fool computer-use install")
                     sys.exit(1)
                 glyph = lambda v: "✅" if v is True else ("❌" if v is False else "•")  # noqa: E731
                 print(f"cua-driver: {st['version'] or 'installed'} ({st['platform']})")
@@ -12891,7 +12891,7 @@ def main():
                     print(f"  {glyph(st['accessibility'])} Accessibility")
                     print(f"  {glyph(st['screen_recording'])} Screen Recording")
                     if not st["ready"]:
-                        print("  Grant: hermes computer-use permissions grant")
+                        print("  Grant: fool computer-use permissions grant")
                 else:  # no TCC model — readiness is driver health
                     print(f"  {glyph(st['ready'])} driver health (no permission toggles on {st['platform']})")
                 for c in st["checks"]:

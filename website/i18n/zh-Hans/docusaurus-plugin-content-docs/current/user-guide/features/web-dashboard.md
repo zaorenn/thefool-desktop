@@ -11,7 +11,7 @@ Web Dashboard 是一个基于浏览器的 UI，用于管理你的 Hermes Agent �
 ## 快速开始
 
 ```bash
-hermes dashboard
+fool dashboard
 ```
 
 这将启动一个本地 Web 服务器，并在浏览器中打开 `http://127.0.0.1:9119`。Dashboard 完全在你的机器上运行——数据不会离开 localhost。
@@ -27,13 +27,13 @@ hermes dashboard
 
 ```bash
 # 自定义端口
-hermes dashboard --port 8080
+fool dashboard --port 8080
 
 # 绑定到所有接口（在共享网络上请谨慎使用）
-hermes dashboard --host 0.0.0.0
+fool dashboard --host 0.0.0.0
 
 # 启动时不打开浏览器
-hermes dashboard --no-open
+fool dashboard --no-open
 ```
 
 ## 前置条件
@@ -46,9 +46,9 @@ cd ~/.hermes/hermes-agent && uv pip install -e ".[web,pty]"
 
 `web` 扩展会引入 FastAPI/Uvicorn；`pty` 扩展会引入 `ptyprocess`（POSIX）或 `pywinpty`（原生 Windows——注意嵌入式 TUI 本身仍需要 WSL）。`cd ~/.hermes/hermes-agent && uv pip install -e ".[all]"` 包含两个扩展，如果你还需要消息/语音等功能，这是最简便的方式。
 
-在没有依赖项的情况下运行 `hermes dashboard` 时，它会告诉你需要安装什么。如果前端尚未构建且 `npm` 可用，则会在首次启动时自动构建。
+在没有依赖项的情况下运行 `fool dashboard` 时，它会告诉你需要安装什么。如果前端尚未构建且 `npm` 可用，则会在首次启动时自动构建。
 
-Chat 标签页是每次 `hermes dashboard` 启动的一部分——内嵌的浏览器聊天面板（通过 PTY/WebSocket 运行 TUI）始终可用，无需任何额外参数。
+Chat 标签页是每次 `fool dashboard` 启动的一部分——内嵌的浏览器聊天面板（通过 PTY/WebSocket 运行 TUI）始终可用，无需任何额外参数。
 
 ## 页面
 
@@ -108,7 +108,7 @@ Chat 标签页是每次 `hermes dashboard` 启动的一部分——内嵌的浏�
 - **Import** — 上传 JSON 配置文件以替换当前值
 
 :::tip
-配置更改在下一次 agent 会话或 gateway 重启时生效。Web Dashboard 编辑的是 `hermes config set` 和 gateway 读取的同一个 `config.yaml` 文件。
+配置更改在下一次 agent 会话或 gateway 重启时生效。Web Dashboard 编辑的是 `fool config set` 和 gateway 读取的同一个 `config.yaml` 文件。
 :::
 
 ### API Keys（API 密钥）
@@ -308,7 +308,7 @@ Web 服务器将 CORS 限制为仅 localhost 来源：
 
 ```bash
 # 终端 1：启动后端 API
-hermes dashboard --no-open
+fool dashboard --no-open
 
 # 终端 2：启动带 HMR 的 Vite 开发服务器
 cd web/
@@ -322,7 +322,7 @@ npm run dev
 
 ## 更新时自动构建
 
-运行 `hermes update` 时，如果 `npm` 可用，Web 前端会自动重新构建。这使 Dashboard 与代码更新保持同步。如果未安装 `npm`，更新会跳过前端构建，`hermes dashboard` 将在首次启动时构建。
+运行 `fool update` 时，如果 `npm` 可用，Web 前端会自动重新构建。这使 Dashboard 与代码更新保持同步。如果未安装 `npm`，更新会跳过前端构建，`fool dashboard` 将在首次启动时构建。
 
 ## 主题与插件
 

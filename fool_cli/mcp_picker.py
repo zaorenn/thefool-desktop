@@ -246,7 +246,7 @@ def _print_rows_text(rows: List[_Row]) -> None:
         print(f"  {_format_row(row)}")
     print()
     print(color(
-        "  Install: hermes mcp install <name>    Picker: hermes mcp",
+        "  Install: fool mcp install <name>    Picker: fool mcp",
         Colors.DIM,
     ))
 
@@ -299,7 +299,7 @@ def run_picker() -> None:
 
 
 def install_by_name(identifier: str) -> int:
-    """`hermes mcp install <name>` — non-interactive entry-point.
+    """`fool mcp install <name>` — non-interactive entry-point.
 
     Returns 0 on success, non-zero on failure (so the CLI can propagate
     exit codes).

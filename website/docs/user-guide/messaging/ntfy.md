@@ -4,7 +4,7 @@
 
 ntfy makes a great lightweight push channel for Hermes: subscribe to a topic from the [ntfy mobile app](https://ntfy.sh/docs/subscribe/phone/), send messages to the topic to talk to the agent, get the response back on your phone.
 
-> Run `hermes gateway setup` and pick **ntfy** for a guided walk-through.
+> Run `fool gateway setup` and pick **ntfy** for a guided walk-through.
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ That's it. No SDK, no daemon, no Node.js. The adapter uses `httpx` which is alre
 ### Via setup wizard
 
 ```bash
-hermes gateway setup
+fool gateway setup
 ```
 
 Select **ntfy** and follow the prompts.
@@ -68,7 +68,7 @@ In all cases, do not put sensitive data through ntfy unless the underlying topic
    ```bash
    echo 'NTFY_TOPIC=hermes-myname-2026' >> ~/.hermes/.env
    echo 'NTFY_ALLOWED_USERS=hermes-myname-2026' >> ~/.hermes/.env
-   hermes gateway restart
+   fool gateway restart
    ```
 4. From the ntfy app, send a message to the topic. The agent's reply lands as a push notification.
 

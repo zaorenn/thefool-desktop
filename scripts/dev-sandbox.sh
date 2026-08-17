@@ -92,11 +92,11 @@ Environment:
 
 Examples:
   # create a sandbox, install this branch as `main`, and then drop to a shell,
-  # skipping `hermes setup` & the browser tools for speed.
+  # skipping `fool setup` & the browser tools for speed.
   scripts/dev-sandbox.sh install --persistent -- --skip-setup --skip-browser
 
   # Install the official upstream main. You're dropped into a shell where
-  # you can run `hermes update`.
+  # you can run `fool update`.
   scripts/dev-sandbox.sh install --persistent --from-main
 
 EOF

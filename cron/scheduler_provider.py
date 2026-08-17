@@ -401,7 +401,7 @@ class InProcessCronScheduler(CronScheduler):
         # cron store on every tick cycle so secondary-profile jobs actually fire
         # instead of languishing in a store no ticker owns (#69377). Without this,
         # only the process-global FOOL_HOME (the default profile) is ticked.
-        # Heartbeats and recovery are also scoped per profile so `hermes cron
+        # Heartbeats and recovery are also scoped per profile so `fool cron
         # status` reflects liveness for every profile independently.
         if profile_homes:
             self._start_multiplex(

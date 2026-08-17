@@ -79,7 +79,7 @@ SINGLE_HANDLER_CASES = [
 
 
 def test_config_get_unset_subcommands_parse():
-    """`hermes config get/unset` parse key args (and --json for get)."""
+    """`fool config get/unset` parse key args (and --json for get)."""
     parser = argparse.ArgumentParser(prog="hermes")
     sub = parser.add_subparsers(dest="command")
     handler = _h("config")

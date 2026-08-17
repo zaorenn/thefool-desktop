@@ -712,7 +712,7 @@ def _check_sensitive_path(filepath: str, task_id: str = "default") -> str | None
 # ---------------------------------------------------------------------------
 # Files that steer FUTURE agent behavior are a prompt-injection persistence
 # vector: an injected instruction that edits AGENTS.md / CLAUDE.md / SOUL.md /
-# .cursorrules (or a project-local .hermes config tree) outlives the current
+# .cursorrules (or a project-local .fool config tree) outlives the current
 # turn and poisons every later session that loads it. Writes to these files
 # therefore ALWAYS require human approval — even under --yolo / auto-approve —
 # and fail closed when no human channel exists.
@@ -824,7 +824,7 @@ def _protected_instruction_reason(filepath: str, task_id: str = "default",
         for pattern in extra_patterns:
             if fnmatch.fnmatch(base_lower, pattern.lower()):
                 return base
-        # Project-local .hermes config dirs (e.g. <repo>/.hermes/config.yaml)
+        # Project-local .fool config dirs (e.g. <repo>/.hermes/config.yaml)
         # are loaded as project context and steer behavior the same way.
         # Scope: the file's IMMEDIATE parent must be ``.hermes`` — matching
         # any ancestor named .hermes would gate every write inside a

@@ -376,7 +376,7 @@ def _migrate_to_21(results: Dict[str, Any], quiet: bool) -> None:
             else:
                 print(
                     "  ✓ Plugins now opt-in: no existing plugins to grandfather. "
-                    "Use `hermes plugins enable <name>` to activate."
+                    "Use `fool plugins enable <name>` to activate."
                 )
 
 

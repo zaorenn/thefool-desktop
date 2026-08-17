@@ -27,7 +27,7 @@ Hermes Agent 具备三层弹性机制，在提供商出现问题时保持会话�
 hermes fallback
 ```
 
-`hermes fallback` 复用 `hermes model` 的提供商选择器——相同的提供商列表、相同的凭据提示、相同的验证流程。使用子命令 `add`、`list`（别名 `ls`）、`remove`（别名 `rm`）和 `clear` 来管理备用链。更改会持久化到 `config.yaml` 顶层的 `fallback_providers:` 列表中。
+`hermes fallback` 复用 `fool model` 的提供商选择器——相同的提供商列表、相同的凭据提示、相同的验证流程。使用子命令 `add`、`list`（别名 `ls`）、`remove`（别名 `rm`）和 `clear` 来管理备用链。更改会持久化到 `config.yaml` 顶层的 `fallback_providers:` 列表中。
 
 如果你更倾向于直接编辑 YAML，可在 `~/.hermes/config.yaml` 中添加 `fallback_model` 部分：
 
@@ -49,8 +49,8 @@ fallback_model:
 |----------|-------|-------------|
 | AI Gateway | `ai-gateway` | `AI_GATEWAY_API_KEY` |
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nous Portal | `nous` | `hermes setup --portal`（全新安装）或 `hermes auth add nous`（OAuth） |
-| OpenAI Codex | `openai-codex` | `hermes model` → **ChatGPT or Codex Subscription**（ChatGPT OAuth） |
+| Nous Portal | `nous` | `fool setup --portal`（全新安装）或 `fool auth add nous`（OAuth） |
+| OpenAI Codex | `openai-codex` | `fool model` → **ChatGPT or Codex Subscription**（ChatGPT OAuth） |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`、`GH_TOKEN` 或 `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | 外部进程（编辑器集成） |
 | Anthropic | `anthropic` | `ANTHROPIC_API_KEY` 或 Claude Code 凭据 |
@@ -65,10 +65,10 @@ fallback_model:
 | Ollama Cloud | `ollama-cloud` | `OLLAMA_API_KEY` |
 | Google AI Studio | `gemini` | `GOOGLE_API_KEY`（别名：`GEMINI_API_KEY`） |
 | xAI（Grok） | `xai`（别名 `grok`） | `XAI_API_KEY`（可选：`XAI_BASE_URL`） |
-| xAI Grok OAuth（SuperGrok） | `xai-oauth`（别名 `grok-oauth`） | `hermes model` → xAI Grok OAuth（浏览器登录；需 SuperGrok 订阅） |
+| xAI Grok OAuth（SuperGrok） | `xai-oauth`（别名 `grok-oauth`） | `fool model` → xAI Grok OAuth（浏览器登录；需 SuperGrok 订阅） |
 | AWS Bedrock | `bedrock` | 标准 boto3 认证（`AWS_REGION` + `AWS_PROFILE` 或 `AWS_ACCESS_KEY_ID`） |
-| Qwen Portal（OAuth） | `qwen-oauth` | `hermes model`（Qwen Portal OAuth；可选：`FOOL_QWEN_BASE_URL`） |
-| MiniMax（OAuth） | `minimax-oauth` | `hermes model`（MiniMax 门户 OAuth） |
+| Qwen Portal（OAuth） | `qwen-oauth` | `fool model`（Qwen Portal OAuth；可选：`FOOL_QWEN_BASE_URL`） |
+| MiniMax（OAuth） | `minimax-oauth` | `fool model`（MiniMax 门户 OAuth） |
 | OpenCode Zen | `opencode-zen` | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | `opencode-go` | `OPENCODE_GO_API_KEY` |
 | Kilo Code | `kilocode` | `KILOCODE_API_KEY` |
@@ -271,8 +271,8 @@ fallback_model:
 |----------|-------------|-------------|
 | `"auto"` | 按顺序尝试各提供商直到找到可用的（默认） | 至少配置一个提供商 |
 | `"openrouter"` | 强制使用 OpenRouter | `OPENROUTER_API_KEY` |
-| `"nous"` | 强制使用 Nous Portal | `hermes auth` |
-| `"codex"` | 强制使用 Codex OAuth | `hermes model` → ChatGPT or Codex Subscription |
+| `"nous"` | 强制使用 Nous Portal | `fool auth` |
+| `"codex"` | 强制使用 Codex OAuth | `fool model` → ChatGPT or Codex Subscription |
 | `"main"` | 使用主 Agent 当前的提供商（仅限辅助任务） | 已配置活跃的主提供商 |
 | `"anthropic"` | 强制使用 Anthropic 原生 | `ANTHROPIC_API_KEY` 或 Claude Code 凭据 |
 

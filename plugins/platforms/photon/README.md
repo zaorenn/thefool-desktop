@@ -48,7 +48,7 @@ talks to it over loopback.
 hermes photon setup --phone +15551234567
 
 # Start the gateway
-hermes gateway start
+fool gateway start
 ```
 
 `hermes photon setup` does, in order:

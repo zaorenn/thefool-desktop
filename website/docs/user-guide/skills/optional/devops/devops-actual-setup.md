@@ -14,7 +14,7 @@ Set up Actual Computer (actual.inc) inference in Hermes.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/devops/actual-setup` |
+| Source | Optional — install with `fool skills install official/devops/actual-setup` |
 | Path | `optional-skills/devops/actual-setup` |
 | Version | `2.0.0` |
 | Author | shl0ms + Hermes Agent |
@@ -73,12 +73,12 @@ a human in a browser.
    ```
 3. Select provider + model:
    ```bash
-   hermes config set model.provider actual
-   hermes config set model.default "MODEL_ID_FROM_DISCOVERY"
+   fool config set model.provider actual
+   fool config set model.default "MODEL_ID_FROM_DISCOVERY"
    ```
 4. Verify end-to-end:
    ```bash
-   hermes chat -Q -q "Reply with exactly: ACTUAL_OK" --provider actual -m MODEL_ID
+   fool chat -Q -q "Reply with exactly: ACTUAL_OK" --provider actual -m MODEL_ID
    ```
 
 ### Local mode
@@ -96,12 +96,12 @@ a human in a browser.
    built-in provider into local no-auth mode automatically — no key needed:
    append `ACTUAL_BASE_URL=http://127.0.0.1:8080` to `~/.hermes/.env`, then:
    ```bash
-   hermes config set model.provider actual
-   hermes config set model.default "INSTALLED_MODEL_NAME"
+   fool config set model.provider actual
+   fool config set model.default "INSTALLED_MODEL_NAME"
    ```
 4. Verify (reduced toolset — see context-window pitfall below):
    ```bash
-   hermes chat -Q -q "Reply with exactly: LOCAL_OK" --provider actual -m INSTALLED_NAME -t file,web
+   fool chat -Q -q "Reply with exactly: LOCAL_OK" --provider actual -m INSTALLED_NAME -t file,web
    ```
 
 ## Quick Reference
@@ -153,11 +153,11 @@ a human in a browser.
 
 ```bash
 # Relay:
-hermes chat -Q -q "Reply with exactly: ACTUAL_OK" --provider actual -m MODEL
+fool chat -Q -q "Reply with exactly: ACTUAL_OK" --provider actual -m MODEL
 # Local (small model — reduced toolset):
-hermes chat -Q -q "Reply with exactly: LOCAL_OK" --provider actual -m MODEL -t file,web
+fool chat -Q -q "Reply with exactly: LOCAL_OK" --provider actual -m MODEL -t file,web
 # Provider status (local no-auth shows key_source=local-offline):
-hermes status
+fool status
 ```
 
 For other OpenAI-compatible clients (e.g. OpenCode), see

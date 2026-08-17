@@ -8,7 +8,7 @@ no `a2a-sdk` dependency.
 ## Enable
 
 ```bash
-hermes gateway setup      # pick A2A, or:
+fool gateway setup      # pick A2A, or:
 ```
 
 ```yaml

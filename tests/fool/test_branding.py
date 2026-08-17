@@ -41,7 +41,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
         ("Nous Research", "Fool Labs"),
         ("Hermes couldn't start", "The Fool couldn't start"),
         ("edit ~/.hermes/.env", "edit ~/.fool/.env"),
-        ("run: hermes update", "run: fool update"),
+        ("run: fool update", "run: fool update"),
     ],
 )
 def test_user_visible_text_is_rebranded(source: str, expected: str) -> None:

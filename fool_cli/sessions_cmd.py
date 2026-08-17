@@ -181,11 +181,11 @@ def cmd_sessions(args, sessions_parser=None):
             print("")
             print("  Next step — offline recovery (never modifies the source):")
             source_hint = report.get("backup_path") or db_path
-            print(f"    hermes sessions recover --source {source_hint} \\")
+            print(f"    fool sessions recover --source {source_hint} \\")
             print("        --inspect-only")
             print("  If that reports the data is recoverable, rebuild it into")
             print("  a NEW database (the active one is left untouched):")
-            print(f"    hermes sessions recover --source {source_hint} \\")
+            print(f"    fool sessions recover --source {source_hint} \\")
             print("        --output recovered-state.db")
         return
 
@@ -953,7 +953,7 @@ def cmd_sessions(args, sessions_parser=None):
             print(
                 f"Note: {skipped_open} open session{suffix} also match these "
                 "filters but will be skipped because prune only deletes ended "
-                "sessions. Use `hermes sessions delete <id>` "
+                "sessions. Use `fool sessions delete <id>` "
                 "to remove one explicitly."
             )
         verb = "Delete" if action == "prune" else "Archive"
@@ -1074,7 +1074,7 @@ def cmd_sessions(args, sessions_parser=None):
             return
         if not pinned_rows:
             print(
-                "No pinned sessions. Pin one with: hermes sessions pin <session_id>"
+                "No pinned sessions. Pin one with: fool sessions pin <session_id>"
             )
             return
         print(f"{'Title':<32} {'Last Active':<13} {'Src':<9} {'ID'}")

@@ -85,12 +85,12 @@ hermes-agent/
 │   ├── model_switch.py       # /model 命令逻辑（CLI + gateway 共用）
 │   ├── setup.py              # 交互式设置向导（大文件）
 │   ├── skin_engine.py        # CLI 主题引擎
-│   ├── skills_config.py      # hermes skills——按平台启用/禁用
+│   ├── skills_config.py      # fool skills——按平台启用/禁用
 │   ├── skills_hub.py         # /skills 斜杠命令
-│   ├── tools_config.py       # hermes tools——按平台启用/禁用
+│   ├── tools_config.py       # fool tools——按平台启用/禁用
 │   ├── plugins.py            # PluginManager——发现、加载、hook
 │   ├── callbacks.py          # 终端回调（clarify、sudo、approval）
-│   └── gateway.py            # hermes gateway 启动/停止
+│   └── gateway.py            # fool gateway 启动/停止
 │
 ├── tools/                    # 工具实现（每个工具一个文件）
 │   ├── registry.py           # 中央工具注册表
@@ -229,7 +229,7 @@ CLI、gateway、cron、ACP 及辅助调用共用的运行时解析器。将 `(pr
 
 ### 插件系统
 
-三种发现来源：`~/.hermes/plugins/`（用户级）、`.hermes/plugins/`（项目级）和 pip entry point。插件通过上下文 API 注册工具、hook 和 CLI 命令。存在两种专用插件类型：记忆提供者（`plugins/memory/`）和上下文引擎（`plugins/context_engine/`）。两者均为单选——每种同时只能激活一个，通过 `hermes plugins` 或 `config.yaml` 配置。
+三种发现来源：`~/.hermes/plugins/`（用户级）、`.hermes/plugins/`（项目级）和 pip entry point。插件通过上下文 API 注册工具、hook 和 CLI 命令。存在两种专用插件类型：记忆提供者（`plugins/memory/`）和上下文引擎（`plugins/context_engine/`）。两者均为单选——每种同时只能激活一个，通过 `fool plugins` 或 `config.yaml` 配置。
 
 → [插件指南](/developer-guide/plugins)，[记忆提供者插件](./memory-provider-plugin.md)
 

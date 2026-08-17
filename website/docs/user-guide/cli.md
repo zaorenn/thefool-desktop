@@ -9,7 +9,7 @@ description: "Master the Hermes Agent terminal interface — commands, keybindin
 Hermes Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `hermes setup --portal` — and you're ready to `hermes chat`. See [Nous Portal](/integrations/nous-portal).
+One command — `fool setup --portal` — and you're ready to `fool chat`. See [Nous Portal](/integrations/nous-portal).
 :::
 
 :::tip
@@ -23,21 +23,21 @@ Hermes also ships a modern TUI with modal overlays, mouse selection, and non-blo
 hermes
 
 # Single query mode (non-interactive)
-hermes chat -q "Hello"
+fool chat -q "Hello"
 
 # With a specific model
-hermes chat --model "anthropic/claude-sonnet-4"
+fool chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-hermes chat --provider nous        # Use Nous Portal
-hermes chat --provider openrouter  # Force OpenRouter
+fool chat --provider nous        # Use Nous Portal
+fool chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
-hermes chat --toolsets "web,terminal,skills"
+fool chat --toolsets "web,terminal,skills"
 
 # Start with one or more skills preloaded
 hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -q "open a draft PR"
+fool chat -s github-pr-workflow -q "open a draft PR"
 
 # Resume previous sessions
 hermes --continue             # Resume the most recent CLI session (-c)
@@ -46,7 +46,7 @@ hermes --resume latest        # Resume the most recent session (same as -c)
 hermes --resume latest --in ./dir  # Resume ./dir's latest session, staying in ./dir
 
 # Verbose mode (debug output)
-hermes chat --verbose
+fool chat --verbose
 
 # Isolated git worktree (for running multiple agents in parallel)
 hermes -w                         # Interactive mode in worktree
@@ -55,16 +55,16 @@ hermes -w -z "Fix issue #123"     # Single query in worktree
 
 ### Plugin management
 
-The `hermes plugins` commands manage native Hermes plugins and portable Agent
+The `fool plugins` commands manage native Hermes plugins and portable Agent
 Plugins v1 packages through the same opt-in workflow:
 
 ```bash
-hermes plugins install owner/repository --no-enable
-hermes plugins list
-hermes plugins enable <plugin-name>
-hermes plugins disable <plugin-name>
-hermes plugins update <plugin-name>
-hermes plugins remove <plugin-name>
+fool plugins install owner/repository --no-enable
+fool plugins list
+fool plugins enable <plugin-name>
+fool plugins disable <plugin-name>
+fool plugins update <plugin-name>
+fool plugins remove <plugin-name>
 ```
 
 Portable packages remain disabled until explicitly enabled. Hermes currently
@@ -215,7 +215,7 @@ If you already know which skills you want active for the session, pass them at l
 
 ```bash
 hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -s github-auth
+fool chat -s github-pr-workflow -s github-auth
 ```
 
 Hermes loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
@@ -409,7 +409,7 @@ hermes -r 20260225_143052_a1b2c3           # Short form
 
 Resuming restores the full conversation history from SQLite. The agent sees all previous messages, tool calls, and responses — just as if you never left.
 
-Use `/title My Session Name` inside a chat to name the current session, or `hermes sessions rename <id> <title>` from the command line. Use `hermes sessions list` to browse past sessions.
+Use `/title My Session Name` inside a chat to name the current session, or `fool sessions rename <id> <title>` from the command line. Use `fool sessions list` to browse past sessions.
 
 ### Session Storage
 
@@ -498,5 +498,5 @@ By default, the CLI runs in quiet mode which:
 
 For debug output:
 ```bash
-hermes chat --verbose
+fool chat --verbose
 ```

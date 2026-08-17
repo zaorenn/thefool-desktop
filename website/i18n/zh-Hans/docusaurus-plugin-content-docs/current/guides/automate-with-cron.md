@@ -94,7 +94,7 @@ Keep it under 500 words — highlight only what matters." --name "Weekly AI dige
 通过 CLI：
 
 ```bash
-hermes cron create "0 9 * * 1" \
+fool cron create "0 9 * * 1" \
   "Generate a weekly report covering the top AI news, trending ML GitHub repos, and most-discussed HN posts. Format with sections, include links, keep under 500 words." \
   --name "Weekly AI digest" \
   --deliver telegram

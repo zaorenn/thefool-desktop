@@ -149,7 +149,7 @@ from fool_cli.config import (
     get_env_value,
     ensure_hermes_home,
 )
-# display_hermes_home imported lazily at call sites (stale-module safety during hermes update)
+# display_hermes_home imported lazily at call sites (stale-module safety during fool update)
 
 from fool_cli.colors import Colors, color
 
@@ -190,9 +190,9 @@ def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     print_info("The interactive wizard cannot be used here.")
     print()
     print_info("Configure Hermes using environment variables or config commands:")
-    print_info("  hermes config set model.provider custom")
-    print_info("  hermes config set model.base_url http://localhost:8080/v1")
-    print_info("  hermes config set model.default your-model-name")
+    print_info("  fool config set model.provider custom")
+    print_info("  fool config set model.base_url http://localhost:8080/v1")
+    print_info("  fool config set model.default your-model-name")
     print()
     print_info("Or set OPENROUTER_API_KEY / OPENAI_API_KEY in your environment.")
     print_info("Run 'fool setup' in an interactive terminal to use the full wizard.")
@@ -411,8 +411,8 @@ def _print_setup_summary(config: dict, hermes_home):
         print()
         print_warning("No inference provider is configured — Hermes cannot chat yet.")
         print_info("  Finish this one step with either of:")
-        print_info("    hermes model            (pick any provider/model)")
-        print_info("    hermes setup --portal   (Nous Portal OAuth, no API key)")
+        print_info("    fool model            (pick any provider/model)")
+        print_info("    fool setup --portal   (Nous Portal OAuth, no API key)")
 
     # Tool availability summary
     print()
@@ -610,7 +610,7 @@ def _print_setup_summary(config: dict, hermes_home):
     if get_env_value("HASS_TOKEN"):
         tool_status.append(("Smart Home (Home Assistant)", True, None))
 
-    # Spotify (OAuth via hermes auth spotify — check auth.json, not env vars)
+    # Spotify (OAuth via fool auth spotify — check auth.json, not env vars)
     try:
         from fool_cli.auth import get_provider_auth_state
         _spotify_state = get_provider_auth_state("spotify") or {}
@@ -704,7 +704,7 @@ def _print_setup_summary(config: dict, hermes_home):
     print(
         f"   {color('fool config edit', Colors.GREEN)}    Open config in your editor"
     )
-    print(f"   {color('hermes config set <key> <value>', Colors.GREEN)}")
+    print(f"   {color('fool config set <key> <value>', Colors.GREEN)}")
     print("                          Set a specific value")
     print()
     print("   Or edit the files directly:")
@@ -888,7 +888,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     print_info(f"   Guide: {_DOCS_BASE}/integrations/providers")
     print()
 
-    # Delegate to the shared hermes model flow — handles provider picker,
+    # Delegate to the shared fool model flow — handles provider picker,
     # credential prompting, model selection, and config persistence.
     from fool_cli.main import select_provider_and_model
     try:
@@ -899,7 +899,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     except Exception as exc:
         logger.debug("select_provider_and_model error during setup: %s", exc)
         print_warning(f"Provider setup encountered an error: {exc}")
-        print_info("You can try again later with: hermes model")
+        print_info("You can try again later with: fool model")
 
     # Re-sync the wizard's config dict from what cmd_model saved to disk.
     # This is critical: cmd_model writes to disk via its own load/save cycle,
@@ -1227,7 +1227,7 @@ def _setup_tts_provider(config: dict):
                     from fool_constants import display_hermes_home as _dhh
                     print_warning(
                         "No xAI API key provided for TTS. Configure XAI_API_KEY "
-                        f"via hermes setup model or {_dhh()}/.env to use xAI TTS. "
+                        f"via fool setup model or {_dhh()}/.env to use xAI TTS. "
                         "Falling back to Edge TTS."
                     )
                     selected = "edge"
@@ -2147,8 +2147,8 @@ def _setup_webhooks():
     print_info("   Route configuration guide:")
     print_info("   https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/#configuring-routes")
     print()
-    print_info("   Open config in your editor:  hermes config edit")
-    print_info("   Open config in your editor:  hermes config edit")
+    print_info("   Open config in your editor:  fool config edit")
+    print_info("   Open config in your editor:  fool config edit")
 
 
 def setup_gateway(config: dict):
@@ -2226,7 +2226,7 @@ def setup_gateway(config: dict):
             print_info("   Set one later with /set-home in your chat, or:")
             for plat in missing_home:
                 print_info(
-                    f"     hermes config set {plat.upper()}_HOME_CHANNEL <channel_id>"
+                    f"     fool config set {plat.upper()}_HOME_CHANNEL <channel_id>"
                 )
 
     # ── Gateway Service Setup ──
@@ -2844,14 +2844,14 @@ def run_setup_wizard(args):
     """Run the interactive setup wizard.
 
     Supports full, quick, and section-specific setup:
-      hermes setup           — full or quick (auto-detected)
-      hermes setup model     — just model/provider
-      hermes setup tts       — just text-to-speech
-      hermes setup terminal  — just terminal backend
-      hermes setup gateway   — just messaging platforms
-      hermes setup tools     — just tool configuration
-      hermes setup telemetry — just local shared metrics
-      hermes setup agent     — just agent settings
+      fool setup           — full or quick (auto-detected)
+      fool setup model     — just model/provider
+      fool setup tts       — just text-to-speech
+      fool setup terminal  — just terminal backend
+      fool setup gateway   — just messaging platforms
+      fool setup tools     — just tool configuration
+      fool setup telemetry — just local shared metrics
+      fool setup agent     — just agent settings
     """
     from fool_cli.config import is_managed, managed_error
     if is_managed():
@@ -2993,7 +2993,7 @@ def run_setup_wizard(args):
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
-        print_info("Tip: jump straight to a section with 'hermes setup model|terminal|")
+        print_info("Tip: jump straight to a section with 'fool setup model|terminal|")
         print_info("     gateway|tools|agent', or fill only missing items with --quick.")
         # Fall through to the "Full Setup — run all sections" block below.
         # --reconfigure is now the default on existing installs; the flag
@@ -3087,7 +3087,7 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     Routes straight to the Nous Portal provider — runs the device-code OAuth
     login, picks a Nous model, then configures the terminal backend and (optionally)
     a messaging platform. Applies sensible defaults for everything else (agent
-    settings, tools); the user can customize later via ``hermes setup <section>``
+    settings, tools); the user can customize later via ``fool setup <section>``
     or switch providers with ``fool model``.
     """
     from fool_cli.config import load_config
@@ -3111,7 +3111,7 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     except Exception as exc:
         logger.debug("_model_flow_nous error during quick setup: %s", exc)
         print_warning(f"Nous Portal setup encountered an error: {exc}")
-        print_info("You can try again later with: hermes model")
+        print_info("You can try again later with: fool model")
 
     # Re-sync the wizard's config dict from disk — _model_flow_nous (and the
     # underlying login/model save) write via their own load/save cycle, and the
@@ -3152,9 +3152,9 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     print()
     print_success("Setup complete! You're ready to go.")
     print()
-    print_info("  Configure all settings:    hermes setup")
+    print_info("  Configure all settings:    fool setup")
     if gateway_choice != 0:
-        print_info("  Connect Telegram/Discord:  hermes setup gateway")
+        print_info("  Connect Telegram/Discord:  fool setup gateway")
     print()
 
     _print_setup_summary(config, hermes_home)
@@ -3300,11 +3300,11 @@ def _run_blank_slate_setup(config: dict, hermes_home, is_existing: bool):
         print()
         print_success("Blank Slate setup complete — minimal agent ready.")
         print_info("Enable anything later, on demand:")
-        print_info("  Enable tools:        hermes tools")
-        print_info("  Seed skills:         hermes skills opt-in --sync")
-        print_info("  Add MCP servers:     hermes mcp add")
-        print_info("  Enable plugins:      hermes plugins")
-        print_info("  Tune agent settings: hermes setup agent")
+        print_info("  Enable tools:        fool tools")
+        print_info("  Seed skills:         fool skills opt-in --sync")
+        print_info("  Add MCP servers:     fool mcp add")
+        print_info("  Enable plugins:      fool plugins")
+        print_info("  Tune agent settings: fool setup agent")
         print()
         _print_setup_summary(config, hermes_home)
         return
@@ -3374,7 +3374,7 @@ def _blank_slate_walkthrough(config: dict, hermes_home):
     print()
     print_header("MCP Servers")
     if prompt_yes_no("Add an MCP server now?", default=False):
-        print_info("Add servers with `hermes mcp add <name> --url ... | --command ...`.")
+        print_info("Add servers with `fool mcp add <name> --url ... | --command ...`.")
     else:
         print_info("No MCP servers configured. Add later with `fool mcp add`.")
 
@@ -3387,10 +3387,10 @@ def _blank_slate_walkthrough(config: dict, hermes_home):
 
     print()
     print_success("Blank Slate setup complete — minimal agent ready.")
-    print_info("  Enable more tools:   hermes tools")
-    print_info("  Seed skills:         hermes skills opt-in --sync")
-    print_info("  Add MCP servers:     hermes mcp add")
-    print_info("  Tune agent settings: hermes setup agent")
+    print_info("  Enable more tools:   fool tools")
+    print_info("  Seed skills:         fool skills opt-in --sync")
+    print_info("  Add MCP servers:     fool mcp add")
+    print_info("  Tune agent settings: fool setup agent")
     print()
 
     _print_setup_summary(config, hermes_home)

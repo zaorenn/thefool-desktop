@@ -19,28 +19,28 @@ Hermes 还提供了一个现代 TUI，支持模态覆盖层、鼠标选择和非
 hermes
 
 # 单次查询模式（非交互式）
-hermes chat -q "Hello"
+fool chat -q "Hello"
 
 # 使用指定模型
-hermes chat --model "anthropic/claude-sonnet-4"
+fool chat --model "anthropic/claude-sonnet-4"
 
 # 使用指定提供商
-hermes chat --provider nous        # 使用 Nous Portal
-hermes chat --provider openrouter  # 强制使用 OpenRouter
+fool chat --provider nous        # 使用 Nous Portal
+fool chat --provider openrouter  # 强制使用 OpenRouter
 
 # 使用指定工具集
-hermes chat --toolsets "web,terminal,skills"
+fool chat --toolsets "web,terminal,skills"
 
 # 启动时预加载一个或多个 skill
 hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -q "open a draft PR"
+fool chat -s github-pr-workflow -q "open a draft PR"
 
 # 恢复之前的会话
 hermes --continue             # 恢复最近的 CLI 会话（-c）
 hermes --resume <session_id>  # 通过 ID 恢复指定会话（-r）
 
 # 详细模式（调试输出）
-hermes chat --verbose
+fool chat --verbose
 
 # 隔离的 git worktree（用于并行运行多个 agent）
 hermes -w                         # 在 worktree 中以交互模式运行
@@ -165,7 +165,7 @@ quick_commands:
 
 ```bash
 hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -s github-auth
+fool chat -s github-pr-workflow -s github-auth
 ```
 
 Hermes 会在第一轮对话前将每个指定的 skill 加载到会话 prompt 中。该标志在交互模式和单次查询模式下均有效。
@@ -347,7 +347,7 @@ hermes -r 20260225_143052_a1b2c3           # 简写形式
 
 恢复会从 SQLite 中还原完整的对话历史。agent 能看到所有之前的消息、工具调用和响应——就像从未离开一样。
 
-在聊天中使用 `/title My Session Name` 为当前会话命名，或从命令行使用 `hermes sessions rename <id> <title>`。使用 `hermes sessions list` 浏览历史会话。
+在聊天中使用 `/title My Session Name` 为当前会话命名，或从命令行使用 `fool sessions rename <id> <title>`。使用 `fool sessions list` 浏览历史会话。
 
 ### 会话存储
 
@@ -436,5 +436,5 @@ Hermes 立即确认任务并将提示符还给你：
 
 如需调试输出：
 ```bash
-hermes chat --verbose
+fool chat --verbose
 ```

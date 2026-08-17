@@ -65,7 +65,7 @@ def test_usage_command_is_registered():
     import argparse
     import fool_cli.curator as curator_cli
 
-    parser = argparse.ArgumentParser(prog="hermes curator")
+    parser = argparse.ArgumentParser(prog="fool curator")
     curator_cli.register_cli(parser)
     args = parser.parse_args(["usage", "--sort", "recent", "--provenance", "hub", "--json"])
     assert args.func is curator_cli._cmd_usage

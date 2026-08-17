@@ -1,4 +1,4 @@
-"""Tests for `hermes memory setup [provider]` routing.
+"""Tests for `fool memory setup [provider]` routing.
 
 The `memory setup` subcommand accepts an optional positional ``provider`` so a
 fresh install can configure a specific provider directly (e.g.
@@ -30,7 +30,7 @@ class TestMemorySetupProviderRouting:
         memory_setup.cmd_setup_provider("notaprovider")
         out = capsys.readouterr().out
         assert "not found" in out
-        assert "hermes memory setup" in out
+        assert "fool memory setup" in out
 
 
 class TestInstallDependenciesRunner:

@@ -144,7 +144,7 @@ declare global {
         remove: (id: string) => Promise<{ ok: boolean; registry: DesktopConnectionsRegistry }>
         setPrimary: (id: string) => Promise<{ ok: boolean; registry: DesktopConnectionsRegistry }>
         test: (id: string) => Promise<DesktopConnectionTestResult>
-        // Fan out `hermes update` to every eligible registered connection;
+        // Fan out `fool update` to every eligible registered connection;
         // cloud entries are skipped (platform-managed), each row independent.
         updateAll?: () => Promise<{ ok: boolean; results: DesktopConnectionUpdateResult[] }>
         // Registry lifecycle push: fired when a connection is removed or
@@ -530,7 +530,7 @@ export interface DesktopUpdateApplyResult {
   message?: string
   blockers?: DesktopUpdateBlocker[]
   /** True when no staged updater exists (CLI install) and the user should run
-   *  `hermes update` themselves. `command` is the exact line to run. */
+   *  `fool update` themselves. `command` is the exact line to run. */
   manual?: boolean
   command?: string
   hermesRoot?: string
@@ -875,7 +875,7 @@ export interface DesktopCloudStatus {
   portalBaseUrl: string
   // Whether the OAuth partition holds a live Nous portal (Privy) session — the
   // portal authenticates via Privy, so this reflects the privy-token cookie, NOT
-  // the hermes gateway session cookies. See cookiesHavePrivySession.
+  // the fool gateway session cookies. See cookiesHavePrivySession.
   signedIn: boolean
 }
 

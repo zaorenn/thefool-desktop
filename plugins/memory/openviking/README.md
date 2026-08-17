@@ -28,7 +28,7 @@ openviking-server
 Then configure Hermes:
 
 ```bash
-hermes memory setup    # select "openviking"
+fool memory setup    # select "openviking"
 ```
 
 The setup can link to an existing `~/.openviking/ovcli.conf`, copy its current
@@ -38,7 +38,7 @@ not exist.
 Or manually:
 
 ```bash
-hermes config set memory.provider openviking
+fool config set memory.provider openviking
 ```
 
 Add the connection settings to the active profile's `.env` file. For the

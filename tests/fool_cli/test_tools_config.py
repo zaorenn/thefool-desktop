@@ -954,7 +954,7 @@ def test_visible_providers_reuses_pool_video_feature_snapshot(monkeypatch):
 # ── Windows console-flash guard for post-setup subprocess spawns ──────────────
 #
 # The desktop GUI runs post-setup hooks through a detached, console-less
-# `hermes tools post-setup <key>` child. On Windows each console child (npm,
+# `fool tools post-setup <key>` child. On Windows each console child (npm,
 # npx, pip, powershell) spawned without CREATE_NO_WINDOW materializes a brand
 # new console window — the "terminal flash" reported on the Capabilities
 # browser-setup journey. `_post_setup_no_window_flags` is the single wrapper
@@ -1056,7 +1056,7 @@ def test_agent_disabled_toolsets_still_wins():
 @_requires_recently_shipped
 def test_agent_disabled_toolsets_json_array_string_form_still_wins():
     """#86661: the suppression list may arrive as a JSON-array string (e.g.
-    `hermes config set agent.disabled_toolsets '["memory"]'`). It must be
+    `fool config set agent.disabled_toolsets '["memory"]'`). It must be
     parsed, not treated as one dead toolset name that filters nothing."""
     config = _saved_list_from_before()
     import json as _json

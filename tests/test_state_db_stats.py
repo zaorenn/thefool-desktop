@@ -1,4 +1,4 @@
-"""Tests for state.db health/stats collection (hermes doctor section).
+"""Tests for state.db health/stats collection (fool doctor section).
 
 Covers:
 - ``fool_state.collect_state_db_stats``: read-only, best-effort stats

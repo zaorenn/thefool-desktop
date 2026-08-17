@@ -429,8 +429,8 @@ def _print_curator_first_run_notice() -> None:
         f"~{days}d after installation; only agent-created skills are in "
         f"scope and nothing is ever auto-deleted (archive is recoverable)."
     )
-    print("  Preview now:  hermes curator run --dry-run")
-    print("  Pause it:     hermes curator pause")
+    print("  Preview now:  fool curator run --dry-run")
+    print("  Pause it:     fool curator pause")
     print(
         "  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator"
     )
@@ -521,7 +521,7 @@ def _print_fts_optimize_available_notice() -> None:
             "interrupted. Search still works; re-run the command to resume "
             "and finish reclaiming disk:"
         )
-        print("    hermes sessions optimize-storage")
+        print("    fool sessions optimize-storage")
         return
 
     # Concrete size framing — lead with the savings the user cares about.
@@ -542,7 +542,7 @@ def _print_fts_optimize_available_notice() -> None:
             f"typically frees ~60% of state.db — about {est_reclaim:.1f} GB "
             f"of your current {size_gb:.1f} GB."
         )
-    print("  Run when convenient:  hermes sessions optimize-storage")
+    print("  Run when convenient:  fool sessions optimize-storage")
     print(
         "  It runs in the foreground with a progress bar, is safe to "
         "interrupt/re-run, and never changes your conversations."
@@ -603,7 +603,7 @@ def _print_curator_recent_run_notice() -> None:
         print(f"  {line}")
     print(
         "  (This message shows once per curator run. "
-        "View anytime: hermes curator status)"
+        "View anytime: fool curator status)"
     )
 
     # Stamp shown so we don't repeat on the next update.
@@ -701,7 +701,7 @@ def _finish_dashboard_update_cleanup(
         "not be auto-restarted."
     )
     print("  Re-launch it when you want the web UI back:")
-    print("    hermes dashboard --port <port>")
+    print("    fool dashboard --port <port>")
 
 def _atomic_replace_dir(src: str, dst: str) -> None:
     """Replace directory *dst* with *src* without leaving *dst* half-deleted.
@@ -905,7 +905,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False):
         print(
             "  This path runs when git file I/O is broken on the system. "
             "Either resolve the git-side breakage (typically an antivirus "
-            "or NTFS filter holding files open) and rerun `hermes update "
+            "or NTFS filter holding files open) and rerun `fool update "
             f"--branch {branch}`, or update against main with `fool update`."
         )
         _m().sys.exit(1)
@@ -1151,7 +1151,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False):
         if result.get("user_modified"):
             print(f"  ~ {len(result['user_modified'])} user-modified (kept)")
             print(
-                "    → see them: hermes skills list-modified  "
+                "    → see them: fool skills list-modified  "
                 "(diff/reset to resume updates)"
             )
         if result.get("cleaned"):
@@ -2344,7 +2344,7 @@ def _repair_node_deps_on_current_checkout(print_completion) -> None:
     A current checkout does not imply healthy Node deps: a previous npm
     install may have failed (EBADENGINE from a node/npm mismatch, network
     timeout, interrupted install) and its error message says to "re-run
-    hermes update" — but the early return never reached the Node refresh,
+    fool update" — but the early return never reached the Node refresh,
     so that repair advice could never work. ``_update_node_dependencies``
     self-gates on the lockfile hash, which is only recorded after a
     SUCCESSFUL npm install (and re-trips when node_modules is missing or
@@ -3473,7 +3473,7 @@ def _format_venv_python_holders_message(matches: list[tuple[int, str, str]]) -> 
     lines.append(
         "  Close the Hermes desktop app / other Hermes terminals, then re-run:"
     )
-    lines.append("    hermes update")
+    lines.append("    fool update")
     lines.append("  (or use `fool update --force-venv` to proceed anyway at your own risk)")
     return "\n".join(lines)
 
@@ -3854,7 +3854,7 @@ def _pause_windows_gateways_for_update() -> dict | None:
         if respawnable < len(unmapped_pids):
             # Some had no recoverable command line (psutil missing, access
             # denied, already gone): those still need a manual restart.
-            print("    Restart manually after update: hermes gateway run")
+            print("    Restart manually after update: fool gateway run")
 
     return {
         "resume_needed": True,
@@ -3988,7 +3988,7 @@ def _warn_incomplete_gateway_fleet_restart(failed_units: list) -> None:
         print(f"    - {name}")
     print("  Skipped units may still be running pre-update code (mixed")
     print("  sys.modules). Restart them manually, then verify:")
-    print("    hermes gateway status")
+    print("    fool gateway status")
     print("    systemctl --user restart <unit>   # user-scope")
     print("    sudo systemctl restart <unit>     # system-scope")
 
@@ -4030,8 +4030,8 @@ def _warn_gateway_restart_phase_aborted(exc: BaseException, pids) -> None:
         print("  Any gateway still running is serving pre-update code")
         print("  (mixed sys.modules) against the updated checkout.")
     print("  Restart it manually, then verify:")
-    print("    hermes gateway restart")
-    print("    hermes gateway status")
+    print("    fool gateway restart")
+    print("    fool gateway status")
 
 def _refresh_windows_gateway_launchers() -> None:
     """Regenerate installed Windows gateway launcher scripts after update.
@@ -4415,7 +4415,7 @@ def _rebuild_desktop_after_update(
     #
     # Start the build subprocess with the Hermes-managed Node on PATH: when
     # `fool update` runs inside the desktop updater chain (Desktop →
-    # hermes-setup → hermes update), the shell PATH customizations are lost,
+    # hermes-setup → fool update), the shell PATH customizations are lost,
     # so a bare-PATH child would fail with `node: not found` before cmd_gui can
     # self-heal.
     from fool_constants import with_hermes_node_path
@@ -4920,7 +4920,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     _print_update_completion("✓ Update complete!")
                 else:
                     print(f"⚠ Venv still unhealthy after repair: {detail_after}")
-                    print("  Close all Hermes windows/gateways and re-run: hermes update")
+                    print("  Close all Hermes windows/gateways and re-run: fool update")
             else:
                 _repair_node_deps_on_current_checkout(_print_update_completion)
             if runtime_repaired is not None and not _m()._is_windows():
@@ -5077,7 +5077,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             )
             print(
                 "  Reattach to the branch and retry: "
-                f"git -C {_m().PROJECT_ROOT} checkout {branch} && hermes update"
+                f"git -C {_m().PROJECT_ROOT} checkout {branch} && fool update"
             )
             _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
             sys.exit(1)
@@ -5357,7 +5357,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             if result.get("user_modified"):
                 print(f"  ~ {len(result['user_modified'])} user-modified (kept)")
                 print(
-                    "    → see them: hermes skills list-modified  "
+                    "    → see them: fool skills list-modified  "
                     "(diff/reset to resume updates)"
                 )
             if result.get("cleaned"):
@@ -5591,7 +5591,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     print()
                     print("✓ Configuration updated!")
                 if (gateway_mode or assume_yes or response == "auto") and missing_env:
-                    print("  ℹ API keys require manual entry: hermes config migrate")
+                    print("  ℹ API keys require manual entry: fool config migrate")
             else:
                 print()
                 print("Skipped. Run 'fool config migrate' later to configure.")
@@ -5979,7 +5979,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                         print(
                             f"  ⚠ systemctl timed out listing {scope}-scope "
                             f"gateway units ({exc.cmd if exc.cmd else 'unknown command'}). "
-                            f"Check the gateway with: hermes gateway status"
+                            f"Check the gateway with: fool gateway status"
                         )
                         continue
 
@@ -6418,7 +6418,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 )
                 if unmapped_count:
                     print(f"  → Stopped {unmapped_count} manual gateway process(es)")
-                    print("    Restart manually: hermes gateway run")
+                    print("    Restart manually: fool gateway run")
                     if unmapped_count > 1:
                         print(
                             "    (or: hermes -p <profile> gateway run  for each profile)"
@@ -6530,7 +6530,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 print("  hermes-gateway.service for the bot token and cause SIGTERM")
                 print("  flap loops. Remove them with:")
                 print()
-                print("    hermes gateway migrate-legacy")
+                print("    fool gateway migrate-legacy")
                 print()
                 print("  (add `sudo` if any are in system scope)")
         except Exception as e:
@@ -6551,7 +6551,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         print()
         print("Tip: You can now select a provider and model:")
-        print("  hermes model              # Select provider and model")
+        print("  fool model              # Select provider and model")
 
         if gateway_fleet_restart_incomplete:
             # Code update itself succeeded, but at least one gateway still

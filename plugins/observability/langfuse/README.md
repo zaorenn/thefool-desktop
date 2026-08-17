@@ -9,16 +9,16 @@ Pick one:
 
 ```bash
 # Interactive: walks you through credentials + SDK install + enable
-hermes tools  # → Langfuse Observability
+fool tools  # → Langfuse Observability
 
 # Manual
 pip install langfuse
-hermes plugins enable observability/langfuse
+fool plugins enable observability/langfuse
 ```
 
 ## Required credentials
 
-Set these in `~/.hermes/.env` (or via `hermes tools`):
+Set these in `~/.hermes/.env` (or via `fool tools`):
 
 ```bash
 FOOL_LANGFUSE_PUBLIC_KEY=pk-lf-...
@@ -32,8 +32,8 @@ open.
 ## Verify
 
 ```bash
-hermes plugins list                 # observability/langfuse should show "enabled"
-hermes chat -q "hello"              # then check Langfuse for a "Hermes turn" trace
+fool plugins list                 # observability/langfuse should show "enabled"
+fool chat -q "hello"              # then check Langfuse for a "Hermes turn" trace
 ```
 
 Generation observations include the Hermes system prompt when the provider
@@ -79,5 +79,5 @@ For personal sessions or shared Langfuse projects, prefer `metadata`.
 ## Disable
 
 ```bash
-hermes plugins disable observability/langfuse
+fool plugins disable observability/langfuse
 ```

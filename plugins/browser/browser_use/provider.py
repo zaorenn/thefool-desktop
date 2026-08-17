@@ -307,7 +307,7 @@ class BrowserUseBrowserProvider(BrowserProvider):
             )
 
     def get_setup_schema(self) -> Optional[Dict[str, Any]]:
-        # Hidden from the hermes tools picker: the "Browser Use" row now
+        # Hidden from the fool tools picker: the "Browser Use" row now
         # activates the CLI-based backend (tools/browser_use_cli.py). This
         # provider stays registered for the Nous gateway path and un-migrated
         # legacy cloud_provider configs.

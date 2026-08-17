@@ -26,8 +26,8 @@ I am the default profile on this machine.
 - Execute directly.
 `
 
-test('generated protocol uses hermes profile list, not the invalid profiles plural', () => {
-  assert.match(source, /run `hermes profile list` for the LIVE/)
+test('generated protocol uses fool profile list, not the invalid profiles plural', () => {
+  assert.match(source, /run `fool profile list` for the LIVE/)
   assert.doesNotMatch(source, /run `hermes profiles list` for the LIVE/)
 })
 

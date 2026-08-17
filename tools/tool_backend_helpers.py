@@ -163,7 +163,7 @@ def resolve_provider_secret(
 ) -> str:
     """Resolve a voice-provider API key. Single owner for STT/TTS key lookup.
 
-    Resolution order (fixes #68003 — keys added via ``hermes auth add
+    Resolution order (fixes #68003 — keys added via ``fool auth add
     <provider>`` were invisible to the voice tools, which only consulted
     env/.env):
 
@@ -174,7 +174,7 @@ def resolve_provider_secret(
        ``agent/secret_scope.py``). Outside multiplexing it reads
        ``fool_cli.config.get_env_value`` (os.environ, then ``.env``),
        matching the tools' historical behaviour exactly.
-    3. The credential pool / auth store for ``provider_id`` (``hermes auth
+    3. The credential pool / auth store for ``provider_id`` (``fool auth
        add <provider_id>``). Skipped under an active multiplex turn, where
        only the profile scope is authoritative for credentials.
 
@@ -224,7 +224,7 @@ def resolve_provider_secret(
     try:
         from agent.credential_pool import load_pool
 
-        # `hermes auth add <provider>` keys a registry provider by its plain
+        # `fool auth add <provider>` keys a registry provider by its plain
         # id, but a provider declared via config.yaml ``providers.<name>`` /
         # ``custom_providers`` is pooled under ``custom:<name>`` (see
         # agent/credential_pool.py CUSTOM_POOL_PREFIX). Check both.

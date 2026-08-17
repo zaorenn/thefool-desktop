@@ -1136,7 +1136,7 @@ def get_nous_recommended_aux_model(
 # ---------------------------------------------------------------------------
 # Canonical provider list — single source of truth for provider identity.
 # Every code path that lists, displays, or iterates providers derives from
-# this list:  hermes model, /model, list_authenticated_providers.
+# this list:  fool model, /model, list_authenticated_providers.
 #
 # Fields:
 #   slug        — internal provider ID (used in config.yaml, --provider flag)
@@ -3501,7 +3501,7 @@ def _credential_fingerprint(provider: str) -> str:
 
     # Effective configured endpoint: config.yaml's model.base_url changes the
     # endpoint discovery probes (data-residency hosts) without touching any
-    # env var, so it must change the fingerprint too or `hermes config set
+    # env var, so it must change the fingerprint too or `fool config set
     # model.base_url ...` keeps serving the previous endpoint's cached
     # catalog until TTL expiry.
     if provider in ("openai", "openai-api"):

@@ -35,9 +35,9 @@ them collectively.
 
 ```bash
 # Create profiles (once)
-hermes profile create coder
-hermes profile create personal-bot
-hermes profile create research
+fool profile create coder
+fool profile create personal-bot
+fool profile create research
 
 # Configure each
 coder setup
@@ -87,8 +87,8 @@ Set the flag on the **default profile** (it owns the multiplexer) and restart
 its gateway:
 
 ```bash
-hermes config set gateway.multiplex_profiles true
-hermes gateway restart
+fool config set gateway.multiplex_profiles true
+fool gateway restart
 ```
 
 Equivalently, in the default profile's `~/.hermes/config.yaml`:
@@ -105,7 +105,7 @@ credentials, and routes each inbound message to the profile it belongs to. Each
 turn resolves the routed profile's config, skills, memory, SOUL, **and provider
 keys** — credentials are never shared across profiles.
 
-You do **not** run `hermes gateway start` for the secondary profiles — the
+You do **not** run `fool gateway start` for the secondary profiles — the
 default gateway serves them. See the contract changes below.
 
 ### What changes when multiplexing is on
@@ -115,7 +115,7 @@ moment the flag is off.
 
 #### 1. Secondary profiles must not start their own gateway
 
-With a multiplexer running, a named-profile `hermes gateway start` / `run` is a
+With a multiplexer running, a named-profile `fool gateway start` / `run` is a
 **hard error**, pointing you back at the multiplexer:
 
 ```
@@ -203,8 +203,8 @@ migration, no orphaned history.
 #### 5. One PID/lock and one status surface
 
 There is a single process-level PID and lock (the multiplexer, under the default
-home). `hermes status` reports the multiplexer and the profiles it serves;
-`hermes status -p <name>` slices to one profile. Each profile still writes its
+home). `fool status` reports the multiplexer and the profiles it serves;
+`fool status -p <name>` slices to one profile. Each profile still writes its
 own `runtime_status.json` under its own home, so existing per-profile readers
 keep working.
 
@@ -309,7 +309,7 @@ run_for_profile() {
   profile="$1"
   action="$2"
   if [ "$profile" = "default" ]; then
-    hermes gateway "$action"
+    fool gateway "$action"
   else
     hermes -p "$profile" gateway "$action"
   fi
@@ -324,7 +324,7 @@ case "$action" in
     done
     ;;
   list)
-    hermes gateway list
+    fool gateway list
     ;;
   *)
     usage
@@ -340,11 +340,11 @@ hermes-gateways start      # start every configured profile
 hermes-gateways stop       # stop every configured profile
 hermes-gateways restart    # restart all
 hermes-gateways status     # status across all
-hermes-gateways list       # delegates to `hermes gateway list`
+hermes-gateways list       # delegates to `fool gateway list`
 ```
 
 :::tip
-The `default` profile is targeted with `hermes gateway <action>` (no `-p`),
+The `default` profile is targeted with `fool gateway <action>` (no `-p`),
 not `hermes -p default gateway <action>`. The wrapper above handles both forms.
 :::
 
@@ -402,15 +402,15 @@ tail -f ~/.hermes/logs/gateway.log ~/.hermes/profiles/*/logs/gateway.log
 The CLI also has a structured log viewer:
 
 ```bash
-hermes logs -f                  # follow default profile
+fool logs -f                  # follow default profile
 hermes -p coder logs -f         # follow one profile
-hermes logs --help              # filters, levels, JSON output
+fool logs --help              # filters, levels, JSON output
 ```
 
 ## Identify what's actually running
 
 ```bash
-hermes profile list             # profiles + model + gateway state
+fool profile list             # profiles + model + gateway state
 hermes-gateways status          # full status across every profile
 launchctl list | grep hermes    # macOS — PIDs and labels
 systemctl --user list-units 'hermes-gateway-*'   # Linux — units
@@ -432,7 +432,7 @@ The default profile uses `~/.hermes/` directly with the same three files.
 Edit them with any editor or via the CLI:
 
 ```bash
-hermes config set model.model anthropic/claude-sonnet-4    # default profile
+fool config set model.model anthropic/claude-sonnet-4    # default profile
 coder config set model.model openai/gpt-5                  # named profile
 ```
 
@@ -513,11 +513,11 @@ grep -H 'TELEGRAM_BOT_TOKEN\|DISCORD_BOT_TOKEN' \
 
 ## Updating the code
 
-`hermes update` pulls the latest code once and syncs new bundled skills into
+`fool update` pulls the latest code once and syncs new bundled skills into
 every profile:
 
 ```bash
-hermes update
+fool update
 hermes-gateways restart
 ```
 
@@ -527,7 +527,7 @@ User-modified skills are never overwritten.
 
 ### "Could not find service in domain for user gui: 501"
 
-You ran `hermes gateway start` after a previous `hermes gateway stop`. The
+You ran `fool gateway start` after a previous `fool gateway stop`. The
 CLI's `stop` does a full `launchctl unload`, which removes the service from
 launchd's registry. The CLI catches this specific error on `start` and
 automatically re-loads the plist (`↻ launchd job was unloaded; reloading
@@ -559,6 +559,6 @@ systemctl --user restart hermes-gateway-<profile>.service
 ### Health check
 
 ```bash
-hermes doctor                  # default profile
+fool doctor                  # default profile
 hermes -p <profile> doctor     # one profile
 ```

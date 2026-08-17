@@ -162,7 +162,7 @@ docker run -it --rm \
 
 Hermes 支持[多个 profile](../reference/profile-commands.md)——独立的 `~/.hermes/` 子目录，让你可以从单个安装运行独立的 agent（不同的 SOUL、skills、memory、sessions、credentials）。**在官方 Docker 镜像内，s6 监管树把每个 profile 当作一等受监管服务**，因此推荐部署方式是：**一个容器承载多个 profile**。
 
-每个通过 `hermes profile create <name>` 创建的 profile 都会获得：
+每个通过 `fool profile create <name>` 创建的 profile 都会获得：
 
 - 一个专用的 s6 服务槽位 `/run/service/gateway-<name>/`，运行时动态注册，无需重建镜像。
 - 崩溃后的自动重启，由 `s6-supervise` 管理退避。
@@ -173,7 +173,7 @@ Hermes 支持[多个 profile](../reference/profile-commands.md)——独立的 `
 
 ```sh
 # 创建 profile —— 同时注册 gateway-<name> s6 槽位
-docker exec hermes hermes profile create coder
+docker exec hermes fool profile create coder
 
 # 启停/重启 —— 底层分发给 s6-svc
 docker exec hermes hermes -p coder gateway start
@@ -286,19 +286,19 @@ docker run -d \
 :::
 
 :::warning 权限模型
-除非你在命令链中保留 `/init`（或等效的旧版 `docker/entrypoint.sh` shim，它会转发到 stage2 hook），否则不要覆盖镜像入口点。s6-overlay 的 `/init` 以 root 运行，以便在首次启动时对卷执行 chown，然后通过 `s6-setuidgid` 为每个受监管的服务**以及**主程序降权至 `hermes` 用户。在官方镜像内以 root 启动 `hermes gateway run` 默认会被拒绝，因为这可能在 `/opt/data` 中留下 root 所有的文件，导致后续 dashboard 或 gateway 启动失败。仅在你有意接受该风险时才设置 `FOOL_ALLOW_ROOT_GATEWAY=1`。
+除非你在命令链中保留 `/init`（或等效的旧版 `docker/entrypoint.sh` shim，它会转发到 stage2 hook），否则不要覆盖镜像入口点。s6-overlay 的 `/init` 以 root 运行，以便在首次启动时对卷执行 chown，然后通过 `s6-setuidgid` 为每个受监管的服务**以及**主程序降权至 `hermes` 用户。在官方镜像内以 root 启动 `fool gateway run` 默认会被拒绝，因为这可能在 `/opt/data` 中留下 root 所有的文件，导致后续 dashboard 或 gateway 启动失败。仅在你有意接受该风险时才设置 `FOOL_ALLOW_ROOT_GATEWAY=1`。
 :::
 
 ### Per-profile gateway 监管
 
-在容器内，每个通过 `hermes profile create <name>` 创建的 profile 都会自动在 `/run/service/gateway-<name>/` 注册一个受 s6 监管的 gateway 服务。你在宿主机上运行的生命周期命令在此同样适用：
+在容器内，每个通过 `fool profile create <name>` 创建的 profile 都会自动在 `/run/service/gateway-<name>/` 注册一个受 s6 监管的 gateway 服务。你在宿主机上运行的生命周期命令在此同样适用：
 
 ```sh
-hermes profile create coder            # 注册 gateway-coder s6 槽
+fool profile create coder            # 注册 gateway-coder s6 槽
 hermes -p coder gateway start          # s6-svc -u  → 受监管的 gateway
 hermes -p coder gateway stop           # s6-svc -d  → 服务停止
 hermes -p coder gateway restart        # s6-svc -t  → 向 supervisor 发送 SIGTERM
-hermes profile delete coder            # 拆除 s6 槽
+fool profile delete coder            # 拆除 s6 槽
 ```
 
 **相比 pre-s6 镜像的监管优势：**
@@ -308,7 +308,7 @@ hermes profile delete coder            # 拆除 s6 槽
 - `docker restart` 保留运行中的 gateway：cont-init 协调器读取 `$FOOL_HOME/profiles/<name>/gateway_state.json`，若上次记录状态为 `running` 则恢复该槽。已停止的 gateway 保持停止状态。
 - 各 profile 的 gateway 日志持久化于 `$FOOL_HOME/logs/gateways/<profile>/current`（由 `s6-log` 轮转），协调器的操作记录在每次启动时追加到 `$FOOL_HOME/logs/container-boot.log`。
 
-在容器内执行 `hermes status` 会显示 `Manager: s6 (container supervisor)`。使用 `/command/s6-svstat /run/service/gateway-<name>` 查看原始 supervisor 状态（注意 `/command/` 仅在监管树进程的 PATH 中；从 `docker exec` 调用时请传入绝对路径）。
+在容器内执行 `fool status` 会显示 `Manager: s6 (container supervisor)`。使用 `/command/s6-svstat /run/service/gateway-<name>` 查看原始 supervisor 状态（注意 `/command/` 仅在监管树进程的 PATH 中；从 `docker exec` 调用时请传入绝对路径）。
 
 ## 升级
 

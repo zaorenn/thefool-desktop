@@ -159,11 +159,11 @@ Hermes 在会话启动时从当前工作目录加载顶层 `AGENTS.md`。子目�
 
 ### 使用 /title 整理会话
 
-用 `/title auth-refactor` 或 `/title research-llm-quantization` 为会话命名。命名后的会话可通过 `hermes sessions list` 轻松找到，并用 `hermes -r "auth-refactor"` 恢复。未命名的会话会堆积起来，难以区分。
+用 `/title auth-refactor` 或 `/title research-llm-quantization` 为会话命名。命名后的会话可通过 `fool sessions list` 轻松找到，并用 `hermes -r "auth-refactor"` 恢复。未命名的会话会堆积起来，难以区分。
 
 ### DM 配对实现团队访问
 
-不要手动收集用户 ID 来维护白名单，而是启用 DM 配对。当团队成员向 bot 发送私信时，他们会收到一次性配对码。你用 `hermes pairing approve telegram XKGH5N7P` 批准即可——简单且安全。
+不要手动收集用户 ID 来维护白名单，而是启用 DM 配对。当团队成员向 bot 发送私信时，他们会收到一次性配对码。你用 `fool pairing approve telegram XKGH5N7P` 批准即可——简单且安全。
 
 ### 工具进度显示模式
 

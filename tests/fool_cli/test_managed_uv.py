@@ -1176,7 +1176,7 @@ class TestDefaultLiveVenv:
     """_default_live_venv() must cover BOTH install layouts (venv/ and .venv/).
 
     Historically repair hardcoded venv/, so uv-default/.venv checkouts got
-    'not-applicable' on every hermes update and stayed on journal_mode=DELETE
+    'not-applicable' on every fool update and stayed on journal_mode=DELETE
     (2,600x slower state.db appends) while the WAL warning promised repair.
     """
 

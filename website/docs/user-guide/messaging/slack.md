@@ -220,15 +220,15 @@ SLACK_HOME_CHANNEL_NAME=general              # Human-readable name for the home 
 Or run the interactive setup:
 
 ```bash
-hermes gateway setup    # Select Slack when prompted
+fool gateway setup    # Select Slack when prompted
 ```
 
 Then start the gateway:
 
 ```bash
-hermes gateway              # Foreground
-hermes gateway install      # Install as a user service
-sudo hermes gateway install --system   # Linux only: boot-time system service
+fool gateway              # Foreground
+fool gateway install      # Install as a user service
+sudo fool gateway install --system   # Linux only: boot-time system service
 ```
 
 :::tip Codex reasoning-effort safety
@@ -283,7 +283,7 @@ channel's history.
 
 ### Refreshing slash commands after updates
 
-When Hermes adds new commands (e.g. after `hermes update`), regenerate
+When Hermes adds new commands (e.g. after `fool update`), regenerate
 the manifest and update your Slack app:
 
 ```bash

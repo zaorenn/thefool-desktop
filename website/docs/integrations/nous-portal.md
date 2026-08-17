@@ -11,10 +11,10 @@ description: "One subscription, 300+ frontier models, and the Tool Gateway — t
 If you only have time to set up one thing, set up this. The fastest path:
 
 ```bash
-hermes setup --portal
+fool setup --portal
 ```
 
-That single command runs the Portal OAuth, lets you pick a Nous model, sets Nous as your inference provider in `config.yaml`, and turns on the Tool Gateway. You're ready to `hermes chat` immediately after.
+That single command runs the Portal OAuth, lets you pick a Nous model, sets Nous as your inference provider in `config.yaml`, and turns on the Tool Gateway. You're ready to `fool chat` immediately after.
 
 Don't have a subscription yet? [portal.nousresearch.com/manage-subscription](https://portal.nousresearch.com/manage-subscription) — sign up, then come back and run the command above.
 
@@ -92,7 +92,7 @@ The Portal's own [model info page](https://portal.nousresearch.com/info) carries
 ### Fresh install — one command
 
 ```bash
-hermes setup --portal
+fool setup --portal
 ```
 
 This runs the full setup in one shot:
@@ -102,7 +102,7 @@ This runs the full setup in one shot:
 3. Lets you pick a Nous model from the curated list (or skip to keep your current one)
 4. Sets Nous as your inference provider in `~/.hermes/config.yaml` (when you pick a model)
 5. Turns on the Tool Gateway (web, image, TTS, browser routing)
-6. Returns you to your terminal ready to `hermes chat`
+6. Returns you to your terminal ready to `fool chat`
 
 If you don't have a subscription yet, sign up at [portal.nousresearch.com/manage-subscription](https://portal.nousresearch.com/manage-subscription) first.
 
@@ -111,12 +111,12 @@ If you don't have a subscription yet, sign up at [portal.nousresearch.com/manage
 If you already have Hermes configured with OpenRouter, Anthropic, or any other provider and you want to add the Portal alongside them:
 
 ```bash
-hermes model
+fool model
 # pick "Nous Portal" from the provider list
 # browser opens, sign in, done
 ```
 
-Your existing providers stay configured. You can switch between them with `/model` mid-session or `hermes model` between sessions — the Portal becomes one of your available providers, not your only one.
+Your existing providers stay configured. You can switch between them with `/model` mid-session or `fool model` between sessions — the Portal becomes one of your available providers, not your only one.
 
 ### Headless / SSH / remote setup
 
@@ -138,7 +138,7 @@ hermes portal tools      # detailed Tool Gateway catalog with per-tool routing
 hermes portal open       # open the subscription management page in your browser
 ```
 
-`hermes portal` (with no subcommand) is the human-readable alias for `hermes auth add nous --type oauth` — it logs you in, lets you pick a Nous model, sets Nous as your inference provider, and offers the Tool Gateway opt-in (identical to `hermes setup --portal`, and the same Nous flow as the first-time quick setup).
+`hermes portal` (with no subcommand) is the human-readable alias for `fool auth add nous --type oauth` — it logs you in, lets you pick a Nous model, sets Nous as your inference provider, and offers the Tool Gateway opt-in (identical to `fool setup --portal`, and the same Nous flow as the first-time quick setup).
 
 `hermes portal info` gives you the high-level overview:
 
@@ -178,22 +178,22 @@ Or open the picker:
 Outside a session (the full setup wizard, useful when adding a new provider):
 
 ```bash
-hermes model
+fool model
 ```
 
 ### Mixing the gateway with your own backends
 
-If you already have, say, a Browserbase account and want to keep using it while routing web search and image generation through Nous, that's supported. Use `hermes tools` to pick backends per tool:
+If you already have, say, a Browserbase account and want to keep using it while routing web search and image generation through Nous, that's supported. Use `fool tools` to pick backends per tool:
 
 ```bash
-hermes tools
+fool tools
 # → Web search       → "Nous Subscription"
 # → Image generation → "Nous Subscription"
 # → Browser          → "Browserbase"  (your existing key)
 # → TTS              → "Nous Subscription"
 ```
 
-The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `hermes tools` whether or not you're logged into Nous Portal — if you pick "Nous Subscription" before authenticating, Hermes runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
+The Tool Gateway is opt-in per tool, not all-or-nothing. The managed backends show up in `fool tools` whether or not you're logged into Nous Portal — if you pick "Nous Subscription" before authenticating, Hermes runs the Portal login inline (it won't change your inference provider or touch your other tools). See the [Tool Gateway docs](/user-guide/features/tool-gateway) for the full per-tool configuration matrix.
 
 ### Subscription management
 
@@ -204,7 +204,7 @@ Manage your plan, view usage, or upgrade/cancel at any time:
 
 ## Configuration reference
 
-After `hermes setup --portal`, `~/.hermes/config.yaml` will look like:
+After `fool setup --portal`, `~/.hermes/config.yaml` will look like:
 
 ```yaml
 model:
@@ -238,7 +238,7 @@ The OAuth refresh token is stored separately at `~/.hermes/auth.json` (not in `c
 
 Hermes mints a short-lived JWT from your stored Portal refresh token on each inference call rather than reusing a long-lived API key. The token lifecycle is fully automatic — refresh, mint, retry on transient 401 — and you never see it.
 
-If the Portal invalidates the refresh token (password change, manual revoke, session expiry), the invalid refresh token is **quarantined locally** so Hermes stops replaying it and you don't see a stream of identical 401s. The next call surfaces a clear "re-authentication required" message. Run `hermes auth add nous` to log in again; the quarantine clears on the next successful login.
+If the Portal invalidates the refresh token (password change, manual revoke, session expiry), the invalid refresh token is **quarantined locally** so Hermes stops replaying it and you don't see a stream of identical 401s. The next call surfaces a clear "re-authentication required" message. Run `fool auth add nous` to log in again; the quarantine clears on the next successful login.
 
 ## Troubleshooting
 
@@ -250,11 +250,11 @@ You haven't completed the OAuth flow, or your refresh token was wiped. Run:
 hermes portal
 ```
 
-or use `hermes model` and re-select Nous Portal.
+or use `fool model` and re-select Nous Portal.
 
 ### Got a "re-authentication required" message mid-session
 
-Your Portal refresh token was invalidated (password change, manual revoke, or session expiry). Run `hermes auth add nous` and your next request will use the new credentials. Any quarantine on the old token clears automatically on successful re-login.
+Your Portal refresh token was invalidated (password change, manual revoke, or session expiry). Run `fool auth add nous` and your next request will use the new credentials. Any quarantine on the old token clears automatically on successful re-login.
 
 ### Want to use a specific provider model that the Portal doesn't expose
 
@@ -268,7 +268,7 @@ If a model is genuinely missing, [open an issue](https://github.com/NousResearch
 
 ### Bills not appearing on my Portal account
 
-Check `hermes portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using Nous as inference provider`), your local config has drifted. Run `hermes model`, pick Nous Portal, and the next request will route through your subscription.
+Check `hermes portal info` first — if it shows you're using a different provider (`Model: currently openrouter` instead of `using Nous as inference provider`), your local config has drifted. Run `fool model`, pick Nous Portal, and the next request will route through your subscription.
 
 ## See also
 

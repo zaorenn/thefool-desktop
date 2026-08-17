@@ -3907,7 +3907,7 @@ class MCPServerTask:
                             logger.warning(
                                 "MCP server '%s' failed initial authentication, "
                                 "parking until credentials change; re-authenticate "
-                                "with `hermes mcp login %s` "
+                                "with `fool mcp login %s` "
                                 "(state: connecting → parked): %s: %s",
                                 self.name, self.name,
                                 type(root).__name__, root,
@@ -4743,7 +4743,7 @@ def _handle_auth_error_and_retry(
     _bump_server_error(server_name)
     return tool_error(
         f"MCP server '{server_name}' requires re-authentication. "
-        f"Run `hermes mcp login {server_name}` (or delete the tokens "
+        f"Run `fool mcp login {server_name}` (or delete the tokens "
         f"file under ~/.hermes/mcp-tokens/ and restart). Do NOT retry "
         f"this tool — ask the user to re-authenticate.",
         needs_reauth=True,

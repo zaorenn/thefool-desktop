@@ -1,7 +1,7 @@
 """``fool debug`` debug tools for Hermes Agent.
 
 Currently supports:
-    hermes debug share    Upload debug report (system info + logs) to a
+    fool debug share    Upload debug report (system info + logs) to a
                           paste service and print a shareable URL.
                           By default, log content is run through
                           ``agent.redact.redact_sensitive_text`` with
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # Visible in the public paste so reviewers know the content was sanitized.
 # Kept short; the trailing newline guarantees the banner sits on its own line.
 _REDACTION_BANNER = (
-    "[hermes debug share: log content redacted at upload time. "
+    "[fool debug share: log content redacted at upload time. "
     "run with --no-redact to disable]\n"
 )
 
@@ -778,7 +778,7 @@ def build_debug_share(
 
     if redact:
         logger.info(
-            "hermes debug share: applied force-mode redaction to log snapshots before upload"
+            "fool debug share: applied force-mode redaction to log snapshots before upload"
         )
 
     report = bundle["report"]
@@ -907,7 +907,7 @@ def run_debug_share(args):
     print(f"\n⏱  Pastes will auto-delete in {hours} hours.")
 
     # Manual delete fallback
-    print("To delete now:  hermes debug delete <url>")
+    print("To delete now:  fool debug delete <url>")
 
     print("\nShare these links with the Hermes team for support.")
 
@@ -951,7 +951,7 @@ def _run_debug_share_nous(args, *, log_lines: int, redact: bool) -> None:
     bundle = collect_share_bundle(log_lines=log_lines, redact=redact)
     if redact:
         logger.info(
-            "hermes debug share --nous: applied force-mode redaction before upload"
+            "fool debug share --nous: applied force-mode redaction before upload"
         )
     blob = build_nous_bundle(bundle, redact=redact)
 
@@ -992,7 +992,7 @@ def run_debug_delete(args):
     """Delete one or more paste URLs uploaded by /debug."""
     urls = getattr(args, "urls", [])
     if not urls:
-        print("Usage: hermes debug delete <url> [<url> ...]")
+        print("Usage: fool debug delete <url> [<url> ...]")
         print("  Deletes paste.rs pastes uploaded by 'fool debug share'.")
         return
 
@@ -1028,7 +1028,7 @@ def run_debug(args):
         run_debug_delete(args)
     else:
         # Default: show help
-        print("Usage: hermes debug <command>")
+        print("Usage: fool debug <command>")
         print()
         print("Commands:")
         print("  share    Upload debug report to a paste service and print URL")

@@ -33,7 +33,7 @@ Label, prioritize, and summarize new issues every night. Delivers a digest to yo
 **Trigger:** Schedule (nightly)
 
 ```bash
-hermes cron create "0 2 * * *" \
+fool cron create "0 2 * * *" \
   "You are a project manager triaging the NousResearch/hermes-agent GitHub repo.
 
 1. Run: gh issue list --repo NousResearch/hermes-agent --state open --json number,title,labels,author,createdAt --limit 30
@@ -115,7 +115,7 @@ Weekly scan of merged PRs to find API changes that need documentation updates.
 **Trigger:** Schedule (weekly)
 
 ```bash
-hermes cron create "0 9 * * 1" \
+fool cron create "0 9 * * 1" \
   "Scan the NousResearch/hermes-agent repo for documentation drift.
 
 1. Run: gh pr list --repo NousResearch/hermes-agent --state merged --json number,title,files,mergedAt --limit 30
@@ -139,7 +139,7 @@ Daily scan for known vulnerabilities in project dependencies.
 **Trigger:** Schedule (daily)
 
 ```bash
-hermes cron create "0 6 * * *" \
+fool cron create "0 6 * * *" \
   "Run a dependency security audit on the hermes-agent project.
 
 1. cd ~/.hermes/hermes-agent && source .venv/bin/activate
@@ -259,7 +259,7 @@ else:
 ```
 
 ```bash
-hermes cron create "every 30m" \
+fool cron create "every 30m" \
   "If the script reports OUTAGE DETECTED, summarize which services are down and suggest likely causes. If NO_ISSUES, respond with [SILENT]." \
   --script ~/.hermes/scripts/check-uptime.py \
   --name "Uptime monitor" \
@@ -277,7 +277,7 @@ Monitor competitor repos for interesting PRs, features, and architectural decisi
 **Trigger:** Schedule (daily)
 
 ```bash
-hermes cron create "0 8 * * *" \
+fool cron create "0 8 * * *" \
   "Scout these AI agent repositories for notable activity in the last 24 hours:
 
 Repos to check:
@@ -310,7 +310,7 @@ Weekly roundup of AI/ML developments.
 **Trigger:** Schedule (weekly)
 
 ```bash
-hermes cron create "0 9 * * 1" \
+fool cron create "0 9 * * 1" \
   "Generate a weekly AI news digest covering the past 7 days:
 
 1. Search the web for major AI announcements, model releases, and research breakthroughs
@@ -335,7 +335,7 @@ Daily arXiv scan that saves summaries to your note-taking system.
 **Trigger:** Schedule (daily)
 
 ```bash
-hermes cron create "0 8 * * *" \
+fool cron create "0 8 * * *" \
   "Search arXiv for the 3 most interesting papers on 'language model reasoning' OR 'tool-use agents' from the past day. For each paper, create an Obsidian note with the title, authors, abstract summary, key contribution, and potential relevance to Hermes Agent development." \
   --skill arxiv --skill obsidian \
   --name "Paper digest" \
@@ -477,7 +477,7 @@ Compile key business metrics every morning.
 **Trigger:** Schedule (daily)
 
 ```bash
-hermes cron create "0 8 * * *" \
+fool cron create "0 8 * * *" \
   "Generate a morning business metrics summary.
 
 Search the web for:
@@ -502,7 +502,7 @@ Combine multiple skills for a comprehensive weekly security review.
 **Trigger:** Schedule (weekly)
 
 ```bash
-hermes cron create "0 3 * * 0" \
+fool cron create "0 3 * * 0" \
   "Run a comprehensive security audit of the hermes-agent codebase.
 
 1. Check for dependency vulnerabilities (pip audit, npm audit)
@@ -528,7 +528,7 @@ Research, draft, and prepare content on a schedule.
 **Trigger:** Schedule (weekly)
 
 ```bash
-hermes cron create "0 10 * * 3" \
+fool cron create "0 10 * * 3" \
   "Research and draft a technical blog post outline about a trending topic in AI agents.
 
 1. Search the web for the most discussed AI agent topics this week

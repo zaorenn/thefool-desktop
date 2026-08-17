@@ -6,7 +6,7 @@ A walkthrough of the four use-cases the Hermes Kanban system was designed for, w
 
 ```bash
 hermes kanban init           # optional; first `hermes kanban <anything>` auto-inits
-hermes dashboard             # opens http://127.0.0.1:9119 in your browser
+fool dashboard             # opens http://127.0.0.1:9119 in your browser
 # click Kanban in the left nav
 ```
 
@@ -130,7 +130,7 @@ that picks up all three specialist profiles' tasks on the same
 kanban.db:
 
 ```bash
-hermes gateway start
+fool gateway start
 ```
 
 Now filter the board to `content-ops` (or just search for "Transcribe") and you get this:

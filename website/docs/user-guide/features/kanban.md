@@ -136,7 +136,7 @@ so path-traversal tricks can't name a board.
 
 ### Managing boards from the dashboard
 
-`hermes dashboard` → Kanban tab shows a board switcher at the top as soon
+`fool dashboard` → Kanban tab shows a board switcher at the top as soon
 as more than one board exists (or any board has tasks). Single-board users
 see only a small `+ New board` button; the switcher is hidden until it
 matters.
@@ -200,7 +200,7 @@ The commands below are **you** (the human) setting up the board and creating tas
 hermes kanban init
 
 # 2. Start the gateway (hosts the embedded dispatcher)
-hermes gateway start
+fool gateway start
 
 # 3. Create a task (you — or an orchestrator agent via kanban_create)
 hermes kanban create "research AI funding landscape" --assignee researcher
@@ -232,7 +232,7 @@ kanban:
 ```
 
 Override the config flag at runtime via `FOOL_KANBAN_DISPATCH_IN_GATEWAY=0`
-for debugging. Standard gateway supervision applies: run `hermes gateway
+for debugging. Standard gateway supervision applies: run `fool gateway
 start` directly, or wire the gateway up as a systemd user unit (see the
 gateway docs). Without a running gateway, `ready` tasks stay where they are
 until one comes up — `hermes kanban create` warns about this at creation
@@ -354,7 +354,7 @@ Three reasons:
 2. **No shell-quoting fragility.** Passing `--metadata '{"files": [...]}'` through shlex + argparse is a latent footgun. Structured tool args skip it entirely.
 3. **Better errors.** Tool results are structured JSON the model can reason about, not stderr strings it has to parse.
 
-**Zero schema footprint on normal sessions.** A regular `hermes chat` session has zero `kanban_*` tools in its schema unless the active profile explicitly enables the `kanban` toolset for orchestrator work. Dispatcher-spawned task workers get task-scoped tools because `FOOL_KANBAN_TASK` is set; orchestrator profiles get the broader routing surface through config. No tool bloat for users who never touch kanban.
+**Zero schema footprint on normal sessions.** A regular `fool chat` session has zero `kanban_*` tools in its schema unless the active profile explicitly enables the `kanban` toolset for orchestrator work. Dispatcher-spawned task workers get task-scoped tools because `FOOL_KANBAN_TASK` is set; orchestrator profiles get the broader routing surface through config. No tool bloat for users who never touch kanban.
 
 The auto-injected kanban guidance teaches the model which tool to call when and in what order.
 
@@ -461,7 +461,7 @@ hermes kanban create "audit auth flow" \
 
 **From the dashboard**, type the skills comma-separated into the **skills** field of the create-task dialog.
 
-The dispatcher emits one `--skills <name>` flag per skill listed, so the worker spawns with all of them loaded on top of the auto-injected kanban guidance. The skill names must match skills that are actually installed on the assignee's profile (run `hermes skills list` to see what's available); there's no runtime install.
+The dispatcher emits one `--skills <name>` flag per skill listed, so the worker spawns with all of them loaded on top of the auto-injected kanban guidance. The skill names must match skills that are actually installed on the assignee's profile (run `fool skills list` to see what's available); there's no runtime install.
 
 ### Per-task model override
 
@@ -565,7 +565,7 @@ Open it with:
 
 ```bash
 hermes kanban init      # one-time: create kanban.db if not already present
-hermes dashboard        # "Kanban" tab appears in the nav, after "Skills"
+fool dashboard        # "Kanban" tab appears in the nav, after "Skills"
 ```
 
 ### What the plugin gives you
@@ -601,7 +601,7 @@ The kanban board has two ways to handle a task you drop into the Triage column:
 
 Flip between the two modes from the **Orchestration: Auto/Manual** pill at the top of the kanban page (emerald = Auto, muted gray = Manual), or by editing `config.yaml` directly. Both modes coexist with `hermes kanban specify` — that's still available as a single-task spec rewrite when you don't want fan-out.
 
-The decomposer's routing decisions depend on profile descriptions, which is a per-profile labeling primitive you set with `hermes profile create --description "..."`, `hermes profile describe <name> --text "..."`, `hermes profile describe <name> --auto` (LLM-generates from the profile's installed skills + model), or the dashboard's per-profile editor in the expanded **Orchestration settings** panel. Profiles without a description still appear in the roster — they're routable by name, just less precisely. The decomposer NEVER lands a child task with `assignee=None`: when the LLM picks an unknown profile, the child gets routed to `kanban.default_assignee` (or the active default profile if that's unset).
+The decomposer's routing decisions depend on profile descriptions, which is a per-profile labeling primitive you set with `fool profile create --description "..."`, `fool profile describe <name> --text "..."`, `fool profile describe <name> --auto` (LLM-generates from the profile's installed skills + model), or the dashboard's per-profile editor in the expanded **Orchestration settings** panel. Profiles without a description still appear in the roster — they're routable by name, just less precisely. The decomposer NEVER lands a child task with `assignee=None`: when the LLM picks an unknown profile, the child gets routed to `kanban.default_assignee` (or the active default profile if that's unset).
 
 `kanban.orchestrator_profile` does not load that profile's prompt, skills, or custom logic into the decomposition call. It controls who owns the root/orchestration task after fan-out. To change the decomposer's model/provider, configure `auxiliary.kanban_decomposer`. To use a profile's custom task-splitting logic instead of the built-in decomposer, switch to Manual mode and have that profile create or decompose tasks explicitly.
 
@@ -621,7 +621,7 @@ And the two auxiliary LLM slots:
 | Key | Purpose |
 |---|---|
 | `auxiliary.kanban_decomposer` | Model that produces the task graph (called by Decompose). Set `provider`/`model` to override the main chat model. |
-| `auxiliary.profile_describer` | Model that auto-generates profile descriptions (called by `hermes profile describe --auto`). |
+| `auxiliary.profile_describer` | Model that auto-generates profile descriptions (called by `fool profile describe --auto`). |
 
 ### Architecture
 
@@ -697,7 +697,7 @@ The dashboard's HTTP auth middleware [explicitly skips `/api/plugins/`](./extend
 
 The WebSocket takes one additional step: it requires the dashboard's ephemeral session token as a `?token=…` query parameter (browsers can't set `Authorization` on an upgrade request), matching the pattern used by the in-browser PTY bridge.
 
-If you run `hermes dashboard --host 0.0.0.0`, every plugin route — kanban included — becomes reachable from the network. **Don't do that on a shared host.** The board contains task bodies, comments, and workspace paths; an attacker reaching these routes gets read access to your entire collaboration surface and can also create / reassign / archive tasks.
+If you run `fool dashboard --host 0.0.0.0`, every plugin route — kanban included — becomes reachable from the network. **Don't do that on a shared host.** The board contains task bodies, comments, and workspace paths; an attacker reaching these routes gets read access to your entire collaboration surface and can also create / reassign / archive tasks.
 
 Tasks in `~/.hermes/kanban.db` are profile-agnostic on purpose (that's the coordination primitive). If you open the dashboard with `hermes -p <profile> dashboard`, the board still shows tasks created by any other profile on the host. Same user owns all profiles, but this is worth knowing if multiple personas coexist.
 
@@ -766,7 +766,7 @@ hermes kanban runs <id> [--json]                       # attempt history (one ro
 hermes kanban assignees [--json]                       # profiles on disk + per-assignee task counts
 hermes kanban dispatch [--dry-run] [--max N]           # one-shot pass
         [--failure-limit N] [--json]
-hermes kanban daemon --force                           # DEPRECATED — standalone dispatcher (use `hermes gateway start` instead)
+hermes kanban daemon --force                           # DEPRECATED — standalone dispatcher (use `fool gateway start` instead)
         [--failure-limit N] [--pidfile PATH] [-v]
 hermes kanban stats [--json]                           # per-status + per-assignee counts
 hermes kanban log <id> [--tail BYTES]                  # worker log from ~/.hermes/kanban/logs/
@@ -847,7 +847,7 @@ The resulting graph is committed atomically: dispatchers and dashboard readers s
 
 ## `/kanban` slash command {#kanban-slash-command}
 
-Every `hermes kanban <action>` verb is also reachable as `/kanban <action>` — from inside an interactive `hermes chat` session **and** from any gateway platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, email, SMS). Both surfaces call the exact same `fool_cli.kanban.run_slash()` entry point that reuses the `hermes kanban` argparse tree, so the argument surface, flags, and output format are identical across CLI, `/kanban`, and `hermes kanban`. You don't have to leave the chat to drive the board.
+Every `hermes kanban <action>` verb is also reachable as `/kanban <action>` — from inside an interactive `fool chat` session **and** from any gateway platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, email, SMS). Both surfaces call the exact same `fool_cli.kanban.run_slash()` entry point that reuses the `hermes kanban` argparse tree, so the argument surface, flags, and output format are identical across CLI, `/kanban`, and `hermes kanban`. You don't have to leave the chat to drive the board.
 
 ```
 /kanban list

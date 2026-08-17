@@ -792,7 +792,7 @@ class TestLazyMcpInstall:
                  "cua_driver_runtime_contract_status",
                  return_value=state,
              ), patch("tools.lazy_deps.ensure") as mock_ensure:
-            with pytest.raises(RuntimeError, match="hermes computer-use install"):
+            with pytest.raises(RuntimeError, match="fool computer-use install"):
                 cua_backend.CuaDriverBackend().start()
 
         mock_ensure.assert_not_called()

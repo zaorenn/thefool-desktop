@@ -187,15 +187,15 @@ SLACK_HOME_CHANNEL_NAME=general              # 主频道的可读名称（可选
 或运行交互式设置：
 
 ```bash
-hermes gateway setup    # 提示时选择 Slack
+fool gateway setup    # 提示时选择 Slack
 ```
 
 然后启动 gateway：
 
 ```bash
-hermes gateway              # 前台运行
-hermes gateway install      # 安装为用户服务
-sudo hermes gateway install --system   # 仅 Linux：开机启动系统服务
+fool gateway              # 前台运行
+fool gateway install      # 安装为用户服务
+sudo fool gateway install --system   # 仅 Linux：开机启动系统服务
 ```
 
 ---
@@ -220,7 +220,7 @@ sudo hermes gateway install --system   # 仅 Linux：开机启动系统服务
 
 ### 更新后刷新斜杠命令
 
-当 Hermes 添加新命令时（例如执行 `hermes update` 后），重新生成 manifest 并更新你的 Slack 应用：
+当 Hermes 添加新命令时（例如执行 `fool update` 后），重新生成 manifest 并更新你的 Slack 应用：
 
 ```bash
 hermes slack manifest --write

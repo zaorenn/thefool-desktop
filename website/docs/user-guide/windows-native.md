@@ -37,7 +37,7 @@ No admin rights required. The installer goes to `%LOCALAPPDATA%\hermes\` and add
 | `-Commit` | unset | Pin install to a specific commit SHA (overrides `-Branch`) |
 | `-Tag` | unset | Pin install to a specific git tag (e.g. `v0.14.0`) |
 | `-NoVenv` | off | Skip venv creation (advanced — you manage Python yourself) |
-| `-SkipSetup` | off | Skip the post-install `hermes setup` wizard |
+| `-SkipSetup` | off | Skip the post-install `fool setup` wizard |
 | `-HermesHome` | `%LOCALAPPDATA%\hermes` | Override data directory |
 | `-InstallDir` | `%LOCALAPPDATA%\hermes\hermes-agent` | Override code location |
 
@@ -76,10 +76,10 @@ Top-to-bottom, in order:
 7. **Auto-installs messaging SDKs** keyed off `.env` — if `TELEGRAM_BOT_TOKEN` / `DISCORD_BOT_TOKEN` / `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN` / `WHATSAPP_ENABLED` are present, runs `python -m ensurepip --upgrade` and targeted `pip install` calls so each platform's SDK is actually importable.
 8. **Sets `FOOL_GIT_BASH_PATH`** to the resolved `bash.exe` so Hermes finds it deterministically in fresh shells.
 9. **Adds `%LOCALAPPDATA%\hermes\hermes-agent\bin` to User PATH and sets `FOOL_HOME=%LOCALAPPDATA%\hermes`** — exposes the `hermes` command (and points it at your data dir) after you open a new terminal. Only the `hermes.exe` / `hermes-acp.exe` launchers are copied into this `bin` directory; the full `venv\Scripts` is deliberately **not** placed on PATH so Hermes never shadows your own `python` command.
-10. **Runs `hermes setup`** — the normal first-run wizard (model, provider, toolsets). Skip with `-SkipSetup`.
+10. **Runs `fool setup`** — the normal first-run wizard (model, provider, toolsets). Skip with `-SkipSetup`.
 
 :::tip Skip provider hunting on Windows
-On Windows, per-tool API key setup (Firecrawl, FAL, Browser Use, OpenAI TTS) is the highest-friction part of getting a useful agent. A [Nous Portal](/user-guide/features/tool-gateway) subscription covers the model **and** all of those tools through one OAuth login. After the installer finishes, run `hermes setup --portal` to wire everything up.
+On Windows, per-tool API key setup (Firecrawl, FAL, Browser Use, OpenAI TTS) is the highest-friction part of getting a useful agent. A [Nous Portal](/user-guide/features/tool-gateway) subscription covers the model **and** all of those tools through one OAuth login. After the installer finishes, run `fool setup --portal` to wire everything up.
 :::
 
 ## Feature matrix
@@ -88,7 +88,7 @@ Everything except the dashboard's embedded terminal pane runs natively on Window
 
 | Feature | Native Windows | WSL2 |
 |---|---|---|
-| CLI (`hermes chat`, `hermes setup`, `hermes gateway`, …) | ✓ | ✓ |
+| CLI (`fool chat`, `fool setup`, `fool gateway`, …) | ✓ | ✓ |
 | Interactive TUI (`hermes --tui`) | ✓ | ✓ |
 | Messaging gateway (Telegram, Discord, Slack, WhatsApp, 15+ platforms) | ✓ | ✓ |
 | Cron scheduler | ✓ | ✓ |
@@ -166,12 +166,12 @@ On legacy `cmd.exe` consoles `Ctrl+Enter` collapses to plain `Enter` — use `Es
 
 ## Running the gateway at Windows login
 
-`hermes gateway install` on Windows uses **Scheduled Tasks** with a Startup-folder fallback — no admin required.
+`fool gateway install` on Windows uses **Scheduled Tasks** with a Startup-folder fallback — no admin required.
 
 ### Install
 
 ```powershell
-hermes gateway install
+fool gateway install
 ```
 
 What happens under the hood:
@@ -185,14 +185,14 @@ Flags used when spawning: `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_
 ### Manage
 
 ```powershell
-hermes gateway status      # Merged view: schtasks + Startup folder + running PID
-hermes gateway start       # Starts the scheduled task now
-hermes gateway stop        # Graceful SIGTERM equivalent (TerminateProcess via psutil)
-hermes gateway restart
-hermes gateway uninstall   # Removes schtasks entry, Startup shortcut, pid file
+fool gateway status      # Merged view: schtasks + Startup folder + running PID
+fool gateway start       # Starts the scheduled task now
+fool gateway stop        # Graceful SIGTERM equivalent (TerminateProcess via psutil)
+fool gateway restart
+fool gateway uninstall   # Removes schtasks entry, Startup shortcut, pid file
 ```
 
-`hermes gateway status` is idempotent — call it a thousand times in a row and it will never accidentally kill the gateway. (Pre-PR #21561 it silently did, via `os.kill(pid, 0)` colliding with `CTRL_C_EVENT` at the C level — see "process management internals" below if you care about the story.)
+`fool gateway status` is idempotent — call it a thousand times in a row and it will never accidentally kill the gateway. (Pre-PR #21561 it silently did, via `os.kill(pid, 0)` colliding with `CTRL_C_EVENT` at the C level — see "process management internals" below if you care about the story.)
 
 ### Why not a Windows Service?
 
@@ -218,7 +218,7 @@ The browser tool uses `agent-browser` (a Node helper) to drive Chromium. On Wind
 
 - The installer puts `agent-browser` on PATH via npm.
 - `shutil.which("agent-browser", path=...)` picks up the `.cmd` shim automatically — `CreateProcessW` can't execute an extensionless shebang, so Hermes always resolves to the `.CMD` wrapper. Don't manually invoke the shebang script; always go through the `.cmd`.
-- Playwright Chromium is auto-installed on first run (`npx playwright install chromium`). If installation fails, `hermes doctor` surfaces it with a fix-it hint.
+- Playwright Chromium is auto-installed on first run (`npx playwright install chromium`). If installation fails, `fool doctor` surfaces it with a fix-it hint.
 
 ## Running Hermes on Windows — practical notes
 
@@ -259,7 +259,7 @@ These only affect native Windows installs:
 From PowerShell:
 
 ```powershell
-hermes uninstall
+fool uninstall
 ```
 
 That's the clean path — removes the schtasks entry, Startup folder shortcut, `hermes.cmd` shim, deletes `%LOCALAPPDATA%\hermes\hermes-agent\`, and trims the User PATH. It leaves the rest of `%LOCALAPPDATA%\hermes\` alone (your config, auth, skills, sessions, logs) in case you're reinstalling.
@@ -267,13 +267,13 @@ That's the clean path — removes the schtasks entry, Startup folder shortcut, `
 To nuke everything:
 
 ```powershell
-hermes uninstall
+fool uninstall
 Remove-Item -Recurse -Force "$env:LOCALAPPDATA\hermes"
 # Also remove a legacy CLI/WSL data dir if you ever used one:
 Remove-Item -Recurse -Force "$env:USERPROFILE\.hermes"
 ```
 
-The `hermes uninstall` CLI subcommand also handles the case where the schtasks entry was registered under a different task name (older installs) — it searches by install path rather than by hardcoded task name.
+The `fool uninstall` CLI subcommand also handles the case where the schtasks entry was registered under a different task name (older installs) — it searches by install path rather than by hardcoded task name.
 
 ## Process management internals
 
@@ -297,13 +297,13 @@ You hit a shebang-script invocation that bypassed the `.cmd` shim. Hermes resolv
 Your download of `install.ps1` picked up a UTF-8 BOM. The `irm | iex` form strips BOMs automatically; `[scriptblock]::Create((irm ...))` does not. Re-run with the simple `irm | iex` form, or download the script manually and save it without a BOM via `[IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))`.
 
 **Gateway won't stay running after restart.**
-Check `hermes gateway status` — it merges the schtasks entry, the Startup-folder shortcut (if used), and the live PID. If schtasks is registered but not running, group policy may be blocking `ONLOGON` triggers. Run `schtasks /Query /TN HermesGateway /V /FO LIST` to see the task's failure reason, or fall back to the Startup-folder path by uninstalling and reinstalling with `FOOL_GATEWAY_FORCE_STARTUP=1`.
+Check `fool gateway status` — it merges the schtasks entry, the Startup-folder shortcut (if used), and the live PID. If schtasks is registered but not running, group policy may be blocking `ONLOGON` triggers. Run `schtasks /Query /TN HermesGateway /V /FO LIST` to see the task's failure reason, or fall back to the Startup-folder path by uninstalling and reinstalling with `FOOL_GATEWAY_FORCE_STARTUP=1`.
 
 **`/edit` still does nothing after setting `$env:EDITOR`.**
 You set it in the current process only; close and reopen the shell, or set it at User scope in System Properties → Environment Variables. Verify with `echo $env:EDITOR` in a new PowerShell window.
 
 **Browser tool launches but tools time out.**
-Chromium is auto-installed on first run. If the install failed (rate-limited GitHub, Playwright CDN hiccup), run `hermes doctor` — it will surface the missing Chromium and print the exact `npx playwright install chromium` command to fix it.
+Chromium is auto-installed on first run. If the install failed (rate-limited GitHub, Playwright CDN hiccup), run `fool doctor` — it will surface the missing Chromium and print the exact `npx playwright install chromium` command to fix it.
 
 **`agent-browser` fails with a weird Node version error.**
 The installer provisions Node 26 at `%LOCALAPPDATA%\hermes\node` but your PATH may have an older system Node 18 first. Either move Hermes's node dir earlier on PATH, or delete the system install if you don't use Node elsewhere.

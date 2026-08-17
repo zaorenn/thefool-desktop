@@ -268,7 +268,7 @@ def _is_cron_approval_context() -> bool:
 def _is_single_query_approval_context() -> bool:
     """True when the current approval decision is from a single-query (-q) session.
 
-    ``hermes chat -q "..."`` runs one turn and exits with no user waiting to
+    ``fool chat -q "..."`` runs one turn and exits with no user waiting to
     answer approval prompts, but it still exports ``FOOL_INTERACTIVE=1`` so
     interactive sudo password prompts can be driven from stdin. Without an
     explicit marker, ``_is_interactive_cli()`` would report True and the gate

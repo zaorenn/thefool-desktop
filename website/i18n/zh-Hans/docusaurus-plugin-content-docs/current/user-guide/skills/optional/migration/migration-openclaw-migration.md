@@ -14,7 +14,7 @@ description: "将用户的 OpenClaw 自定义配置迁移到 Hermes Agent"
 
 | | |
 |---|---|
-| 来源 | 可选 — 通过 `hermes skills install official/migration/openclaw-migration` 安装 |
+| 来源 | 可选 — 通过 `fool skills install official/migration/openclaw-migration` 安装 |
 | 路径 | `optional-skills/migration/openclaw-migration` |
 | 版本 | `1.0.0` |
 | 作者 | Hermes Agent (Nous Research) |
@@ -47,7 +47,7 @@ hermes claw migrate --source /custom/path/.openclaw  # Custom source
 
 CLI 命令运行与下文所述相同的迁移脚本。当需要交互式、引导式迁移并支持 dry-run（预览）和逐项冲突解决时，请通过 agent 使用此 skill。
 
-**首次设置：** `hermes setup` 向导会自动检测 `~/.openclaw`，并在配置开始前提供迁移选项。
+**首次设置：** `fool setup` 向导会自动检测 `~/.openclaw`，并在配置开始前提供迁移选项。
 
 ## 此 skill 的功能
 

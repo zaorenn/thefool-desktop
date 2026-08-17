@@ -1231,7 +1231,7 @@ function BotFace({ shape, color, image, size = 36, name = 'agent', mood = 'idle'
 
 // -- inline MCP setup (per-profile), driven by the mcp.servers.* gateway RPCs --
 // Feature-detected: if the gateway predates those RPCs the setup button hides
-// and the row falls back to the "run hermes mcp / Settings" hint. profile is
+// and the row falls back to the "run fool mcp / Settings" hint. profile is
 // the target bot's profile name (its config is what we write).
 
 async function mcpRpc(method, params) {
@@ -2876,7 +2876,7 @@ function messagingProtocolSection(name, roster) {
     '"tell <name> ...", that is a handoff: message that agent, wait for the',
     'reply, and report back.',
     '',
-    'The roster grows over time — run `hermes profile list` for the LIVE',
+    'The roster grows over time — run `fool profile list` for the LIVE',
     'teammate list before a handoff. Teammates when you were created:',
     ...(teammates.length
       ? teammates.map(b => `- \`${b.name}\`${b.description ? ` — ${b.description}` : ''}`)

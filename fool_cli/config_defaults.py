@@ -1095,7 +1095,7 @@ DEFAULT_CONFIG = {
         },
         # Profile describer — auto-generates a 1-2 sentence description
         # of what a profile is good at. Invoked by
-        # ``hermes profile describe <name> --auto`` and the dashboard's
+        # ``fool profile describe <name> --auto`` and the dashboard's
         # auto-generate button. Short, cheap call.
         "profile_describer": {
             "provider": "auto",
@@ -2006,7 +2006,7 @@ DEFAULT_CONFIG = {
         # ~/.hermes/skills/.curator_ledger.jsonl with before/after file
         # hashes; file contents are stored content-addressed (deduped) under
         # ~/.hermes/.curator_backups/blobs/. Enables `fool curator ledger`
-        # and single-mutation `hermes curator rollback <entry-id>`.
+        # and single-mutation `fool curator rollback <entry-id>`.
         # Telemetry, never a gate: ledger failures cannot block a mutation.
         "ledger": True,
     },
@@ -2346,7 +2346,7 @@ DEFAULT_CONFIG = {
             "transport_fallback": "deny",
         },
         # Writes to agent-instruction files (AGENTS.md/CLAUDE.md/SOUL.md/
-        # .cursorrules, project-local .hermes config) always require human
+        # .cursorrules, project-local .fool config) always require human
         # approval — even under auto-approve/yolo. Extra patterns are
         # fnmatch globs matched against the basename (e.g. "*.mdc").
         "protected_instruction_files": True,
@@ -2363,7 +2363,7 @@ DEFAULT_CONFIG = {
         # Acknowledged supply-chain security advisories. Each entry is the
         # ID of an advisory the user has read and acted on (uninstalled the
         # compromised package, rotated credentials). Acked advisories no
-        # longer trigger the startup banner. Add via `hermes doctor --ack
+        # longer trigger the startup banner. Add via `fool doctor --ack
         # <id>`; remove by editing the list directly. See
         # ``fool_cli/security_advisories.py`` for the catalog.
         "acked_advisories": [],

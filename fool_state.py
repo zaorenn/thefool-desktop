@@ -2870,7 +2870,7 @@ def quarantine_zeroed_state_db(path: Path) -> Optional[Path]:
             handle.close()
 
 
-# ── Read-only health/stats probes (hermes doctor, dashboards) ──────────
+# ── Read-only health/stats probes (fool doctor, dashboards) ──────────
 
 
 def collect_state_db_stats(db_path: Path) -> Dict[str, Any]:

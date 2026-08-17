@@ -2,11 +2,11 @@
 
 Status: design proposal (not yet implemented)
 Author: drafted for Teknium
-Supersedes: PR #31781 (prompt_toolkit `hermes profile wizard`)
+Supersedes: PR #31781 (prompt_toolkit `fool profile wizard`)
 
 ## Why this, not the CLI wizard
 
-PR #31781 added a keyboard-driven `hermes profile wizard` in the terminal.
+PR #31781 added a keyboard-driven `fool profile wizard` in the terminal.
 The decision is to **not** build the profile-creation experience in the CLI.
 The dashboard already owns mature, separate pages for every element a profile
 needs, and a profile is just a FOOL_HOME directory — so the dashboard is the

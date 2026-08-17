@@ -178,7 +178,7 @@ gateway/platforms/                  # core base + legacy direct adapters
 └── api_server.py        # REST API server adapter
 ```
 
-**Deferred loading:** Bundled `kind: platform` plugins register cheap `register_deferred` loaders in `gateway/platform_registry.py` (via `fool_cli/plugins.py`) so platform SDKs import only when the gateway starts, delivers, or runs setup/status — not on plain `hermes chat`. Resolution loads one adapter on lookup; full enumeration runs pending loaders only on paths that need every platform.
+**Deferred loading:** Bundled `kind: platform` plugins register cheap `register_deferred` loaders in `gateway/platform_registry.py` (via `fool_cli/plugins.py`) so platform SDKs import only when the gateway starts, delivers, or runs setup/status — not on plain `fool chat`. Resolution loads one adapter on lookup; full enumeration runs pending loaders only on paths that need every platform.
 
 Experimental connector-backed platforms use the generic relay adapter in `gateway/relay/` instead of a direct platform module. When `GATEWAY_RELAY_URL` or `gateway.relay_url` is configured, the gateway registers the `relay` platform, dials the connector over an outbound WebSocket, and receives `descriptor`, `inbound`, and `interrupt_inbound` frames on that same socket. The connector advertises a `CapabilityDescriptor`; Hermes can send normal outbound replies, token-less `follow_up` operations, and interrupt frames back through the relay. The source-grounded wire contract lives in [`docs/relay-connector-contract.md`](https://github.com/NousResearch/hermes-agent/blob/main/docs/relay-connector-contract.md).
 
@@ -258,11 +258,11 @@ The gateway runs periodic maintenance alongside message handling:
 
 The gateway runs as a long-lived process, managed via:
 
-- `hermes gateway start` / `hermes gateway stop` — manual control
+- `fool gateway start` / `fool gateway stop` — manual control
 - `systemctl` (Linux) or `launchctl` (macOS) — service management
 - PID file at `~/.hermes/gateway.pid` — profile-scoped process tracking
 
-**Profile-scoped vs global**: `start_gateway()` uses profile-scoped PID files. `hermes gateway stop` stops only the current profile's gateway. `hermes gateway stop --all` uses global `ps aux` scanning to kill all gateway processes (used during updates).
+**Profile-scoped vs global**: `start_gateway()` uses profile-scoped PID files. `fool gateway stop` stops only the current profile's gateway. `fool gateway stop --all` uses global `ps aux` scanning to kill all gateway processes (used during updates).
 
 ## Related Docs
 

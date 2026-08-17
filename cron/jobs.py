@@ -624,7 +624,7 @@ def _preserve_file_ownership(path: Path, before: Optional[os.stat_result]) -> No
 
     The atomic-write pattern (mkstemp + replace) makes the rewritten file owned
     by the *writer's* euid. When a root shell runs a state-writing cron CLI
-    command (``docker exec hermes hermes cron create ...`` — ``docker exec``
+    command (``docker exec hermes fool cron create ...`` — ``docker exec``
     defaults to root) against a store owned by the unprivileged gateway user,
     the replace flips ``jobs.json`` to ``root:root`` mode 600 and the gateway's
     ticker (uid 1000) is silently locked out of every subsequent tick (#68483).
@@ -1201,7 +1201,7 @@ def record_catch_up_occurrence() -> None:
 def record_ticker_error(message: str) -> None:
     """Persist the most recent tick failure so other processes can surface it.
 
-    The ticker thread lives inside the gateway process; ``hermes cron
+    The ticker thread lives inside the gateway process; ``fool cron
     status``/``list`` run in a separate process and previously could only
     infer "ticks may be failing" from marker staleness, with no clue WHY.
     A root-owned ``jobs.json`` (#68483) failed every tick for ~14h with the

@@ -1,6 +1,6 @@
 """Dead-owner cron claim reclaim + one-shot CLI `cron run` sync gate (#86721).
 
-A one-shot ``hermes cron run <job_id>`` used to background-dispatch the run
+A one-shot ``fool cron run <job_id>`` used to background-dispatch the run
 onto a daemon thread of the calling process when the CLI inherited a
 gateway/desktop session env. The process exited immediately, the runner died
 mid-LLM-call, and the job's execution row stayed ``claimed`` forever —

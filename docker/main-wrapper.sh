@@ -74,7 +74,7 @@ cd /opt/data
 . /opt/hermes/.venv/bin/activate
 
 # Restore the original working directory before handing off to
-# the user's command so `hermes chat` starts in the Docker -w
+# the user's command so `fool chat` starts in the Docker -w
 # directory, not /opt/data.
 cd "$_hermes_orig_cwd"
 

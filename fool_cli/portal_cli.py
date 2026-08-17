@@ -171,7 +171,7 @@ def _cmd_tools(args) -> int:
 def _cmd_login(args) -> int:
     """Run the one-shot Nous Portal onboarding (login + model + provider + tools).
 
-    This is the human-readable front door for `hermes auth add nous --type
+    This is the human-readable front door for `fool auth add nous --type
     oauth`. It reuses the exact wiring behind `fool setup --portal` (which in
     turn runs the same Nous flow as the first-time quick setup), so the
     commands stay in lockstep: device-code login, pick a Nous model, switch the
@@ -217,7 +217,7 @@ def add_parser(subparsers) -> None:
         description=(
             "Run `fool portal` with no subcommand to log in to Nous Portal "
             "and set it up — pick a model, set Nous as your provider, and offer "
-            "the Tool Gateway (the human-readable alias for `hermes auth add "
+            "the Tool Gateway (the human-readable alias for `fool auth add "
             "nous --type oauth`, identical to `fool setup --portal`). "
             "Subcommands: login (default), info, open, tools."
         ),

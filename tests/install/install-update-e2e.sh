@@ -24,7 +24,7 @@
 #                                       [--install-ref REF] [--keep]
 #
 #   --route         which update path to exercise (required):
-#                     update     `hermes update`
+#                     update     `fool update`
 #                     installer  re-running the curl one-liner over the checkout
 #   --install-ref   what to install first; anything git resolves (a branch, a
 #                   tag like v2026.7.7, or a SHA reachable from main).
@@ -145,16 +145,16 @@ fi
 rm -rf -- "$SANDBOX_ROOT"
 
 # ── helpers ────────────────────────────────────────────────────────────────
-# Does the INSTALLED hermes accept FLAG on `hermes update`?
+# Does the INSTALLED hermes accept FLAG on `fool update`?
 #
 # Asked of the installed binary rather than parsed out of a release's source:
 # the update subcommand has lived in main.py, subcommands/update.py, and
 # update_cmd.py across the releases we sample, so any static parse is a guess
-# that silently rots. `hermes update --help` is the same surface a user meets,
+# that silently rots. `fool update --help` is the same surface a user meets,
 # and argparse prints every option it accepts.
 update_supports() {
   local flag="$1"
-  in_sandbox "hermes update --help 2>&1" | grep -qF -- "$flag"
+  in_sandbox "fool update --help 2>&1" | grep -qF -- "$flag"
 }
 
 # Does the installer at REF accept FLAG? Read it out of that ref's own
@@ -261,21 +261,21 @@ require_hermes_works 'after install'
 # ── apply exactly one update route ─────────────────────────────────────────
 case "$ROUTE" in
   update)
-    step 'ROUTE: hermes update'
+    step 'ROUTE: fool update'
     # `--yes` reaches the update subcommand only in later releases, and argparse
     # rejects the whole invocation when it does not exist. Ask the installed
     # hermes which it accepts; older ones read the prompt from stdin, so close it.
     if update_supports --yes; then
-      update_cmd="hermes update --yes"
+      update_cmd="fool update --yes"
     else
-      update_cmd="hermes update </dev/null"
+      update_cmd="fool update </dev/null"
     fi
     if ! in_sandbox "cd $INSTALL_DIR && $update_cmd"; then
       collect_sandbox_logs update
-      fail "hermes update failed ($update_cmd)"
+      fail "fool update failed ($update_cmd)"
     fi
-    require_landed_on_target 'hermes update'
-    require_hermes_works 'after hermes update'
+    require_landed_on_target 'fool update'
+    require_hermes_works 'after fool update'
     ;;
   installer)
     step 'ROUTE: installer re-run over the existing checkout'

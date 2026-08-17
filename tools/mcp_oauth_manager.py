@@ -644,7 +644,7 @@ class MCPOAuthManager:
             raise OAuthNonInteractiveError(
                 "MCP OAuth for "
                 f"'{server_name}': non-interactive environment and no "
-                "cached tokens found. Run `hermes mcp login "
+                "cached tokens found. Run `fool mcp login "
                 f"{server_name}` interactively first to complete initial "
                 "authorization."
             )
@@ -680,8 +680,8 @@ class MCPOAuthManager:
     ) -> _ProviderEntry | None:
         """Evict the provider from cache AND delete tokens from disk.
 
-        Called by ``hermes mcp remove <name>`` and (indirectly) by
-        ``hermes mcp login <name>`` during forced re-auth.
+        Called by ``fool mcp remove <name>`` and (indirectly) by
+        ``fool mcp login <name>`` during forced re-auth.
         """
         with self._entries_lock:
             entry = self._entries.pop(self._key(server_name, hermes_home), None)

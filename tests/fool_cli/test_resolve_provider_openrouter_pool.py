@@ -31,7 +31,7 @@ def _clean_inference_env(monkeypatch):
 
 
 def _seed_openrouter_pool(token: str = "sk-or-FAKEKEY123") -> None:
-    """Mimic `hermes auth add openrouter <token>` — a manual pool entry."""
+    """Mimic `fool auth add openrouter <token>` — a manual pool entry."""
     from agent.credential_pool import (
         AUTH_TYPE_API_KEY,
         SOURCE_MANUAL,

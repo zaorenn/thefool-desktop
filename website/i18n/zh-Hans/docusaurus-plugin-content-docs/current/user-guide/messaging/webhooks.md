@@ -26,7 +26,7 @@ agent 处理事件后，可通过在 PR 上发布评论、向 Telegram/Discord �
 
 ## 快速开始
 
-1. 通过 `hermes gateway setup` 或环境变量启用
+1. 通过 `fool gateway setup` 或环境变量启用
 2. 在 `config.yaml` 中定义路由，**或**使用 `hermes webhook subscribe` 动态创建
 3. 将你的服务指向 `http://your-server:8644/webhooks/<route-name>`
 
@@ -39,7 +39,7 @@ agent 处理事件后，可通过在 PR 上发布评论、向 Telegram/Discord �
 ### 通过设置向导
 
 ```bash
-hermes gateway setup
+fool gateway setup
 ```
 
 按照提示启用 webhooks、设置端口和全局 HMAC secret。
@@ -526,7 +526,7 @@ Webhook payload 包含攻击者可控的数据——PR 标题、commit 消息、
 
 ### Agent 未响应
 
-- 在前台运行 gateway 以查看日志：`hermes gateway run`
+- 在前台运行 gateway 以查看日志：`fool gateway run`
 - 检查 prompt 模板是否正确渲染
 - 验证投递目标已配置并连接
 

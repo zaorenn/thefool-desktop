@@ -52,7 +52,7 @@ def test_emits_for_default_when_any_profile_is_managed(tmp_path):
     assert "@hermes" in section
     assert "@default" not in section
     assert "`researcher`" in section
-    assert "hermes profile list" in section
+    assert "fool profile list" in section
 
 
 def test_emits_for_named_profile_with_own_handle(tmp_path):

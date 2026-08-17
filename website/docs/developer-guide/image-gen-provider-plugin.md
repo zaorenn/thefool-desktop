@@ -20,9 +20,9 @@ Hermes scans for image-gen backends in three places:
 2. **User** — `~/.hermes/plugins/image_gen/<name>/` (opt-in via `plugins.enabled`)
 3. **Pip** — packages declaring a `hermes_agent.plugins` entry point
 
-Each plugin's `register(ctx)` function calls `ctx.register_image_gen_provider(...)` — that puts it into the registry in `agent/image_gen_registry.py`. The active provider is picked by `image_gen.provider` in `config.yaml`; `hermes tools` walks users through selection.
+Each plugin's `register(ctx)` function calls `ctx.register_image_gen_provider(...)` — that puts it into the registry in `agent/image_gen_registry.py`. The active provider is picked by `image_gen.provider` in `config.yaml`; `fool tools` walks users through selection.
 
-The `image_generate` tool wrapper asks the registry for the active provider and dispatches there. If no provider is registered, the tool surfaces a helpful error pointing at `hermes tools`.
+The `image_generate` tool wrapper asks the registry for the active provider and dispatches there. If no provider is registered, the tool surfaces a helpful error pointing at `fool tools`.
 
 ## Directory structure
 
@@ -32,7 +32,7 @@ plugins/image_gen/my-backend/
 └── plugin.yaml      # Manifest with kind: backend
 ```
 
-A bundled plugin is complete at this point. User plugins at `~/.hermes/plugins/image_gen/<name>/` need to be added to `plugins.enabled` in `config.yaml` (or run `hermes plugins enable <name>`).
+A bundled plugin is complete at this point. User plugins at `~/.hermes/plugins/image_gen/<name>/` need to be added to `plugins.enabled` in `config.yaml` (or run `fool plugins enable <name>`).
 
 ## The ImageGenProvider ABC
 
@@ -62,7 +62,7 @@ class MyBackendImageGenProvider(ImageGenProvider):
 
     @property
     def display_name(self) -> str:
-        # Human label shown in `hermes tools`. Defaults to name.title() if omitted.
+        # Human label shown in `fool tools`. Defaults to name.title() if omitted.
         return "My Backend"
 
     def is_available(self) -> bool:
@@ -77,7 +77,7 @@ class MyBackendImageGenProvider(ImageGenProvider):
         return True
 
     def list_models(self) -> List[Dict[str, Any]]:
-        # Catalog shown in `hermes tools` model picker.
+        # Catalog shown in `fool tools` model picker.
         return [
             {
                 "id": "my-model-fast",
@@ -99,7 +99,7 @@ class MyBackendImageGenProvider(ImageGenProvider):
         return "my-model-fast"
 
     def get_setup_schema(self) -> Dict[str, Any]:
-        # Metadata for the `hermes tools` picker — keys to prompt for at setup.
+        # Metadata for the `fool tools` picker — keys to prompt for at setup.
         return {
             "name": "My Backend",
             "badge": "paid",        # optional; shown as a short tag in the picker
@@ -219,7 +219,7 @@ requires_env:
   - MY_BACKEND_API_KEY
 ```
 
-`kind: backend` is what routes the plugin to the image-gen registration path. `requires_env` is prompted during `hermes plugins install`.
+`kind: backend` is what routes the plugin to the image-gen registration path. `requires_env` is prompted during `fool plugins install`.
 
 ## ABC reference
 
@@ -228,9 +228,9 @@ Full contract in `agent/image_gen_provider.py`. The methods you'll typically ove
 | Member | Required | Default | Purpose |
 |---|---|---|---|
 | `name` | ✅ | — | Stable id used in `image_gen.provider` config |
-| `display_name` | — | `name.title()` | Label shown in `hermes tools` |
+| `display_name` | — | `name.title()` | Label shown in `fool tools` |
 | `is_available()` | — | `True` | Gate for missing creds/deps |
-| `list_models()` | — | `[]` | Catalog for `hermes tools` model picker |
+| `list_models()` | — | `[]` | Catalog for `fool tools` model picker |
 | `default_model()` | — | first from `list_models()` | Fallback when no model is configured |
 | `get_setup_schema()` | — | minimal | Picker metadata + env-var prompts |
 | `generate(prompt, aspect_ratio, **kwargs)` | ✅ | — | The call |
@@ -271,7 +271,7 @@ Some backends return image URLs (fal, Replicate); others return base64 payloads 
 
 ## User overrides
 
-Drop a user plugin at `~/.hermes/plugins/image_gen/<name>/` with the same `name` property as a bundled one and enable it via `hermes plugins enable <name>` — the registry is last-writer-wins, so your version replaces the built-in. Useful for pointing an `openai` plugin at a private proxy, or swapping in a custom model catalog.
+Drop a user plugin at `~/.hermes/plugins/image_gen/<name>/` with the same `name` property as a bundled one and enable it via `fool plugins enable <name>` — the registry is last-writer-wins, so your version replaces the built-in. Useful for pointing an `openai` plugin at a private proxy, or swapping in a custom model catalog.
 
 ## Testing
 
@@ -281,7 +281,7 @@ mkdir -p $FOOL_HOME/plugins/image_gen/my-backend
 # …copy __init__.py + plugin.yaml into that dir…
 
 export MY_BACKEND_API_KEY=your-test-key
-hermes plugins enable my-backend
+fool plugins enable my-backend
 
 # Pick it as the active provider
 echo "image_gen:" >> $FOOL_HOME/config.yaml
@@ -291,7 +291,7 @@ echo "  provider: my-backend" >> $FOOL_HOME/config.yaml
 hermes -z "Generate an image of a corgi in a spacesuit"
 ```
 
-Or interactively: `hermes tools` → "Image Generation" → select `my-backend` → enter API key if prompted.
+Or interactively: `fool tools` → "Image Generation" → select `my-backend` → enter API key if prompted.
 
 ## Reference implementations
 

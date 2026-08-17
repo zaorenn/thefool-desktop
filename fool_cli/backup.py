@@ -1224,13 +1224,13 @@ def run_import(args) -> None:
                 # fool_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
                     print("\n  Profiles detected but aliases could not be created.")
-                    print("  Run: hermes profile list  (after installing hermes)")
+                    print("  Run: fool profile list  (after installing hermes)")
 
         # Guidance
         print()
         if not (hermes_root / "hermes-agent").is_dir():
             print("Note: The hermes-agent codebase was not included in the backup.")
-            print("  If this is a fresh install, run: hermes update")
+            print("  If this is a fresh install, run: fool update")
 
         if restored_profiles:
             gw_profiles = [n for n, _ in restored_profiles]
@@ -1252,13 +1252,13 @@ def run_import(args) -> None:
                 ensure_gateway_service(context="import")
         except Exception:
             print("\nStart the gateway to activate cron jobs and messaging:")
-            print("  hermes gateway install")
+            print("  fool gateway install")
 
         print("Done. Your Hermes configuration has been restored.")
 
 
 # ---------------------------------------------------------------------------
-# Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
+# Quick state snapshots (used by /snapshot slash command and fool backup --quick)
 # ---------------------------------------------------------------------------
 
 # Critical state files to include in quick snapshots (relative to FOOL_HOME).
@@ -1803,7 +1803,7 @@ def prune_quick_snapshots(
 
 
 def run_quick_backup(args) -> None:
-    """CLI entry point for hermes backup --quick."""
+    """CLI entry point for fool backup --quick."""
     label = getattr(args, "label", None)
     snap_id = create_quick_snapshot(label=label)
     if snap_id:

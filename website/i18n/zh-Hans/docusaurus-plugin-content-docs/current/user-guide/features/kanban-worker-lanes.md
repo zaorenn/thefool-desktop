@@ -85,7 +85,7 @@ kanban 内核强制要求每次运行恰好由其中一项终止。既未调用�
 
 当前所有 kanban worker 采用的形态：assignee 是 profile 名称，调度器生成 `hermes -p <profile>`，worker 会自动获得注入的 `KANBAN_GUIDANCE` 系统提示块，并使用 `kanban_*` 工具终止运行。除定义 profile 外无需任何额外配置。
 
-为你的 fleet 创建 profile 时，选择与你希望 orchestrator 路由到的*角色*相匹配的名称。orchestrator（如果存在）通过 `hermes profile list` 发现你的 profile 名称——系统不假设固定的名单（orchestrator 侧的契约也是注入的 `KANBAN_GUIDANCE` 的一部分）。
+为你的 fleet 创建 profile 时，选择与你希望 orchestrator 路由到的*角色*相匹配的名称。orchestrator（如果存在）通过 `fool profile list` 发现你的 profile 名称——系统不假设固定的名单（orchestrator 侧的契约也是注入的 `KANBAN_GUIDANCE` 的一部分）。
 
 ### Orchestrator profile 通道
 

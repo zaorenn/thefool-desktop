@@ -21,7 +21,7 @@ hermes [global-options] <command> [subcommand/options]
 | 选项 | 说明 |
 |--------|-------------|
 | `--version`, `-V` | 显示版本并退出。 |
-| `--profile <name>`, `-p <name>` | 选择本次调用使用的 Hermes profile（配置文件）。覆盖 `hermes profile use` 设置的粘性默认值。 |
+| `--profile <name>`, `-p <name>` | 选择本次调用使用的 Hermes profile（配置文件）。覆盖 `fool profile use` 设置的粘性默认值。 |
 | `--resume <session>`, `-r <session>` | 通过 ID 或标题恢复之前的会话。 |
 | `--continue [name]`, `-c [name]` | 恢复最近的会话，或恢复最近一个匹配标题的会话。 |
 | `--worktree`, `-w` | 在隔离的 git worktree 中启动，用于并行 agent 工作流。 |
@@ -36,56 +36,56 @@ hermes [global-options] <command> [subcommand/options]
 
 | 命令 | 用途 |
 |---------|---------|
-| `hermes chat` | 与 agent 进行交互式或单次聊天。 |
-| `hermes model` | 交互式选择默认 provider 和模型。 |
+| `fool chat` | 与 agent 进行交互式或单次聊天。 |
+| `fool model` | 交互式选择默认 provider 和模型。 |
 | `hermes fallback` | 管理主模型出错时依次尝试的 fallback provider。 |
-| `hermes gateway` | 运行或管理消息 gateway 服务。 |
+| `fool gateway` | 运行或管理消息 gateway 服务。 |
 | `hermes proxy` | 本地 OpenAI 兼容代理，附加 OAuth provider 凭据。参见 [订阅代理](../user-guide/features/subscription-proxy.md)。 |
 | `hermes lsp` | 管理 Language Server Protocol 集成（为 write_file/patch 提供语义诊断）。 |
-| `hermes setup` | 全部或部分配置的交互式设置向导。 |
+| `fool setup` | 全部或部分配置的交互式设置向导。 |
 | `hermes whatsapp` | 配置并配对 WhatsApp 桥接。 |
 | `hermes slack` | Slack 辅助工具（当前功能：生成将每条命令注册为原生斜杠命令的 app manifest）。 |
-| `hermes auth` | 管理凭据——添加、列出、删除、重置、设置策略。处理 Codex/Nous/Anthropic 的 OAuth 流程。 |
-| `hermes login` / `logout` | **已弃用** — 请改用 `hermes auth`。 |
-| `hermes status` | 显示 agent、auth 和平台状态。 |
-| `hermes cron` | 检查并触发 cron 调度器。 |
+| `fool auth` | 管理凭据——添加、列出、删除、重置、设置策略。处理 Codex/Nous/Anthropic 的 OAuth 流程。 |
+| `hermes login` / `logout` | **已弃用** — 请改用 `fool auth`。 |
+| `fool status` | 显示 agent、auth 和平台状态。 |
+| `fool cron` | 检查并触发 cron 调度器。 |
 | `hermes kanban` | 多 profile 协作看板（任务、链接、调度器）。 |
 | `hermes webhook` | 管理用于事件驱动激活的动态 webhook 订阅。 |
 | `hermes hooks` | 检查、审批或删除 `config.yaml` 中声明的 shell 脚本 hook。 |
-| `hermes doctor` | 诊断配置和依赖问题。 |
+| `fool doctor` | 诊断配置和依赖问题。 |
 | `hermes security audit` | 对 venv、plugin 依赖和固定 MCP 服务器进行按需供应链审计（OSV.dev）。 |
 | `hermes dump` | 可直接复制粘贴的设置摘要，用于支持/调试。 |
-| `hermes debug` | 调试工具——上传日志和系统信息以获取支持。 |
-| `hermes backup` | 将 Hermes 主目录备份为 zip 文件。 |
+| `fool debug` | 调试工具——上传日志和系统信息以获取支持。 |
+| `fool backup` | 将 Hermes 主目录备份为 zip 文件。 |
 | `hermes checkpoints` | 检查/修剪/清除 `~/.hermes/checkpoints/`（`/rollback` 使用的影子存储）。不带参数运行可查看状态概览。 |
 | `hermes import` | 从 zip 文件恢复 Hermes 备份。 |
-| `hermes logs` | 查看、跟踪和过滤 agent/gateway/错误日志文件。 |
-| `hermes config` | 显示、编辑、迁移和查询配置文件。 |
-| `hermes pairing` | 审批或撤销消息配对码。 |
-| `hermes skills` | 浏览、安装、发布、审计和配置 skill。 |
-| `hermes bundles` | 将多个 skill 归组到单个 `/<name>` 斜杠命令下。参见 [Skill Bundles](../user-guide/features/skills.md#skill-bundles)。 |
-| `hermes curator` | 后台 skill 维护——状态、运行、暂停、固定。参见 [Curator](../user-guide/features/curator.md)。 |
-| `hermes memory` | 配置外部 memory provider。当对应 provider 激活时，特定于 plugin 的子命令（如 `hermes honcho`）会自动注册。 |
-| `hermes acp` | 将 Hermes 作为 ACP 服务器运行，用于编辑器集成。 |
-| `hermes mcp` | 管理 MCP 服务器配置，并将 Hermes 作为 MCP 服务器运行。 |
-| `hermes plugins` | 管理 Hermes Agent plugin（安装、启用、禁用、删除）。 |
+| `fool logs` | 查看、跟踪和过滤 agent/gateway/错误日志文件。 |
+| `fool config` | 显示、编辑、迁移和查询配置文件。 |
+| `fool pairing` | 审批或撤销消息配对码。 |
+| `fool skills` | 浏览、安装、发布、审计和配置 skill。 |
+| `fool bundles` | 将多个 skill 归组到单个 `/<name>` 斜杠命令下。参见 [Skill Bundles](../user-guide/features/skills.md#skill-bundles)。 |
+| `fool curator` | 后台 skill 维护——状态、运行、暂停、固定。参见 [Curator](../user-guide/features/curator.md)。 |
+| `fool memory` | 配置外部 memory provider。当对应 provider 激活时，特定于 plugin 的子命令（如 `hermes honcho`）会自动注册。 |
+| `fool acp` | 将 Hermes 作为 ACP 服务器运行，用于编辑器集成。 |
+| `fool mcp` | 管理 MCP 服务器配置，并将 Hermes 作为 MCP 服务器运行。 |
+| `fool plugins` | 管理 Hermes Agent plugin（安装、启用、禁用、删除）。 |
 | `hermes portal` | Nous Portal 状态、订阅链接和 Tool Gateway 路由。参见 [Tool Gateway](../user-guide/features/tool-gateway.md)。 |
-| `hermes tools` | 按平台配置已启用的工具。 |
-| `hermes computer-use` | 安装或检查 cua-driver 后端（macOS Computer Use）。 |
-| `hermes sessions` | 浏览、导出、修剪、重命名和删除会话。 |
-| `hermes insights` | 显示 token/费用/活动分析。 |
+| `fool tools` | 按平台配置已启用的工具。 |
+| `fool computer-use` | 安装或检查 cua-driver 后端（macOS Computer Use）。 |
+| `fool sessions` | 浏览、导出、修剪、重命名和删除会话。 |
+| `fool insights` | 显示 token/费用/活动分析。 |
 | `hermes claw` | OpenClaw 迁移辅助工具。 |
-| `hermes dashboard` | 启动用于管理配置、API 密钥和会话的 Web 控制台。 |
-| `hermes profile` | 管理 profile——多个隔离的 Hermes 实例。 |
+| `fool dashboard` | 启动用于管理配置、API 密钥和会话的 Web 控制台。 |
+| `fool profile` | 管理 profile——多个隔离的 Hermes 实例。 |
 | `hermes completion` | 打印 shell 补全脚本（bash/zsh/fish）。 |
-| `hermes version` | 显示版本信息。 |
-| `hermes update` | 拉取最新代码并重新安装依赖。`--check` 预览而不安装；`--backup` 在拉取前对 `FOOL_HOME` 进行快照。 |
-| `hermes uninstall` | 从系统中删除 Hermes。 |
+| `fool version` | 显示版本信息。 |
+| `fool update` | 拉取最新代码并重新安装依赖。`--check` 预览而不安装；`--backup` 在拉取前对 `FOOL_HOME` 进行快照。 |
+| `fool uninstall` | 从系统中删除 Hermes。 |
 
-## `hermes chat`
+## `fool chat`
 
 ```bash
-hermes chat [options]
+fool chat [options]
 ```
 
 常用选项：
@@ -114,12 +114,12 @@ hermes chat [options]
 
 ```bash
 hermes
-hermes chat -q "Summarize the latest PRs"
-hermes chat --provider openrouter --model anthropic/claude-sonnet-4.6
-hermes chat --toolsets web,terminal,skills
-hermes chat --quiet -q "Return only JSON"
-hermes chat --worktree -q "Review this repo and open a PR"
-hermes chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
+fool chat -q "Summarize the latest PRs"
+fool chat --provider openrouter --model anthropic/claude-sonnet-4.6
+fool chat --toolsets web,terminal,skills
+fool chat --quiet -q "Return only JSON"
+fool chat --worktree -q "Review this repo and open a PR"
+fool chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
 ```
 
 ### `hermes -z <prompt>` — 脚本化单次调用
@@ -147,14 +147,14 @@ hermes -z "…" --provider openrouter --model openai/gpt-5.5
 FOOL_INFERENCE_MODEL=anthropic/claude-sonnet-4.6 hermes -z "…"
 ```
 
-相同的 agent、相同的工具、相同的 skill——只是剥离了所有交互式/装饰性层。如果你还需要在记录中包含工具输出，请改用 `hermes chat -q`；`-z` 专门用于"我只需要最终答案"的场景。
+相同的 agent、相同的工具、相同的 skill——只是剥离了所有交互式/装饰性层。如果你还需要在记录中包含工具输出，请改用 `fool chat -q`；`-z` 专门用于"我只需要最终答案"的场景。
 
-## `hermes model`
+## `fool model`
 
 交互式 provider + 模型选择器。**这是添加新 provider、设置 API 密钥和运行 OAuth 流程的命令。** 从终端运行——不要在活跃的 Hermes 聊天会话内部运行。
 
 ```bash
-hermes model
+fool model
 ```
 
 在以下情况使用此命令：
@@ -165,12 +165,12 @@ hermes model
 - 配置自定义/自托管端点
 - 将新默认值保存到 config
 
-:::warning hermes model 与 /model——了解区别
-**`hermes model`**（从终端运行，在任何 Hermes 会话外部）是**完整的 provider 设置向导**。它可以添加新 provider、运行 OAuth 流程、提示输入 API 密钥并配置端点。
+:::warning fool model 与 /model——了解区别
+**`fool model`**（从终端运行，在任何 Hermes 会话外部）是**完整的 provider 设置向导**。它可以添加新 provider、运行 OAuth 流程、提示输入 API 密钥并配置端点。
 
 **`/model`**（在活跃的 Hermes 聊天会话中输入）只能**在已设置好的 provider 和模型之间切换**。它无法添加新 provider、运行 OAuth 或提示输入 API 密钥。
 
-**如果需要添加新 provider：** 先退出 Hermes 会话（`Ctrl+C` 或 `/quit`），然后从终端提示符运行 `hermes model`。
+**如果需要添加新 provider：** 先退出 Hermes 会话（`Ctrl+C` 或 `/quit`），然后从终端提示符运行 `fool model`。
 :::
 
 ### `/model` 斜杠命令（会话中途）
@@ -194,15 +194,15 @@ hermes model
 ```
 
 :::info 如果我只看到 OpenRouter 模型怎么办？
-如果你只配置了 OpenRouter，`/model` 将只显示 OpenRouter 模型。要添加其他 provider（Anthropic、DeepSeek、Copilot 等），请退出会话并从终端运行 `hermes model`。
+如果你只配置了 OpenRouter，`/model` 将只显示 OpenRouter 模型。要添加其他 provider（Anthropic、DeepSeek、Copilot 等），请退出会话并从终端运行 `fool model`。
 :::
 
 Provider 和 base URL 的更改会自动持久化到 `config.yaml`。从自定义端点切换走时，过时的 base URL 会被清除，以防止其泄漏到其他 provider。
 
-## `hermes gateway`
+## `fool gateway`
 
 ```bash
-hermes gateway <subcommand>
+fool gateway <subcommand>
 ```
 
 子命令：
@@ -223,11 +223,11 @@ hermes gateway <subcommand>
 
 | 选项 | 说明 |
 |--------|-------------|
-| `--all` | 在 `start` / `restart` / `stop` 时：对**每个 profile** 的 gateway 执行操作，而不仅限于活跃的 `FOOL_HOME`。当你并行运行多个 profile 并希望在 `hermes update` 后全部重启时很有用。 |
+| `--all` | 在 `start` / `restart` / `stop` 时：对**每个 profile** 的 gateway 执行操作，而不仅限于活跃的 `FOOL_HOME`。当你并行运行多个 profile 并希望在 `fool update` 后全部重启时很有用。 |
 | `--no-supervise` | 在 `run` 时：在 s6-overlay Docker 镜像内部，跳过 s6 自动监管，退回到 pre-s6 前台语义——gateway 作为容器主进程运行，无自动重启。在 s6 镜像之外为空操作。等同于设置 `FOOL_GATEWAY_NO_SUPERVISE=1`。 |
 
 :::tip WSL 用户
-使用 `hermes gateway run` 而非 `hermes gateway start`——WSL 的 systemd 支持不稳定。用 tmux 包裹以保持持久运行：`tmux new -s hermes 'hermes gateway run'`。详见 [WSL FAQ](/reference/faq#wsl-gateway-keeps-disconnecting-or-hermes-gateway-start-fails)。
+使用 `fool gateway run` 而非 `fool gateway start`——WSL 的 systemd 支持不稳定。用 tmux 包裹以保持持久运行：`tmux new -s hermes 'fool gateway run'`。详见 [WSL FAQ](/reference/faq#wsl-gateway-keeps-disconnecting-or-hermes-gateway-start-fails)。
 :::
 
 ## `hermes lsp`
@@ -251,10 +251,10 @@ hermes lsp <subcommand>
 
 完整指南、支持的语言和配置项，请参阅 [LSP — 语义诊断](/user-guide/features/lsp)。
 
-## `hermes setup`
+## `fool setup`
 
 ```bash
-hermes setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
+fool setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
 ```
 
 **首次运行：** 启动首次使用向导。
@@ -278,7 +278,7 @@ hermes setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--res
 | `--quick` | 在已配置用户运行时：仅提示缺失或未设置的项目，跳过已配置的项目。 |
 | `--non-interactive` | 使用默认值/环境变量，不显示提示。 |
 | `--reset` | 在设置前将配置重置为默认值。 |
-| `--reconfigure` | 向后兼容别名——在已有安装上裸运行 `hermes setup` 现在默认执行此操作。 |
+| `--reconfigure` | 向后兼容别名——在已有安装上裸运行 `fool setup` 现在默认执行此操作。 |
 | `--portal` | 一键 Nous Portal 设置：通过 OAuth 登录，将 Nous 设为推理 provider，并选择加入 [Tool Gateway](../user-guide/features/tool-gateway.md)。跳过向导其余部分。 |
 
 ## `hermes portal`
@@ -295,7 +295,7 @@ hermes portal [status|open|tools]
 | `open` | 在默认浏览器中打开 `portal.nousresearch.com/manage-subscription`。 |
 | `tools` | 列出每个 Tool Gateway 合作伙伴（Firecrawl、FAL、OpenAI TTS、Browser Use、Modal）及哪些通过 Nous 路由。 |
 
-关于 gateway 本身的配置，请参阅 [Tool Gateway](../user-guide/features/tool-gateway.md)。关于一键设置路径，请参阅上方的 `hermes setup --portal`。
+关于 gateway 本身的配置，请参阅 [Tool Gateway](../user-guide/features/tool-gateway.md)。关于一键设置路径，请参阅上方的 `fool setup --portal`。
 
 ## `hermes whatsapp`
 
@@ -322,38 +322,38 @@ hermes slack manifest --slashes-only  # 仅输出 features.slash_commands 数组
 | `--description DESC` | 默认简介 | Slack app 目录中显示的机器人描述。 |
 | `--slashes-only` | 关闭 | 仅输出 `features.slash_commands`，用于合并到手动维护的 manifest 中。 |
 
-`hermes update` 后重新运行 `hermes slack manifest --write` 以获取新增命令。
+`fool update` 后重新运行 `hermes slack manifest --write` 以获取新增命令。
 
 
 ## `hermes login` / `hermes logout` *（已弃用）*
 
 :::caution
-`hermes login` 已被移除。请使用 `hermes auth` 管理 OAuth 凭据，使用 `hermes model` 选择 provider，或使用 `hermes setup` 进行完整的交互式设置。
+`hermes login` 已被移除。请使用 `fool auth` 管理 OAuth 凭据，使用 `fool model` 选择 provider，或使用 `fool setup` 进行完整的交互式设置。
 :::
 
-## `hermes auth`
+## `fool auth`
 
 管理同一 provider 的密钥轮换凭据池。完整文档请参阅 [凭据池](/user-guide/features/credential-pools)。
 
 ```bash
-hermes auth                                              # 交互式向导
-hermes auth list                                         # 显示所有池
-hermes auth list openrouter                              # 显示特定 provider
-hermes auth add openrouter --api-key sk-or-v1-xxx        # 添加 API 密钥
-hermes auth add anthropic --type oauth                   # 添加 OAuth 凭据
-hermes auth remove openrouter 2                          # 按索引删除
-hermes auth reset openrouter                             # 清除冷却时间
-hermes auth status anthropic                             # 显示某 provider 的认证状态
-hermes auth logout anthropic                             # 登出并清除已存储的认证状态
-hermes auth spotify                                      # 通过 PKCE 将 Hermes 与 Spotify 认证
+fool auth                                              # 交互式向导
+fool auth list                                         # 显示所有池
+fool auth list openrouter                              # 显示特定 provider
+fool auth add openrouter --api-key sk-or-v1-xxx        # 添加 API 密钥
+fool auth add anthropic --type oauth                   # 添加 OAuth 凭据
+fool auth remove openrouter 2                          # 按索引删除
+fool auth reset openrouter                             # 清除冷却时间
+fool auth status anthropic                             # 显示某 provider 的认证状态
+fool auth logout anthropic                             # 登出并清除已存储的认证状态
+fool auth spotify                                      # 通过 PKCE 将 Hermes 与 Spotify 认证
 ```
 
 子命令：`add`、`list`、`remove`、`reset`、`status`、`logout`、`spotify`。不带子命令调用时，启动交互式管理向导。
 
-## `hermes status`
+## `fool status`
 
 ```bash
-hermes status [--all] [--deep]
+fool status [--all] [--deep]
 ```
 
 | 选项 | 说明 |
@@ -361,10 +361,10 @@ hermes status [--all] [--deep]
 | `--all` | 以可分享的脱敏格式显示所有详情。 |
 | `--deep` | 运行可能耗时更长的深度检查。 |
 
-## `hermes cron`
+## `fool cron`
 
 ```bash
-hermes cron <list|create|edit|pause|resume|run|remove|status|tick>
+fool cron <list|create|edit|pause|resume|run|remove|status|tick>
 ```
 
 | 子命令 | 说明 |
@@ -481,10 +481,10 @@ hermes webhook subscribe <name> [options]
 
 订阅持久化到 `~/.hermes/webhook_subscriptions.json`，webhook 适配器无需重启 gateway 即可热重载。
 
-## `hermes doctor`
+## `fool doctor`
 
 ```bash
-hermes doctor [--fix]
+fool doctor [--fix]
 ```
 
 | 选项 | 说明 |
@@ -564,13 +564,13 @@ config_overrides:
 - 出现问题时快速进行健全性检查
 
 :::tip
-`hermes dump` 专为分享而设计。交互式诊断请使用 `hermes doctor`。可视化概览请使用 `hermes status`。
+`hermes dump` 专为分享而设计。交互式诊断请使用 `fool doctor`。可视化概览请使用 `fool status`。
 :::
 
-## `hermes debug`
+## `fool debug`
 
 ```bash
-hermes debug share [options]
+fool debug share [options]
 ```
 
 将调试报告（系统信息 + 近期日志）上传到粘贴服务并获取可分享的 URL。适用于快速支持请求——包含帮助者诊断问题所需的一切信息。
@@ -588,16 +588,16 @@ hermes debug share [options]
 ### 示例
 
 ```bash
-hermes debug share              # 上传调试报告，打印 URL
-hermes debug share --lines 500  # 包含更多日志行
-hermes debug share --expire 30  # 粘贴保留 30 天
-hermes debug share --local      # 在终端打印报告（不上传）
+fool debug share              # 上传调试报告，打印 URL
+fool debug share --lines 500  # 包含更多日志行
+fool debug share --expire 30  # 粘贴保留 30 天
+fool debug share --local      # 在终端打印报告（不上传）
 ```
 
-## `hermes backup`
+## `fool backup`
 
 ```bash
-hermes backup [options]
+fool backup [options]
 ```
 
 创建 Hermes 配置、skill、会话和数据的 zip 归档。备份不包含 hermes-agent 代码库本身。
@@ -619,10 +619,10 @@ hermes backup [options]
 ### 示例
 
 ```bash
-hermes backup                           # 完整备份到 ~/hermes-backup-*.zip
-hermes backup -o /tmp/hermes.zip        # 完整备份到指定路径
-hermes backup --quick                   # 仅状态快速快照
-hermes backup --quick --label "pre-upgrade"  # 带标签的快速快照
+fool backup                           # 完整备份到 ~/hermes-backup-*.zip
+fool backup -o /tmp/hermes.zip        # 完整备份到指定路径
+fool backup --quick                   # 仅状态快速快照
+fool backup --quick --label "pre-upgrade"  # 带标签的快速快照
 ```
 
 ## `hermes checkpoints`
@@ -685,10 +685,10 @@ hermes import ~/hermes-backup-20260423.zip           # 覆盖现有配置前提�
 hermes import ~/hermes-backup-20260423.zip --force   # 不提示直接覆盖
 ```
 
-## `hermes logs`
+## `fool logs`
 
 ```bash
-hermes logs [log_name] [options]
+fool logs [log_name] [options]
 ```
 
 查看、跟踪和过滤 Hermes 日志文件。所有日志存储在 `~/.hermes/logs/`（非默认 profile 存储在 `<profile>/logs/`）。
@@ -717,25 +717,25 @@ hermes logs [log_name] [options]
 
 ```bash
 # 查看 agent.log 的最后 50 行（默认）
-hermes logs
+fool logs
 
 # 实时跟踪 agent.log
-hermes logs -f
+fool logs -f
 
 # 查看 gateway.log 的最后 100 行
-hermes logs gateway -n 100
+fool logs gateway -n 100
 
 # 仅显示最近一小时的警告和错误
-hermes logs --level WARNING --since 1h
+fool logs --level WARNING --since 1h
 
 # 按特定会话过滤
-hermes logs --session abc123
+fool logs --session abc123
 
 # 从 30 分钟前开始跟踪 errors.log
-hermes logs errors --since 30m -f
+fool logs errors --since 30m -f
 
 # 列出所有日志文件及其大小
-hermes logs list
+fool logs list
 ```
 
 ### 过滤
@@ -744,19 +744,19 @@ hermes logs list
 
 ```bash
 # 最近 2 小时内包含会话 "tg-12345" 的 WARNING+ 行
-hermes logs --level WARNING --since 2h --session tg-12345
+fool logs --level WARNING --since 2h --session tg-12345
 ```
 
 当 `--since` 激活时，没有可解析时间戳的行会被包含（它们可能是多行日志条目的续行）。当 `--level` 激活时，没有可检测级别的行会被包含。
 
 ### 日志轮转
 
-Hermes 使用 Python 的 `RotatingFileHandler`。旧日志会自动轮转——查找 `agent.log.1`、`agent.log.2` 等。`hermes logs list` 子命令显示所有日志文件，包括已轮转的。
+Hermes 使用 Python 的 `RotatingFileHandler`。旧日志会自动轮转——查找 `agent.log.1`、`agent.log.2` 等。`fool logs list` 子命令显示所有日志文件，包括已轮转的。
 
-## `hermes config`
+## `fool config`
 
 ```bash
-hermes config <subcommand>
+fool config <subcommand>
 ```
 
 子命令：
@@ -771,10 +771,10 @@ hermes config <subcommand>
 | `check` | 检查缺失或过期的 config。 |
 | `migrate` | 交互式添加新引入的选项。 |
 
-## `hermes pairing`
+## `fool pairing`
 
 ```bash
-hermes pairing <list|approve|revoke|clear-pending>
+fool pairing <list|approve|revoke|clear-pending>
 ```
 
 | 子命令 | 说明 |
@@ -784,10 +784,10 @@ hermes pairing <list|approve|revoke|clear-pending>
 | `revoke <platform> <user-id>` | 撤销用户的访问权限。 |
 | `clear-pending` | 清除待处理的配对码。 |
 
-## `hermes skills`
+## `fool skills`
 
 ```bash
-hermes skills <subcommand>
+fool skills <subcommand>
 ```
 
 子命令：
@@ -812,21 +812,21 @@ hermes skills <subcommand>
 常用示例：
 
 ```bash
-hermes skills browse
-hermes skills browse --source official
-hermes skills search react --source skills-sh
-hermes skills search https://mintlify.com/docs --source well-known
-hermes skills inspect official/security/1password
-hermes skills inspect skills-sh/vercel-labs/json-render/json-render-react
-hermes skills install official/migration/openclaw-migration
-hermes skills install skills-sh/anthropics/skills/pdf --force
-hermes skills install https://sharethis.chat/SKILL.md                     # 直接 URL（含引用的支持文件）
-hermes skills install https://example.com/SKILL.md --name my-skill        # frontmatter 无名称时覆盖名称
-hermes skills check
-hermes skills update
-hermes skills config
-hermes skills reset google-workspace
-hermes skills reset google-workspace --restore --yes
+fool skills browse
+fool skills browse --source official
+fool skills search react --source skills-sh
+fool skills search https://mintlify.com/docs --source well-known
+fool skills inspect official/security/1password
+fool skills inspect skills-sh/vercel-labs/json-render/json-render-react
+fool skills install official/migration/openclaw-migration
+fool skills install skills-sh/anthropics/skills/pdf --force
+fool skills install https://sharethis.chat/SKILL.md                     # 直接 URL（含引用的支持文件）
+fool skills install https://example.com/SKILL.md --name my-skill        # frontmatter 无名称时覆盖名称
+fool skills check
+fool skills update
+fool skills config
+fool skills reset google-workspace
+fool skills reset google-workspace --restore --yes
 ```
 
 注意：
@@ -837,10 +837,10 @@ hermes skills reset google-workspace --restore --yes
 - `--source browse-sh` 搜索 [browse.sh](https://browse.sh) 包含 200+ 站点特定浏览器自动化 skill 的目录。标识符形如 `browse-sh/airbnb.com/search-listings-ddgioa`。
 - 传入 `http(s)://…/*.md` URL 可安装 `SKILL.md`，以及其中明确引用且位于 `references/`、`templates/`、`scripts/`、`assets/` 和 `examples/` 下的文件。当 frontmatter 没有 `name:` 且 URL slug 不是有效标识符时，交互式终端会提示输入名称；非交互式界面（TUI 内的 `/skills install`、gateway 平台）需要改用 `--name <x>`。
 
-## `hermes bundles`
+## `fool bundles`
 
 ```bash
-hermes bundles <subcommand>
+fool bundles <subcommand>
 ```
 
 Skill bundle 将多个 skill 归组到一个 `/<bundle-name>` 斜杠命令下。调用 bundle 会将每个引用的 skill 加载到单个合并的用户消息中。存储位置：`~/.hermes/skill-bundles/<slug>.yaml`。YAML schema 和行为请参阅 [Skill Bundles](../user-guide/features/skills.md#skill-bundles)。
@@ -858,23 +858,23 @@ Skill bundle 将多个 skill 归组到一个 `/<bundle-name>` 斜杠命令下。
 示例：
 
 ```bash
-hermes bundles create backend-dev \
+fool bundles create backend-dev \
   --skill github-code-review \
   --skill test-driven-development \
   --skill github-pr-workflow \
   -d "Backend feature work"
 
-hermes bundles list
-hermes bundles show backend-dev
-hermes bundles delete backend-dev
+fool bundles list
+fool bundles show backend-dev
+fool bundles delete backend-dev
 ```
 
 在聊天会话中，`/bundles` 列出已安装的 bundle，`/<bundle-name>` 加载某个 bundle。
 
-## `hermes curator`
+## `fool curator`
 
 ```bash
-hermes curator <subcommand>
+fool curator <subcommand>
 ```
 
 Curator 是一个辅助模型后台任务，定期审查 agent 创建的 skill，修剪过期的，合并重叠的，并归档过时的。捆绑和通过 hub 安装的 skill 不会被触及。归档可恢复；不会发生自动删除。
@@ -899,7 +899,7 @@ Curator 是一个辅助模型后台任务，定期审查 agent 创建的 skill�
 | `prune` | 手动修剪 curator 通常会清理的 skill |
 | `list-archived` | 列出已归档的 skill（可通过 `restore` 恢复） |
 
-在全新安装时，第一次计划运行会延迟一个完整的 `interval_hours`（默认 7 天）——gateway 不会在 `hermes update` 后的第一次 tick 时立即执行 curator。使用 `hermes curator run --dry-run` 在此之前预览。
+在全新安装时，第一次计划运行会延迟一个完整的 `interval_hours`（默认 7 天）——gateway 不会在 `fool update` 后的第一次 tick 时立即执行 curator。使用 `fool curator run --dry-run` 在此之前预览。
 
 行为和配置请参阅 [Curator](../user-guide/features/curator.md)。
 
@@ -914,7 +914,7 @@ hermes fallback <subcommand>
 | 子命令 | 说明 |
 |------------|-------------|
 | `list`（别名：`ls`） | 显示当前 fallback 链（不带子命令时的默认行为） |
-| `add` | 选择 provider + 模型（与 `hermes model` 相同的选择器）并追加到链末尾 |
+| `add` | 选择 provider + 模型（与 `fool model` 相同的选择器）并追加到链末尾 |
 | `remove`（别名：`rm`） | 选择要从链中删除的条目 |
 | `clear` | 删除所有 fallback 条目 |
 
@@ -937,10 +937,10 @@ hermes hooks <subcommand>
 
 事件签名和 payload 格式请参阅 [Hooks](../user-guide/features/hooks.md)。
 
-## `hermes memory`
+## `fool memory`
 
 ```bash
-hermes memory <subcommand>
+fool memory <subcommand>
 ```
 
 设置和管理外部 memory provider plugin。可用 provider：honcho、openviking、mem0、hindsight、holographic、retaindb、byterover、supermemory。同一时间只能有一个外部 provider 处于活跃状态。内置 memory（MEMORY.md/USER.md）始终处于活跃状态。
@@ -957,10 +957,10 @@ hermes memory <subcommand>
 当外部 memory provider 处于活跃状态时，它可能会注册自己的顶级 `hermes <provider>` 命令用于 provider 特定管理（例如 Honcho 激活时的 `hermes honcho`）。未激活的 provider 不暴露其子命令。运行 `hermes --help` 查看当前已连接的命令。
 :::
 
-## `hermes acp`
+## `fool acp`
 
 ```bash
-hermes acp
+fool acp
 ```
 
 将 Hermes 作为 ACP（Agent Client Protocol）stdio 服务器启动，用于编辑器集成。
@@ -980,10 +980,10 @@ cd ~/.hermes/hermes-agent && uv pip install -e '.[acp]'
 
 参见 [ACP 编辑器集成](../user-guide/features/acp.md) 和 [ACP 内部原理](../developer-guide/acp-internals.md)。
 
-## `hermes mcp`
+## `fool mcp`
 
 ```bash
-hermes mcp <subcommand>
+fool mcp <subcommand>
 ```
 
 管理 MCP（Model Context Protocol）服务器配置，并将 Hermes 作为 MCP 服务器运行。
@@ -1000,13 +1000,13 @@ hermes mcp <subcommand>
 
 参见 [MCP 配置参考](./mcp-config-reference.md)、[在 Hermes 中使用 MCP](../guides/use-mcp-with-hermes.md) 和 [MCP 服务器模式](../user-guide/features/mcp.md#running-hermes-as-an-mcp-server)。
 
-## `hermes plugins`
+## `fool plugins`
 
 ```bash
-hermes plugins [subcommand]
+fool plugins [subcommand]
 ```
 
-统一的 plugin 管理——通用 plugin、memory provider 和 context engine 集于一处。不带子命令运行 `hermes plugins` 会打开包含两个部分的复合交互界面：
+统一的 plugin 管理——通用 plugin、memory provider 和 context engine 集于一处。不带子命令运行 `fool plugins` 会打开包含两个部分的复合交互界面：
 
 - **General Plugins** — 多选复选框，用于启用/禁用已安装的 plugin
 - **Provider Plugins** — 单选配置，用于 Memory Provider 和 Context Engine。在某个类别上按 ENTER 打开单选选择器。
@@ -1029,10 +1029,10 @@ Provider plugin 选择保存到 `config.yaml`：
 
 参见 [Plugins](../user-guide/features/plugins.md) 和 [构建 Hermes Plugin](../developer-guide/plugins/index.md)。
 
-## `hermes tools`
+## `fool tools`
 
 ```bash
-hermes tools [--summary]
+fool tools [--summary]
 ```
 
 | 选项 | 说明 |
@@ -1041,10 +1041,10 @@ hermes tools [--summary]
 
 不带 `--summary` 时，启动交互式按平台工具配置界面。
 
-## `hermes computer-use`
+## `fool computer-use`
 
 ```bash
-hermes computer-use <subcommand>
+fool computer-use <subcommand>
 ```
 
 子命令：
@@ -1055,14 +1055,14 @@ hermes computer-use <subcommand>
 | `install --upgrade` | 即使 cua-driver 已在 PATH 中也重新运行安装程序。上游脚本始终拉取最新版本，因此这会执行原地升级。 |
 | `status` | 打印 `cua-driver` 是否在 `$PATH` 中以及已安装的版本。 |
 
-`hermes computer-use install` 是安装 `computer_use` toolset 使用的 [cua-driver](https://github.com/trycua/cua) 二进制文件的稳定入口。它运行与首次启用 Computer Use 时 `hermes tools` 调用的相同上游安装程序，因此如果 toolset 切换未触发安装（例如在已配置用户的设置中），可以安全地用于重新运行安装。
+`fool computer-use install` 是安装 `computer_use` toolset 使用的 [cua-driver](https://github.com/trycua/cua) 二进制文件的稳定入口。它运行与首次启用 Computer Use 时 `fool tools` 调用的相同上游安装程序，因此如果 toolset 切换未触发安装（例如在已配置用户的设置中），可以安全地用于重新运行安装。
 
-`hermes update` 在更新结束时，如果 cua-driver 在 PATH 中，会自动重新运行上游安装程序，因此大多数用户不需要手动调用 `--upgrade`。当上游发布了你现在就想要的修复，而不想等待下次 Hermes 更新时，使用此选项。
+`fool update` 在更新结束时，如果 cua-driver 在 PATH 中，会自动重新运行上游安装程序，因此大多数用户不需要手动调用 `--upgrade`。当上游发布了你现在就想要的修复，而不想等待下次 Hermes 更新时，使用此选项。
 
-## `hermes sessions`
+## `fool sessions`
 
 ```bash
-hermes sessions <subcommand>
+fool sessions <subcommand>
 ```
 
 子命令：
@@ -1077,10 +1077,10 @@ hermes sessions <subcommand>
 | `stats` | 显示会话存储统计信息。 |
 | `rename <session-id> <title>` | 设置或更改会话标题。 |
 
-## `hermes insights`
+## `fool insights`
 
 ```bash
-hermes insights [--days N] [--source platform]
+fool insights [--days N] [--source platform]
 ```
 
 | 选项 | 说明 |
@@ -1139,10 +1139,10 @@ hermes claw migrate --preset user-data --overwrite
 hermes claw migrate --source /home/user/old-openclaw
 ```
 
-## `hermes dashboard`
+## `fool dashboard`
 
 ```bash
-hermes dashboard [options]
+fool dashboard [options]
 ```
 
 启动 Web 控制台——基于浏览器的界面，用于管理配置、API 密钥和监控会话。需要 `cd ~/.hermes/hermes-agent && uv pip install -e ".[web]"`（FastAPI + Uvicorn）。内嵌浏览器 Chat 标签页始终可用，但额外需要 `pty` extra（`cd ~/.hermes/hermes-agent && uv pip install -e ".[web,pty]"`）以及 POSIX PTY 环境（如 Linux、macOS 或 WSL2）。完整文档请参阅 [Web 控制台](/user-guide/features/web-dashboard)。
@@ -1153,21 +1153,21 @@ hermes dashboard [options]
 | `--host` | `127.0.0.1` | 绑定地址 |
 | `--no-open` | — | 不自动打开浏览器 |
 | `--insecure` | 关闭 | 允许绑定到非 localhost 主机。会在网络上暴露控制台凭据；仅在受信任的网络控制下使用。 |
-| `--stop` | — | 停止正在运行的 `hermes dashboard` 进程并退出。 |
-| `--status` | — | 列出正在运行的 `hermes dashboard` 进程并退出。 |
+| `--stop` | — | 停止正在运行的 `fool dashboard` 进程并退出。 |
+| `--status` | — | 列出正在运行的 `fool dashboard` 进程并退出。 |
 
 ```bash
 # 默认——在浏览器中打开 http://127.0.0.1:9119
-hermes dashboard
+fool dashboard
 
 # 自定义端口，不打开浏览器
-hermes dashboard --port 8080 --no-open
+fool dashboard --port 8080 --no-open
 ```
 
-## `hermes profile`
+## `fool profile`
 
 ```bash
-hermes profile <subcommand>
+fool profile <subcommand>
 ```
 
 管理 profile——多个隔离的 Hermes 实例，每个实例拥有自己的 config、会话、skill 和主目录。
@@ -1190,14 +1190,14 @@ hermes profile <subcommand>
 示例：
 
 ```bash
-hermes profile list
-hermes profile create work --clone
-hermes profile use work
-hermes profile alias work --name h-work
-hermes profile export work -o work-backup.tar.gz
-hermes profile import work-backup.tar.gz --name restored
-hermes profile install github.com/user/my-distro --alias
-hermes profile update work
+fool profile list
+fool profile create work --clone
+fool profile use work
+fool profile alias work --name h-work
+fool profile export work -o work-backup.tar.gz
+fool profile import work-backup.tar.gz --name restored
+fool profile install github.com/user/my-distro --alias
+fool profile update work
 hermes -p work chat -q "Hello from work profile"
 ```
 
@@ -1222,10 +1222,10 @@ hermes completion zsh >> ~/.zshrc
 hermes completion fish > ~/.config/fish/completions/hermes.fish
 ```
 
-## `hermes update`
+## `fool update`
 
 ```bash
-hermes update [--check] [--backup] [--restart-gateway]
+fool update [--check] [--backup] [--restart-gateway]
 ```
 
 拉取最新的 `hermes-agent` 代码并在受管理的 venv 中重新安装依赖，然后重新运行安装后 hook（MCP 服务器、skill 同步、补全安装）。可在运行中的安装上安全执行。使用 `--check` 查看你的检出是否落后于 `origin/main`，而不安装。
@@ -1238,7 +1238,7 @@ hermes update [--check] [--backup] [--restart-gateway]
 
 附加行为：
 
-- **配对数据快照。** 即使 `--backup` 关闭，`hermes update` 也会在 `git pull` 前对 `~/.hermes/pairing/` 和 Feishu 评论规则进行轻量快照。如果拉取覆盖了你正在编辑的文件，可以用 `hermes backup restore --state pre-update` 回滚。
+- **配对数据快照。** 即使 `--backup` 关闭，`fool update` 也会在 `git pull` 前对 `~/.hermes/pairing/` 和 Feishu 评论规则进行轻量快照。如果拉取覆盖了你正在编辑的文件，可以用 `fool backup restore --state pre-update` 回滚。
 - **旧版 `hermes.service` 警告。** 如果 Hermes 检测到预重命名的 `hermes.service` systemd 单元（而非当前的 `hermes-gateway.service`），会打印一次性迁移提示，帮助你避免循环重启问题。
 - **退出码。** 成功时为 `0`，拉取/安装/安装后错误时为 `1`，阻止 `git pull` 的意外工作树变更时为 `2`。
 
@@ -1246,9 +1246,9 @@ hermes update [--check] [--backup] [--restart-gateway]
 
 | 命令 | 说明 |
 |---------|-------------|
-| `hermes version` | 打印版本信息。 |
-| `hermes update` | 拉取最新变更并重新安装依赖。 |
-| `hermes uninstall [--full] [--yes]` | 删除 Hermes，可选择删除所有 config/数据。 |
+| `fool version` | 打印版本信息。 |
+| `fool update` | 拉取最新变更并重新安装依赖。 |
+| `fool uninstall [--full] [--yes]` | 删除 Hermes，可选择删除所有 config/数据。 |
 
 ## 另请参阅
 

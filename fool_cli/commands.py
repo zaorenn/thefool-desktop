@@ -1059,7 +1059,7 @@ def telegram_menu_commands(max_commands: int = 100) -> tuple[list[tuple[str, str
 
     Skills are the only tier that gets trimmed when the cap is hit.
     User-installed hub skills are excluded — accessible via /skills.
-    Skills disabled for the ``"telegram"`` platform (via ``hermes skills
+    Skills disabled for the ``"telegram"`` platform (via ``fool skills
     config``) are excluded from the menu entirely.
 
     Returns:
@@ -1321,19 +1321,19 @@ _SLACK_PRIORITY_ALIASES = ("btw", "bg")
 #     (the rehaul folded the old /credits + /billing surfaces into /topup.)
 #   - moa: high-cost slash mode, available through /hermes moa to avoid
 #     displacing existing native Slack slash commands at the 50-command cap.
-#   - debug: the log/report upload surface; reached via /hermes debug on Slack.
+#   - debug: the log/report upload surface; reached via /fool debug on Slack.
 #   - egress: Docker-only proxy status; reachable as /hermes egress on Slack.
 #   - init: repo-scan AGENTS.md bootstrap — a cwd-centric dev command that is
 #     rare from Slack; reachable as /hermes init. Without this entry, adding
 #     /init clamps /version off the native list and breaks Telegram parity.
-#   - version: low-frequency info command; reachable as /hermes version on
+#   - version: low-frequency info command; reachable as /fool version on
 #     Slack. Demoted when /context claimed a native slot (context is a
 #     recurring inspection surface; version is a one-off lookup); the demotion
 #     also absorbs the native slot /approvals now consumes at the 50-cap.
 #   - diff: git working-tree diff; reached via /hermes diff on Slack so it
 #     doesn't displace an existing native slash at the 50-command cap.
 #   - update: low-frequency self-update maintenance command; reached via
-#     /hermes update on Slack. Demoted to free the native slot /approvals now
+#     /fool update on Slack. Demoted to free the native slot /approvals now
 #     claims — without this entry /approvals tips the registry past the 50-cap
 #     and silently clamps /update off, breaking Telegram parity.
 #   - heartbeat: session heartbeat management; reached via /hermes heartbeat
@@ -1341,7 +1341,7 @@ _SLACK_PRIORITY_ALIASES = ("btw", "bg")
 #   - refine: on-demand memory/skill review; reached via /hermes refine on
 #     Slack. Added at the 50-cap — a native slot would clamp an existing
 #     native slash.
-#   - pause: global emergency stop; reached via /hermes pause [off] on
+#   - pause: global emergency stop; reached via /fool pause [off] on
 #     Slack. Added at the 50-cap — a native slot would clamp /platform.
 #   - whoami: one-off identity lookup; reached via /hermes whoami on Slack.
 #     Demoted when /loop claimed a native slot (loop is a recurring

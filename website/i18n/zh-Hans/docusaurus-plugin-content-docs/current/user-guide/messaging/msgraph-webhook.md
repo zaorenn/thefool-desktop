@@ -40,7 +40,7 @@ MSGRAPH_WEBHOOK_CLIENT_STATE=<generate-with-openssl-rand-hex-32>
 MSGRAPH_WEBHOOK_ACCEPTED_RESOURCES=communications/onlineMeetings
 ```
 
-启动 gateway：`hermes gateway run`。监听器暴露以下端点：
+启动 gateway：`fool gateway run`。监听器暴露以下端点：
 
 - `POST /msgraph/webhook` — 来自 Graph 的变更通知
 - `GET /msgraph/webhook?validationToken=...` — Graph 订阅验证握手

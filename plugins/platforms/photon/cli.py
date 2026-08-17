@@ -41,7 +41,7 @@ from .sidecar_paths import resolve_sidecar_dir
 # non-None value and only resolve/derive when unset.
 _SIDECAR_DIR: Path | None = None
 # Written on npm failure so check_requirements() can surface the root cause
-# when called later (gateway start, hermes status). Cleared on success.
+# when called later (gateway start, fool status). Cleared on success.
 _NPM_ERROR_LOG: Path | None = None
 
 
@@ -244,7 +244,7 @@ def _cmd_setup(args: argparse.Namespace) -> int:
             print(
                 "  ⚠ Project secret was regenerated. If the gateway is running, "
                 "restart it so the sidecar picks up the new secret:\n"
-                "      hermes gateway restart"
+                "      fool gateway restart"
             )
     except Exception as e:
         print(f"spectrum provisioning failed: {e}", file=sys.stderr)
@@ -348,7 +348,7 @@ def _cmd_setup(args: argparse.Namespace) -> int:
 
     print()
     print("✓ Photon setup complete.")
-    print("  Start the gateway:  hermes gateway start")
+    print("  Start the gateway:  fool gateway start")
     return 0
 
 
@@ -437,7 +437,7 @@ def _cmd_telemetry(args: argparse.Namespace) -> int:
         print(f"could not save PHOTON_TELEMETRY: {e}", file=sys.stderr)
         return 1
     print(f"✓ Spectrum telemetry turned {state} (PHOTON_TELEMETRY in ~/.hermes/.env)")
-    print("  Restart the gateway for the sidecar to pick it up:  hermes gateway restart")
+    print("  Restart the gateway for the sidecar to pick it up:  fool gateway restart")
     return 0
 
 

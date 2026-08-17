@@ -40,7 +40,7 @@ def test_sessions_delete_accepts_unique_id_prefix(monkeypatch, capsys):
 
 
 def _run_prune(monkeypatch, capsys, argv_tail, candidates=None, skipped_open=0):
-    """Run `hermes sessions prune <argv_tail>` against a FakeDB, capturing
+    """Run `fool sessions prune <argv_tail>` against a FakeDB, capturing
     the filter kwargs passed to list_prune_candidates. Auto-confirms."""
     import fool_cli.main as main_mod
     import fool_state
@@ -125,5 +125,5 @@ def test_sessions_prune_surfaces_matching_open_sessions(monkeypatch, capsys):
 
     assert "2 open sessions also match these filters" in out
     assert "prune only deletes ended sessions" in out
-    assert "hermes sessions delete <id>" in out
+    assert "fool sessions delete <id>" in out
     assert "No sessions match" in out

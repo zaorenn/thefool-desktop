@@ -306,7 +306,7 @@ _EXTRA_ENV_KEYS = frozenset({
     "MATRIX_REQUIRE_MENTION", "MATRIX_FREE_RESPONSE_ROOMS", "MATRIX_AUTO_THREAD", "MATRIX_DM_AUTO_THREAD",
     "MATRIX_RECOVERY_KEY",
     # Langfuse observability plugin — optional tuning keys + standard SDK vars.
-    # Activation is via plugins.enabled (opt-in through `hermes plugins enable
+    # Activation is via plugins.enabled (opt-in through `fool plugins enable
     # observability/langfuse` or `fool tools → Langfuse`); credentials gate
     # the plugin at runtime.
     "FOOL_LANGFUSE_ENV",
@@ -5105,7 +5105,7 @@ def warn_unpinned_cron_jobs_after_model_config_change(
         f"{snapshot_field} values that differ from the new global {axis}. "
         "They will fail closed on their next run instead of silently using the "
         "changed model/provider. Inspect with `fool cron list`, then pin the "
-        "intended values with `hermes cron edit <job_id> --provider <provider> "
+        "intended values with `fool cron edit <job_id> --provider <provider> "
         "--model <model>`."
     )
 

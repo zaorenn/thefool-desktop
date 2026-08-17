@@ -1,4 +1,4 @@
-"""Tests for hermes backup and import commands."""
+"""Tests for fool backup and import commands."""
 
 import json
 import os

@@ -294,7 +294,7 @@ class TestIsSatisfiedVersionAware:
 
 
 # ---------------------------------------------------------------------------
-# active_features + refresh_active_features (Piece A — hermes update wiring)
+# active_features + refresh_active_features (Piece A — fool update wiring)
 # ---------------------------------------------------------------------------
 
 
@@ -306,7 +306,7 @@ class TestActiveFeatures:
 
     def test_shared_dependency_does_not_activate_feature(self, monkeypatch):
         # asyncpg is a generic dependency that may be installed for unrelated
-        # reasons. It must not make hermes update try to refresh Matrix unless
+        # reasons. It must not make fool update try to refresh Matrix unless
         # the Matrix anchor package (mautrix) is present.
         monkeypatch.setattr(
             ld, "_is_present",

@@ -4,7 +4,7 @@
 #
 #     systemctl --user disable --now hermes-kanban-dispatcher.service
 #     # then make sure a gateway is running; e.g. a systemd user unit
-#     # for `hermes gateway start`. The gateway hosts the dispatcher.
+#     # for `fool gateway start`. The gateway hosts the dispatcher.
 #
 # This unit is kept for users who truly cannot run the gateway (host
 # policy forbids long-lived services, etc.). It now invokes the

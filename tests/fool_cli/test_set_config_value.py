@@ -322,7 +322,7 @@ class TestCronModelDriftConfigWarning:
         set_config_value("model.default", "new-model")
 
         warning = capsys.readouterr().out
-        assert "hermes cron edit <job_id> --provider <provider> --model <model>" in warning
+        assert "fool cron edit <job_id> --provider <provider> --model <model>" in warning
         assert "cronjob action=update" not in warning
 
 

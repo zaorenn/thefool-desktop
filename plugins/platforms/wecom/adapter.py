@@ -1846,7 +1846,7 @@ def interactive_setup() -> None:
         elif access_idx == 1:
             save_env_value("WECOM_DM_POLICY", "pairing")
             print_success("DM pairing mode — users will receive a code to request access.")
-            print_info("Approve with: hermes pairing approve <platform> <code>")
+            print_info("Approve with: fool pairing approve <platform> <code>")
         elif access_idx == 2:
             save_env_value("WECOM_DM_POLICY", "disabled")
             print_warning("Direct messages disabled.")

@@ -3,7 +3,17 @@ import fs from 'node:fs'
 // `fool serve` announces FOOL_BACKEND_READY; the legacy `fool dashboard`
 // backend announces FOOL_DASHBOARD_READY. Accept either so the desktop spawn
 // works against both the headless backend and old/dashboard runtimes.
-const _READY_RE = /^HERMES_(?:BACKEND|DASHBOARD)_READY port=(\d+)/m
+// FOOL-SEAM: ready-token
+//
+// Backend `FOOL_BACKEND_READY port=<n>` yaziyor. Bu regex bir SÖZLEŞME:
+// eşleşmezse backend sorunsuz baslar, portunu duyurur, masaüstü duymaz ve
+// 90 saniye sonra "Timed out waiting for backend port announcement" der.
+// Hata mesaji backend'i suclu gosterir; oysa backend calisiyordur.
+//
+// Toplu marka donusumu bunu ATLAMISTI: `HERMES_` burada bir env degiskeni
+// degil, regex deseninin parcasi -- `HERMES_[A-Z0-9_]+` kurali eslesmedi.
+// Python tarafi cevrildi, bu taraf kalmisti.
+const _READY_RE = /^FOOL_(?:BACKEND|DASHBOARD)_READY port=(\d+)/m
 
 // The announcement clock starts the instant the backend process is spawned —
 // before uvicorn binds its socket. On a cold install the child must first

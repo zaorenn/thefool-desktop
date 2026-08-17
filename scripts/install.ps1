@@ -2995,7 +2995,12 @@ function Set-PathVariable {
         # path, so they work from any location and survive updates.)
         $hermesBin = "$InstallDir\bin"
         New-Item -ItemType Directory -Force -Path $hermesBin | Out-Null
-        foreach ($launcher in @("hermes.exe", "hermes-acp.exe")) {
+        # FOOL-SEAM: cli-launchers
+        # venv artik fool.exe / fool-acp.exe uretiyor. Eski adlar
+        # kalirsa bu asama var olmayan dosyalari kopyalamaya calisir
+        # ve `fool` komutu PATH'e HIC girmez -- kurulum "basarili"
+        # gorunur ama terminalde hicbir sey yoktur.
+        foreach ($launcher in @("fool.exe", "fool-acp.exe")) {
             $src = "$InstallDir\venv\Scripts\$launcher"
             if (Test-Path $src) {
                 Copy-Item -Force $src "$hermesBin\$launcher"

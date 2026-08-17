@@ -3674,7 +3674,7 @@ def delegate_task(
     # set_current_session_id(child.session_id), which clobbers the
     # FOOL_SESSION_ID ContextVar and os.environ with the subagent's internal
     # id before the background-dispatch code below would read it. The
-    # request-scoped chat_id binding (the raw X-Hermes-Session-Id on
+    # request-scoped chat_id binding (the raw X-Fool-Session-Id on
     # api_server) is untouched by child construction, so read it here and
     # thread it through the dispatch.
     from tools.async_delegation import _current_origin_session_id
@@ -3973,7 +3973,7 @@ def delegate_task(
             # bound (the API server always binds one — see
             # ApiServerAdapter._bind_api_server_session), gateway.wake can
             # still reach the session by self-POSTing /v1/chat/completions
-            # with that id in X-Hermes-Session-Id once the batch completes.
+            # with that id in X-Fool-Session-Id once the batch completes.
             # Only fall back to forced-sync execution when there is truly no
             # session id to wake. Uses the origin captured before child
             # construction (see _origin_wake_sid above) — reading

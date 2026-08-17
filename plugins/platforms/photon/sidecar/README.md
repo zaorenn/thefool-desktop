@@ -8,7 +8,7 @@ The sidecar:
 
 - runs `Spectrum({ projectId, projectSecret, providers: [imessage.config()] })`
 - exposes a loopback-only HTTP control channel for the Python adapter
-  to push send/typing requests (auth via `X-Hermes-Sidecar-Token`)
+  to push send/typing requests (auth via `X-Fool-Sidecar-Token`)
 - drains the inbound message stream so `spectrum-ts` keeps its
   reconnect/heartbeat machinery alive and Hermes can receive inbound messages
   over the adapter's loopback `GET /inbound` stream

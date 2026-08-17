@@ -14,7 +14,7 @@
 // Outbound (Hermes -> gRPC): `/send` drives `space.send(...)`; `/typing`
 //   sends the documented `typing("start" | "stop")` content builder.
 //
-// Protocol (all requests require `X-Hermes-Sidecar-Token: ${TOKEN}`):
+// Protocol (all requests require `X-Fool-Sidecar-Token: ${TOKEN}`):
 //   - GET  /inbound    -> 200 NDJSON stream; one JSON event per line, blank
 //                         lines are heartbeats. One consumer at a time.
 //   - POST /healthz     -> {"ok": true}

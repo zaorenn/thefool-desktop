@@ -117,7 +117,7 @@ GET  /api/model/options          Provider-aware picker inventory
 GET  /health, /health/detailed
 ```
 
-Setup, headers (`X-Hermes-Session-Id`, `X-Hermes-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
+Setup, headers (`X-Fool-Session-Id`, `X-Fool-Session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
 
 ### Model catalog surfaces
 
@@ -129,7 +129,7 @@ If an external control plane needs Hermes' curated provider rows, per-model
 pricing, or capability hints, use one of the authenticated picker surfaces:
 
 - API server REST: `GET /api/model/options` with the API-server bearer key
-- Dashboard backend REST: `GET /api/model/options` with `X-Hermes-Session-Token`
+- Dashboard backend REST: `GET /api/model/options` with `X-Fool-Session-Token`
 - TUI gateway RPC: `model.options`
 
 Those surfaces share the same payload builder and the same custom-provider

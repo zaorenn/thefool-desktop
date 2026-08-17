@@ -43,11 +43,11 @@ test('redactSecrets scrubs ?token= and ?ticket= URL params', () => {
   assert.ok(!redactSecrets('?token=supersecret').includes('supersecret'))
 })
 
-test('redactSecrets scrubs Authorization and X-The Fool-Session-Token headers', () => {
+test('redactSecrets scrubs Authorization and X-Fool-Session-Token headers', () => {
   assert.match(redactSecrets('Authorization: Bearer tok_9999'), /Authorization: Bearer <redacted>/)
   assert.ok(!redactSecrets('Authorization: Bearer tok_9999').includes('tok_9999'))
-  assert.match(redactSecrets('X-The Fool-Session-Token: hdr_888'), /X-The Fool-Session-Token: ?<redacted>/)
-  assert.ok(!redactSecrets('X-The Fool-Session-Token: hdr_888').includes('hdr_888'))
+  assert.match(redactSecrets('X-Fool-Session-Token: hdr_888'), /X-Fool-Session-Token: ?<redacted>/)
+  assert.ok(!redactSecrets('X-Fool-Session-Token: hdr_888').includes('hdr_888'))
 })
 
 test('redactSecrets handles null/undefined and non-secret text untouched', () => {

@@ -912,8 +912,54 @@ def ensure_hermes_home():
             d.mkdir(parents=True, exist_ok=True)
             _secure_dir(d)
         _ensure_default_soul_md(home)
+        _fool_seed_local_model(home)
 
     _HERMES_HOME_ENSURED.add(key)
+
+
+def _fool_seed_local_model(home: Path) -> None:
+    """FOOL-SEAM: first-run-autodetect
+
+    İlk açılışta çalışan bir yerel model sunucusu varsa onu bulup
+    ``config.yaml``'a yaz. Yerel-önce bir uygulamanın kullanıcıyı "sağlayıcı
+    seç, base URL yaz, model kimliğini kopyala" adımlarına sokması kabul
+    edilemez — özellikle uygulamayı denemesi için birine gönderiyorsan.
+
+    Yalnızca config.yaml YOKKEN çalışır: mevcut bir yapılandırmayı ezmek,
+    kullanıcının bilinçli seçimini sessizce geri almak olurdu.
+    """
+    config_path = home / "config.yaml"
+    if config_path.exists():
+        return
+
+    try:
+        from fool.autodetect import config_patch, detect
+
+        detection = detect()
+        if detection is None:
+            return
+
+        import yaml
+
+        patch = config_patch(detection)
+        patch.setdefault("display", {})["skin"] = "the-fool"
+
+        with config_path.open("w", encoding="utf-8") as handle:
+            handle.write(
+                "# The Fool — ilk acilista otomatik olusturuldu.\n"
+                f"# Bulunan yerel sunucu: {detection.runner.label} "
+                f"({detection.runner.base_url})\n"
+                "# Degistirmek icin: fool model\n\n"
+            )
+            yaml.safe_dump(patch, handle, sort_keys=False, allow_unicode=True)
+
+        _secure_file(config_path)
+        logger.info(
+            "[The Fool] %s bulundu, model %s olarak yapilandirildi",
+            detection.runner.label, detection.chosen_model,
+        )
+    except Exception as exc:  # pragma: no cover — kurulum asla cokmemeli
+        logger.debug("[The Fool] yerel sunucu otomatik yapilandirmasi atlandi: %s", exc)
 
 
 def _ensure_hermes_home_managed(home: Path):

@@ -20,15 +20,15 @@ Hermes 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端�
 
 内置 provider 需要在几个层面保持一致：
 
-1. `thefool_cli/auth.py` 决定如何查找凭据。
-2. `thefool_cli/runtime_provider.py` 将其转换为运行时数据：
+1. `fool_cli/auth.py` 决定如何查找凭据。
+2. `fool_cli/runtime_provider.py` 将其转换为运行时数据：
    - `provider`
    - `api_mode`
    - `base_url`
    - `api_key`
    - `source`
 3. `run_agent.py` 使用 `api_mode` 决定如何构建和发送请求。
-4. `thefool_cli/models.py` 和 `thefool_cli/main.py` 使 provider 在 CLI 中可见。（`thefool_cli/setup.py` 自动委托给 `main.py`——无需在此处做任何修改。）
+4. `fool_cli/models.py` 和 `fool_cli/main.py` 使 provider 在 CLI 中可见。（`fool_cli/setup.py` 自动委托给 `main.py`——无需在此处做任何修改。）
 5. `agent/auxiliary_client.py` 和 `agent/model_metadata.py` 保持辅助任务和 token 预算正常运作。
 
 核心抽象是 `api_mode`。
@@ -74,17 +74,17 @@ Hermes 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端�
 
 ### 每个内置 provider 都必须修改
 
-1. `thefool_cli/auth.py`
-2. `thefool_cli/models.py`
-3. `thefool_cli/runtime_provider.py`
-4. `thefool_cli/main.py`
+1. `fool_cli/auth.py`
+2. `fool_cli/models.py`
+3. `fool_cli/runtime_provider.py`
+4. `fool_cli/main.py`
 5. `agent/auxiliary_client.py`
 6. `agent/model_metadata.py`
 7. 测试
 8. `website/docs/` 下的用户文档
 
 :::tip
-`thefool_cli/setup.py` **无需**修改。setup 向导将 provider/model 选择委托给 `main.py` 中的 `select_provider_and_model()`——在那里添加的任何 provider 都会自动出现在 `hermes setup` 中。
+`fool_cli/setup.py` **无需**修改。setup 向导将 provider/model 选择委托给 `main.py` 中的 `select_provider_and_model()`——在那里添加的任何 provider 都会自动出现在 `hermes setup` 中。
 :::
 
 ### 原生 / 非 OpenAI provider 额外需要
@@ -102,7 +102,7 @@ Hermes 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端�
 1. 在 `plugins/model-providers/<your-provider>/` 下创建一个插件目录，包含：
    - `__init__.py`——在模块级别调用 `register_provider(profile)`
    - `plugin.yaml`——清单文件（name、kind: model-provider、version、description）
-2. 就这些。Provider 插件在任何代码首次调用 `get_provider_profile()` 或 `list_providers()` 时自动加载——捆绑插件（本仓库）和位于 `$THEFOOL_HOME/plugins/model-providers/` 的用户插件都会被加载。
+2. 就这些。Provider 插件在任何代码首次调用 `get_provider_profile()` 或 `list_providers()` 时自动加载——捆绑插件（本仓库）和位于 `$FOOL_HOME/plugins/model-providers/` 的用户插件都会被加载。
 
 当你添加一个插件并调用 `register_provider()` 时，以下内容会自动接线：
 
@@ -119,7 +119,7 @@ Hermes 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端�
 11. `--provider <name>` CLI 标志接受该 provider id
 12. 回退模型激活可以干净地切换到该 provider
 
-位于 `$THEFOOL_HOME/plugins/model-providers/<name>/` 的用户插件会覆盖同名的捆绑插件（`register_provider()` 中后写者获胜）——因此第三方可以在不编辑本仓库的情况下对任何内置 profile 进行 monkey-patch 或替换。
+位于 `$FOOL_HOME/plugins/model-providers/<name>/` 的用户插件会覆盖同名的捆绑插件（`register_provider()` 中后写者获胜）——因此第三方可以在不编辑本仓库的情况下对任何内置 profile 进行 monkey-patch 或替换。
 
 参见 `plugins/model-providers/nvidia/` 或 `plugins/model-providers/gmi/` 作为模板，以及完整的 [Model Provider Plugin 指南](/developer-guide/model-provider-plugin)，了解字段参考、hook 用法和端到端示例。
 
@@ -145,17 +145,17 @@ Hermes 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端�
 
 该 id 应出现在：
 
-- `thefool_cli/auth.py` 中的 `PROVIDER_REGISTRY`
-- `thefool_cli/models.py` 中的 `_PROVIDER_LABELS`
-- `thefool_cli/auth.py` 和 `thefool_cli/models.py` 中的 `_PROVIDER_ALIASES`
-- `thefool_cli/main.py` 中的 CLI `--provider` 选项
+- `fool_cli/auth.py` 中的 `PROVIDER_REGISTRY`
+- `fool_cli/models.py` 中的 `_PROVIDER_LABELS`
+- `fool_cli/auth.py` 和 `fool_cli/models.py` 中的 `_PROVIDER_ALIASES`
+- `fool_cli/main.py` 中的 CLI `--provider` 选项
 - setup / 模型选择分支
 - 辅助模型默认值
 - 测试
 
 如果这些文件之间的 id 不一致，provider 会感觉只接了一半线：认证可能正常，而 `/model`、setup 或运行时解析会静默地遗漏它。
 
-## 第 2 步：在 `thefool_cli/auth.py` 中添加认证元数据
+## 第 2 步：在 `fool_cli/auth.py` 中添加认证元数据
 
 对于 API key provider，在 `PROVIDER_REGISTRY` 中添加一个 `ProviderConfig` 条目，包含：
 
@@ -184,7 +184,7 @@ Hermes 已经可以通过自定义 provider 路径与任何 OpenAI 兼容的端�
 
 如果 provider 需要的不仅仅是"查找 API key"，请添加专用的凭据解析器，而不是将逻辑塞进不相关的分支。
 
-## 第 3 步：在 `thefool_cli/models.py` 中添加模型目录和别名
+## 第 3 步：在 `fool_cli/models.py` 中添加模型目录和别名
 
 更新 provider 目录，使 provider 在菜单和 `provider:model` 语法中正常工作。
 
@@ -207,7 +207,7 @@ kimi:model-name
 
 如果此处缺少别名，provider 可能认证正常，但在 `/model` 解析中仍然失败。
 
-## 第 4 步：在 `thefool_cli/runtime_provider.py` 中解析运行时数据
+## 第 4 步：在 `fool_cli/runtime_provider.py` 中解析运行时数据
 
 `resolve_runtime_provider()` 是 CLI、gateway（网关）、cron、ACP 和辅助客户端共用的路径。
 
@@ -228,11 +228,11 @@ kimi:model-name
 
 注意 API key 优先级。Hermes 已经包含避免将 OpenRouter key 泄露给无关端点的逻辑。新 provider 应同样明确地指定哪个 key 对应哪个 base URL。
 
-## 第 5 步：在 `thefool_cli/main.py` 中接线 CLI
+## 第 5 步：在 `fool_cli/main.py` 中接线 CLI
 
 在交互式 `hermes model` 流程中出现之前，provider 是不可发现的。
 
-在 `thefool_cli/main.py` 中更新以下内容：
+在 `fool_cli/main.py` 中更新以下内容：
 
 - `provider_labels` 字典
 - `select_provider_and_model()` 中的 `providers` 列表
@@ -242,7 +242,7 @@ kimi:model-name
 - 一个 `_model_flow_<provider>()` 函数，或者如果适用则复用 `_model_flow_api_key_provider()`
 
 :::tip
-`thefool_cli/setup.py` 无需修改——它调用 `main.py` 中的 `select_provider_and_model()`，因此你的新 provider 会自动出现在 `hermes model` 和 `hermes setup` 中。
+`fool_cli/setup.py` 无需修改——它调用 `main.py` 中的 `select_provider_and_model()`，因此你的新 provider 会自动出现在 `hermes model` 和 `hermes setup` 中。
 :::
 
 ## 第 6 步：保持辅助调用正常工作
@@ -358,15 +358,15 @@ python -m pytest tests/ -n0 -q
 
 ```bash
 source venv/bin/activate
-python -m thefool_cli.main chat -q "Say hello" --provider your-provider --model your-model
+python -m fool_cli.main chat -q "Say hello" --provider your-provider --model your-model
 ```
 
 如果你修改了菜单，也测试交互式流程：
 
 ```bash
 source venv/bin/activate
-python -m thefool_cli.main model
-python -m thefool_cli.main setup
+python -m fool_cli.main model
+python -m fool_cli.main setup
 ```
 
 对于原生 provider，至少也验证一次工具调用，而不仅仅是纯文本响应。
@@ -385,11 +385,11 @@ python -m thefool_cli.main setup
 
 如果 provider 是标准 chat completions，使用此清单。
 
-- [ ] 在 `thefool_cli/auth.py` 中添加 `ProviderConfig`
-- [ ] 在 `thefool_cli/auth.py` 和 `thefool_cli/models.py` 中添加别名
-- [ ] 在 `thefool_cli/models.py` 中添加模型目录
-- [ ] 在 `thefool_cli/runtime_provider.py` 中添加运行时分支
-- [ ] 在 `thefool_cli/main.py` 中添加 CLI 接线（setup.py 自动继承）
+- [ ] 在 `fool_cli/auth.py` 中添加 `ProviderConfig`
+- [ ] 在 `fool_cli/auth.py` 和 `fool_cli/models.py` 中添加别名
+- [ ] 在 `fool_cli/models.py` 中添加模型目录
+- [ ] 在 `fool_cli/runtime_provider.py` 中添加运行时分支
+- [ ] 在 `fool_cli/main.py` 中添加 CLI 接线（setup.py 自动继承）
 - [ ] 在 `agent/auxiliary_client.py` 中添加辅助模型
 - [ ] 在 `agent/model_metadata.py` 中添加上下文长度
 - [ ] 更新运行时 / CLI 测试

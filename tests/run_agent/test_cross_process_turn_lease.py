@@ -8,7 +8,7 @@ import time
 from types import SimpleNamespace
 
 from agent import relay_runtime
-from thefool_state import SessionDB
+from fool_state import SessionDB
 from run_agent import AIAgent
 
 

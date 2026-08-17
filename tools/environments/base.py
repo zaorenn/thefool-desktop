@@ -22,17 +22,17 @@ from collections import deque
 from pathlib import Path
 from typing import IO, Callable, Iterable, Protocol
 
-from thefool_constants import get_hermes_home
-from thefool_cli._subprocess_compat import windows_hide_flags
+from fool_constants import get_hermes_home
+from fool_cli._subprocess_compat import windows_hide_flags
 from tools.interrupt import is_interrupted
 
 logger = logging.getLogger(__name__)
 
 # Opt-in debug tracing for the interrupt/activity/poll machinery.  Set
-# THEFOOL_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
+# FOOL_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
 # every is_interrupted() state change from _wait_for_process.  Off by default
 # to avoid flooding production gateway logs.
-_DEBUG_INTERRUPT = bool(os.getenv("THEFOOL_DEBUG_INTERRUPT"))
+_DEBUG_INTERRUPT = bool(os.getenv("FOOL_DEBUG_INTERRUPT"))
 
 if _DEBUG_INTERRUPT:
     # AIAgent's quiet_mode path (run_agent.py) forces the `tools` logger to
@@ -283,7 +283,7 @@ def get_sandbox_dir() -> Path:
     """Return the host-side root for all sandbox storage (Docker workspaces,
     Singularity overlays/SIF cache, etc.).
 
-    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {THEFOOL_HOME}/sandboxes/.
+    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {FOOL_HOME}/sandboxes/.
     """
     custom = os.getenv("TERMINAL_SANDBOX_DIR")
     if custom:
@@ -516,20 +516,20 @@ def _cwd_marker(session_id: str) -> str:
 # the shared bash session snapshot: a single long-lived backend serves many
 # concurrent sessions (the messaging gateway, TUI, desktop/web dashboard all
 # collapse the terminal to one "default" environment), so ``export -p`` dumping
-# the FIRST session's THEFOOL_SESSION_ID into the snapshot makes every LATER
+# the FIRST session's FOOL_SESSION_ID into the snapshot makes every LATER
 # session ``source`` that stale value and see a FOREIGN session's identity —
 # overriding the correct per-command Popen env (issue: cross-session
-# THEFOOL_SESSION_ID leak via the shared snapshot). Stripping them from the
+# FOOL_SESSION_ID leak via the shared snapshot). Stripping them from the
 # snapshot is safe because they are re-injected on every command; a snapshot
 # should only carry the user's own shell state (PATH, functions, exports they
 # set), not Hermes' per-turn session identity.
 #
 # Kept in sync with gateway.session_context._VAR_MAP: every bridged name starts
-# with one of these prefixes (or is THEFOOL_UI_SESSION_ID). Used by unit tests
+# with one of these prefixes (or is FOOL_UI_SESSION_ID). Used by unit tests
 # as the Python-side contract for the exclusion set; the dump path unsets by
 # name/prefix instead of grepping declare lines (see below / issue #71296).
 _SNAPSHOT_EXCLUDED_ENV_REGEX = (
-    "^declare -x (THEFOOL_SESSION_|THEFOOL_UI_SESSION_ID|THEFOOL_CRON_AUTO_DELIVER_|THEFOOL_CRON_SESSION)"
+    "^declare -x (FOOL_SESSION_|FOOL_UI_SESSION_ID|FOOL_CRON_AUTO_DELIVER_|FOOL_CRON_SESSION)"
 )
 _SHELL_ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -546,7 +546,7 @@ def _export_dump_excluding_session_vars(
     ``grep -vE`` filter is unsafe: bash 3.2 prints a value containing a newline
     as a multi-line ``declare -x NAME="…`` block, so only the opener matches the
     regex and continuation lines (e.g. ``curl … | bash #`` smuggled into a
-    Matrix room/display name via ``THEFOOL_SESSION_CHAT_NAME``) land in the
+    Matrix room/display name via ``FOOL_SESSION_CHAT_NAME``) land in the
     snapshot and execute on the next ``source`` (issue #71296). Unsetting first
     means ``export -p`` never emits those vars — including any continuation
     lines. ``|| true`` keeps the success contract for callers that chain on it.
@@ -572,15 +572,15 @@ def _export_dump_excluding_session_vars(
         extra_unset = f" {extra_unset}"
     return (
         "{ ( "
-        "unset ${!THEFOOL_SESSION_*} ${!THEFOOL_CRON_AUTO_DELIVER_*} "
-        # AI_AGENT / THEFOOL_AGENT are per-command attribution markers
+        "unset ${!FOOL_SESSION_*} ${!FOOL_CRON_AUTO_DELIVER_*} "
+        # AI_AGENT / FOOL_AGENT are per-command attribution markers
         # (re-exported by every _wrap_command with outer-harness-preserving
         # ${VAR:-default} semantics).  Persisting them into the snapshot
         # would make the FIRST command's value override a later outer
         # harness value arriving via the process env, exactly like the
         # session-var leak this dump already guards against.
-        "AI_AGENT THEFOOL_AGENT "
-        f"THEFOOL_UI_SESSION_ID{extra_unset} 2>/dev/null; "
+        "AI_AGENT FOOL_AGENT "
+        f"FOOL_UI_SESSION_ID{extra_unset} 2>/dev/null; "
         "export -p; "
         ") || true; } "
         f"> {tmp_path}"
@@ -903,7 +903,7 @@ class BaseEnvironment(ABC):
         # Harness attribution: every tool subprocess advertises that it runs
         # under Hermes via the cross-agent ``AI_AGENT`` standard (read by e.g.
         # huggingface_hub's agent detection) plus the Hermes-specific
-        # ``THEFOOL_AGENT`` marker.  The value MUST equal our id in the public
+        # ``FOOL_AGENT`` marker.  The value MUST equal our id in the public
         # agent-harness registry (``hermes-agent`` — see huggingface.js
         # ``agent-harnesses.ts``); standard-var matching is exact, so any other
         # value is reported as "unknown".  Setting it here (rather than only in
@@ -914,7 +914,7 @@ class BaseEnvironment(ABC):
         # process env (Hermes running inside another agent's terminal).
         parts.append(
             'export AI_AGENT="${AI_AGENT:-hermes-agent}" '
-            'THEFOOL_AGENT="${THEFOOL_AGENT:-true}"'
+            'FOOL_AGENT="${FOOL_AGENT:-true}"'
         )
 
         # Preserve bare ``~`` expansion, but rewrite ``~/...`` through
@@ -966,7 +966,7 @@ class BaseEnvironment(ABC):
     @staticmethod
     def _embed_stdin_heredoc(command: str, stdin_data: str) -> str:
         """Append stdin_data as a shell heredoc to the command string."""
-        delimiter = f"THEFOOL_STDIN_{uuid.uuid4().hex[:12]}"
+        delimiter = f"FOOL_STDIN_{uuid.uuid4().hex[:12]}"
         return f"{command} << '{delimiter}'\n{stdin_data}\n{delimiter}"
 
     # ------------------------------------------------------------------
@@ -1165,7 +1165,7 @@ class BaseEnvironment(ABC):
             "start": _now,
         }
 
-        # --- Debug tracing (opt-in via THEFOOL_DEBUG_INTERRUPT=1) -------------
+        # --- Debug tracing (opt-in via FOOL_DEBUG_INTERRUPT=1) -------------
         # Captures loop entry/exit, interrupt state changes, and periodic
         # heartbeats so we can diagnose "agent never sees the interrupt"
         # reports without reproducing locally.

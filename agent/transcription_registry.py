@@ -24,7 +24,7 @@ import threading
 from typing import Dict, List, Optional
 
 from agent.transcription_provider import TranscriptionProvider
-from thefool_constants import hermes_home_key
+from fool_constants import hermes_home_key
 
 logger = logging.getLogger(__name__)
 

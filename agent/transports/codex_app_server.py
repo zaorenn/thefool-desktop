@@ -99,15 +99,15 @@ class CodexAppServerClient:
         # Codex sandbox on, but add the Kanban root as the only extra writable
         # root. Without this, codex-runtime workers finish their actual work
         # but crash/block when kanban_complete/kanban_block writes SQLite.
-        if spawn_env.get("THEFOOL_KANBAN_TASK"):
-            kanban_db = spawn_env.get("THEFOOL_KANBAN_DB")
+        if spawn_env.get("FOOL_KANBAN_TASK"):
+            kanban_db = spawn_env.get("FOOL_KANBAN_DB")
             kanban_root = (
                 os.path.dirname(kanban_db)
                 if kanban_db
                 else spawn_env.get(
-                    "THEFOOL_KANBAN_ROOT",
+                    "FOOL_KANBAN_ROOT",
                     os.path.join(
-                        spawn_env.get("THEFOOL_HOME", os.path.expanduser("~/.hermes")),
+                        spawn_env.get("FOOL_HOME", os.path.expanduser("~/.hermes")),
                         "kanban",
                     ),
                 )
@@ -129,7 +129,7 @@ class CodexAppServerClient:
 
         # Hide the console the codex child would otherwise flash on Windows
         # (#56747). Hide-only — stdio pipes stay intact for the app-server wire.
-        from thefool_cli._subprocess_compat import windows_hide_flags
+        from fool_cli._subprocess_compat import windows_hide_flags
 
         self._proc = subprocess.Popen(
             cmd,

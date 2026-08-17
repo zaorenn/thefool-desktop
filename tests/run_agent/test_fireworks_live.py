@@ -1,7 +1,7 @@
 """Live Fireworks smoke test — exercises the Hermes runtime, not a raw SDK client.
 
 Opt-in only:
-    THEFOOL_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
+    FOOL_LIVE_TESTS=1 FIREWORKS_API_KEY=fw_... \\
         pytest tests/run_agent/test_fireworks_live.py -q
 
 Unlike a bare OpenAI() client pointed at the endpoint, this drives Hermes'
@@ -16,11 +16,11 @@ import os
 
 import pytest
 
-LIVE = os.environ.get("THEFOOL_LIVE_TESTS") == "1"
+LIVE = os.environ.get("FOOL_LIVE_TESTS") == "1"
 FIREWORKS_KEY = os.environ.get("FIREWORKS_API_KEY", "")
 
 pytestmark = [
-    pytest.mark.skipif(not LIVE, reason="live-only: set THEFOOL_LIVE_TESTS=1"),
+    pytest.mark.skipif(not LIVE, reason="live-only: set FOOL_LIVE_TESTS=1"),
     pytest.mark.skipif(not FIREWORKS_KEY, reason="FIREWORKS_API_KEY not configured"),
     pytest.mark.integration,
 ]

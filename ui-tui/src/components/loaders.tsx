@@ -1,4 +1,4 @@
-import { Box, Text } from '@thefool/ink'
+import { Box, Text } from '@fool/ink'
 import { useEffect, useState } from 'react'
 
 import { mix } from '../lib/color.js'

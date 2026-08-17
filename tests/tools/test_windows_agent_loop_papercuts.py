@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from thefool_cli._subprocess_compat import split_command_line
+from fool_cli._subprocess_compat import split_command_line
 
 
 class TestSplitCommandLine:

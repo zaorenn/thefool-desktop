@@ -31,7 +31,7 @@ def managed_nous_tools_enabled(*, force_fresh: bool = False) -> bool:
     reflect a just-purchased subscription, credits, or pool grant immediately.
     """
     try:
-        from thefool_cli.nous_account import get_nous_portal_account_info
+        from fool_cli.nous_account import get_nous_portal_account_info
 
         if force_fresh:
             account_info = get_nous_portal_account_info(force_fresh=True)
@@ -51,7 +51,7 @@ def nous_tool_gateway_unavailable_message(
 ) -> str:
     """Return account-aware guidance for an unavailable Nous Tool Gateway path."""
     try:
-        from thefool_cli.nous_account import (
+        from fool_cli.nous_account import (
             format_nous_portal_entitlement_message,
             get_nous_portal_account_info,
         )
@@ -172,7 +172,7 @@ def resolve_provider_secret(
        this reads the active profile's secret scope (authoritative — a scope
        miss must NOT borrow another profile's ``os.environ``; see
        ``agent/secret_scope.py``). Outside multiplexing it reads
-       ``thefool_cli.config.get_env_value`` (os.environ, then ``.env``),
+       ``fool_cli.config.get_env_value`` (os.environ, then ``.env``),
        matching the tools' historical behaviour exactly.
     3. The credential pool / auth store for ``provider_id`` (``hermes auth
        add <provider_id>``). Skipped under an active multiplex turn, where
@@ -183,7 +183,7 @@ def resolve_provider_secret(
 
     ``env_getter`` lets callers supply their module-level ``get_env_value``
     wrapper (transcription_tools / tts_tool expose one that tests patch);
-    when omitted, ``thefool_cli.config.get_env_value`` is used directly.
+    when omitted, ``fool_cli.config.get_env_value`` is used directly.
     """
     value = str(config_value or "").strip()
     if value:
@@ -211,7 +211,7 @@ def resolve_provider_secret(
         key = str(env_getter(env_var) or "").strip()
     else:
         try:
-            from thefool_cli.config import get_env_value
+            from fool_cli.config import get_env_value
 
             key = str(get_env_value(env_var) or "").strip()
         except ImportError:  # pragma: no cover — config is in-repo
@@ -281,7 +281,7 @@ def prefers_gateway(config_section: str) -> bool:
     Reads ``<section>.use_gateway`` from config.yaml.  Never raises.
     """
     try:
-        from thefool_cli.config import load_config
+        from fool_cli.config import load_config
         section = (load_config() or {}).get(config_section)
         if isinstance(section, dict):
             return is_truthy_value(section.get("use_gateway"), default=False)
@@ -294,7 +294,7 @@ def fal_key_is_configured() -> bool:
     """Return True when FAL_KEY is set to a non-whitespace value.
 
     Consults both ``os.environ`` and ``~/.hermes/.env`` (via
-    ``thefool_cli.config.get_env_value`` when available) so tool-side
+    ``fool_cli.config.get_env_value`` when available) so tool-side
     checks and CLI setup-time checks agree.  A whitespace-only value
     is treated as unset everywhere.
     """
@@ -303,7 +303,7 @@ def fal_key_is_configured() -> bool:
         # Fall back to the .env file for CLI paths that may run before
         # dotenv is loaded into os.environ.
         try:
-            from thefool_cli.config import get_env_value
+            from fool_cli.config import get_env_value
 
             value = get_env_value("FAL_KEY")
         except Exception:

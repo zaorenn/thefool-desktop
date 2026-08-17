@@ -306,7 +306,7 @@ class TestAllowPrivateUrlsConfig:
 
     def test_browser_config_string_false_stays_disabled(self, monkeypatch):
         monkeypatch.setattr(
-            "thefool_cli.config.read_raw_config",
+            "fool_cli.config.read_raw_config",
             lambda: {"browser": {"allow_private_urls": "false"}},
         )
 
@@ -321,7 +321,7 @@ class TestAllowPrivateUrlsConfig:
         self, tmp_path, profile_order
     ):
         """The browser's independent guard must follow the active profile."""
-        from thefool_constants import (
+        from fool_constants import (
             reset_hermes_home_override,
             set_hermes_home_override,
         )

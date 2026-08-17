@@ -4,7 +4,7 @@ hermesNpmLib.buildNpmPackage {
   dirs = [
     "web"
 
-    # @thefool/shared ships as a file: workspace dep of web, so its source
+    # @fool/shared ships as a file: workspace dep of web, so its source
     # must be in the filtered src tree too.
     "apps/shared"
   ];
@@ -16,7 +16,7 @@ hermesNpmLib.buildNpmPackage {
     # The workspace root's node_modules/ is at ../node_modules/.
     cd web
     node ../node_modules/typescript/bin/tsc -b
-    # outDir in vite.config.ts points to ../thefool_cli/web_dist for the
+    # outDir in vite.config.ts points to ../fool_cli/web_dist for the
     # monorepo layout.  Override with --outDir dist for the nix build.
     node ../node_modules/vite/bin/vite.js build --outDir dist
 

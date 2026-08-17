@@ -559,7 +559,7 @@ class MemoryManager:
             except Exception as exc:  # pragma: no cover - re-raised by caller
                 error_box["value"] = exc
 
-        # Propagate the caller's contextvars (profile THEFOOL_HOME override)
+        # Propagate the caller's contextvars (profile FOOL_HOME override)
         # to the prefetch thread — see _submit_background.
         import contextvars
         from functools import partial
@@ -737,7 +737,7 @@ class MemoryManager:
 
         The submitted callable is wrapped with the CALLER's contextvars:
         profile isolation in multi-profile processes (gateway multiplexer,
-        dashboard, cron) is a ContextVar-scoped THEFOOL_HOME override, and
+        dashboard, cron) is a ContextVar-scoped FOOL_HOME override, and
         executor worker threads start with empty contexts — without the
         wrap, a provider resolving ambient state (config paths, secrets)
         from the worker would silently land on the default profile.
@@ -1279,7 +1279,7 @@ class MemoryManager:
         ``get_hermes_home()`` themselves.
         """
         if "hermes_home" not in kwargs:
-            from thefool_constants import get_hermes_home
+            from fool_constants import get_hermes_home
             kwargs["hermes_home"] = str(get_hermes_home())
         for provider in self._providers:
             try:

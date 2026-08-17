@@ -414,7 +414,7 @@ def test_post_setup_writes_config_and_prints_summary(monkeypatch, tmp_path, caps
     config: dict = {"memory": {}}
     monkeypatch.setenv("SUPERMEMORY_API_KEY", "")
     monkeypatch.setattr(
-        "thefool_cli.memory_setup._prompt",
+        "fool_cli.memory_setup._prompt",
         lambda label, secret=True, default=None: "new-api-key",
     )
     monkeypatch.setattr(
@@ -433,7 +433,7 @@ def test_post_setup_writes_config_and_prints_summary(monkeypatch, tmp_path, caps
     def fake_save_config(cfg):
         saved.update(cfg)
 
-    monkeypatch.setattr("thefool_cli.config.save_config", fake_save_config)
+    monkeypatch.setattr("fool_cli.config.save_config", fake_save_config)
 
     SupermemoryMemoryProvider().post_setup(str(tmp_path), config)
 

@@ -49,7 +49,7 @@ import {
   useQuery,
   useQueryClient,
   useValue
-} from '@thefool/plugin-sdk'
+} from '@fool/plugin-sdk'
 import {
   type CSSProperties,
   type DragEvent as ReactDragEvent,

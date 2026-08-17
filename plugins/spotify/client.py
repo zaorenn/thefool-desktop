@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 import httpx
 
-from thefool_cli.auth import (
+from fool_cli.auth import (
     AuthError,
     resolve_spotify_runtime_credentials,
 )

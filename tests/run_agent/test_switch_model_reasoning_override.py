@@ -59,7 +59,7 @@ class TestSwitchModelReasoningOverride:
             },
         }
 
-        with patch("thefool_cli.config.load_config", return_value=fake_cfg):
+        with patch("fool_cli.config.load_config", return_value=fake_cfg):
             try:
                 switch_model(
                     agent,

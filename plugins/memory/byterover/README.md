@@ -30,7 +30,7 @@ echo "BRV_API_KEY=your-key" >> ~/.hermes/.env
 |---------|----------|-------------|
 | `BRV_API_KEY` | No | Cloud sync key (optional, local-first by default) |
 
-Working directory: `$THEFOOL_HOME/byterover/` (profile-scoped).
+Working directory: `$FOOL_HOME/byterover/` (profile-scoped).
 
 ## Tools
 

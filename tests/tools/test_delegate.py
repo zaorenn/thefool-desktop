@@ -31,7 +31,7 @@ from tools.delegate_tool import (
     _resolve_child_credential_pool,
     _resolve_delegation_credentials,
 )
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 def _make_mock_parent(depth=0):
@@ -819,7 +819,7 @@ class TestDelegationCredentialResolution(unittest.TestCase):
         self.assertEqual(creds["api_mode"], "anthropic_messages")
 
 
-    @patch("thefool_cli.runtime_provider.resolve_runtime_provider")
+    @patch("fool_cli.runtime_provider.resolve_runtime_provider")
     def test_provider_resolution_failure_raises_valueerror(self, mock_resolve):
         """When provider resolution fails, ValueError is raised with helpful message."""
         mock_resolve.side_effect = RuntimeError("OPENROUTER_API_KEY not set")
@@ -830,7 +830,7 @@ class TestDelegationCredentialResolution(unittest.TestCase):
         self.assertIn("openrouter", str(ctx.exception).lower())
         self.assertIn("Cannot resolve", str(ctx.exception))
 
-    @patch("thefool_cli.runtime_provider.resolve_runtime_provider")
+    @patch("fool_cli.runtime_provider.resolve_runtime_provider")
     def test_provider_resolves_but_no_api_key_raises(self, mock_resolve):
         """When provider resolves but has no API key, ValueError is raised."""
         mock_resolve.return_value = {
@@ -845,7 +845,7 @@ class TestDelegationCredentialResolution(unittest.TestCase):
             _resolve_delegation_credentials(cfg, parent)
         self.assertIn("no API key", str(ctx.exception))
 
-    @patch("thefool_cli.runtime_provider.resolve_runtime_provider")
+    @patch("fool_cli.runtime_provider.resolve_runtime_provider")
     def test_named_custom_provider_preserves_provider_name(self, mock_resolve):
         """Named custom provider (e.g. crof.ai) resolves to 'custom' at runtime level
         but the subagent must retain the original provider identity so that
@@ -1463,7 +1463,7 @@ class TestConcurrencyDefaults(unittest.TestCase):
 
         with patch.dict("sys.modules", {"cli": stale_cli}):
             with patch(
-                "thefool_cli.config.load_config_readonly", return_value=active_config
+                "fool_cli.config.load_config_readonly", return_value=active_config
             ):
                 self.assertEqual(_load_config()["max_concurrent_children"], 50)
                 self.assertEqual(_get_max_concurrent_children(), 50)
@@ -1940,7 +1940,7 @@ class TestFallbackModelInheritance(unittest.TestCase):
             "args": [],
         }
         with patch(
-            "thefool_cli.runtime_provider.resolve_runtime_provider",
+            "fool_cli.runtime_provider.resolve_runtime_provider",
             return_value=runtime,
         ):
             with patch("shutil.which", return_value=None):

@@ -69,7 +69,7 @@ Override the default `docker-compose.yml` with a
 # Network egress isolation for production deployments.
 #
 # Usage:
-#   THEFOOL_UID=$(id -u) THEFOOL_GID=$(id -g) docker compose up -d
+#   FOOL_UID=$(id -u) FOOL_GID=$(id -g) docker compose up -d
 #
 # This overrides network_mode: host with isolated Docker networks.
 

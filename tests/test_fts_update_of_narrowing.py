@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from thefool_state import SessionDB
-from thefool_state_common import FTS_CJK_STALE_KEY
-from thefool_state_schema import SessionSchemaMixin
+from fool_state import SessionDB
+from fool_state_common import FTS_CJK_STALE_KEY
+from fool_state_schema import SessionSchemaMixin
 
 
 def _trigger_sql(conn: sqlite3.Connection, name: str) -> str | None:

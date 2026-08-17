@@ -72,7 +72,7 @@ class TestResolveIdentityHeader:
         from tools.mcp_tool import _resolve_identity_header
 
         with patch(
-            "thefool_cli.profiles.get_active_profile_name",
+            "fool_cli.profiles.get_active_profile_name",
             return_value="workbot",
         ):
             result = _resolve_identity_header("srv", {
@@ -237,7 +237,7 @@ class TestHTTPIdentityHeader:
 
         server = MCPServerTask("remote")
         with patch(
-            "thefool_cli.profiles.get_active_profile_name",
+            "fool_cli.profiles.get_active_profile_name",
             return_value="workbot",
         ):
             captured = _drive_http(server, {

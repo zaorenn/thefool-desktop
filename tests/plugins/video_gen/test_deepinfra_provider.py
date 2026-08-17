@@ -20,8 +20,8 @@ import plugins.video_gen.deepinfra as deepinfra_plugin
 
 @pytest.fixture(autouse=True)
 def _isolation(tmp_path, monkeypatch):
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
-    import thefool_cli.models as _models_mod
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
+    import fool_cli.models as _models_mod
     monkeypatch.setattr(_models_mod, "_deepinfra_catalog_cache", {})
     monkeypatch.setenv("DEEPINFRA_API_KEY", "test-key")
     yield
@@ -39,7 +39,7 @@ def test_identity_and_availability(monkeypatch):
 
 def test_list_models_filters_by_video_gen_tag(monkeypatch):
     """list_models() returns only ``video-gen``-tagged catalog entries."""
-    import thefool_cli.models as _models_mod
+    import fool_cli.models as _models_mod
 
     def _fake_by_tag(tag, **kw):
         assert tag == "video-gen"

@@ -1,4 +1,4 @@
-import { resolveGatewayWsUrl } from '@thefool/shared'
+import { resolveGatewayWsUrl } from '@fool/shared'
 
 import { getApiRequestProfile, speakText } from '@/hermes'
 import {

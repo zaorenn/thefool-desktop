@@ -25,9 +25,9 @@ def hermes_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
 
-    from thefool_cli import goals
+    from fool_cli import goals
 
     goals._DB_CACHE.clear()
     yield home
@@ -77,7 +77,7 @@ def _make_runner_with_adapter(session_id: str = None):
     src = _make_source()
     # Default to a unique session_id so xdist parallel runs on the same worker
     # don't see each other's GoalManager state (DEFAULT_DB_PATH gets frozen at
-    # module-import time, defeating per-test THEFOOL_HOME monkeypatches).
+    # module-import time, defeating per-test FOOL_HOME monkeypatches).
     session_entry = SessionEntry(
         session_key=build_session_key(src),
         session_id=session_id or f"goal-sess-{uuid.uuid4().hex[:8]}",
@@ -104,12 +104,12 @@ async def test_goal_verdict_continue_enqueues_continuation(hermes_home):
     proceeds on the next turn."""
     runner, adapter, session_entry, src = _make_runner_with_adapter()
 
-    from thefool_cli.goals import GoalManager
+    from fool_cli.goals import GoalManager
 
     mgr = GoalManager(session_entry.session_id)
     mgr.set("polish the docs")
 
-    with patch("thefool_cli.goals.judge_goal", return_value=("continue", "still needs work", False, None, False)):
+    with patch("fool_cli.goals.judge_goal", return_value=("continue", "still needs work", False, None, False)):
         await runner._post_turn_goal_continuation(
             session_entry=session_entry,
             source=src,
@@ -130,14 +130,14 @@ async def test_goal_verdict_budget_exhausted_sends_pause(hermes_home):
     and no further continuation enqueued."""
     runner, adapter, session_entry, src = _make_runner_with_adapter()
 
-    from thefool_cli.goals import GoalManager, save_goal
+    from fool_cli.goals import GoalManager, save_goal
 
     mgr = GoalManager(session_entry.session_id, default_max_turns=2)
     state = mgr.set("tiny goal", max_turns=2)
     state.turns_used = 2
     save_goal(session_entry.session_id, state)
 
-    with patch("thefool_cli.goals.judge_goal", return_value=("continue", "keep going", False, None, False)):
+    with patch("fool_cli.goals.judge_goal", return_value=("continue", "keep going", False, None, False)):
         await runner._post_turn_goal_continuation(
             session_entry=session_entry,
             source=src,

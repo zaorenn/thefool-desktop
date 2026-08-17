@@ -29,7 +29,7 @@ import {
   useQuery,
   useQueryClient,
   useValue
-} from '@thefool/plugin-sdk'
+} from '@fool/plugin-sdk'
 import { useEffect, useState } from 'react'
 
 import { $boardSlug, BOARDS_KEY, createBoard, fetchBoards, fetchProjects, PROJECTS_KEY, updateBoard } from './api'

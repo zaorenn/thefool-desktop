@@ -118,5 +118,5 @@ class TestConfigVersionCoverage:
 
     def test_default_config_version_covers_env_var_versions(self):
         """_config_version must be >= the highest ENV_VARS_BY_VERSION key."""
-        from thefool_cli.config import DEFAULT_CONFIG, ENV_VARS_BY_VERSION
+        from fool_cli.config import DEFAULT_CONFIG, ENV_VARS_BY_VERSION
         assert DEFAULT_CONFIG["_config_version"] >= max(ENV_VARS_BY_VERSION)

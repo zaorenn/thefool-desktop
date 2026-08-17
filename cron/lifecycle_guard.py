@@ -682,7 +682,7 @@ def _resolve_script_path(script_path: str) -> Optional[Path]:
     """Resolve a cron ``script`` value the same way the scheduler does.
 
     The scheduler (``cron.scheduler``) resolves a bare/relative script path
-    under ``<THEFOOL_HOME>/scripts/`` and only accepts absolute paths as-is.
+    under ``<FOOL_HOME>/scripts/`` and only accepts absolute paths as-is.
     We MUST mirror that here so the guard scans the file that will actually
     run — otherwise a job whose script lives at the scheduler's real location
     (``~/.hermes/scripts/restart.sh``) but is passed as the bare name
@@ -694,7 +694,7 @@ def _resolve_script_path(script_path: str) -> Optional[Path]:
     ``_expand_candidate_path``; such a value can never name a file the
     scheduler would execute, so there is nothing to scan.
     """
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     raw = _expand_candidate_path(script_path)
     if raw is None:
@@ -705,7 +705,7 @@ def _resolve_script_path(script_path: str) -> Optional[Path]:
         return get_hermes_home() / "scripts" / raw
     except (RuntimeError, OSError):
         # get_hermes_home() falls back to Path.home(), which raises when
-        # neither THEFOOL_HOME nor HOME is resolvable (launchd/systemd
+        # neither FOOL_HOME nor HOME is resolvable (launchd/systemd
         # environments) — same ingestion contract: nothing to scan.
         return None
 

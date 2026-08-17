@@ -54,7 +54,7 @@ Hub 健康检查：`GET http://localhost:40404/mcp` 返回包含实例 PID、项
 运行设置脚本处理所有事项：
 
 ```bash
-bash "${THEFOOL_HOME:-$HOME/.hermes}/skills/creative/touchdesigner-mcp/scripts/setup.sh"
+bash "${FOOL_HOME:-$HOME/.hermes}/skills/creative/touchdesigner-mcp/scripts/setup.sh"
 ```
 
 脚本将：

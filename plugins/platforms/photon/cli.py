@@ -26,13 +26,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from thefool_cli.colors import Colors, color
+from fool_cli.colors import Colors, color
 
 from . import auth as photon_auth
 from .adapter import _NPM_ERROR_LOG_MAX_CHARS, sidecar_deps_installed
 from .sidecar_paths import resolve_sidecar_dir
 
-# Writable sidecar runtime dir (mirrors to THEFOOL_HOME on immutable
+# Writable sidecar runtime dir (mirrors to FOOL_HOME on immutable
 # installs — NS-606). All npm/setup work happens here. Resolved lazily on
 # first use — resolve_sidecar_dir() probes the filesystem and may mirror
 # files, side effects that must not fire at import time (e.g. when argparse
@@ -340,7 +340,7 @@ def _cmd_setup(args: argparse.Namespace) -> int:
     #    disabled even after a successful provisioning run, silently
     #    keeping iMessage offline.
     try:
-        from thefool_cli.config import write_platform_config_field
+        from fool_cli.config import write_platform_config_field
         write_platform_config_field("photon", "enabled", True, raw=True)
         print("  ✓ photon platform enabled in config.yaml")
     except Exception as e:
@@ -362,7 +362,7 @@ def _autoconfigure_access(phone: str) -> None:
     never clobbered on a re-run.
     """
     try:
-        from thefool_cli.config import get_env_value, save_env_value
+        from fool_cli.config import get_env_value, save_env_value
     except ImportError:
         return
     for key, label in (
@@ -417,7 +417,7 @@ def _telemetry_enabled() -> bool:
     always matches what the sidecar will actually do.
     """
     try:
-        from thefool_cli.config import get_env_value
+        from fool_cli.config import get_env_value
         raw = get_env_value("PHOTON_TELEMETRY")
     except ImportError:
         raw = os.getenv("PHOTON_TELEMETRY")
@@ -431,7 +431,7 @@ def _cmd_telemetry(args: argparse.Namespace) -> int:
         print("  Toggle with `hermes photon telemetry on` / `hermes photon telemetry off`.")
         return 0
     try:
-        from thefool_cli.config import save_env_value
+        from fool_cli.config import save_env_value
         save_env_value("PHOTON_TELEMETRY", "true" if state == "on" else "false")
     except Exception as e:
         print(f"could not save PHOTON_TELEMETRY: {e}", file=sys.stderr)

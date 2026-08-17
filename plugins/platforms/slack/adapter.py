@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 # identify HermesAgent traffic — matching other Hermes outbound surfaces
 # that already set ``HermesAgent/<version>`` for platform-partner attribution.
 try:
-    from thefool_cli import __version__ as _HERMES_VERSION
+    from fool_cli import __version__ as _HERMES_VERSION
 except Exception:
     _HERMES_VERSION = "unknown"
 _HERMES_SLACK_USER_AGENT_PREFIX = f"HermesAgent/{_HERMES_VERSION}"
@@ -413,7 +413,7 @@ def _rewrite_known_bang_command(text: str) -> str:
         return text
 
     try:
-        from thefool_cli.commands import is_gateway_known_command
+        from fool_cli.commands import is_gateway_known_command
 
         first_token = text[1:].split(maxsplit=1)[0]
         cmd_name = first_token.split("@", 1)[0].lower()
@@ -1871,7 +1871,7 @@ class SlackAdapter(BasePlatformAdapter):
         bot_tokens = [t.strip() for t in raw_token.split(",") if t.strip()]
 
         # Also load tokens from OAuth token file
-        from thefool_constants import get_hermes_home
+        from fool_constants import get_hermes_home
 
         tokens_file = get_hermes_home() / "slack_tokens.json"
         if tokens_file.exists():
@@ -2108,7 +2108,7 @@ class SlackAdapter(BasePlatformAdapter):
             # routes the command event through the socket regardless of the
             # manifest's request URL, but it will not deliver an event for
             # a slash command the manifest doesn't declare.
-            from thefool_cli.commands import slack_native_slashes
+            from fool_cli.commands import slack_native_slashes
             import re as _re
 
             _slash_names = [name for name, _d, _h in slack_native_slashes()]
@@ -2168,7 +2168,7 @@ class SlackAdapter(BasePlatformAdapter):
             # down the gateway: any exception inside the plugin handler is
             # caught and logged, and slack_bolt still sees a clean ack.
             try:
-                from thefool_cli.plugins import get_plugin_manager
+                from fool_cli.plugins import get_plugin_manager
                 _plugin_handlers = get_plugin_manager().get_slack_action_handlers()
             except Exception as e:  # pragma: no cover - defensive
                 logger.warning(
@@ -8177,7 +8177,7 @@ class SlackAdapter(BasePlatformAdapter):
             # Empty slash_name falls into this branch for backward compat
             # with any caller that didn't populate command["command"].
             legacy_text = raw_text.strip()
-            from thefool_cli.commands import slack_subcommand_map
+            from fool_cli.commands import slack_subcommand_map
 
             subcommand_map = slack_subcommand_map()
             subcommand_map["compact"] = "/compress"
@@ -8994,7 +8994,7 @@ class SlackAdapter(BasePlatformAdapter):
 # the per-platform core touchpoints (the ``Platform.SLACK`` elif in
 # ``gateway/run.py``, the ``slack_cfg`` YAML→env block in ``gateway/config.py``,
 # the ``_setup_slack`` wizard + ``_PLATFORMS["slack"]`` static dict in
-# ``thefool_cli/{setup,gateway}.py``, and the ``_send_slack`` dispatch in
+# ``fool_cli/{setup,gateway}.py``, and the ``_send_slack`` dispatch in
 # ``tools/send_message_tool.py``).
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -9141,7 +9141,7 @@ async def _standalone_send(
     # string, which Slack rejects as ``invalid_auth`` (#47547).
     tokens = [t.strip() for t in str(raw_token or "").split(",") if t.strip()]
     try:
-        from thefool_constants import get_hermes_home
+        from fool_constants import get_hermes_home
 
         _tokens_file = get_hermes_home() / "slack_tokens.json"
         if _tokens_file.exists():
@@ -9371,11 +9371,11 @@ def interactive_setup() -> None:
     Mirrors Discord's ``interactive_setup`` shape: lazy-imports CLI helpers so
     the plugin's import surface stays small, generates and writes the Slack app
     manifest, prompts for the bot + app tokens, captures an allowlist, and
-    offers to set a home channel. Replaces ``thefool_cli/setup.py::_setup_slack``.
+    offers to set a home channel. Replaces ``fool_cli/setup.py::_setup_slack``.
     """
     from pathlib import Path
-    from thefool_cli.config import get_env_value, remove_env_value, save_env_value
-    from thefool_cli.cli_output import (
+    from fool_cli.config import get_env_value, remove_env_value, save_env_value
+    from fool_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -9385,11 +9385,11 @@ def interactive_setup() -> None:
     )
 
     def _write_slack_manifest_and_instruct() -> None:
-        """Generate the Slack manifest, write it under THEFOOL_HOME, and print
+        """Generate the Slack manifest, write it under FOOL_HOME, and print
         paste-into-Slack instructions. Failures are non-fatal."""
         try:
-            from thefool_cli.slack_cli import _build_full_manifest
-            from thefool_constants import get_hermes_home
+            from fool_cli.slack_cli import _build_full_manifest
+            from fool_constants import get_hermes_home
             import json as _json
 
             manifest = _build_full_manifest(
@@ -9556,12 +9556,12 @@ def _apply_yaml_config(yaml_cfg: dict, slack_cfg: dict) -> dict | None:
 def _is_connected(config) -> bool:
     """Slack is considered connected when SLACK_BOT_TOKEN is set.
 
-    Looks up via ``thefool_cli.gateway.get_env_value`` at call time (not via the
+    Looks up via ``fool_cli.gateway.get_env_value`` at call time (not via the
     plugin's own bound import) so tests that patch ``gateway_mod.get_env_value``
     can suppress ambient ``SLACK_BOT_TOKEN`` env vars. Matches what the legacy
     ``Platform.SLACK`` connected-check did before this migration.
     """
-    import thefool_cli.gateway as gateway_mod
+    import fool_cli.gateway as gateway_mod
 
     return bool((gateway_mod.get_env_value("SLACK_BOT_TOKEN") or "").strip())
 
@@ -9582,8 +9582,8 @@ def register(ctx) -> None:
         is_connected=_is_connected,
         required_env=["SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"],
         install_hint="Run `hermes setup` to install Slack support.",
-        # Interactive setup wizard — replaces thefool_cli/setup.py::_setup_slack
-        # and the static _PLATFORMS["slack"] dict in thefool_cli/gateway.py.
+        # Interactive setup wizard — replaces fool_cli/setup.py::_setup_slack
+        # and the static _PLATFORMS["slack"] dict in fool_cli/gateway.py.
         setup_fn=interactive_setup,
         # YAML→env config bridge — owns the translation of config.yaml slack:
         # keys (require_mention, strict_mention, ignore_other_user_mentions,

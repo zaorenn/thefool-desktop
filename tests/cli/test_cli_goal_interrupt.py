@@ -26,14 +26,14 @@ import pytest
 
 @pytest.fixture
 def hermes_home(tmp_path, monkeypatch):
-    """Isolated THEFOOL_HOME so SessionDB.state_meta writes stay hermetic."""
+    """Isolated FOOL_HOME so SessionDB.state_meta writes stay hermetic."""
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
 
-    # Bust the goal module's DB cache so it re-resolves THEFOOL_HOME each test.
-    from thefool_cli import goals
+    # Bust the goal module's DB cache so it re-resolves FOOL_HOME each test.
+    from fool_cli import goals
     goals._DB_CACHE.clear()
     yield home
     goals._DB_CACHE.clear()
@@ -42,7 +42,7 @@ def hermes_home(tmp_path, monkeypatch):
 def _make_cli_with_goal(session_id: str, goal_text: str = "build a thing"):
     """Build a minimal HermesCLI stub with an active goal wired in."""
     from cli import HermesCLI
-    from thefool_cli.goals import GoalManager
+    from fool_cli.goals import GoalManager
 
     cli = HermesCLI.__new__(HermesCLI)
     # State the hook + helpers touch directly.
@@ -76,7 +76,7 @@ class TestInterruptAutoPause:
         cli.conversation_history = [
             {"role": "assistant", "content": "partial"},
         ]
-        with patch("thefool_cli.goals.judge_goal"):
+        with patch("fool_cli.goals.judge_goal"):
             cli._maybe_continue_goal_after_turn()
         assert mgr.state.status == "paused"
 
@@ -101,7 +101,7 @@ class TestHealthyTurnStillRuns:
 
         # Force the judge to say "continue" without touching the network.
         with patch(
-            "thefool_cli.goals.judge_goal",
+            "fool_cli.goals.judge_goal",
             return_value=("continue", "needs more steps", False, None, False),
         ):
             cli._maybe_continue_goal_after_turn()
@@ -121,7 +121,7 @@ class TestHealthyTurnStillRuns:
         ]
 
         with patch(
-            "thefool_cli.goals.judge_goal",
+            "fool_cli.goals.judge_goal",
             return_value=("done", "goal satisfied", False, None, False),
         ):
             cli._maybe_continue_goal_after_turn()

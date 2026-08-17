@@ -15,7 +15,7 @@
  * bot-initiated sends use `hermes -p <bot> chat --in ~ -c "Bot Chat"`.
  */
 
-import * as sdk from '@thefool/plugin-sdk'
+import * as sdk from '@fool/plugin-sdk'
 import {
   atom,
   Button,
@@ -60,7 +60,7 @@ import {
   Tip,
   useQuery,
   useValue
-} from '@thefool/plugin-sdk'
+} from '@fool/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
@@ -2122,20 +2122,20 @@ function mergeMultiSourceRoster(local, union) {
 /** The @handle users tag a bot with. Multi-source rosters precompute the
  *  handle (bare name, or name-device when the profile exists on several
  *  registered sources) — prefer it when present. The primary profile's
- *  callable alias is 'thefool' — the mention middleware resolves it back to
+ *  callable alias is 'fool' — the mention middleware resolves it back to
  *  'default' — so the word 'default' never surfaces in the UI.
  *
  *  FOOL-SEAM: bot-handle
  *  Bu yalnizca gorunen bir etiket degil, CAGRILABILIR bir takma ad. Asagidaki
  *  mention cozucusuyle birlikte degismek zorunda; ayrisirlarsa kullanicinin
- *  yazdigi @thefool hicbir bota cozulmez. Eski @hermes de kabul edilmeye
+ *  yazdigi @fool hicbir bota cozulmez. Eski @hermes de kabul edilmeye
  *  devam ediyor (geriye donuk uyumluluk). */
 function botHandle(name, bot) {
   if (bot?.handle && bot.handle !== name) {
     return bot.handle
   }
 
-  return (name || '').trim().toLowerCase() === 'default' ? 'thefool' : name
+  return (name || '').trim().toLowerCase() === 'default' ? 'fool' : name
 }
 
 function showsHandle(name, meta, bot) {
@@ -2273,7 +2273,7 @@ function displayName(bot, meta) {
   // unless the user gives it a real title.
   //
   // FOOL-SEAM: bot-display-name
-  // Sabit dize: bu bir eklenti dosyasi, yalnizca @thefool/plugin-sdk'ye
+  // Sabit dize: bu bir eklenti dosyasi, yalnizca @fool/plugin-sdk'ye
   // baglanmasi gerekiyor; uygulama ici modul importu eklemek eklenti
   // sozlesmesini bozar. Test esligi dogruluyor.
   if ((bot.name || '').trim().toLowerCase() === 'default' && !bot.title) {
@@ -6912,7 +6912,7 @@ export default {
             // botHandle() ile birlikte degismeli. 'hermes' eski kurulumlardan
             // gelen mesajlar icin kabul edilmeye devam ediyor.
             if (
-              (name === 'thefool' || name === 'hermes') &&
+              (name === 'fool' || name === 'hermes') &&
               !names.includes(name) &&
               names.includes('default')
             ) {

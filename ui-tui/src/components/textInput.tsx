@@ -1,5 +1,5 @@
-import type { InputEvent, Key } from '@thefool/ink'
-import * as Ink from '@thefool/ink'
+import type { InputEvent, Key } from '@fool/ink'
+import * as Ink from '@fool/ink'
 import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react'
 
 import { setInputSelection } from '../app/inputSelectionStore.js'
@@ -620,7 +620,7 @@ export function supportsFastEchoTerminal(env: NodeJS.ProcessEnv = process.env): 
   // stale paints at soft-wrap boundaries on tall/narrow viewports. Keep this
   // off by default in Termux mode; allow explicit opt-in for local debugging.
   if (isTermuxTuiMode(env)) {
-    const override = String(env.THEFOOL_TUI_TERMUX_FAST_ECHO ?? '')
+    const override = String(env.FOOL_TUI_TERMUX_FAST_ECHO ?? '')
       .trim()
       .toLowerCase()
 

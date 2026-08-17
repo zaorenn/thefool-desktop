@@ -10,7 +10,7 @@ behave identically to a manually configured platform toolset list.
 from gateway.platforms.base import BasePlatformAdapter
 from gateway.platforms.webhook import WebhookAdapter
 from gateway.run import GatewayRunner
-from thefool_cli.tools_config import _get_platform_tools
+from fool_cli.tools_config import _get_platform_tools
 
 
 class _Src:

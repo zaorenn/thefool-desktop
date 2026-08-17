@@ -49,20 +49,20 @@ give you — the whole provider layer is intact.
 
 ```bash
 git clone https://github.com/zaorenn/thefool-desktop.git
-cd thefool-desktop
+cd fool-desktop
 
 uv venv .venv --python 3.13
 uv pip install --python .venv -e ".[dev]"
 npm install
 
 # CLI
-.venv/Scripts/thefool --help
+.venv/Scripts/fool --help
 
 # Desktop app
 npm run dev --workspace apps/desktop
 ```
 
-Point it at your local model in `~/.thefool/config.yaml`:
+Point it at your local model in `~/.fool/config.yaml`:
 
 ```yaml
 model:

@@ -19,9 +19,9 @@ import {
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
-} from "@thefool/shared";
+} from "@fool/shared";
 
-import { THEFOOL_BASE_PATH, buildWsAuthParam } from "@/lib/api";
+import { FOOL_BASE_PATH, buildWsAuthParam } from "@/lib/api";
 import { maybeReloadForLoopbackWsAuthFailure } from "@/lib/dashboard-auth-reload";
 
 export type { ConnectionState, GatewayEvent, GatewayEventName };
@@ -55,7 +55,7 @@ export class GatewayClient extends JsonRpcGatewayClient {
     await super.connect(
       buildHermesWebSocketUrl({
         authParam,
-        basePath: THEFOOL_BASE_PATH,
+        basePath: FOOL_BASE_PATH,
         path: "/api/ws",
       }),
     );

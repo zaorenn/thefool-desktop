@@ -52,7 +52,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
-from thefool_constants import secure_parent_dir
+from fool_constants import secure_parent_dir
 
 logger = logging.getLogger(__name__)
 
@@ -184,10 +184,10 @@ _USER_SKIPPED_SENTINEL = "__hermes_user_skipped__"
 def _get_token_dir(hermes_home: str | Path | None = None) -> Path:
     """Return the directory for MCP OAuth token files.
 
-    Uses THEFOOL_HOME so each profile gets its own OAuth tokens.
-    Layout: ``THEFOOL_HOME/mcp-tokens/``
+    Uses FOOL_HOME so each profile gets its own OAuth tokens.
+    Layout: ``FOOL_HOME/mcp-tokens/``
     """
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     base = Path(hermes_home) if hermes_home is not None else Path(get_hermes_home())
     return base / "mcp-tokens"
@@ -431,9 +431,9 @@ class HermesTokenStorage:
 
     File layout::
 
-        THEFOOL_HOME/mcp-tokens/<server_name>.json         -- tokens
-        THEFOOL_HOME/mcp-tokens/<server_name>.client.json   -- client info
-        THEFOOL_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
+        FOOL_HOME/mcp-tokens/<server_name>.json         -- tokens
+        FOOL_HOME/mcp-tokens/<server_name>.client.json   -- client info
+        FOOL_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
     """
 
     def __init__(self, server_name: str, *, hermes_home: str | Path | None = None):

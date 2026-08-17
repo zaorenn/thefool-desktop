@@ -7,5 +7,5 @@ subcommands such as `gateway`, `cron`, and `doctor`.
 """
 
 if __name__ == "__main__":
-    from thefool_cli.main import main
+    from fool_cli.main import main
     main()

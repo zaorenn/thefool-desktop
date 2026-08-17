@@ -954,7 +954,7 @@ class TestAdapterBehavior(unittest.TestCase):
     @patch.dict(
         os.environ,
         {
-            "THEFOOL_FEISHU_TEXT_BATCH_MAX_MESSAGES": "2",
+            "FOOL_FEISHU_TEXT_BATCH_MAX_MESSAGES": "2",
         },
         clear=True,
     )
@@ -1095,7 +1095,7 @@ class TestAdapterBehavior(unittest.TestCase):
                 return _FakeResponse()
 
         with tempfile.TemporaryDirectory() as tmp:
-            with patch.dict(os.environ, {"THEFOOL_HOME": tmp}, clear=False):
+            with patch.dict(os.environ, {"FOOL_HOME": tmp}, clear=False):
                 adapter = FeishuAdapter(PlatformConfig())
 
                 async def _run() -> tuple[str, str]:
@@ -1184,7 +1184,7 @@ class TestAdapterBehavior(unittest.TestCase):
         from plugins.platforms.feishu.adapter import FeishuAdapter
 
         with tempfile.TemporaryDirectory() as temp_home:
-            with patch.dict(os.environ, {"THEFOOL_HOME": temp_home}, clear=False):
+            with patch.dict(os.environ, {"FOOL_HOME": temp_home}, clear=False):
                 first = FeishuAdapter(PlatformConfig())
                 self.assertFalse(first._is_duplicate("om_same"))
                 second = FeishuAdapter(PlatformConfig())
@@ -1553,7 +1553,7 @@ class TestWebhookSecurity(unittest.TestCase):
 
     def test_webhook_request_rejects_oversized_chunked_body_while_reading(self):
         from gateway.config import PlatformConfig
-        from thefool_constants import reset_hermes_home_override, set_hermes_home_override
+        from fool_constants import reset_hermes_home_override, set_hermes_home_override
         from plugins.platforms.feishu.adapter import FeishuAdapter, _FEISHU_WEBHOOK_MAX_BODY_BYTES
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1636,7 +1636,7 @@ class TestDedupTTL(unittest.TestCase):
         from plugins.platforms.feishu.adapter import FeishuAdapter
 
         with tempfile.TemporaryDirectory() as temp_home:
-            with patch.dict(os.environ, {"THEFOOL_HOME": temp_home}, clear=True):
+            with patch.dict(os.environ, {"FOOL_HOME": temp_home}, clear=True):
                 adapter = FeishuAdapter(PlatformConfig())
                 adapter._dedup_state_path.parent.mkdir(parents=True, exist_ok=True)
                 adapter._dedup_state_path.write_text(

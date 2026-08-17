@@ -37,14 +37,14 @@ def _write_skill(skills_dir: Path, name: str, description: str = "") -> Path:
 
 @pytest.fixture
 def hermes_home(monkeypatch):
-    """Isolate THEFOOL_HOME for ``reload_skills`` tests.
+    """Isolate FOOL_HOME for ``reload_skills`` tests.
 
     Rather than popping cache-bearing modules from ``sys.modules``,
-    we monkeypatch the module-level ``THEFOOL_HOME`` / ``SKILLS_DIR``
+    we monkeypatch the module-level ``FOOL_HOME`` / ``SKILLS_DIR``
     constants in place so the isolation is local to this fixture's scope.
     """
     td = tempfile.mkdtemp(prefix="hermes-reload-skills-")
-    monkeypatch.setenv("THEFOOL_HOME", td)
+    monkeypatch.setenv("FOOL_HOME", td)
     home = Path(td)
     (home / "skills").mkdir(parents=True, exist_ok=True)
 
@@ -53,7 +53,7 @@ def hermes_home(monkeypatch):
     import tools.skills_tool as _st
     import agent.skill_commands as _sc
 
-    monkeypatch.setattr(_st, "THEFOOL_HOME", home, raising=False)
+    monkeypatch.setattr(_st, "FOOL_HOME", home, raising=False)
     monkeypatch.setattr(_st, "SKILLS_DIR", home / "skills", raising=False)
     # Reset the in-process slash-command cache so each test starts from zero.
     monkeypatch.setattr(_sc, "_skill_commands", {}, raising=False)

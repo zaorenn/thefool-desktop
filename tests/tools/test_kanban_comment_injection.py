@@ -20,7 +20,7 @@ _WORKTREE = Path(__file__).resolve().parents[2]
 if str(_WORKTREE) not in sys.path:
     sys.path.insert(0, str(_WORKTREE))
 
-from thefool_cli import kanban_db as kb
+from fool_cli import kanban_db as kb
 import tools.kanban_tools as kt
 
 
@@ -37,13 +37,13 @@ class FakeAgent:
 def worker_home(tmp_path, monkeypatch):
     home = tmp_path / "hermes_home"
     home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    for var in ("THEFOOL_KANBAN_DB", "THEFOOL_KANBAN_WORKSPACES_ROOT", "THEFOOL_KANBAN_HOME", "THEFOOL_KANBAN_BOARD"):
+    for var in ("FOOL_KANBAN_DB", "FOOL_KANBAN_WORKSPACES_ROOT", "FOOL_KANBAN_HOME", "FOOL_KANBAN_BOARD"):
         monkeypatch.delenv(var, raising=False)
     try:
-        import thefool_constants
-        thefool_constants._cached_default_hermes_root = None  # type: ignore[attr-defined]
+        import fool_constants
+        fool_constants._cached_default_hermes_root = None  # type: ignore[attr-defined]
     except Exception:
         pass
     kb._INITIALIZED_PATHS.clear()
@@ -59,7 +59,7 @@ def _unthrottle():
 
 
 def test_noop_without_worker_env(worker_home, monkeypatch):
-    monkeypatch.delenv("THEFOOL_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("FOOL_KANBAN_TASK", raising=False)
     agent = FakeAgent()
     assert kt.inject_new_comments_from_env(agent) is False
     assert agent.steers == []
@@ -73,8 +73,8 @@ def test_seed_then_inject_new_comment(worker_home, monkeypatch):
     finally:
         conn.close()
 
-    monkeypatch.setenv("THEFOOL_KANBAN_TASK", tid)
-    monkeypatch.setenv("THEFOOL_PROFILE", "worker-bot")
+    monkeypatch.setenv("FOOL_KANBAN_TASK", tid)
+    monkeypatch.setenv("FOOL_PROFILE", "worker-bot")
     agent = FakeAgent()
 
     # First poll seeds the watermark past the existing thread — no injection.
@@ -106,8 +106,8 @@ def test_skips_own_authored_comments(worker_home, monkeypatch):
     finally:
         conn.close()
 
-    monkeypatch.setenv("THEFOOL_KANBAN_TASK", tid)
-    monkeypatch.setenv("THEFOOL_PROFILE", "worker-bot")
+    monkeypatch.setenv("FOOL_KANBAN_TASK", tid)
+    monkeypatch.setenv("FOOL_PROFILE", "worker-bot")
     agent = FakeAgent()
 
     _unthrottle()

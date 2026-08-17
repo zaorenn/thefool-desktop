@@ -190,10 +190,10 @@ def test_run_job_releases_cwd_lock_when_body_raises(tmp_path):
 
     with patch("cron.scheduler._hermes_home", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-         patch("thefool_cli.env_loader.reset_secret_source_cache"), \
+         patch("fool_cli.env_loader.load_hermes_dotenv"), \
+         patch("fool_cli.env_loader.reset_secret_source_cache"), \
          patch.object(sched.logger, "info", side_effect=_raise_on_workdir_log), \
-         patch("thefool_state.SessionDB", return_value=MagicMock()):
+         patch("fool_state.SessionDB", return_value=MagicMock()):
         # run_job catches its own body exceptions and returns (False, ...);
         # it must not propagate, and it must release the lock either way.
         success, _out, _final, _err = sched.run_job(job)
@@ -284,17 +284,17 @@ def test_lock_wait_shorter_than_bound_still_succeeds(monkeypatch, tmp_path):
 
 
 def test_cwd_lock_timeout_derivation(monkeypatch):
-    """The bound tracks THEFOOL_CRON_TIMEOUT (+margin) with a floor, and
+    """The bound tracks FOOL_CRON_TIMEOUT (+margin) with a floor, and
     stays finite when the job runtime is unlimited (0)."""
     import cron.scheduler as sched
 
-    monkeypatch.delenv("THEFOOL_CRON_TIMEOUT", raising=False)
+    monkeypatch.delenv("FOOL_CRON_TIMEOUT", raising=False)
     assert sched._cwd_lock_timeout_seconds() == 660.0
-    monkeypatch.setenv("THEFOOL_CRON_TIMEOUT", "1800")
+    monkeypatch.setenv("FOOL_CRON_TIMEOUT", "1800")
     assert sched._cwd_lock_timeout_seconds() == 1860.0
-    monkeypatch.setenv("THEFOOL_CRON_TIMEOUT", "30")
+    monkeypatch.setenv("FOOL_CRON_TIMEOUT", "30")
     assert sched._cwd_lock_timeout_seconds() == 180.0
-    monkeypatch.setenv("THEFOOL_CRON_TIMEOUT", "0")
+    monkeypatch.setenv("FOOL_CRON_TIMEOUT", "0")
     assert sched._cwd_lock_timeout_seconds() == 660.0
-    monkeypatch.setenv("THEFOOL_CRON_TIMEOUT", "bogus")
+    monkeypatch.setenv("FOOL_CRON_TIMEOUT", "bogus")
     assert sched._cwd_lock_timeout_seconds() == 660.0

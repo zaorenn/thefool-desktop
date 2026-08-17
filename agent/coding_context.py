@@ -60,7 +60,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-from thefool_cli._subprocess_compat import bounded_git_probe
+from fool_cli._subprocess_compat import bounded_git_probe
 
 logger = logging.getLogger("hermes.coding_context")
 
@@ -337,7 +337,7 @@ def _coding_mode(config: Optional[dict[str, Any]]) -> str:
     """Return the normalized ``agent.coding_context`` mode (auto/focus/on/off)."""
     if config is None:
         try:
-            from thefool_cli.config import load_config_readonly
+            from fool_cli.config import load_config_readonly
 
             config = load_config_readonly()
         except Exception:
@@ -365,7 +365,7 @@ def _coding_instructions(config: Optional[dict[str, Any]]) -> str:
     """
     if config is None:
         try:
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
 
             config = load_config()
         except Exception:
@@ -511,7 +511,7 @@ class RuntimeMode:
         messaging for build notifications, …) keeps it while coding.
 
         Callers apply this only when the user hasn't pinned an explicit
-        selection (``--toolsets``, ``THEFOOL_TUI_TOOLSETS``, …); they never
+        selection (``--toolsets``, ``FOOL_TUI_TOOLSETS``, …); they never
         override a pin. Returns the profile's toolset plus enabled MCP servers.
         """
         if self.config_mode != "focus":
@@ -699,8 +699,8 @@ def _enabled_mcp_servers(config: Optional[dict[str, Any]]) -> list[str]:
     of the coding workflow, not noise to strip.
     """
     try:
-        from thefool_cli.config import read_raw_config
-        from thefool_cli.tools_config import _parse_enabled_flag
+        from fool_cli.config import read_raw_config
+        from fool_cli.tools_config import _parse_enabled_flag
 
         servers = read_raw_config().get("mcp_servers") or {}
         return [

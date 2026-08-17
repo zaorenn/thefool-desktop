@@ -1,5 +1,5 @@
-import type { Key } from '@thefool/ink'
-import { Text, useInput } from '@thefool/ink'
+import type { Key } from '@fool/ink'
+import { Text, useInput } from '@fool/ink'
 import { type ReactNode, useState } from 'react'
 
 import type { UsageModelData } from '../gatewayTypes.js'

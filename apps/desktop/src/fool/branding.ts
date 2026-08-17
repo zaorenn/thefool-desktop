@@ -30,13 +30,13 @@ export const BRAND = {
   /** "Nous Research" yerine geçen üretici adı. */
   vendor: 'Fool Labs',
   /** Terminal komutu — pyproject `[project.scripts]` ile eşleşmeli. */
-  cli: 'thefool',
-  /** Veri dizini adı — `~/.thefool`. Python tarafıyla eşleşmeli. */
-  homeDirName: '.thefool',
+  cli: 'fool',
+  /** Veri dizini adı — `~/.fool`. Python tarafıyla eşleşmeli. */
+  homeDirName: '.fool',
   /** electron-builder appId. */
-  appId: 'com.thefool.desktop',
-  /** Derin bağlantı şeması — thefool://... */
-  protocol: 'thefool'
+  appId: 'com.fool.desktop',
+  /** Derin bağlantı şeması — fool://... */
+  protocol: 'fool'
 } as const
 
 /**
@@ -46,8 +46,8 @@ export const BRAND = {
  *
  * `\b` sınırları sayesinde iç sözleşmeye DOKUNULMAZ — regex'te `_` bir kelime
  * karakteri olduğu için:
- *   THEFOOL_HOME  → eşleşmez (HERMES'ten sonra `_` var, `\b` yok)
- *   thefool_cli   → eşleşmez (aynı sebep)
+ *   FOOL_HOME  → eşleşmez (HERMES'ten sonra `_` var, `\b` yok)
+ *   fool_cli   → eşleşmez (aynı sebep)
  *   ~/.hermes    → eşleşir  (`.` kelime karakteri değil) — ve zaten değişmesini
  *                  istediğimiz yer burası
  */

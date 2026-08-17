@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Paths
 # ---------------------------------------------------------------------------
 #
-# Uses the canonical ``get_hermes_home()`` helper (THEFOOL_HOME-aware and
+# Uses the canonical ``get_hermes_home()`` helper (FOOL_HOME-aware and
 # profile-safe). Resolved at import time; this module is lazy-imported by
 # the Feishu comment event handler, which runs long after profile overrides
 # have been applied, so freezing paths here is safe.
@@ -351,7 +351,7 @@ def _main() -> int:
     import sys
 
     try:
-        from thefool_cli.env_loader import load_hermes_dotenv
+        from fool_cli.env_loader import load_hermes_dotenv
         load_hermes_dotenv()
     except Exception:
         pass

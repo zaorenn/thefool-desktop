@@ -1,6 +1,6 @@
 """Regression: a bot profile's system prompt must reflect ITS OWN skills/home,
 never the launch (default) profile's — even when the agent build runs on a
-thread that did not bind the THEFOOL_HOME ContextVar.
+thread that did not bind the FOOL_HOME ContextVar.
 
 Root cause this guards (confirmed empirically): ContextVars do not propagate
 into ``threading.Thread``. ``build_skills_system_prompt`` and the
@@ -24,7 +24,7 @@ def _skills_body(prompt: str) -> str:
 
 
 def test_skills_prompt_scoped_to_override_not_ambient_home(tmp_path, monkeypatch):
-    """An explicit skills_dir_override wins over ambient THEFOOL_HOME, on a
+    """An explicit skills_dir_override wins over ambient FOOL_HOME, on a
     bare thread with no override bound."""
     from agent import prompt_builder
 
@@ -42,7 +42,7 @@ def test_skills_prompt_scoped_to_override_not_ambient_home(tmp_path, monkeypatch
 
     # Bind ambient home to default (mimics a build thread that lost the
     # bot's override and fell back to launch).
-    monkeypatch.setenv("THEFOOL_HOME", str(default_home))
+    monkeypatch.setenv("FOOL_HOME", str(default_home))
     prompt_builder.clear_skills_system_prompt_cache(clear_snapshot=False)
 
     result = {}
@@ -103,8 +103,8 @@ def test_profile_name_correct_on_bound_profile_session(tmp_path, monkeypatch):
     bot_home = tmp_path / "profiles" / "mybot"
     bot_home.mkdir(parents=True)
 
-    # Bound session: THEFOOL_HOME env points at the profile dir itself.
-    monkeypatch.setenv("THEFOOL_HOME", str(bot_home))
+    # Bound session: FOOL_HOME env points at the profile dir itself.
+    monkeypatch.setenv("FOOL_HOME", str(bot_home))
 
     assert system_prompt._profile_name_for_home(bot_home) == "mybot"
 
@@ -112,7 +112,7 @@ def test_profile_name_correct_on_bound_profile_session(tmp_path, monkeypatch):
 def test_profile_name_default_when_home_is_root(tmp_path, monkeypatch):
     from agent import system_prompt
 
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     assert system_prompt._profile_name_for_home(tmp_path) == "default"
 
 
@@ -127,6 +127,6 @@ def test_profile_name_correct_when_ambient_is_another_profile(tmp_path, monkeypa
     other_home = tmp_path / "profiles" / "other"
     other_home.mkdir(parents=True)
 
-    monkeypatch.setenv("THEFOOL_HOME", str(other_home))
+    monkeypatch.setenv("FOOL_HOME", str(other_home))
 
     assert system_prompt._profile_name_for_home(bot_home) == "mybot"

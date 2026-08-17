@@ -10,7 +10,7 @@ from agent.title_generator import (
     maybe_auto_title,
     _title_language,
 )
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 class TestGenerateTitle:
@@ -22,12 +22,12 @@ class TestGenerateTitle:
     def test_title_language_reads_config(self):
         cfg = {"auxiliary": {"title_generation": {"language": "  French "}}}
 
-        with patch("thefool_cli.config.load_config", return_value=cfg), patch("thefool_cli.config.load_config_readonly", return_value=cfg):
+        with patch("fool_cli.config.load_config", return_value=cfg), patch("fool_cli.config.load_config_readonly", return_value=cfg):
             assert _title_language() == "French"
-        with patch("thefool_cli.config.load_config", return_value={}), patch("thefool_cli.config.load_config_readonly", return_value={}):
+        with patch("fool_cli.config.load_config", return_value={}), patch("fool_cli.config.load_config_readonly", return_value={}):
             assert _title_language() == ""
-        with patch("thefool_cli.config.load_config", side_effect=RuntimeError("bad config")), \
-         patch("thefool_cli.config.load_config_readonly", side_effect=RuntimeError("bad config")):
+        with patch("fool_cli.config.load_config", side_effect=RuntimeError("bad config")), \
+         patch("fool_cli.config.load_config_readonly", side_effect=RuntimeError("bad config")):
             assert _title_language() == ""
 
     def test_default_timeout_delegates_to_auxiliary_config(self):

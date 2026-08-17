@@ -1,7 +1,7 @@
 """E2E tests for the per-profile MCP lifecycle RPCs (mcp.servers.*).
 
 These drive the real registered gateway handlers against a real temp
-``THEFOOL_HOME`` with named profile dirs — no mocks of the config/mcp layer — and
+``FOOL_HOME`` with named profile dirs — no mocks of the config/mcp layer — and
 assert that every write lands in the RIGHT profile's ``config.yaml`` / ``.env``
 and NEVER leaks into the launch (default) profile.
 
@@ -21,18 +21,18 @@ import tui_gateway.server as server
 
 @pytest.fixture
 def hermes_root(tmp_path, monkeypatch):
-    """A temp THEFOOL_HOME root with two named profiles: 'work' and 'other'.
+    """A temp FOOL_HOME root with two named profiles: 'work' and 'other'.
 
-    Pointing THEFOOL_HOME at a dir outside ~/.hermes makes it the profile ROOT
+    Pointing FOOL_HOME at a dir outside ~/.hermes makes it the profile ROOT
     (get_default_hermes_root's Docker/custom branch), so named profiles live at
     ``<root>/profiles/<name>/`` and the launch/default profile is ``<root>``.
     """
     root = tmp_path / "hermes_home"
     (root / "profiles" / "work").mkdir(parents=True)
     (root / "profiles" / "other").mkdir(parents=True)
-    monkeypatch.setenv("THEFOOL_HOME", str(root))
+    monkeypatch.setenv("FOOL_HOME", str(root))
     # Make sure no stale process-wide home override leaks in from another test.
-    from thefool_constants import get_hermes_home_override
+    from fool_constants import get_hermes_home_override
 
     assert get_hermes_home_override() is None
     return root
@@ -239,7 +239,7 @@ def test_default_profile_add_when_profile_omitted(hermes_root):
             {"name": "rootsvc", "config": {"command": "rootsvc-bin"}},
         )
     )
-    # Omitted profile → launch/default profile == THEFOOL_HOME root config.yaml.
+    # Omitted profile → launch/default profile == FOOL_HOME root config.yaml.
     default_cfg = _read_yaml(root / "config.yaml")
     assert "rootsvc" in default_cfg.get("mcp_servers", {})
     # ...and NOT in a named profile.

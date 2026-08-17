@@ -1308,7 +1308,7 @@ export default function SystemPage() {
                   id="import-path"
                   value={importPath}
                   onChange={(e) => setImportPath(e.target.value)}
-                  placeholder="$THEFOOL_HOME/backups/hermes-backup.zip"
+                  placeholder="$FOOL_HOME/backups/hermes-backup.zip"
                 />
               </div>
               <Button

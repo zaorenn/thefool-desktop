@@ -1,4 +1,4 @@
-import { isGatewayReauthRequired, resolveGatewayWsUrl } from '@thefool/shared'
+import { isGatewayReauthRequired, resolveGatewayWsUrl } from '@fool/shared'
 import { useEffect, useRef } from 'react'
 
 import type { HermesConnection } from '@/global'

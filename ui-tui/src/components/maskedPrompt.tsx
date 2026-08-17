@@ -1,4 +1,4 @@
-import { Box, Text } from '@thefool/ink'
+import { Box, Text } from '@fool/ink'
 import { useState } from 'react'
 
 import type { Theme } from '../theme.js'

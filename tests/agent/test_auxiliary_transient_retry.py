@@ -29,8 +29,8 @@ def test_transient_retry_count_default(monkeypatch):
 
     # No config value -> default.
     monkeypatch.setattr(ac, "load_config", lambda: {}, raising=False)
-    with patch("thefool_cli.config.load_config", return_value={}), \
-         patch("thefool_cli.config.cfg_get", return_value=None):
+    with patch("fool_cli.config.load_config", return_value={}), \
+         patch("fool_cli.config.cfg_get", return_value=None):
         assert ac._transient_retry_count() == ac._DEFAULT_TRANSIENT_RETRIES
 
 

@@ -9,20 +9,20 @@ runtime the plugin also requires the ``langfuse`` SDK and credentials; if
 either is missing the hooks are inert.
 
 Required env vars (set via ``hermes tools`` or ~/.hermes/.env):
-  THEFOOL_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
-  THEFOOL_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
-  THEFOOL_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)
+  FOOL_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
+  FOOL_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
+  FOOL_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)
 
 Optional env vars:
-  THEFOOL_LANGFUSE_ENV         - environment tag (e.g. "production", "local")
-  THEFOOL_LANGFUSE_RELEASE     - release/version tag
-  THEFOOL_LANGFUSE_SAMPLE_RATE - sampling rate 0.0–1.0 (default: 1.0)
-  THEFOOL_LANGFUSE_MAX_CHARS   - max chars per field (default: 12000)
-  THEFOOL_LANGFUSE_CAPTURE     - content capture mode (default: "sanitized")
+  FOOL_LANGFUSE_ENV         - environment tag (e.g. "production", "local")
+  FOOL_LANGFUSE_RELEASE     - release/version tag
+  FOOL_LANGFUSE_SAMPLE_RATE - sampling rate 0.0–1.0 (default: 1.0)
+  FOOL_LANGFUSE_MAX_CHARS   - max chars per field (default: 12000)
+  FOOL_LANGFUSE_CAPTURE     - content capture mode (default: "sanitized")
       metadata  - no content: sizes, roles, tool names, IDs, usage, cost only
       sanitized - content with secret-pattern redaction + truncation
       full      - raw content (truncated only); explicit opt-in
-  THEFOOL_LANGFUSE_DEBUG       - set to "true" for verbose logging
+  FOOL_LANGFUSE_DEBUG       - set to "true" for verbose logging
 """
 from __future__ import annotations
 
@@ -92,8 +92,8 @@ _READ_FILE_TAIL_LINES = 15
 # credentials at construction time but drop every trace at flush time.
 # See #23823 — the silent-failure bug this guard fixes.
 _LANGFUSE_KEY_PREFIXES: Dict[str, str] = {
-    "THEFOOL_LANGFUSE_PUBLIC_KEY": "pk-lf-",
-    "THEFOOL_LANGFUSE_SECRET_KEY": "sk-lf-",
+    "FOOL_LANGFUSE_PUBLIC_KEY": "pk-lf-",
+    "FOOL_LANGFUSE_SECRET_KEY": "sk-lf-",
 }
 
 
@@ -110,7 +110,7 @@ def _env_bool(*names: str) -> bool:
 
 
 def _debug_enabled() -> bool:
-    return _env_bool("THEFOOL_LANGFUSE_DEBUG")
+    return _env_bool("FOOL_LANGFUSE_DEBUG")
 
 
 def _debug(message: str) -> None:
@@ -136,7 +136,7 @@ def _capture_mode() -> str:
     the operator intended.
     """
     global _warned_invalid_capture
-    value = _env("THEFOOL_LANGFUSE_CAPTURE").lower()
+    value = _env("FOOL_LANGFUSE_CAPTURE").lower()
     if not value:
         return _DEFAULT_CAPTURE_MODE
     if value in _CAPTURE_MODES:
@@ -144,7 +144,7 @@ def _capture_mode() -> str:
     if not _warned_invalid_capture:
         _warned_invalid_capture = True
         logger.warning(
-            "Langfuse plugin: invalid THEFOOL_LANGFUSE_CAPTURE=%r, falling back "
+            "Langfuse plugin: invalid FOOL_LANGFUSE_CAPTURE=%r, falling back "
             "to %r (valid: %s)",
             value, _DEFAULT_CAPTURE_MODE, ", ".join(_CAPTURE_MODES),
         )
@@ -288,8 +288,8 @@ def _get_langfuse() -> Optional[Langfuse]:
             _LANGFUSE_CLIENT = _INIT_FAILED
             return None
 
-        public_key = _env("THEFOOL_LANGFUSE_PUBLIC_KEY") or _env("LANGFUSE_PUBLIC_KEY")
-        secret_key = _env("THEFOOL_LANGFUSE_SECRET_KEY") or _env("LANGFUSE_SECRET_KEY")
+        public_key = _env("FOOL_LANGFUSE_PUBLIC_KEY") or _env("LANGFUSE_PUBLIC_KEY")
+        secret_key = _env("FOOL_LANGFUSE_SECRET_KEY") or _env("LANGFUSE_SECRET_KEY")
         if not (public_key and secret_key):
             _LANGFUSE_CLIENT = _INIT_FAILED
             return None
@@ -305,8 +305,8 @@ def _get_langfuse() -> Optional[Langfuse]:
         placeholder_issues = [
             msg
             for msg in (
-                _validate_langfuse_key("THEFOOL_LANGFUSE_PUBLIC_KEY", public_key),
-                _validate_langfuse_key("THEFOOL_LANGFUSE_SECRET_KEY", secret_key),
+                _validate_langfuse_key("FOOL_LANGFUSE_PUBLIC_KEY", public_key),
+                _validate_langfuse_key("FOOL_LANGFUSE_SECRET_KEY", secret_key),
             )
             if msg
         ]
@@ -314,17 +314,17 @@ def _get_langfuse() -> Optional[Langfuse]:
             logger.warning(
                 "Langfuse plugin: credentials look like placeholders, traces will "
                 "NOT be emitted (%s). Set real Langfuse keys (pk-lf-... / sk-lf-...) "
-                "or unset THEFOOL_LANGFUSE_PUBLIC_KEY / THEFOOL_LANGFUSE_SECRET_KEY to "
+                "or unset FOOL_LANGFUSE_PUBLIC_KEY / FOOL_LANGFUSE_SECRET_KEY to "
                 "silence this warning.",
                 "; ".join(placeholder_issues),
             )
             _LANGFUSE_CLIENT = _INIT_FAILED
             return None
 
-        base_url = _env("THEFOOL_LANGFUSE_BASE_URL") or _env("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
-        environment = _env("THEFOOL_LANGFUSE_ENV") or _env("LANGFUSE_ENV")
-        release = _env("THEFOOL_LANGFUSE_RELEASE") or _env("LANGFUSE_RELEASE")
-        sample_rate = _env("THEFOOL_LANGFUSE_SAMPLE_RATE")
+        base_url = _env("FOOL_LANGFUSE_BASE_URL") or _env("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
+        environment = _env("FOOL_LANGFUSE_ENV") or _env("LANGFUSE_ENV")
+        release = _env("FOOL_LANGFUSE_RELEASE") or _env("LANGFUSE_RELEASE")
+        sample_rate = _env("FOOL_LANGFUSE_SAMPLE_RATE")
 
         kwargs: Dict[str, Any] = {
             "public_key": public_key,
@@ -339,7 +339,7 @@ def _get_langfuse() -> Optional[Langfuse]:
             try:
                 kwargs["sample_rate"] = float(sample_rate)
             except ValueError:
-                logger.warning("Invalid THEFOOL_LANGFUSE_SAMPLE_RATE=%r", sample_rate)
+                logger.warning("Invalid FOOL_LANGFUSE_SAMPLE_RATE=%r", sample_rate)
 
         try:
             _LANGFUSE_CLIENT = Langfuse(**kwargs)
@@ -582,7 +582,7 @@ def _normalize_payload(value: Any, *, tool_name: str = "", args: Any = None) -> 
 
 def _safe_value(value: Any, *, max_chars: Optional[int] = None, depth: int = 0,
                 parse_json_strings: bool = False) -> Any:
-    max_chars = max_chars if max_chars is not None else int(_env("THEFOOL_LANGFUSE_MAX_CHARS", "12000") or "12000")
+    max_chars = max_chars if max_chars is not None else int(_env("FOOL_LANGFUSE_MAX_CHARS", "12000") or "12000")
     if depth > 4:
         return "<max-depth>"
     if value is None or isinstance(value, (int, float, bool)):

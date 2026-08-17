@@ -219,13 +219,13 @@ def _is_local_terminal_backend() -> bool:
 
 
 def _media_cache_roots() -> list:
-    """Agent-managed media cache directories under THEFOOL_HOME (host side).
+    """Agent-managed media cache directories under FOOL_HOME (host side).
 
     The only host paths vision may read under a non-local backend: gateway-
     downloaded inbound media and the tools' own URL-download temp dirs. Covers
     the consolidated ``cache/`` layout and the legacy flat directories.
     """
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     home = get_hermes_home()
     return [

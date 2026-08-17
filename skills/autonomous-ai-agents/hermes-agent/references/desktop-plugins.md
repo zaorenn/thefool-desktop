@@ -9,9 +9,9 @@ system (`~/.hermes/plugins/`) is otherwise documented separately.
 
 There are TWO on-disk doors, same contract and hot reload:
 
-- `$THEFOOL_HOME/desktop-plugins/<id>/plugin.js` — standalone desktop plugin.
+- `$FOOL_HOME/desktop-plugins/<id>/plugin.js` — standalone desktop plugin.
   Loads enabled by default.
-- `$THEFOOL_HOME/plugins/<id>/desktop/plugin.js` — the desktop HALF of a
+- `$FOOL_HOME/plugins/<id>/desktop/plugin.js` — the desktop HALF of a
   unified agent-plugin package: the same folder that carries the Python
   plugin (`plugin.yaml`) and its `dashboard/plugin_api.py` backend ships its
   desktop UI beside them, so one feature installs/uninstalls as one folder.
@@ -32,12 +32,12 @@ Full human reference (every export, area payloads, backend, security):
 ## Prerequisites
 
 - The Hermes desktop app (it loads plugins; the CLI/gateway alone does not).
-- Write access to `$THEFOOL_HOME/desktop-plugins/` (usually
+- Write access to `$FOOL_HOME/desktop-plugins/` (usually
   `~/.hermes/desktop-plugins/`).
 
 ## How to Run
 
-1. Create `$THEFOOL_HOME/desktop-plugins/<name>/plugin.js` from
+1. Create `$FOOL_HOME/desktop-plugins/<name>/plugin.js` from
    `templates/plugin.js` (in this skill directory) — that's
    `~/.hermes/...` by default, or `~/.hermes/profiles/<profile>/...` under a
    named profile. Keep `<name>` equal to the plugin `id`.
@@ -50,7 +50,7 @@ Full human reference (every export, area payloads, backend, security):
 
 ## Quick Reference
 
-The ONLY import surface is `@thefool/plugin-sdk` (plus `react` /
+The ONLY import surface is `@fool/plugin-sdk` (plus `react` /
 `react/jsx-runtime`, which resolve to the app's own React — write UI with
 `jsx()` calls, not JSX syntax; the file is not compiled).
 
@@ -168,7 +168,7 @@ The ONLY import surface is `@thefool/plugin-sdk` (plus `react` /
   blank space or blurry scaling.
 - JSX syntax will not parse — the file loads uncompiled. Use
   `jsx('div', { children: ... })` from `react/jsx-runtime`.
-- Do not import anything except `@thefool/plugin-sdk`, `react`, and
+- Do not import anything except `@fool/plugin-sdk`, `react`, and
   `react/jsx-runtime`; other specifiers fail to resolve.
 - Handlers must read state imperatively (`$atom.get()`), never from render
   closures — rapid events will otherwise see stale values.

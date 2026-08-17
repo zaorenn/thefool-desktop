@@ -11,14 +11,14 @@
  *   - reuse an existing desktop-dedicated dashboard via a lockfile + an
  *     AUTHENTICATED /api/status probe (pid liveness alone is insufficient),
  *   - spawn a fresh detached `--isolated --port 0` dashboard and scrape its
- *     `THEFOOL_DASHBOARD_READY port=<n>` readiness line,
+ *     `FOOL_DASHBOARD_READY port=<n>` readiness line,
  *   - adopt the token the dashboard actually serves (served-token adoption),
  *   - clean up a stale dashboard only when it is provably ours.
  *
  * No `import 'electron'` so it's unit-testable with `node --test`. main.ts wires
  * the real SshConnection, fetch, adoptServedDashboardToken, and waitForHermes in.
  *
- * The minted THEFOOL_DASHBOARD_SESSION_TOKEN is the SPAWN credential. After
+ * The minted FOOL_DASHBOARD_SESSION_TOKEN is the SPAWN credential. After
  * readiness the caller runs served-token adoption against the tunneled baseUrl
  * and the SERVED token's fingerprint is what lands in the lockfile — so the
  * reuse probe checks the credential that actually authenticates /api/ws, not
@@ -238,12 +238,12 @@ async function probeRemotePlatform(ssh) {
   return { os: osName, arch }
 }
 
-// The THEFOOL_HOME the remote dashboard will use (explicit env wins, else
+// The FOOL_HOME the remote dashboard will use (explicit env wins, else
 // ~/.hermes). Recorded in the lockfile so a future reuse can tell it's the same
 // state store; best-effort.
 async function probeRemoteHermesHome(ssh) {
   try {
-    const out = (await ssh.exec('echo "${THEFOOL_HOME:-$HOME/.hermes}"')).trim().split('\n').pop()
+    const out = (await ssh.exec('echo "${FOOL_HOME:-$HOME/.hermes}"')).trim().split('\n').pop()
 
     return out || '~/.hermes'
   } catch (cause) {
@@ -450,7 +450,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
 
   const dashCmd =
     `ulimit -n ${REMOTE_NOFILE_SOFT_LIMIT} 2>/dev/null || true; ` +
-    `exec env THEFOOL_DESKTOP=1 ${hermes} ${profileArgs}${subCmd}`
+    `exec env FOOL_DESKTOP=1 ${hermes} ${profileArgs}${subCmd}`
 
   return (
     `mkdir -p "$(dirname ${logPath})" && ` +

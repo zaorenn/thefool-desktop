@@ -1,4 +1,4 @@
-import { type ConnectionState, type GatewayEvent, registryBackendScopeKey, resolveGatewayWsUrl } from '@thefool/shared'
+import { type ConnectionState, type GatewayEvent, registryBackendScopeKey, resolveGatewayWsUrl } from '@fool/shared'
 import { atom } from 'nanostores'
 
 import type { HermesConnection } from '@/global'

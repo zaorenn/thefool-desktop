@@ -7,9 +7,9 @@ import textwrap
 
 def test_container_sets_hosted_write_policy_env(built_image: str) -> None:
     script = (
-        'test "$THEFOOL_HOME" = "/opt/data" && '
-        'test "$THEFOOL_WRITE_SAFE_ROOT" = "/opt/data" && '
-        'test "$THEFOOL_DISABLE_LAZY_INSTALLS" = "1" && '
+        'test "$FOOL_HOME" = "/opt/data" && '
+        'test "$FOOL_WRITE_SAFE_ROOT" = "/opt/data" && '
+        'test "$FOOL_DISABLE_LAZY_INSTALLS" = "1" && '
         'test "$PYTHONDONTWRITEBYTECODE" = "1"'
     )
     result = subprocess.run(

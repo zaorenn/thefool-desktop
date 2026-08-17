@@ -39,7 +39,7 @@ from agent.interrupt_compat import request_hard_interrupt
 
 # Sentinel value used by the runtime provider system for providers that are
 # not natively known (named custom providers, third-party aggregators, etc.).
-# Must match thefool_cli.runtime_provider.RUNTIME_PROVIDER_TYPE_CUSTOM.
+# Must match fool_cli.runtime_provider.RUNTIME_PROVIDER_TYPE_CUSTOM.
 _RUNTIME_PROVIDER_CUSTOM = "custom"
 from tools import file_state
 from tools.terminal_tool import set_approval_callback as _set_subagent_approval_cb
@@ -1662,7 +1662,7 @@ def _build_child_agent(
     if override_api_mode is not None:
         effective_api_mode = override_api_mode
     elif _effective_provider_norm in {"nous", "nous-portal", "nousresearch"}:
-        from thefool_cli.providers import nous_api_mode
+        from fool_cli.providers import nous_api_mode
 
         effective_api_mode = nous_api_mode(effective_model)
     elif effective_provider != _parent_provider:
@@ -1716,7 +1716,7 @@ def _build_child_agent(
         # instead of disabling thinking for children.
         delegation_effort = delegation_cfg.get("reasoning_effort")
         if delegation_effort or delegation_effort is False:
-            from thefool_constants import parse_reasoning_effort
+            from fool_constants import parse_reasoning_effort
 
             parsed = parse_reasoning_effort(delegation_effort)
             if parsed is not None:
@@ -1803,7 +1803,7 @@ def _build_child_agent(
     parent_session_db = getattr(parent_agent, "_session_db", None)
     if parent_session_db is not None:
         try:
-            from thefool_state import SessionDB
+            from fool_state import SessionDB
 
             _parent_db_path = getattr(parent_session_db, "db_path", None)
             child_session_db = (
@@ -1938,7 +1938,7 @@ def _build_child_agent(
             logger.debug("spawn_requested relay failed: %s", exc)
 
     try:
-        from thefool_cli.lifecycle import invoke_hook as _invoke_hook
+        from fool_cli.lifecycle import invoke_hook as _invoke_hook
         _invoke_hook(
             "subagent_start",
             parent_session_id=getattr(parent_agent, "session_id", None),
@@ -1976,7 +1976,7 @@ def _dump_subagent_timeout_diagnostic(
     Returns the absolute path to the diagnostic file, or None on failure.
     """
     try:
-        from thefool_constants import get_hermes_home
+        from fool_constants import get_hermes_home
         import datetime as _dt
         import sys as _sys
         import traceback as _traceback
@@ -2142,7 +2142,7 @@ def _spill_summary_to_file(task_index: int, summary: str) -> Optional[str]:
     the trimmed head+tail is still returned to the parent regardless).
     """
     try:
-        from thefool_constants import get_hermes_dir
+        from fool_constants import get_hermes_dir
         import datetime as _dt
 
         cache_dir = get_hermes_dir("cache/delegation", "delegation_cache")
@@ -2458,7 +2458,7 @@ def _run_single_child(
             try:
                 from gateway.session_context import get_session_env
 
-                owner_session_id = get_session_env("THEFOOL_UI_SESSION_ID", "") or None
+                owner_session_id = get_session_env("FOOL_UI_SESSION_ID", "") or None
             except Exception:
                 owner_session_id = None
         if owner_session_id and (
@@ -3303,7 +3303,7 @@ def _finalize_child_results(
 
         parent_session_id = getattr(parent_agent, "session_id", None)
         try:
-            from thefool_cli.plugins import invoke_hook as invoke_hook
+            from fool_cli.plugins import invoke_hook as invoke_hook
         except Exception:
             invoke_hook = None
 
@@ -3672,7 +3672,7 @@ def delegate_task(
     # Capture the ORIGINATING session's wake target BEFORE any child agent is
     # constructed: _build_child_agent() -> AIAgent() -> agent_init calls
     # set_current_session_id(child.session_id), which clobbers the
-    # THEFOOL_SESSION_ID ContextVar and os.environ with the subagent's internal
+    # FOOL_SESSION_ID ContextVar and os.environ with the subagent's internal
     # id before the background-dispatch code below would read it. The
     # request-scoped chat_id binding (the raw X-Hermes-Session-Id on
     # api_server) is untouched by child construction, so read it here and
@@ -3683,7 +3683,7 @@ def delegate_task(
     try:
         from gateway.session_context import get_session_env
 
-        _origin_ui_session_id = get_session_env("THEFOOL_UI_SESSION_ID", "")
+        _origin_ui_session_id = get_session_env("FOOL_UI_SESSION_ID", "")
     except Exception:
         _origin_ui_session_id = ""
     _origin_owner_transport, _origin_owner_session_record = (
@@ -3977,7 +3977,7 @@ def delegate_task(
             # Only fall back to forced-sync execution when there is truly no
             # session id to wake. Uses the origin captured before child
             # construction (see _origin_wake_sid above) — reading
-            # THEFOOL_SESSION_ID here would return the subagent's internal id.
+            # FOOL_SESSION_ID here would return the subagent's internal id.
             _wake_sid = _origin_wake_sid
             if _wake_sid:
                 logger.info(
@@ -4010,11 +4010,11 @@ def delegate_task(
         try:
             from gateway.session_context import get_session_env
 
-            _source = get_session_env("THEFOOL_SESSION_SOURCE", "")
+            _source = get_session_env("FOOL_SESSION_SOURCE", "")
             # Refresh from the same task-local source when available, but retain
             # the immutable value captured before child construction otherwise.
             _origin_ui_session_id = (
-                get_session_env("THEFOOL_UI_SESSION_ID", "") or _origin_ui_session_id
+                get_session_env("FOOL_UI_SESSION_ID", "") or _origin_ui_session_id
             )
             # In desktop/TUI, the routable session key is the durable
             # AIAgent.session_id. Context compression can rotate that id during
@@ -4031,7 +4031,7 @@ def delegate_task(
             _source = ""
         if not _session_key:
             # CLI (single-process) path: the approval contextvar is only bound
-            # during gateway/TUI turns and THEFOOL_SESSION_KEY is not in the CLI
+            # during gateway/TUI turns and FOOL_SESSION_KEY is not in the CLI
             # environment, so the key resolves empty here. Since #64240 the CLI
             # drains completions through a positive-ownership filter keyed on
             # the durable AIAgent.session_id — an empty session_key would fail
@@ -4333,7 +4333,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
         # proxies — pick the right transport automatically. Without this,
         # subagents would default to chat_completions and hit 404s on endpoints
         # that only speak the Anthropic Messages protocol. Fixes #10213.
-        from thefool_cli.runtime_provider import _detect_api_mode_for_url
+        from fool_cli.runtime_provider import _detect_api_mode_for_url
 
         base_lower = configured_base_url.lower()
         provider = "custom"
@@ -4378,7 +4378,7 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
 
     # Provider is configured — resolve full credentials
     try:
-        from thefool_cli.runtime_provider import resolve_runtime_provider
+        from fool_cli.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested=configured_provider, target_model=configured_model)
     except Exception as exc:
@@ -4427,7 +4427,7 @@ def _load_config() -> dict:
     """Load delegation config from the active Hermes config.
 
     Prefer the shared persistent loader because it follows the active
-    THEFOOL_HOME/profile. ``cli.CLI_CONFIG`` is a legacy fallback for entry
+    FOOL_HOME/profile. ``cli.CLI_CONFIG`` is a legacy fallback for entry
     points that cannot import the shared loader; importing it first can return
     an old default ``delegation`` block and hide user-set keys such as
     ``max_concurrent_children``.
@@ -4437,15 +4437,15 @@ def _load_config() -> dict:
     rebuild via ``_get_max_concurrent_children``, so skipping the defensive
     deepcopy matters. Do NOT mutate the returned dict.
 
-    ``THEFOOL_IGNORE_USER_CONFIG=1`` (``hermes chat --ignore-user-config``) is
+    ``FOOL_IGNORE_USER_CONFIG=1`` (``hermes chat --ignore-user-config``) is
     only honored by the legacy ``cli`` loader, not the shared one, so when the
     flag is set we keep ``cli.CLI_CONFIG`` authoritative to preserve the
     flag's contract of suppressing user config.yaml settings.
     """
-    prefer_legacy = os.environ.get("THEFOOL_IGNORE_USER_CONFIG") == "1"
+    prefer_legacy = os.environ.get("FOOL_IGNORE_USER_CONFIG") == "1"
     if not prefer_legacy:
         try:
-            from thefool_cli.config import load_config_readonly
+            from fool_cli.config import load_config_readonly
 
             full = load_config_readonly()
             cfg = full.get("delegation") or {}
@@ -4603,7 +4603,7 @@ DELEGATE_TASK_SCHEMA = {
     # delegation.max_concurrent_children / max_spawn_depth, not the framework
     # defaults. Building these lazily (instead of at module import) also
     # avoids forcing cli.CLI_CONFIG to load before the test conftest can
-    # redirect THEFOOL_HOME.
+    # redirect FOOL_HOME.
     "description": (
         "Spawn one or more subagents in isolated contexts. "
         "Description is rebuilt at every get_definitions() call to reflect "

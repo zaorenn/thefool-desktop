@@ -382,8 +382,8 @@ class TestPayloadFilters:
 
     @pytest.mark.asyncio
     async def test_filter_accepts_nested_any_and_in_file(self, tmp_path, monkeypatch):
-        """Nested any groups can match dynamic watchlists under THEFOOL_HOME."""
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        """Nested any groups can match dynamic watchlists under FOOL_HOME."""
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         watchlist = tmp_path / "data" / "watchlist.json"
         watchlist.parent.mkdir()
         watchlist.write_text(json.dumps(["chat-1", "chat-2"]), encoding="utf-8")
@@ -439,7 +439,7 @@ class TestPayloadFilters:
     @pytest.mark.asyncio
     async def test_script_transforms_payload_before_prompt_rendering(self, tmp_path, monkeypatch):
         """A script can replace the payload used by prompt templates."""
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         scripts = tmp_path / "scripts"
         scripts.mkdir()
         script = scripts / "todoist_filter.py"
@@ -941,7 +941,7 @@ class TestMultiplexProfileWebhookAuthentication:
         runner.config.multiplex_profiles = True
         adapter.gateway_runner = runner
         monkeypatch.setattr(
-            "thefool_cli.profiles.profiles_to_serve",
+            "fool_cli.profiles.profiles_to_serve",
             lambda multiplex, profile_allowlist=None: [
                 ("default", tmp_path),
                 ("worker", tmp_path / "profiles" / "worker"),

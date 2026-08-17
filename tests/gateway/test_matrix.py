@@ -1256,14 +1256,14 @@ class TestMatrixDeviceIdConfig:
     def test_device_id_in_config_extra(self, monkeypatch):
         monkeypatch.setenv("MATRIX_ACCESS_TOKEN", "syt_abc123")
         monkeypatch.setenv("MATRIX_HOMESERVER", "https://matrix.example.org")
-        monkeypatch.setenv("MATRIX_DEVICE_ID", "THEFOOL_BOT")
+        monkeypatch.setenv("MATRIX_DEVICE_ID", "FOOL_BOT")
 
         from gateway.config import GatewayConfig, _apply_env_overrides
         config = GatewayConfig()
         _apply_env_overrides(config)
 
         mc = config.platforms[Platform.MATRIX]
-        assert mc.extra.get("device_id") == "THEFOOL_BOT"
+        assert mc.extra.get("device_id") == "FOOL_BOT"
 
 
 class TestMatrixSyncLoop:

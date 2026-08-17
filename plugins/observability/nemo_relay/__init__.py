@@ -764,25 +764,25 @@ def _get_runtime(
 
 
 def _load_settings() -> _Settings:
-    plugins_toml_path = _env("THEFOOL_NEMO_RELAY_PLUGINS_TOML")
+    plugins_toml_path = _env("FOOL_NEMO_RELAY_PLUGINS_TOML")
     plugins_config = _load_plugins_config(plugins_toml_path)
     return _Settings(
         plugins_toml_path=plugins_toml_path,
         plugins_config=plugins_config,
         dynamic_plugins=_dynamic_plugin_specs(plugins_config, plugins_toml_path),
-        atof_enabled=_env_bool("THEFOOL_NEMO_RELAY_ATOF_ENABLED"),
-        atof_output_directory=_env("THEFOOL_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY"),
-        atof_filename=_env("THEFOOL_NEMO_RELAY_ATOF_FILENAME") or "hermes-atof.jsonl",
-        atof_mode=_env("THEFOOL_NEMO_RELAY_ATOF_MODE") or "append",
-        atif_enabled=_env_bool("THEFOOL_NEMO_RELAY_ATIF_ENABLED"),
-        atif_output_directory=_env("THEFOOL_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY"),
-        atif_filename_template=_env("THEFOOL_NEMO_RELAY_ATIF_FILENAME_TEMPLATE") or "hermes-atif-{session_id}.json",
+        atof_enabled=_env_bool("FOOL_NEMO_RELAY_ATOF_ENABLED"),
+        atof_output_directory=_env("FOOL_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY"),
+        atof_filename=_env("FOOL_NEMO_RELAY_ATOF_FILENAME") or "hermes-atof.jsonl",
+        atof_mode=_env("FOOL_NEMO_RELAY_ATOF_MODE") or "append",
+        atif_enabled=_env_bool("FOOL_NEMO_RELAY_ATIF_ENABLED"),
+        atif_output_directory=_env("FOOL_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY"),
+        atif_filename_template=_env("FOOL_NEMO_RELAY_ATIF_FILENAME_TEMPLATE") or "hermes-atif-{session_id}.json",
         atif_subagent_export_mode=_atif_subagent_export_mode(),
-        atif_agent_name=_env("THEFOOL_NEMO_RELAY_ATIF_AGENT_NAME") or "Hermes Agent",
-        atif_agent_version=_env("THEFOOL_NEMO_RELAY_ATIF_AGENT_VERSION") or "unknown",
-        atif_model_name=_env("THEFOOL_NEMO_RELAY_ATIF_MODEL_NAME") or "unknown",
+        atif_agent_name=_env("FOOL_NEMO_RELAY_ATIF_AGENT_NAME") or "Hermes Agent",
+        atif_agent_version=_env("FOOL_NEMO_RELAY_ATIF_AGENT_VERSION") or "unknown",
+        atif_model_name=_env("FOOL_NEMO_RELAY_ATIF_MODEL_NAME") or "unknown",
         atif_export_timeout_s=_env_float(
-            "THEFOOL_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S", 30.0
+            "FOOL_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S", 30.0
         ),
     )
 
@@ -976,7 +976,7 @@ def _env(name: str) -> str:
 
 
 def _atif_subagent_export_mode() -> str:
-    mode = _env("THEFOOL_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE").lower()
+    mode = _env("FOOL_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE").lower()
     return "all" if mode == "all" else "embedded"
 
 

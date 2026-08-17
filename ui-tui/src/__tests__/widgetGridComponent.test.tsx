@@ -1,6 +1,6 @@
 import { PassThrough } from 'stream'
 
-import { renderSync, Text } from '@thefool/ink'
+import { renderSync, Text } from '@fool/ink'
 import React, { useState } from 'react'
 import { describe, expect, it } from 'vitest'
 

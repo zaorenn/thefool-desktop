@@ -5,7 +5,7 @@ const { evictInkCachesMock, forceRedrawMock } = vi.hoisted(() => ({
   forceRedrawMock: vi.fn()
 }))
 
-vi.mock('@thefool/ink', () => ({
+vi.mock('@fool/ink', () => ({
   evictInkCaches: evictInkCachesMock,
   forceRedraw: forceRedrawMock
 }))

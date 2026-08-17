@@ -40,11 +40,11 @@ def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
     repeats until the ready pool is empty. Records every claim + complete
     into its own JSON result file for later aggregation.
     """
-    os.environ["THEFOOL_HOME"] = hermes_home
+    os.environ["FOOL_HOME"] = hermes_home
     os.environ["HOME"] = hermes_home
     sys.path.insert(0, WT)
 
-    from thefool_cli import kanban_db as kb
+    from fool_cli import kanban_db as kb
 
     events = []
     empty_polls = 0
@@ -118,13 +118,13 @@ def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
 
 def main():
     home = tempfile.mkdtemp(prefix="hermes_concurrency_")
-    print(f"THEFOOL_HOME = {home}")
+    print(f"FOOL_HOME = {home}")
 
     # Seed.
-    os.environ["THEFOOL_HOME"] = home
+    os.environ["FOOL_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
-    from thefool_cli import kanban_db as kb
+    from fool_cli import kanban_db as kb
 
     kb.init_db()
     conn = kb.connect()

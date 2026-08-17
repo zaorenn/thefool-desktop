@@ -44,13 +44,13 @@ For most contributors, the best development bootstrap is the same path users
 take: run the standard installer, then work inside the repository it cloned.
 The installer creates the Hermes venv, wires the `hermes` command, stamps the
 install method for `hermes update`, and clones the full git project into
-`$THEFOOL_HOME/hermes-agent` (usually `~/.hermes/hermes-agent`). That keeps your
+`$FOOL_HOME/hermes-agent` (usually `~/.hermes/hermes-agent`). That keeps your
 development environment on the same layout the CLI, updater, lazy dependency
 installer, gateway, and docs assume.
 
 ```bash
 curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
-cd "${THEFOOL_HOME:-$HOME/.hermes}/hermes-agent"
+cd "${FOOL_HOME:-$HOME/.hermes}/hermes-agent"
 
 # Add dev/test extras on top of the standard install.
 uv pip install -e ".[all,dev]"
@@ -66,12 +66,12 @@ git checkout -b fix/description
 scripts/run_tests.sh
 ```
 
-You can also run a fully isolated Hermes instance (throwaway THEFOOL_HOME, separate Electron
+You can also run a fully isolated Hermes instance (throwaway FOOL_HOME, separate Electron
 userData, distinct Electron app name to avoid the single-instance lock):
 
 ```bash
-scripts/dev-sandbox.sh python -m thefool_cli.main
-scripts/dev-sandbox.sh --persistent python -m thefool_cli.main desktop  # state survives restarts, but lives in the worktree :)
+scripts/dev-sandbox.sh python -m fool_cli.main
+scripts/dev-sandbox.sh --persistent python -m fool_cli.main desktop  # state survives restarts, but lives in the worktree :)
 ```
 
 ### Manual clone fallback
@@ -79,7 +79,7 @@ scripts/dev-sandbox.sh --persistent python -m thefool_cli.main desktop  # state 
 Use this only if you intentionally do not want Hermes' managed install layout
 (for example, a throwaway clone inside a container or CI job). If you install
 this way, make sure you run the `hermes` entrypoint from this venv; running the
-system `python3 -m thefool_cli.main` can pick up unrelated system Python
+system `python3 -m fool_cli.main` can pick up unrelated system Python
 packages.
 
 Create the venv **outside** the cloned source tree. A venv that lives inside
@@ -143,7 +143,7 @@ scripts/run_tests.sh
 - **Comments**: Only when explaining non-obvious intent, trade-offs, or API quirks
 - **Error handling**: Catch specific exceptions. Use `logger.warning()`/`logger.error()` with `exc_info=True` for unexpected errors
 - **Cross-platform**: Never assume Unix (see below)
-- **Profile-safe paths**: Never hardcode `~/.hermes` — use `get_hermes_home()` from `thefool_constants` for code paths and `display_hermes_home()` for user-facing messages. See [AGENTS.md](https://github.com/NousResearch/hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
+- **Profile-safe paths**: Never hardcode `~/.hermes` — use `get_hermes_home()` from `fool_constants` for code paths and `display_hermes_home()` for user-facing messages. See [AGENTS.md](https://github.com/NousResearch/hermes-agent/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
 
 ## Cross-Platform Compatibility
 

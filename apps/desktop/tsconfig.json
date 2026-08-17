@@ -17,9 +17,9 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"],
-      "@thefool/plugin-sdk": ["./src/sdk/index.ts"],
-      "@thefool/shared/billing": ["../shared/src/billing-types.ts"],
-      "@thefool/shared": ["../shared/src/index.ts"]
+      "@fool/plugin-sdk": ["./src/sdk/index.ts"],
+      "@fool/shared/billing": ["../shared/src/billing-types.ts"],
+      "@fool/shared": ["../shared/src/index.ts"]
     }
   },
   "include": ["src", "../shared/src"],

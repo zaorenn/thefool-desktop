@@ -1,7 +1,7 @@
 /**
  * Live skin sync from the Hermes backend.
  *
- * The backend resolves the active skin (built-in or `$THEFOOL_HOME/skins/*.yaml`)
+ * The backend resolves the active skin (built-in or `$FOOL_HOME/skins/*.yaml`)
  * and announces it on `gateway.ready` / `skin.changed`, and answers `config.get
  * skin` with the same payload. `ingestBackendSkin` folds that into the desktop:
  *
@@ -16,7 +16,7 @@
  * authoring/activating a skin from a prompt, or `/skin` elsewhere) repaints.
  */
 
-import type { HermesSkin } from '@thefool/shared/skin'
+import type { HermesSkin } from '@fool/shared/skin'
 import { atom } from 'nanostores'
 
 import { BUILTIN_THEMES } from './presets'

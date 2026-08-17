@@ -11,7 +11,7 @@ three virtual model IDs so the ``hermes tools`` model picker and the
 
 All three hit the same underlying API model (``gpt-image-2``) with a
 different ``quality`` parameter. Output is base64 JSON → saved under
-``$THEFOOL_HOME/cache/images/``.
+``$FOOL_HOME/cache/images/``.
 
 Selection precedence (first hit wins):
 
@@ -85,7 +85,7 @@ _SIZES = {
 def _load_openai_config() -> Dict[str, Any]:
     """Read ``image_gen`` from config.yaml (returns {} on any failure)."""
     try:
-        from thefool_cli.config import load_config
+        from fool_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None

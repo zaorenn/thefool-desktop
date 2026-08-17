@@ -1,7 +1,7 @@
 [console_scripts]
-hermes = thefool_cli.main:main
+hermes = fool_cli.main:main
 hermes-acp = acp_adapter.entry:main
 hermes-agent = run_agent:main
-thefool = thefool_cli.main:main
-thefool-acp = acp_adapter.entry:main
-thefool-agent = run_agent:main
+fool = fool_cli.main:main
+fool-acp = acp_adapter.entry:main
+fool-agent = run_agent:main

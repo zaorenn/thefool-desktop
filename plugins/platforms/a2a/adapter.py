@@ -103,20 +103,20 @@ def _join_url(base: str, prefix: str) -> str:
 
 def _active_profile_name() -> str:
     try:
-        from thefool_cli.profiles import get_active_profile_name
+        from fool_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
     except Exception:
-        return os.getenv("THEFOOL_PROFILE", "default") or "default"
+        return os.getenv("FOOL_PROFILE", "default") or "default"
 
 
 def _profile_home(profile: str) -> Optional[str]:
     try:
-        from thefool_cli.profiles import get_profile_dir
+        from fool_cli.profiles import get_profile_dir
         return str(get_profile_dir(profile))
     except Exception:
         if not profile or profile == "default":
             try:
-                from thefool_cli.config import get_hermes_home
+                from fool_cli.config import get_hermes_home
                 return str(get_hermes_home())
             except Exception:
                 return None
@@ -481,7 +481,7 @@ class A2AAdapter(BasePlatformAdapter):
 
     def _load_global_a2a_config(self) -> dict:
         try:
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
             cfg = load_config() or {}
             return cfg if isinstance(cfg, dict) else {}
         except Exception:
@@ -871,8 +871,8 @@ class A2AAdapter(BasePlatformAdapter):
             env = os.environ.copy()
             home = _profile_home(profile)
             if home:
-                env["THEFOOL_HOME"] = home
-            env["THEFOOL_A2A_PEER"] = peer
+                env["FOOL_HOME"] = home
+            env["FOOL_A2A_PEER"] = peer
             start = time.time()
             try:
                 proc = subprocess.run(

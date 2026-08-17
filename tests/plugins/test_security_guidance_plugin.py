@@ -28,7 +28,7 @@ import pytest
 def _isolate_env(tmp_path, monkeypatch):
     hermes_home = tmp_path / ".hermes"
     hermes_home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+    monkeypatch.setenv("FOOL_HOME", str(hermes_home))
     monkeypatch.delenv("SECURITY_GUIDANCE_BLOCK", raising=False)
     monkeypatch.delenv("SECURITY_GUIDANCE_DISABLE", raising=False)
     yield hermes_home
@@ -272,10 +272,10 @@ class TestPluginDiscovery:
 
         # Wipe any cached plugin state from earlier tests in this worker.
         for k in list(sys.modules):
-            if k.startswith(("hermes_plugins", "thefool_cli.plugins")):
+            if k.startswith(("hermes_plugins", "fool_cli.plugins")):
                 del sys.modules[k]
 
-        from thefool_cli.plugins import _ensure_plugins_discovered
+        from fool_cli.plugins import _ensure_plugins_discovered
 
         mgr = _ensure_plugins_discovered(force=True)
         loaded = set()

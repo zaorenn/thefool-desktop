@@ -1,4 +1,4 @@
-import type { GatewayWsUrlResult } from '@thefool/shared'
+import type { GatewayWsUrlResult } from '@fool/shared'
 
 import type { WakeIndicatorState } from './lib/wake-indicator'
 import type {
@@ -170,7 +170,7 @@ declare global {
       profile: {
         get: () => Promise<DesktopActiveProfile>
         // Persists the desktop's profile choice and relaunches the local
-        // backend under the new THEFOOL_HOME (reloads the window). Pass null to
+        // backend under the new FOOL_HOME (reloads the window). Pass null to
         // clear the preference.
         set: (name: string | null) => Promise<DesktopActiveProfile>
       }
@@ -259,11 +259,11 @@ declare global {
       revealPath?: (path: string) => Promise<boolean>
       // Open a DIRECTORY (created if missing) in the OS file manager.
       openDir?: (path: string) => Promise<{ ok: boolean; error?: string }>
-      // Local Desktop runtime-plugin root (<THEFOOL_HOME>/desktop-plugins),
+      // Local Desktop runtime-plugin root (<FOOL_HOME>/desktop-plugins),
       // resolved by Electron independently of the connected backend (#66899).
       // Created on demand; returns the normalized absolute path.
       desktopPluginsRoot?: () => Promise<string>
-      // Local AGENT-plugin root (<THEFOOL_HOME>/plugins), same Electron-local
+      // Local AGENT-plugin root (<FOOL_HOME>/plugins), same Electron-local
       // resolution. The disk door also scans it for `<name>/desktop/plugin.js`
       // so one agent-plugin package can ship a desktop UI half. Optional:
       // older Electron shells predate it — the scanner then skips this root.

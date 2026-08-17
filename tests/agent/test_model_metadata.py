@@ -1436,7 +1436,7 @@ class TestGrok43StaleCacheGuard:
         assert not _stale_pre_catalog_cache_entry("grok-4", 256_000)
 
     def test_stale_grok_4_3_dropped_and_reresolves_to_1m(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         import importlib
         import agent.model_metadata as mm
         importlib.reload(mm)
@@ -1449,7 +1449,7 @@ class TestGrok43StaleCacheGuard:
 
 
     def test_grok_4_not_clobbered(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         import importlib
         import agent.model_metadata as mm
         importlib.reload(mm)
@@ -1483,7 +1483,7 @@ class TestGrok46StaleCacheGuard:
         assert not _stale_pre_catalog_cache_entry("grok-4.5", 500_000)
 
     def test_stale_grok_4_6_dropped_and_reresolves_to_500k(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         import importlib
         import agent.model_metadata as mm
         importlib.reload(mm)
@@ -1527,7 +1527,7 @@ class TestGenericPreCatalogStaleGuard:
         assert not _stale_pre_catalog_cache_entry("minimax", 204_800)
 
     def test_stale_qwen36_plus_dropped_and_reresolves(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         import importlib
         import agent.model_metadata as mm
         importlib.reload(mm)
@@ -1573,7 +1573,7 @@ class TestMoAContextLength:
 
     def test_moa_resolves_from_aggregator(self, tmp_path, monkeypatch):
         home = str(tmp_path / ".hermes")
-        monkeypatch.setenv("THEFOOL_HOME", home)
+        monkeypatch.setenv("FOOL_HOME", home)
         self._write_moa_config(home, {"provider": "openrouter", "model": "anthropic/claude-opus-4.8"})
 
         # The MoA preset name + virtual base_url would otherwise fall through to
@@ -1594,7 +1594,7 @@ class TestMoAContextLength:
 
         configured_context = 600_000
         home = str(tmp_path / ".hermes")
-        monkeypatch.setenv("THEFOOL_HOME", home)
+        monkeypatch.setenv("FOOL_HOME", home)
         self._write_moa_config(
             home,
             {"provider": "custom:example", "model": "example-model"},

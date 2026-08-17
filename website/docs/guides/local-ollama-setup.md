@@ -35,7 +35,7 @@ Ollama runs on CPU-only servers. A 9B model on a modern 8-core CPU gives ~10 tok
 
 ```bash
 # ~/.hermes/.env
-THEFOOL_API_TIMEOUT=1800   # 30 minutes — generous for slow local models
+FOOL_API_TIMEOUT=1800   # 30 minutes — generous for slow local models
 ```
 :::
 
@@ -278,12 +278,12 @@ ollama serve
 
 ### Slow first response (prefill)
 
-Hermes sends a fixed payload on every API call — the system prompt plus the tool schemas for all enabled tools — before any of your conversation content. On CPU-only or low-VRAM setups, processing that prompt (the *prefill* phase) dominates the first turn: the model can sit silent for minutes while it works through the prompt, then generate at its normal pace. This is expected behaviour, not a hang. The [Mac local-LLM guide](./local-llm-on-mac.md#timeouts) documents the same effect — during prefill on large contexts, local models may produce no output for minutes while processing the prompt — and Hermes automatically raises its stream read timeout from 120s to 1800s for local endpoints (`THEFOOL_STREAM_READ_TIMEOUT`).
+Hermes sends a fixed payload on every API call — the system prompt plus the tool schemas for all enabled tools — before any of your conversation content. On CPU-only or low-VRAM setups, processing that prompt (the *prefill* phase) dominates the first turn: the model can sit silent for minutes while it works through the prompt, then generate at its normal pace. This is expected behaviour, not a hang. The [Mac local-LLM guide](./local-llm-on-mac.md#timeouts) documents the same effect — during prefill on large contexts, local models may produce no output for minutes while processing the prompt — and Hermes automatically raises its stream read timeout from 120s to 1800s for local endpoints (`FOOL_STREAM_READ_TIMEOUT`).
 
 What helps:
 
 - **Keep the model loaded** — Ollama unloads idle models after 5 minutes, adding a full reload before the next prefill. Set `OLLAMA_KEEP_ALIVE=24h` (see [Step 6](#keep-the-model-loaded)).
-- **Widen the API timeout** — set `THEFOOL_API_TIMEOUT=1800` in `~/.hermes/.env` (see [What You Need](#what-you-need)).
+- **Widen the API timeout** — set `FOOL_API_TIMEOUT=1800` in `~/.hermes/.env` (see [What You Need](#what-you-need)).
 - **Measure and trim the fixed prompt** — run `hermes prompt-size` for a byte breakdown of the system prompt and tool schemas, then disable unused toolsets with `hermes tools` and uninstall skills you don't need with `hermes skills`.
 - **Use GPU offloading** — even a partial offload gives a significant speedup (see [Step 6](#use-gpu-offloading-if-available)).
 

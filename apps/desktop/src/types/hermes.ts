@@ -116,7 +116,7 @@ export interface EnvVarInfo {
   is_password: boolean
   is_set: boolean
   // Backend-derived provider grouping hints (from the unified provider catalog
-  // in thefool_cli/provider_catalog.py). When present, the Keys tab groups by
+  // in fool_cli/provider_catalog.py). When present, the Keys tab groups by
   // this provider identity — the SAME one `hermes model` uses — instead of
   // desktop-only env-var prefix guesses. Empty for non-provider env vars.
   provider?: string
@@ -955,7 +955,7 @@ export interface ProfileDesktopOverlay {
 
 // ── Projects ───────────────────────────────────────────────────────────────
 // A first-class, per-profile, human-named workspace spanning one or more
-// folders. Mirrors thefool_cli/projects_db.Project.to_dict().
+// folders. Mirrors fool_cli/projects_db.Project.to_dict().
 export interface ProjectFolder {
   path: string
   label: null | string

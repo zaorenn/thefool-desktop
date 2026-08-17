@@ -62,9 +62,9 @@ class TestModuleNotFound:
         assert "venv" in hint
 
     def test_dotted_module(self):
-        out = "ImportError: No module named 'thefool_cli.main'"
-        hint = annotate_failure("python3 -m thefool_cli.main", 1, out)
-        assert "thefool_cli" in hint
+        out = "ImportError: No module named 'fool_cli.main'"
+        hint = annotate_failure("python3 -m fool_cli.main", 1, out)
+        assert "fool_cli" in hint
 
 
 class TestGitShapes:

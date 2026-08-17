@@ -31,10 +31,10 @@ class TestSlackSyntheticThreadCapture:
     def test_synthetic_slack_thread_not_captured(self):
         """thread_id == message_id on Slack = per-message session key: drop it."""
         env = {
-            "THEFOOL_SESSION_PLATFORM": "slack",
-            "THEFOOL_SESSION_CHAT_ID": "D0BJTDCSR7C",
-            "THEFOOL_SESSION_THREAD_ID": "1755043010.123456",
-            "THEFOOL_SESSION_MESSAGE_ID": "1755043010.123456",
+            "FOOL_SESSION_PLATFORM": "slack",
+            "FOOL_SESSION_CHAT_ID": "D0BJTDCSR7C",
+            "FOOL_SESSION_THREAD_ID": "1755043010.123456",
+            "FOOL_SESSION_MESSAGE_ID": "1755043010.123456",
         }
         with _session_env(env):
             origin = _origin_from_env()
@@ -46,10 +46,10 @@ class TestSlackSyntheticThreadCapture:
     def test_genuine_slack_thread_preserved(self):
         """A real in-thread creation (thread != own message id) keeps its thread."""
         env = {
-            "THEFOOL_SESSION_PLATFORM": "slack",
-            "THEFOOL_SESSION_CHAT_ID": "C0AGENERAL",
-            "THEFOOL_SESSION_THREAD_ID": "1755040000.000100",
-            "THEFOOL_SESSION_MESSAGE_ID": "1755043010.123456",
+            "FOOL_SESSION_PLATFORM": "slack",
+            "FOOL_SESSION_CHAT_ID": "C0AGENERAL",
+            "FOOL_SESSION_THREAD_ID": "1755040000.000100",
+            "FOOL_SESSION_MESSAGE_ID": "1755043010.123456",
         }
         with _session_env(env):
             origin = _origin_from_env()
@@ -59,10 +59,10 @@ class TestSlackSyntheticThreadCapture:
     def test_non_slack_platform_thread_untouched(self):
         """Telegram forum topics legitimately reuse ids; the rule is Slack-scoped."""
         env = {
-            "THEFOOL_SESSION_PLATFORM": "telegram",
-            "THEFOOL_SESSION_CHAT_ID": "-1003941067111",
-            "THEFOOL_SESSION_THREAD_ID": "2203",
-            "THEFOOL_SESSION_MESSAGE_ID": "2203",
+            "FOOL_SESSION_PLATFORM": "telegram",
+            "FOOL_SESSION_CHAT_ID": "-1003941067111",
+            "FOOL_SESSION_THREAD_ID": "2203",
+            "FOOL_SESSION_MESSAGE_ID": "2203",
         }
         with _session_env(env):
             origin = _origin_from_env()
@@ -72,9 +72,9 @@ class TestSlackSyntheticThreadCapture:
     def test_slack_no_message_id_keeps_thread(self):
         """Without a message id to compare, never guess: keep the thread."""
         env = {
-            "THEFOOL_SESSION_PLATFORM": "slack",
-            "THEFOOL_SESSION_CHAT_ID": "D0BJTDCSR7C",
-            "THEFOOL_SESSION_THREAD_ID": "1755040000.000100",
+            "FOOL_SESSION_PLATFORM": "slack",
+            "FOOL_SESSION_CHAT_ID": "D0BJTDCSR7C",
+            "FOOL_SESSION_THREAD_ID": "1755040000.000100",
         }
         with _session_env(env):
             origin = _origin_from_env()

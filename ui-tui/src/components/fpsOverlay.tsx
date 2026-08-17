@@ -1,6 +1,6 @@
-// FPS counter overlay (THEFOOL_TUI_FPS=1). Zero-cost when disabled.
+// FPS counter overlay (FOOL_TUI_FPS=1). Zero-cost when disabled.
 
-import { Text } from '@thefool/ink'
+import { Text } from '@fool/ink'
 import { useStore } from '@nanostores/react'
 
 import { SHOW_FPS } from '../config/env.js'

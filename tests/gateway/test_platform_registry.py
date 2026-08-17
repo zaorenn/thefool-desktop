@@ -279,7 +279,7 @@ class TestPlatformsMerge:
 
 
     def test_get_all_platforms_includes_plugin(self):
-        from thefool_cli.platforms import get_all_platforms
+        from fool_cli.platforms import get_all_platforms
         from gateway.platform_registry import platform_registry as _reg
 
         _reg.register(PlatformEntry(
@@ -318,7 +318,7 @@ class TestApplyYamlConfigFnDispatch:
     """End-to-end dispatch through load_gateway_config().
 
     Each test registers a temporary PlatformEntry, writes a config.yaml in
-    a tmp THEFOOL_HOME, calls load_gateway_config(), and asserts the hook
+    a tmp FOOL_HOME, calls load_gateway_config(), and asserts the hook
     was invoked correctly.  Cleanup unregisters the entry.
     """
 
@@ -380,7 +380,7 @@ class TestApplyYamlConfigFnDispatch:
                 "mybadplat:\n  k: v\n"
                 "mygoodplat:\n  k: v\n",
             )
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             # Must not raise.
             from gateway.config import load_gateway_config
@@ -409,7 +409,7 @@ class TestApplyYamlConfigFnDispatch:
             home = self._write_config(
                 tmp_path, "myprecplat:\n  flag: yaml-value\n",
             )
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             from gateway.config import load_gateway_config
             load_gateway_config()
@@ -458,7 +458,7 @@ class TestPluginPlatformSharedKeyBridge:
                 "  reply_prefix: \"→ \"\n"
                 "  allow_from: [\"alice\", \"bob\"]\n",
             )
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             from gateway.config import load_gateway_config, Platform
             cfg = load_gateway_config()
@@ -514,7 +514,7 @@ class TestPluginEnablementGate:
         ))
         try:
             home = self._write_config(tmp_path)
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             from gateway.config import load_gateway_config, Platform
             cfg = load_gateway_config()
@@ -551,7 +551,7 @@ class TestPluginEnablementGate:
         ))
         try:
             home = self._write_config(tmp_path)
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             from gateway.config import load_gateway_config, Platform
             cfg = load_gateway_config()
@@ -583,7 +583,7 @@ class TestPluginEnablementGate:
         ))
         try:
             home = self._write_config(tmp_path)
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             from gateway.config import load_gateway_config, Platform
             cfg = load_gateway_config()
@@ -621,7 +621,7 @@ class TestPluginEnablementGate:
         ))
         try:
             home = self._write_config(tmp_path)
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             from gateway.config import load_gateway_config, Platform
             cfg = load_gateway_config()
@@ -658,7 +658,7 @@ class TestPluginEnablementGate:
         ))
         try:
             home = self._write_config(tmp_path)
-            monkeypatch.setenv("THEFOOL_HOME", str(home))
+            monkeypatch.setenv("FOOL_HOME", str(home))
 
             from gateway.config import load_gateway_config, Platform
             cfg = load_gateway_config()
@@ -689,7 +689,7 @@ class TestMigratedPlatformWiring:
         ],
     )
     def test_lazy_installable_platform_has_split_wiring(self, platform_name):
-        from thefool_cli.plugins import discover_plugins
+        from fool_cli.plugins import discover_plugins
 
         discover_plugins()
         from gateway.platform_registry import platform_registry

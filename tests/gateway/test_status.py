@@ -14,7 +14,7 @@ from gateway import status
 
 class TestGatewayPidState:
     def test_write_pid_file_records_gateway_metadata(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         status.write_pid_file()
 
@@ -33,7 +33,7 @@ class TestGatewayPidState:
         """
         import pytest
 
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         # First write wins.
         status.write_pid_file()
@@ -50,7 +50,7 @@ class TestGatewayPidState:
 
 
     def test_runtime_lock_claims_and_releases_liveness(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         assert status.is_gateway_runtime_lock_active() is False
         assert status.acquire_gateway_runtime_lock() is True
@@ -62,7 +62,7 @@ class TestGatewayPidState:
 
 
     def test_get_running_pid_cached_invalidates_when_pid_file_changes(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         status._clear_running_pid_cache()
 
         pid_path = tmp_path / "gateway.pid"
@@ -71,7 +71,7 @@ class TestGatewayPidState:
             record = {
                 "pid": pid,
                 "kind": "hermes-gateway",
-                "argv": ["python", "-m", "thefool_cli.main", "gateway"],
+                "argv": ["python", "-m", "fool_cli.main", "gateway"],
                 "start_time": start_time,
             }
             pid_path.write_text(json.dumps(record))
@@ -99,12 +99,12 @@ class TestGatewayPidState:
 
 
     def test_get_running_pid_falls_back_to_live_lock_record(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         pid_path = tmp_path / "gateway.pid"
         pid_path.write_text(json.dumps({
             "pid": 99999,
             "kind": "hermes-gateway",
-            "argv": ["python", "-m", "thefool_cli.main", "gateway"],
+            "argv": ["python", "-m", "fool_cli.main", "gateway"],
             "start_time": 123,
         }))
 
@@ -116,7 +116,7 @@ class TestGatewayPidState:
             lambda: {
                 "pid": os.getpid(),
                 "kind": "hermes-gateway",
-                "argv": ["python", "-m", "thefool_cli.main", "gateway"],
+                "argv": ["python", "-m", "fool_cli.main", "gateway"],
                 "start_time": 123,
             },
         )
@@ -137,19 +137,19 @@ class TestGatewayPidState:
     def test_gateway_identity_files_use_process_home_not_context_override(
         self, tmp_path, monkeypatch
     ):
-        """Regression: pid/lock/state files must use process-level THEFOOL_HOME.
+        """Regression: pid/lock/state files must use process-level FOOL_HOME.
 
         When a profile context override is active (e.g., during session dispatch
         for a named profile), gateway identity files should still be written to
-        the process-level THEFOOL_HOME, not the profile's directory.  See #56986.
+        the process-level FOOL_HOME, not the profile's directory.  See #56986.
         """
-        from thefool_constants import set_hermes_home_override, reset_hermes_home_override
+        from fool_constants import set_hermes_home_override, reset_hermes_home_override
 
         process_home = tmp_path / "default"
         process_home.mkdir()
         profile_home = tmp_path / "profiles" / "cfo"
         profile_home.mkdir(parents=True)
-        monkeypatch.setenv("THEFOOL_HOME", str(process_home))
+        monkeypatch.setenv("FOOL_HOME", str(process_home))
 
         # Simulate a profile context override being active during write.
         token = set_hermes_home_override(str(profile_home))
@@ -166,13 +166,13 @@ class TestGatewayPidState:
         assert payload["pid"] == os.getpid()
 
         # Cleanup for atexit hooks.
-        monkeypatch.setenv("THEFOOL_HOME", str(process_home))
+        monkeypatch.setenv("FOOL_HOME", str(process_home))
         (process_home / "gateway.pid").unlink(missing_ok=True)
 
 
 class TestGatewayRuntimeStatus:
     def test_clear_profile_platforms_preserves_primary_entries(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         (tmp_path / "gateway_state.json").write_text(
             json.dumps({
                 "platforms": {
@@ -194,7 +194,7 @@ class TestGatewayRuntimeStatus:
     def test_clear_profile_platforms_and_write_are_one_atomic_update(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         (tmp_path / "gateway_state.json").write_text(
             json.dumps({
                 "platforms": {
@@ -226,7 +226,7 @@ class TestGatewayRuntimeStatus:
         # therefore stamped with the writer's (pid, start_time) identity —
         # the same PID-reuse fingerprint the liveness checks use — so
         # ownership is exact equality, not clock heuristics.
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         status.write_runtime_status(platform="telegram", platform_state="connected")
 
@@ -239,7 +239,7 @@ class TestGatewayRuntimeStatus:
     def test_clear_profile_platforms_repairs_malformed_platforms(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         (tmp_path / "gateway_state.json").write_text(
             json.dumps({"platforms": ["not", "a", "mapping"]}),
             encoding="utf-8",
@@ -252,7 +252,7 @@ class TestGatewayRuntimeStatus:
 
     def test_write_runtime_status_overwrites_stale_pid_on_restart(self, tmp_path, monkeypatch):
         """Regression: setdefault() preserved stale PID from previous process (#1631)."""
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         # Simulate a previous gateway run that left a state file with a stale PID
         state_path = tmp_path / "gateway_state.json"
@@ -329,7 +329,7 @@ class TestGatewayRuntimeStatus:
 
 
     def test_command_line_belongs_to_profile_normalizes_separators(self):
-        """A Windows argv renders THEFOOL_HOME with backslashes while the
+        """A Windows argv renders FOOL_HOME with backslashes while the
         profile's Path may carry forward slashes (and, on Windows, vice
         versa).  The separator difference must not defeat the match."""
         home = Path("c:/opt/data/profiles/coder")
@@ -338,7 +338,7 @@ class TestGatewayRuntimeStatus:
 
 
     def test_write_runtime_status_explicit_none_clears_stale_fields(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         status.write_runtime_status(
             gateway_state="startup_failed",
@@ -407,7 +407,7 @@ class TestTerminatePid:
 
         # taskkill is spawned with the no-window flag so the windowless
         # pythonw.exe backend doesn't flash a conhost window on force-kill.
-        from thefool_cli._subprocess_compat import windows_hide_flags
+        from fool_cli._subprocess_compat import windows_hide_flags
 
         assert calls == [
             (["taskkill", "/PID", "123", "/T", "/F"], True, True, 10, windows_hide_flags())
@@ -448,7 +448,7 @@ class TestScopedLocks:
         assert lock_path.read_text(encoding="utf-8") == "\n"
 
     def test_acquire_scoped_lock_rejects_live_other_process(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_path = tmp_path / "locks" / "telegram-bot-token-2bb80d537b1da3e3.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.write_text(json.dumps({
@@ -475,14 +475,14 @@ class TestScopedLocks:
         succeeds) but belongs to a completely different program.  The lock
         must be treated as stale.
         """
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_path = tmp_path / "locks" / "telegram-bot-token-2bb80d537b1da3e3.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.write_text(json.dumps({
             "pid": 873,
             "start_time": None,
             "kind": "hermes-gateway",
-            "argv": ["/Users/user/.hermes/hermes-agent/thefool_cli/main.py", "gateway", "run", "--replace"],
+            "argv": ["/Users/user/.hermes/hermes-agent/fool_cli/main.py", "gateway", "run", "--replace"],
         }))
 
         # Post-#21561 the liveness probe routes through
@@ -512,14 +512,14 @@ class TestScopedLocks:
         freshly built record has a real fingerprint. Requiring equality made
         the gateway report its own PID as a foreign token squatter.
         """
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_path = tmp_path / "locks" / "discord-bot-token-2bb80d537b1da3e3.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.write_text(json.dumps({
             "pid": os.getpid(),
             "start_time": None,
             "kind": "hermes-gateway",
-            "argv": ["thefool_cli/main.py", "--profile", "milena", "gateway", "run", "--replace"],
+            "argv": ["fool_cli/main.py", "--profile", "milena", "gateway", "run", "--replace"],
             "scope": "discord-bot-token",
         }))
 
@@ -544,7 +544,7 @@ class TestScopedLocks:
 
     def test_release_scoped_lock_allows_null_disk_start_time(self, tmp_path, monkeypatch):
         """#81468: release must not no-op when disk start_time is null."""
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_path = tmp_path / "locks" / "discord-bot-token-2bb80d537b1da3e3.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.write_text(json.dumps({
@@ -567,14 +567,14 @@ class TestScopedLocks:
         psutil transient) while the live process now reports a different value.
         Since the PID is ours, start_time equality is not required.
         """
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_path = tmp_path / "locks" / "discord-bot-token-2bb80d537b1da3e3.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.write_text(json.dumps({
             "pid": os.getpid(),
             "start_time": 111,
             "kind": "hermes-gateway",
-            "argv": ["thefool_cli/main.py", "gateway", "run", "--replace"],
+            "argv": ["fool_cli/main.py", "gateway", "run", "--replace"],
             "scope": "discord-bot-token",
         }))
 
@@ -595,7 +595,7 @@ class TestScopedLocks:
         os.replace() hits FileNotFoundError (winner already claimed the stale
         file) and the winner's FRESH lock must survive: the loser must fall
         through to O_EXCL and lose, not clobber it like the old unlink() did."""
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_path = tmp_path / "locks" / "telegram-bot-token-2bb80d537b1da3e3.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         stale_record = {
@@ -634,7 +634,7 @@ class TestScopedLocks:
 
 
     def test_acquire_scoped_lock_replaces_stale_record(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_path = tmp_path / "locks" / "telegram-bot-token-2bb80d537b1da3e3.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.write_text(json.dumps({
@@ -655,7 +655,7 @@ class TestScopedLocks:
 
 
     def test_release_all_scoped_locks_can_target_single_owner(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         lock_dir = tmp_path / "locks"
         lock_dir.mkdir(parents=True, exist_ok=True)
 
@@ -683,8 +683,8 @@ class TestScopedLocks:
 
     def test_acquire_scoped_lock_stamps_profile_label(self, tmp_path, monkeypatch):
         """OOF-3: scoped locks are machine-global — record which profile owns them."""
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / "profiles" / "lead-gen-outreach"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path / "profiles" / "lead-gen-outreach"))
 
         acquired, existing = status.acquire_scoped_lock(
             "telegram-bot-token", "secret", metadata={"platform": "telegram"}
@@ -699,8 +699,8 @@ class TestScopedLocks:
 
     def test_acquire_scoped_lock_omits_profile_when_not_inferable(self, tmp_path, monkeypatch):
         """No label for unrecognizable custom homes — field omitted, not null."""
-        monkeypatch.setenv("THEFOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / "some-custom-dir"))
+        monkeypatch.setenv("FOOL_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path / "some-custom-dir"))
         monkeypatch.setattr(status, "_profile_label_for_home", lambda home: None)
 
         acquired, _ = status.acquire_scoped_lock("telegram-bot-token", "secret")
@@ -727,11 +727,11 @@ class TestScopedLockOwnerLabel:
         )
 
     def test_profile_label_for_root_home_is_default(self, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", "/opt/data")
+        monkeypatch.setenv("FOOL_HOME", "/opt/data")
         assert status._profile_label_for_home("/opt/data") == "default"
 
     def test_profile_label_for_unknown_layout_is_none(self, monkeypatch):
-        monkeypatch.delenv("THEFOOL_HOME", raising=False)
+        monkeypatch.delenv("FOOL_HOME", raising=False)
         assert status._profile_label_for_home("/somewhere/else") is None
 
     def test_profile_label_rejects_invalid_directory_names(self, tmp_path):
@@ -781,7 +781,7 @@ class TestTakeoverMarker:
     """
 
     def test_write_marker_records_target_identity(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: 42)
 
         ok = status.write_takeover_marker(target_pid=12345)
@@ -809,7 +809,7 @@ class TestTakeoverMarker:
         misclassified as an unexpected UNKNOWN exit. With start_time
         unavailable we fall back to PID equality alone, bounded by the TTL.
         """
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         # Simulate Windows: no start_time available for any PID.
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: None)
 
@@ -825,8 +825,8 @@ class TestTakeoverMarker:
 
 
     def test_write_marker_records_replacer_hermes_home(self, tmp_path, monkeypatch):
-        """The marker stamps the replacer's THEFOOL_HOME for cross-profile guard (#29092)."""
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        """The marker stamps the replacer's FOOL_HOME for cross-profile guard (#29092)."""
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: 42)
 
         status.write_takeover_marker(target_pid=12345)
@@ -836,12 +836,12 @@ class TestTakeoverMarker:
 
     def test_consume_rejects_marker_from_different_profile(self, tmp_path, monkeypatch):
         """Regression (#29092): a marker written by a gateway under a DIFFERENT
-        THEFOOL_HOME must be rejected even when PID + start_time coincidentally
+        FOOL_HOME must be rejected even when PID + start_time coincidentally
         match — otherwise two profile services sharing a default ~/.hermes flap
         each other in an infinite SIGTERM/Restart loop. The mismatched marker is
         left in place so the profile it was actually meant for can consume it.
         """
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: 100)
         marker_path = tmp_path / ".gateway-takeover.json"
         from datetime import datetime, timezone
@@ -866,7 +866,7 @@ class TestTakeoverMarker:
         ``replacer_hermes_home`` field; an absent field is treated as same-home so
         single-profile setups and mixed old/new deployments keep working.
         """
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: 100)
         marker_path = tmp_path / ".gateway-takeover.json"
         from datetime import datetime, timezone
@@ -892,7 +892,7 @@ class TestScopedLockTakeover:
         record = {
             "pid": pid,
             "kind": "hermes-gateway",
-            "argv": ["python", "-m", "thefool_cli.main", "gateway", "run"],
+            "argv": ["python", "-m", "fool_cli.main", "gateway", "run"],
             "start_time": start_time,
             "hermes_home": str(target_home),
         }
@@ -905,7 +905,7 @@ class TestScopedLockTakeover:
         replacer_home = tmp_path / "replacer"
         target_home = tmp_path / "target"
         replacer_home.mkdir()
-        monkeypatch.setenv("THEFOOL_HOME", str(replacer_home))
+        monkeypatch.setenv("FOOL_HOME", str(replacer_home))
         record = self._owner_record(target_home)
 
         alive = iter([True, True, False])
@@ -914,7 +914,7 @@ class TestScopedLockTakeover:
         monkeypatch.setattr(
             status,
             "_read_process_cmdline",
-            lambda _pid: "python -m thefool_cli.main gateway run",
+            lambda _pid: "python -m fool_cli.main gateway run",
         )
         calls = []
 
@@ -950,7 +950,7 @@ class TestScopedLockTakeover:
         monkeypatch.setattr(
             status,
             "_read_process_cmdline",
-            lambda _pid: "python -m thefool_cli.main gateway run",
+            lambda _pid: "python -m fool_cli.main gateway run",
         )
         calls = []
         monkeypatch.setattr(
@@ -966,7 +966,7 @@ class TestPlannedStopMarker:
     """Tests for intentional service/manual gateway stop markers."""
 
     def test_write_marker_records_target_identity(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: 42)
 
         ok = status.write_planned_stop_marker(target_pid=12345)
@@ -996,7 +996,7 @@ class TestPlannedStopMarker:
         With start_time unavailable on BOTH sides we fall back to PID
         equality alone, bounded by the marker TTL.
         """
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         # Simulate Windows: no start_time available for any PID.
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: None)
 
@@ -1021,7 +1021,7 @@ class TestPlannedStopMarker:
         unavailable. When both sides report one (Linux), a mismatch must
         still reject — otherwise PID reuse could resurrect a stale marker.
         """
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         monkeypatch.setattr(status, "_get_process_start_time", lambda pid: 100)
         status.write_planned_stop_marker(target_pid=os.getpid())
 
@@ -1055,7 +1055,7 @@ class TestReadProcessCmdlinePsFallback:
 
         monkeypatch.setattr(status.Path, "read_bytes", fake_read_bytes)
         result = status._read_process_cmdline(12345)
-        assert "thefool_cli/main.py" in result
+        assert "fool_cli/main.py" in result
         assert calls == ["proc"]
 
 
@@ -1089,7 +1089,7 @@ class TestActiveAgentsTurnBoundaryWrite:
     not clobber it."""
 
     def test_active_agents_only_write_preserves_gateway_state(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         # Lifecycle transition sets running.
         status.write_runtime_status(gateway_state="running", active_agents=0)
@@ -1130,7 +1130,7 @@ class TestGatewayBusyDerivation:
 
 class TestRespawnStormBreaker:
     def test_no_storm_under_threshold(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         for _ in range(5):
             result = status.record_start_and_check_storm(
                 max_starts=5, window_s=120.0
@@ -1140,8 +1140,8 @@ class TestRespawnStormBreaker:
 
 class TestLaunchdPlistRespawnGovernance:
     def test_plist_has_throttle_interval(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
-        from thefool_cli.gateway import generate_launchd_plist
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
+        from fool_cli.gateway import generate_launchd_plist
 
         plist = generate_launchd_plist()
         assert "<key>ThrottleInterval</key>" in plist
@@ -1156,7 +1156,7 @@ class TestPermissionErrorOnLockFile:
     def test_permission_error_on_lock_file_returns_false_and_removes(self, tmp_path, monkeypatch):
         """When the lock file is not writable (root-owned), the function should
         remove the stale file and report the lock as inactive."""
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         lock_path = tmp_path / "gateway.lock"
         lock_path.write_text("stale", encoding="utf-8")
 
@@ -1176,7 +1176,7 @@ class TestPermissionErrorOnLockFile:
     def test_permission_error_unlink_failure_still_returns_false(self, tmp_path, monkeypatch):
         """Even if unlinking the stale lock file fails (e.g. directory not writable),
         the function should still return False to allow startup."""
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         lock_path = tmp_path / "gateway.lock"
         lock_path.write_text("stale", encoding="utf-8")
 
@@ -1203,7 +1203,7 @@ class TestPermissionErrorOnLockFile:
     def test_acquire_gateway_runtime_lock_recovers_from_permission_error(self, tmp_path, monkeypatch):
         """acquire_gateway_runtime_lock must survive a stale root-owned lock
         file: unlink it and retry with a fresh file instead of crashing."""
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         lock_path = status._get_gateway_lock_path()
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.write_text("stale", encoding="utf-8")
@@ -1280,7 +1280,7 @@ class TestRuntimeStatusUpdatedAtContract:
         string|null contract every emit surface relies on."""
         from datetime import datetime
 
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
         status.write_runtime_status(gateway_state="running")
 
@@ -1353,7 +1353,7 @@ class TestResolveGatewayLiveness:
         """Gateway identity files live in the per-profile home.
 
         The status readers resolve process-level paths and deliberately
-        ignore the THEFOOL_HOME contextvar override (#56986), so the profile
+        ignore the FOOL_HOME contextvar override (#56986), so the profile
         directory must be threaded through explicitly or a scoped request
         silently reports a DIFFERENT profile's gateway (#71211).
         """

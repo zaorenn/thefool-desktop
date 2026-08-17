@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from thefool_cli import web_server
+from fool_cli import web_server
 
 
 class FakeBridge:
@@ -44,7 +44,7 @@ def pty_keepalive_harness(monkeypatch):
 
     async def fake_argv(**kw):
         resume = "child" if kw.get("resume") == "parent" else kw.get("resume")
-        env = {"THEFOOL_TUI_RESUME": resume} if resume else {}
+        env = {"FOOL_TUI_RESUME": resume} if resume else {}
         return (["x", resume or "fresh"], "/tmp", env)
 
     monkeypatch.setattr(web_server, "_resolve_chat_argv_async", fake_argv)

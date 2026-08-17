@@ -39,13 +39,13 @@ TUI_CONTEXT_DIRS = [
 
 # User plugin roots — scanned at runtime if they exist.  Plugins load from
 # ``get_hermes_home() / "plugins"`` (user) and ``./.hermes/plugins/`` (project,
-# gated behind ``THEFOOL_ENABLE_PROJECT_PLUGINS``) — see
-# ``thefool_cli/plugins.py:10-12``.  The guard only checked the bundled
+# gated behind ``FOOL_ENABLE_PROJECT_PLUGINS``) — see
+# ``fool_cli/plugins.py:10-12``.  The guard only checked the bundled
 # ``plugins/`` dir, missing user-installed code that spawns subprocesses
 # (gap reported in #67639).
 #
 # Import is deferred to ``main()`` (after ``os.chdir(repo_root)``) because
-# this script runs as a standalone subprocess — ``thefool_constants`` isn't
+# this script runs as a standalone subprocess — ``fool_constants`` isn't
 # on ``sys.path`` until the repo root is added.
 
 # subprocess and os APIs that inherit stdin by default when called without
@@ -78,7 +78,7 @@ SKIP_DIRS = {
     "scripts/",
     "skills/",
     "optional-skills/",
-    "thefool_cli/",
+    "fool_cli/",
     "gateway/",
     "cron/",
 }
@@ -157,10 +157,10 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     os.chdir(repo_root)
 
-    # Add repo root to sys.path so we can import thefool_constants (this script
+    # Add repo root to sys.path so we can import fool_constants (this script
     # runs as a standalone subprocess, not as a module).
     sys.path.insert(0, str(repo_root))
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     all_violations = []
 
@@ -190,7 +190,7 @@ def main() -> int:
     # ./.hermes/plugins/, where code like ori/hooks.py can spawn
     # subprocesses with inherited stdin — #67639).
     plugin_roots: list[Path] = [get_hermes_home() / "plugins"]
-    if os.environ.get("THEFOOL_ENABLE_PROJECT_PLUGINS"):
+    if os.environ.get("FOOL_ENABLE_PROJECT_PLUGINS"):
         plugin_roots.append(Path.cwd() / ".hermes" / "plugins")
     seen_roots: set[Path] = set()
     for plugin_root in plugin_roots:

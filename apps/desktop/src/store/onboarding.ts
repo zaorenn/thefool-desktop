@@ -196,7 +196,7 @@ function notifyReady(provider: string) {
 }
 
 // Human-friendly labels for tools auto-routed through the Nous Tool Gateway,
-// mirroring thefool_cli/nous_subscription._GATEWAY_TOOL_LABELS so the GUI and
+// mirroring fool_cli/nous_subscription._GATEWAY_TOOL_LABELS so the GUI and
 // CLI describe the same thing.
 const GATEWAY_TOOL_LABELS: Record<string, string> = {
   browser: 'browser automation',

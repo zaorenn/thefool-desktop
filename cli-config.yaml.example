@@ -194,11 +194,11 @@ model:
 # client rebuilds during credential rotation.  For OpenAI-wire chat
 # completions (streaming and non-streaming) the configured value is also
 # used as the per-request ``timeout=`` kwarg so it wins over the legacy
-# THEFOOL_API_TIMEOUT env var (which still applies when no config is set).
+# FOOL_API_TIMEOUT env var (which still applies when no config is set).
 # ``stale_timeout_seconds`` controls the non-streaming stale-call detector and
-# wins over the legacy THEFOOL_API_CALL_STALE_TIMEOUT env var. Leaving these
-# unset keeps the legacy defaults (THEFOOL_API_TIMEOUT=1800s,
-# THEFOOL_API_CALL_STALE_TIMEOUT=90s, native Anthropic 900s). The
+# wins over the legacy FOOL_API_CALL_STALE_TIMEOUT env var. Leaving these
+# unset keeps the legacy defaults (FOOL_API_TIMEOUT=1800s,
+# FOOL_API_CALL_STALE_TIMEOUT=90s, native Anthropic 900s). The
 # implicit non-stream stale detector is auto-disabled for local endpoints
 # and can scale upward for very large contexts.
 #
@@ -233,7 +233,7 @@ model:
 # timeouts:
 #   tools:
 #     concurrent_batch: 420   # Deadline for a parallel tool-call batch
-#                             # (legacy env: THEFOOL_CONCURRENT_TOOL_TIMEOUT_S)
+#                             # (legacy env: FOOL_CONCURRENT_TOOL_TIMEOUT_S)
 #     sequential_call: 420    # Deadline for one sequentially-executed tool call.
 #                             # Defaults to concurrent_batch's value so the two
 #                             # executor paths stay in sync; human waits
@@ -327,9 +327,9 @@ terminal:
   # font_family: "MesloLGS NF"  # Also accepts a CSS stack; blank uses bundled JetBrains Mono.
   timeout: 180
   # HOME policy for tool subprocesses:
-  #   auto    - default: host uses your real HOME; containers use THEFOOL_HOME/home
+  #   auto    - default: host uses your real HOME; containers use FOOL_HOME/home
   #   real    - force your real OS-user HOME
-  #   profile - force THEFOOL_HOME/home for strict per-profile CLI config isolation
+  #   profile - force FOOL_HOME/home for strict per-profile CLI config isolation
   home_mode: "auto"
   docker_mount_cwd_to_workspace: false  # SECURITY: off by default. Opt in to mount the launch cwd into Docker /workspace.
   lifetime_seconds: 300
@@ -1007,7 +1007,7 @@ agent:
   # coding surfaces (CLI, TUI, desktop) and programmatic callers, and disables
   # it on conversational messaging surfaces (Telegram, Discord, etc.) where the
   # verification summary would reach a human as chat noise. Set true or false to
-  # force it on or off; the THEFOOL_VERIFY_ON_STOP env var (1/0) takes precedence.
+  # force it on or off; the FOOL_VERIFY_ON_STOP env var (1/0) takes precedence.
   # verify_on_stop: auto
 
   # Standing operator instructions for the coding posture (when Hermes is in a
@@ -1053,7 +1053,7 @@ agent:
   # Custom personalities (use with /personality command).
   # Built-ins (helpful, concise, technical, creative, teacher, kawaii, catgirl,
   # pirate, shakespeare, surfer, noir, uwu, philosopher, hype) are always
-  # available on every surface — defined once in thefool_cli/personality.py.
+  # available on every surface — defined once in fool_cli/personality.py.
   # Entries here ADD new personalities or OVERRIDE a built-in by name.
   # The active selection is stored in display.personality (never here, and
   # never in agent.system_prompt — that field is your manual system prompt).
@@ -1369,7 +1369,7 @@ stt:
   language: "en"               # GLOBAL language hint for every STT provider (per-provider language wins). Set "" for auto-detect.
   # groq:
   #   model: "whisper-large-v3-turbo"
-  #   language: ""             # blank = stt.language > THEFOOL_LOCAL_STT_LANGUAGE > auto-detect
+  #   language: ""             # blank = stt.language > FOOL_LOCAL_STT_LANGUAGE > auto-detect
   openai:
     model: "whisper-1"         # whisper-1 | gpt-4o-mini-transcribe | gpt-4o-transcribe | gpt-transcribe
     language: ""               # auto-detect; set to "en", "es", "fr", etc. to force
@@ -1384,7 +1384,7 @@ stt:
 # Text-to-speech. Only the deepinfra block is documented here — the
 # remaining providers (edge, openai, xai, minimax, mistral, gemini,
 # elevenlabs, neutts, kittentts, piper) inherit sensible defaults from
-# DEFAULT_CONFIG in thefool_cli/config.py.
+# DEFAULT_CONFIG in fool_cli/config.py.
 # tts:
 #   provider: "deepinfra"
 #   deepinfra:
@@ -1396,7 +1396,7 @@ stt:
 
 # "Hey Hermes" hands-free wake word (off by default; toggle with /wake).
 # Full engine/provider options inherit from DEFAULT_CONFIG in
-# thefool_cli/config_defaults.py — only capture placement is documented here.
+# fool_cli/config_defaults.py — only capture placement is documented here.
 # wake_word:
 #   enabled: false
 #   capture: "auto"    # auto | local | client
@@ -1693,14 +1693,14 @@ display:
 # stdout the script may return JSON that either blocks the tool call or
 # injects context into the next LLM call.
 #
-# Valid events (mirror thefool_cli.plugins.VALID_HOOKS):
+# Valid events (mirror fool_cli.plugins.VALID_HOOKS):
 #   pre_tool_call, post_tool_call, pre_llm_call, post_llm_call,
 #   pre_api_request, post_api_request, on_session_start, on_session_end,
 #   on_session_finalize, on_session_reset, subagent_stop
 #
 # First-use consent: each (event, command) pair prompts once on a TTY, then
 # is persisted to ~/.hermes/shell-hooks-allowlist.json.  Non-interactive
-# runs (gateway, cron) need --accept-hooks, THEFOOL_ACCEPT_HOOKS=1, or the
+# runs (gateway, cron) need --accept-hooks, FOOL_ACCEPT_HOOKS=1, or the
 # hooks_auto_accept key below.
 #
 # See website/docs/user-guide/features/hooks.md for the full JSON wire
@@ -1727,7 +1727,7 @@ display:
 # =============================================================================
 # Shared metrics are disabled by default. When enabled, Hermes writes only
 # allowlisted aggregate counters and immutable JSON
-# packages under $THEFOOL_HOME/telemetry/shared_metrics; it does not upload them.
+# packages under $FOOL_HOME/telemetry/shared_metrics; it does not upload them.
 # Packages include a random profile-scoped ID that stays stable until this
 # directory is deleted. It is not derived from hardware, account, or host data.
 # Successfully exported local history is retained for 30 days; pending deltas
@@ -1742,7 +1742,7 @@ telemetry:
 # Update Behavior
 # =============================================================================
 updates:
-  # Create a full THEFOOL_HOME zip before every `hermes update`.
+  # Create a full FOOL_HOME zip before every `hermes update`.
   # Backups land in ~/.hermes/backups/ and can be restored with `hermes import`.
   # Off by default because large homes can add minutes to every update.
   pre_update_backup: false
@@ -1766,9 +1766,9 @@ updates:
 # The bundled Nous Portal plugin reads these on startup; settings here are
 # the canonical surface. Each can be overridden by an environment variable:
 #
-#   dashboard.oauth.client_id   <-  THEFOOL_DASHBOARD_OAUTH_CLIENT_ID
-#   dashboard.oauth.portal_url  <-  THEFOOL_DASHBOARD_PORTAL_URL
-#   dashboard.public_url        <-  THEFOOL_DASHBOARD_PUBLIC_URL
+#   dashboard.oauth.client_id   <-  FOOL_DASHBOARD_OAUTH_CLIENT_ID
+#   dashboard.oauth.portal_url  <-  FOOL_DASHBOARD_PORTAL_URL
+#   dashboard.public_url        <-  FOOL_DASHBOARD_PUBLIC_URL
 #
 # Env wins when set to a non-empty value. This is what Fly.io's platform-
 # secret injection uses to push per-deploy client_ids without needing to
@@ -1807,10 +1807,10 @@ updates:
 # nous block above when gating the dashboard with your own identity provider.
 # Each setting can be overridden by an environment variable:
 #
-#   dashboard.oauth.self_hosted.issuer         <-  THEFOOL_DASHBOARD_OIDC_ISSUER
-#   dashboard.oauth.self_hosted.client_id      <-  THEFOOL_DASHBOARD_OIDC_CLIENT_ID
-#   dashboard.oauth.self_hosted.scopes         <-  THEFOOL_DASHBOARD_OIDC_SCOPES
-#   dashboard.oauth.self_hosted.client_secret  <-  THEFOOL_DASHBOARD_OIDC_CLIENT_SECRET
+#   dashboard.oauth.self_hosted.issuer         <-  FOOL_DASHBOARD_OIDC_ISSUER
+#   dashboard.oauth.self_hosted.client_id      <-  FOOL_DASHBOARD_OIDC_CLIENT_ID
+#   dashboard.oauth.self_hosted.scopes         <-  FOOL_DASHBOARD_OIDC_SCOPES
+#   dashboard.oauth.self_hosted.client_secret  <-  FOOL_DASHBOARD_OIDC_CLIENT_SECRET
 #
 # dashboard:
 #   oauth:
@@ -1827,7 +1827,7 @@ updates:
 #       # IDP's discovery doc) IN ADDITION to PKCE. Leave unset for a public
 #       # (PKCE-only) client — the common case.
 #       #
-#       # This is a CREDENTIAL: prefer setting THEFOOL_DASHBOARD_OIDC_CLIENT_SECRET
+#       # This is a CREDENTIAL: prefer setting FOOL_DASHBOARD_OIDC_CLIENT_SECRET
 #       # in ~/.hermes/.env over putting it here in config.yaml.
 #       #   client_secret: ""
 

@@ -155,7 +155,7 @@ class TestHandleVoiceCommand:
 
         fake_cfg = {"voice": {"auto_tts": True}}
         monkeypatch.setattr(
-            "thefool_cli.config.load_config",
+            "fool_cli.config.load_config",
             lambda: fake_cfg,
         )
         adapter = SimpleNamespace(
@@ -414,7 +414,7 @@ class TestVoiceInHelp:
 
     def test_voice_in_help_output(self):
         """The gateway help text includes /voice (generated from registry)."""
-        from thefool_cli.commands import gateway_help_lines
+        from fool_cli.commands import gateway_help_lines
         help_text = "\n".join(gateway_help_lines())
         assert "/voice" in help_text
 
@@ -839,7 +839,7 @@ class TestDiscordVoiceChannelMethods:
         from plugins.platforms.discord.adapter import DiscordAdapter
         from gateway.config import PlatformConfig
 
-        with patch("thefool_cli.config.read_raw_config", return_value={
+        with patch("fool_cli.config.read_raw_config", return_value={
             "discord": {
                 "voice_channel_inactivity_timeout_seconds": 0,
                 "voice_playback_timeout_seconds": 240,

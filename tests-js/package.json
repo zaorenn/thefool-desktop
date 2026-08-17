@@ -1,5 +1,5 @@
 {
-  "name": "@thefool/root-tests",
+  "name": "@fool/root-tests",
   "private": true,
   "type": "module",
   "scripts": {

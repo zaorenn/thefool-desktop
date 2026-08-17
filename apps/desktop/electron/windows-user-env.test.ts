@@ -7,25 +7,25 @@ import { expandWindowsEnvRefs, parseRegQueryValue, readWindowsUserEnvVar } from 
 // ── parseRegQueryValue ─────────────────────────────────────────────────────
 
 test('parseRegQueryValue extracts a REG_SZ value', () => {
-  const out = ['', 'HKEY_CURRENT_USER\\Environment', '    THEFOOL_HOME    REG_SZ    F:\\Hermes\\data', ''].join('\r\n')
-  assert.equal(parseRegQueryValue(out, 'THEFOOL_HOME'), 'F:\\Hermes\\data')
+  const out = ['', 'HKEY_CURRENT_USER\\Environment', '    FOOL_HOME    REG_SZ    F:\\Hermes\\data', ''].join('\r\n')
+  assert.equal(parseRegQueryValue(out, 'FOOL_HOME'), 'F:\\Hermes\\data')
 })
 
 test('parseRegQueryValue matches the name case-insensitively', () => {
   const out = 'HKEY_CURRENT_USER\\Environment\r\n    Hermes_Home    REG_EXPAND_SZ    %USERPROFILE%\\h\r\n'
-  assert.equal(parseRegQueryValue(out, 'THEFOOL_HOME'), '%USERPROFILE%\\h')
+  assert.equal(parseRegQueryValue(out, 'FOOL_HOME'), '%USERPROFILE%\\h')
 })
 
 test('parseRegQueryValue preserves spaces inside the value', () => {
-  const out = '    THEFOOL_HOME    REG_SZ    C:\\Program Files\\Hermes\r\n'
-  assert.equal(parseRegQueryValue(out, 'THEFOOL_HOME'), 'C:\\Program Files\\Hermes')
+  const out = '    FOOL_HOME    REG_SZ    C:\\Program Files\\Hermes\r\n'
+  assert.equal(parseRegQueryValue(out, 'FOOL_HOME'), 'C:\\Program Files\\Hermes')
 })
 
 test('parseRegQueryValue returns null when the value line is absent', () => {
   const out = 'HKEY_CURRENT_USER\\Environment\r\n    Path    REG_SZ    C:\\x\r\n'
-  assert.equal(parseRegQueryValue(out, 'THEFOOL_HOME'), null)
-  assert.equal(parseRegQueryValue('', 'THEFOOL_HOME'), null)
-  assert.equal(parseRegQueryValue('garbage', 'THEFOOL_HOME'), null)
+  assert.equal(parseRegQueryValue(out, 'FOOL_HOME'), null)
+  assert.equal(parseRegQueryValue('', 'FOOL_HOME'), null)
+  assert.equal(parseRegQueryValue('garbage', 'FOOL_HOME'), null)
 })
 
 // ── expandWindowsEnvRefs ───────────────────────────────────────────────────
@@ -50,7 +50,7 @@ test('readWindowsUserEnvVar returns null off Windows without spawning', () => {
     return ''
   }
 
-  assert.equal(readWindowsUserEnvVar('THEFOOL_HOME', { platform: 'linux', exec }), null)
+  assert.equal(readWindowsUserEnvVar('FOOL_HOME', { platform: 'linux', exec }), null)
   assert.equal(spawned, false)
 })
 
@@ -60,17 +60,17 @@ test('readWindowsUserEnvVar queries HKCU\\Environment and expands the value', ()
   const exec = (cmd, args) => {
     calls.push([cmd, args])
 
-    return 'HKEY_CURRENT_USER\\Environment\r\n    THEFOOL_HOME    REG_EXPAND_SZ    %DRIVE%\\Hermes\r\n'
+    return 'HKEY_CURRENT_USER\\Environment\r\n    FOOL_HOME    REG_EXPAND_SZ    %DRIVE%\\Hermes\r\n'
   }
 
-  const value = readWindowsUserEnvVar('THEFOOL_HOME', {
+  const value = readWindowsUserEnvVar('FOOL_HOME', {
     platform: 'win32',
     env: { DRIVE: 'F:' },
     exec
   })
 
   assert.equal(value, 'F:\\Hermes')
-  assert.deepEqual(calls, [['reg', ['query', 'HKCU\\Environment', '/v', 'THEFOOL_HOME']]])
+  assert.deepEqual(calls, [['reg', ['query', 'HKCU\\Environment', '/v', 'FOOL_HOME']]])
 })
 
 test('readWindowsUserEnvVar returns null when reg exits non-zero (value missing)', () => {
@@ -78,10 +78,10 @@ test('readWindowsUserEnvVar returns null when reg exits non-zero (value missing)
     throw new Error('reg exited 1')
   }
 
-  assert.equal(readWindowsUserEnvVar('THEFOOL_HOME', { platform: 'win32', exec }), null)
+  assert.equal(readWindowsUserEnvVar('FOOL_HOME', { platform: 'win32', exec }), null)
 })
 
 test('readWindowsUserEnvVar returns null for an empty value', () => {
-  const exec = () => '    THEFOOL_HOME    REG_SZ    \r\n'
-  assert.equal(readWindowsUserEnvVar('THEFOOL_HOME', { platform: 'win32', exec }), null)
+  const exec = () => '    FOOL_HOME    REG_SZ    \r\n'
+  assert.equal(readWindowsUserEnvVar('FOOL_HOME', { platform: 'win32', exec }), null)
 })

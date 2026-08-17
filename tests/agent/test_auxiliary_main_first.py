@@ -114,7 +114,7 @@ class TestResolveAutoMainFirst:
                 }
             )
         )
-        monkeypatch.setenv("THEFOOL_HOME", str(home))
+        monkeypatch.setenv("FOOL_HOME", str(home))
 
         with patch(
             "agent.auxiliary_client.resolve_provider_client"
@@ -423,14 +423,14 @@ class TestResolveVisionMainFirst:
         ), patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "thefool_cli.auth.resolve_api_key_provider_credentials",
+            "fool_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "thefool_cli.copilot_auth.copilot_request_headers",
+            "fool_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()
@@ -460,14 +460,14 @@ class TestResolveVisionMainFirst:
         with patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "thefool_cli.auth.resolve_api_key_provider_credentials",
+            "fool_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "thefool_cli.copilot_auth.copilot_request_headers",
+            "fool_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()

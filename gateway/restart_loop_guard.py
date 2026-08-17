@@ -25,7 +25,7 @@ still starts and serves real inbound messages, it just stops replaying
 the session that keeps killing it, which breaks the cycle and puts a
 human back in the loop.
 
-State lives in ``<THEFOOL_HOME>/gateway/restart_loop.json`` so it is
+State lives in ``<FOOL_HOME>/gateway/restart_loop.json`` so it is
 profile-scoped and survives process death.  It is intentionally tiny and
 best-effort: any read/write failure fails OPEN (no false trip) because a
 broken breaker must never wedge a healthy gateway.
@@ -38,7 +38,7 @@ import logging
 import time
 from typing import List, Optional
 
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 
 logger = logging.getLogger("gateway.run")
 

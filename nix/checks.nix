@@ -17,7 +17,7 @@
         export HOME=$TMPDIR
         ${hermesVenv}/bin/python3 -c '
 import json, sys
-from thefool_cli.config import DEFAULT_CONFIG
+from fool_cli.config import DEFAULT_CONFIG
 
 def leaf_paths(d, prefix=""):
     paths = []
@@ -132,9 +132,9 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           test "$SKILL_COUNT" -gt 0 || (echo "FAIL: no SKILL.md files found in skills directory"; exit 1)
           echo "PASS: $SKILL_COUNT bundled skills found"
 
-          grep -q "THEFOOL_BUNDLED_SKILLS" ${hermes-agent}/bin/hermes || \
-            (echo "FAIL: THEFOOL_BUNDLED_SKILLS not in wrapper"; exit 1)
-          echo "PASS: THEFOOL_BUNDLED_SKILLS set in wrapper"
+          grep -q "FOOL_BUNDLED_SKILLS" ${hermes-agent}/bin/hermes || \
+            (echo "FAIL: FOOL_BUNDLED_SKILLS not in wrapper"; exit 1)
+          echo "PASS: FOOL_BUNDLED_SKILLS set in wrapper"
 
           # Optional skills ship via the wrapper too (pythonSrc excludes
           # them from the wheel, so the env var is the only path in nix).
@@ -142,9 +142,9 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             (echo "FAIL: optional-skills directory missing"; exit 1)
           OPT_COUNT=$(find -L ${hermes-agent}/share/hermes-agent/optional-skills -name "SKILL.md" | wc -l)
           test "$OPT_COUNT" -gt 0 || (echo "FAIL: no SKILL.md files in optional-skills"; exit 1)
-          grep -q "THEFOOL_OPTIONAL_SKILLS" ${hermes-agent}/bin/hermes || \
-            (echo "FAIL: THEFOOL_OPTIONAL_SKILLS not in wrapper"; exit 1)
-          echo "PASS: $OPT_COUNT optional skills found, THEFOOL_OPTIONAL_SKILLS set in wrapper"
+          grep -q "FOOL_OPTIONAL_SKILLS" ${hermes-agent}/bin/hermes || \
+            (echo "FAIL: FOOL_OPTIONAL_SKILLS not in wrapper"; exit 1)
+          echo "PASS: $OPT_COUNT optional skills found, FOOL_OPTIONAL_SKILLS set in wrapper"
 
           echo "=== All bundled skills checks passed ==="
           mkdir -p $out
@@ -162,9 +162,9 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             (echo "FAIL: irc plugin manifest missing"; exit 1)
           echo "PASS: irc plugin manifest present"
 
-          grep -q "THEFOOL_BUNDLED_PLUGINS" ${hermes-agent}/bin/hermes || \
-            (echo "FAIL: THEFOOL_BUNDLED_PLUGINS not in wrapper"; exit 1)
-          echo "PASS: THEFOOL_BUNDLED_PLUGINS set in wrapper"
+          grep -q "FOOL_BUNDLED_PLUGINS" ${hermes-agent}/bin/hermes || \
+            (echo "FAIL: FOOL_BUNDLED_PLUGINS not in wrapper"; exit 1)
+          echo "PASS: FOOL_BUNDLED_PLUGINS set in wrapper"
 
           echo "=== All bundled plugins checks passed ==="
           mkdir -p $out
@@ -188,18 +188,18 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           test -f ${hermes-agent}/share/hermes-agent/locales/en.yaml || (echo "FAIL: en.yaml missing"; exit 1)
           echo "PASS: en.yaml present"
 
-          grep -q "THEFOOL_BUNDLED_LOCALES" ${hermes-agent}/bin/hermes || \
-            (echo "FAIL: THEFOOL_BUNDLED_LOCALES not in wrapper"; exit 1)
-          echo "PASS: THEFOOL_BUNDLED_LOCALES set in wrapper"
+          grep -q "FOOL_BUNDLED_LOCALES" ${hermes-agent}/bin/hermes || \
+            (echo "FAIL: FOOL_BUNDLED_LOCALES not in wrapper"; exit 1)
+          echo "PASS: FOOL_BUNDLED_LOCALES set in wrapper"
 
           # locales/ is a bare data dir (no __init__.py), shipped via a
-          # symlink + THEFOOL_BUNDLED_LOCALES (not via wheel data-files).
+          # symlink + FOOL_BUNDLED_LOCALES (not via wheel data-files).
           # Verify the wrapper override resolves real strings.
           export HOME=$(mktemp -d)
-          RENDERED=$(cd "$HOME" && THEFOOL_BUNDLED_LOCALES=${hermes-agent}/share/hermes-agent/locales \
+          RENDERED=$(cd "$HOME" && FOOL_BUNDLED_LOCALES=${hermes-agent}/share/hermes-agent/locales \
             ${hermesVenv}/bin/python3 -c "from agent import i18n; print(i18n.t('gateway.reset.header_default', lang='en'))")
           echo "rendered: $RENDERED"
-          test "$RENDERED" != "gateway.reset.header_default" || (echo "FAIL: i18n returned the raw key with THEFOOL_BUNDLED_LOCALES set"; exit 1)
+          test "$RENDERED" != "gateway.reset.header_default" || (echo "FAIL: i18n returned the raw key with FOOL_BUNDLED_LOCALES set"; exit 1)
           echo "PASS: i18n renders a human string via the wrapper override"
 
           echo "=== All bundled locales checks passed ==="
@@ -209,7 +209,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
         # Verify bundled optional-mcps catalog is present and resolvable.
         # optional-mcps/ is a bare data dir shipped via symlink +
-        # THEFOOL_OPTIONAL_MCPS (not via wheel data-files).
+        # FOOL_OPTIONAL_MCPS (not via wheel data-files).
         bundled-mcps = pkgs.runCommand "hermes-bundled-mcps" { } ''
           set -e
           echo "=== Checking bundled optional-mcps ==="
@@ -220,9 +220,9 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           test "$MANIFEST_COUNT" -gt 0 || (echo "FAIL: no manifest.yaml files found"; exit 1)
           echo "PASS: $MANIFEST_COUNT catalog manifests found"
 
-          grep -q "THEFOOL_OPTIONAL_MCPS" ${hermes-agent}/bin/hermes || \
-            (echo "FAIL: THEFOOL_OPTIONAL_MCPS not in wrapper"; exit 1)
-          echo "PASS: THEFOOL_OPTIONAL_MCPS set in wrapper"
+          grep -q "FOOL_OPTIONAL_MCPS" ${hermes-agent}/bin/hermes || \
+            (echo "FAIL: FOOL_OPTIONAL_MCPS not in wrapper"; exit 1)
+          echo "PASS: FOOL_OPTIONAL_MCPS set in wrapper"
 
           export HOME=$(mktemp -d)
           CATALOG=$(cd "$HOME" && ${hermes-agent}/bin/hermes mcp catalog 2>/dev/null || true)
@@ -247,39 +247,39 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
           # self-contained bundle; no runtime node_modules expected
 
-          grep -q "THEFOOL_TUI_DIR" ${hermes-agent}/bin/hermes || \
-            (echo "FAIL: THEFOOL_TUI_DIR not in wrapper"; exit 1)
-          echo "PASS: THEFOOL_TUI_DIR set in wrapper"
+          grep -q "FOOL_TUI_DIR" ${hermes-agent}/bin/hermes || \
+            (echo "FAIL: FOOL_TUI_DIR not in wrapper"; exit 1)
+          echo "PASS: FOOL_TUI_DIR set in wrapper"
 
           echo "=== All bundled TUI checks passed ==="
           mkdir -p $out
           echo "ok" > $out/result
         '';
 
-        # Verify THEFOOL_NODE is set in wrapper and points to Node 26+
+        # Verify FOOL_NODE is set in wrapper and points to Node 26+
         # (Hermes pins its toolchain to Node 26 everywhere)
         hermes-node = pkgs.runCommand "hermes-node-version" { } ''
           set -e
-          echo "=== Checking THEFOOL_NODE in wrapper ==="
-          grep -q "THEFOOL_NODE" ${hermes-agent}/bin/hermes || \
-            (echo "FAIL: THEFOOL_NODE not set in wrapper"; exit 1)
-          echo "PASS: THEFOOL_NODE present in wrapper"
+          echo "=== Checking FOOL_NODE in wrapper ==="
+          grep -q "FOOL_NODE" ${hermes-agent}/bin/hermes || \
+            (echo "FAIL: FOOL_NODE not set in wrapper"; exit 1)
+          echo "PASS: FOOL_NODE present in wrapper"
 
-          THEFOOL_NODE=$(sed -n "s/^export THEFOOL_NODE='\(.*\)'/\1/p" ${hermes-agent}/bin/hermes)
-          test -x "$THEFOOL_NODE" || (echo "FAIL: THEFOOL_NODE=$THEFOOL_NODE not executable"; exit 1)
-          echo "PASS: THEFOOL_NODE executable at $THEFOOL_NODE"
+          FOOL_NODE=$(sed -n "s/^export FOOL_NODE='\(.*\)'/\1/p" ${hermes-agent}/bin/hermes)
+          test -x "$FOOL_NODE" || (echo "FAIL: FOOL_NODE=$FOOL_NODE not executable"; exit 1)
+          echo "PASS: FOOL_NODE executable at $FOOL_NODE"
 
-          NODE_MAJOR=$("$THEFOOL_NODE" --version | sed 's/^v//' | cut -d. -f1)
+          NODE_MAJOR=$("$FOOL_NODE" --version | sed 's/^v//' | cut -d. -f1)
           test "$NODE_MAJOR" -ge 26 || \
             (echo "FAIL: Node v$NODE_MAJOR < 26, Hermes requires Node 26"; exit 1)
           echo "PASS: Node v$NODE_MAJOR >= 26"
 
-          echo "=== All THEFOOL_NODE checks passed ==="
+          echo "=== All FOOL_NODE checks passed ==="
           mkdir -p $out
           echo "ok" > $out/result
         '';
 
-        # Verify THEFOOL_MANAGED guard works on all mutation commands
+        # Verify FOOL_MANAGED guard works on all mutation commands
         managed-guard = pkgs.runCommand "hermes-managed-guard" { } ''
           set -e
           export HOME=$(mktemp -d)
@@ -287,12 +287,12 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           check_blocked() {
             local label="$1"
             shift
-            OUTPUT=$(THEFOOL_MANAGED=true "$@" 2>&1 || true)
+            OUTPUT=$(FOOL_MANAGED=true "$@" 2>&1 || true)
             echo "$OUTPUT" | grep -q "managed by NixOS" || (echo "FAIL: $label not guarded"; echo "$OUTPUT"; exit 1)
             echo "PASS: $label blocked in managed mode"
           }
 
-          echo "=== Checking THEFOOL_MANAGED guards ==="
+          echo "=== Checking FOOL_MANAGED guards ==="
           check_blocked "config set" ${hermes-agent}/bin/hermes config set model foo
           check_blocked "config edit" ${hermes-agent}/bin/hermes config edit
 
@@ -436,11 +436,11 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           # Helper: run merge then load with Python, output merged JSON
           merge_and_load() {
             local hermes_home="$1"
-            export THEFOOL_HOME="$hermes_home"
+            export FOOL_HOME="$hermes_home"
             ${configMergeScript} ${nixSettings} "$hermes_home/config.yaml"
             ${hermesVenv}/bin/python3 -c '
 import json, sys
-from thefool_cli.config import load_config
+from fool_cli.config import load_config
 json.dump(load_config(), sys.stdout, default=str)
 '
           }

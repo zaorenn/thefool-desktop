@@ -61,10 +61,10 @@ Patterns are case-insensitive [fnmatch](https://docs.python.org/3/library/fnmatc
 
 ### Sandbox file writes
 
-`THEFOOL_WRITE_SAFE_ROOT` restricts `write_file` and `patch` to the directory prefix(es) you list — anything outside is hard-blocked. Multiple roots are separated by `:` on Unix:
+`FOOL_WRITE_SAFE_ROOT` restricts `write_file` and `patch` to the directory prefix(es) you list — anything outside is hard-blocked. Multiple roots are separated by `:` on Unix:
 
 ```bash
-export THEFOOL_WRITE_SAFE_ROOT=/path/to/project:/home/you/.hermes
+export FOOL_WRITE_SAFE_ROOT=/path/to/project:/home/you/.hermes
 ```
 
 Sensitive paths inside the safe root are still blocked — pointing it at `$HOME` does not allow writing `~/.ssh/id_rsa`.
@@ -171,7 +171,7 @@ terminal:
 And in `~/.hermes/.env`, if you want the write sandbox:
 
 ```bash
-THEFOOL_WRITE_SAFE_ROOT=/path/to/project:/home/you/.hermes
+FOOL_WRITE_SAFE_ROOT=/path/to/project:/home/you/.hermes
 ```
 
 ## See Also

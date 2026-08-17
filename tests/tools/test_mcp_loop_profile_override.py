@@ -1,4 +1,4 @@
-"""Regression tests for THEFOOL_HOME override propagation onto the MCP loop.
+"""Regression tests for FOOL_HOME override propagation onto the MCP loop.
 
 Tasks scheduled via run_coroutine_threadsafe are created inside the MCP
 event-loop thread, so they copy THAT thread's context — not the scheduling
@@ -23,7 +23,7 @@ def mcp_loop():
 
 
 def test_override_propagates_to_mcp_loop(tmp_path, monkeypatch, mcp_loop):
-    from thefool_constants import (
+    from fool_constants import (
         get_hermes_home,
         reset_hermes_home_override,
         set_hermes_home_override,
@@ -33,7 +33,7 @@ def test_override_propagates_to_mcp_loop(tmp_path, monkeypatch, mcp_loop):
     profile_home = tmp_path / "profile-home"
     process_home.mkdir()
     profile_home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(process_home))
+    monkeypatch.setenv("FOOL_HOME", str(process_home))
 
     async def read_home():
         return str(get_hermes_home())
@@ -61,7 +61,7 @@ def test_concurrent_scopes_do_not_interfere(tmp_path, monkeypatch, mcp_loop):
     loop must each see their own home — the wrapper is task-local."""
     import threading
 
-    from thefool_constants import (
+    from fool_constants import (
         get_hermes_home,
         reset_hermes_home_override,
         set_hermes_home_override,
@@ -72,7 +72,7 @@ def test_concurrent_scopes_do_not_interfere(tmp_path, monkeypatch, mcp_loop):
     home_b = tmp_path / "profile-b"
     for h in (process_home, home_a, home_b):
         h.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(process_home))
+    monkeypatch.setenv("FOOL_HOME", str(process_home))
 
     async def read_home():
         return str(get_hermes_home())

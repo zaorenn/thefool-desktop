@@ -43,7 +43,7 @@ def test_scrub_on_forwards_extra_like_sanitize_extra_env(monkeypatch):
 
 
 def test_no_scrub_inherit_profile_home_bridges_context_override(tmp_path):
-    from thefool_constants import set_hermes_home_override, reset_hermes_home_override
+    from fool_constants import set_hermes_home_override, reset_hermes_home_override
 
     token = set_hermes_home_override(str(tmp_path))
     try:
@@ -52,7 +52,7 @@ def test_no_scrub_inherit_profile_home_bridges_context_override(tmp_path):
         )
     finally:
         reset_hermes_home_override(token)
-    assert env["THEFOOL_HOME"] == str(tmp_path)
+    assert env["FOOL_HOME"] == str(tmp_path)
 
 
 # ---------------------------------------------------------------------------
@@ -60,11 +60,11 @@ def test_no_scrub_inherit_profile_home_bridges_context_override(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_e2e_child_sees_hermes_home_and_no_planted_secret(tmp_path, monkeypatch):
-    """A real child spawned with a factory-built env must see THEFOOL_HOME
+    """A real child spawned with a factory-built env must see FOOL_HOME
     propagated and (with scrub on) a planted provider-style key absent."""
     hermes_home = tmp_path / "hermes-home"
     hermes_home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+    monkeypatch.setenv("FOOL_HOME", str(hermes_home))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-FAKE-planted")
     monkeypatch.setenv("AUXILIARY_FAKE_API_KEY", "sk-FAKE-aux")
 
@@ -72,7 +72,7 @@ def test_e2e_child_sees_hermes_home_and_no_planted_secret(tmp_path, monkeypatch)
 
     code = (
         "import os, json; "
-        "print(json.dumps({'home': os.environ.get('THEFOOL_HOME'), "
+        "print(json.dumps({'home': os.environ.get('FOOL_HOME'), "
         "'k1': 'ANTHROPIC_API_KEY' in os.environ, "
         "'k2': 'AUXILIARY_FAKE_API_KEY' in os.environ}))"
     )

@@ -4,9 +4,9 @@ Gateway runtime status helpers.
 Provides PID-file based detection of whether the gateway daemon is running,
 used by send_message's check_fn to gate availability in the CLI.
 
-The PID file lives at ``{THEFOOL_HOME}/gateway.pid``.  THEFOOL_HOME defaults to
+The PID file lives at ``{FOOL_HOME}/gateway.pid``.  FOOL_HOME defaults to
 ``~/.hermes`` but can be overridden via the environment variable.  This means
-separate THEFOOL_HOME directories naturally get separate PID files — a property
+separate FOOL_HOME directories naturally get separate PID files — a property
 that will be useful when we add named profiles (multiple agents running
 concurrently under distinct configurations).
 """
@@ -26,7 +26,7 @@ import time
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
-from thefool_constants import get_hermes_home, _get_platform_default_hermes_home
+from fool_constants import get_hermes_home, _get_platform_default_hermes_home
 from typing import Any, Callable, NamedTuple, Optional
 from utils import atomic_json_write
 
@@ -130,7 +130,7 @@ def record_start_and_check_storm(
 
 
 def _get_process_hermes_home() -> Path:
-    """Return the process-level THEFOOL_HOME, skipping context-local overrides.
+    """Return the process-level FOOL_HOME, skipping context-local overrides.
 
     Gateway identity files (PID, lock, runtime status, takeover/stop markers)
     must always live in the directory the gateway process was launched with.
@@ -139,31 +139,31 @@ def _get_process_hermes_home() -> Path:
     profile directory when a profile-context task happens to be active at write
     time.  See issue #56986.
     """
-    val = os.environ.get("THEFOOL_HOME", "").strip()
+    val = os.environ.get("FOOL_HOME", "").strip()
     if val:
         return Path(val)
     return _get_platform_default_hermes_home()
 
 
 def _canonical_hermes_home(path: Path | str) -> Path:
-    """Return a stable absolute THEFOOL_HOME path for persisted identity data."""
+    """Return a stable absolute FOOL_HOME path for persisted identity data."""
     return Path(path).expanduser().resolve(strict=False)
 
 
 def _same_hermes_home(left: Path | str, right: Path | str) -> bool:
-    """Compare THEFOOL_HOME paths with the host platform's case semantics."""
+    """Compare FOOL_HOME paths with the host platform's case semantics."""
     return os.path.normcase(str(_canonical_hermes_home(left))) == os.path.normcase(
         str(_canonical_hermes_home(right))
     )
 
 
-# Mirrors thefool_cli.profiles._PROFILE_ID_RE — duplicated here because gateway
-# identity code must stay import-light (thefool_constants + stdlib only).
+# Mirrors fool_cli.profiles._PROFILE_ID_RE — duplicated here because gateway
+# identity code must stay import-light (fool_constants + stdlib only).
 _PROFILE_LABEL_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 
 
 def _profile_label_for_home(home: Path | str) -> Optional[str]:
-    """Best-effort profile label for a THEFOOL_HOME path.
+    """Best-effort profile label for a FOOL_HOME path.
 
     Returns the profile name for ``<root>/profiles/<name>`` layouts (both
     ``~/.hermes/profiles/coder`` and Docker ``/opt/data/profiles/coder``),
@@ -177,7 +177,7 @@ def _profile_label_for_home(home: Path | str) -> Optional[str]:
     if canonical.parent.name == "profiles" and _PROFILE_LABEL_RE.match(canonical.name):
         return canonical.name
     try:
-        from thefool_constants import get_default_hermes_root
+        from fool_constants import get_default_hermes_root
 
         if _same_hermes_home(canonical, get_default_hermes_root()):
             return "default"
@@ -195,7 +195,7 @@ def scoped_lock_owner_label(record: Optional[dict[str, Any]]) -> Optional[str]:
     """Profile label for the gateway that owns a scoped credential lock.
 
     Scoped locks are machine-global, so the holder may belong to a different
-    THEFOOL_HOME profile than the caller.  Prefers the explicit ``profile``
+    FOOL_HOME profile than the caller.  Prefers the explicit ``profile``
     field stamped by :func:`acquire_scoped_lock`; falls back to inferring the
     label from the persisted ``hermes_home`` for locks written before the
     profile field existed.  Returns ``None`` for legacy or malformed records
@@ -215,7 +215,7 @@ def scoped_lock_owner_label(record: Optional[dict[str, Any]]) -> Optional[str]:
 
 
 def _get_pid_path() -> Path:
-    """Return the path to the gateway PID file, respecting THEFOOL_HOME."""
+    """Return the path to the gateway PID file, respecting FOOL_HOME."""
     home = _get_process_hermes_home()
     return home / "gateway.pid"
 
@@ -235,7 +235,7 @@ def _get_runtime_status_path() -> Path:
 
 def _get_lock_dir() -> Path:
     """Return the machine-local directory for token-scoped gateway locks."""
-    override = os.getenv("THEFOOL_GATEWAY_LOCK_DIR")
+    override = os.getenv("FOOL_GATEWAY_LOCK_DIR")
     if override:
         return Path(override)
     state_home = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local" / "state"))
@@ -312,7 +312,7 @@ def terminate_pid(pid: int, *, force: bool = False) -> None:
         # CREATE_NO_WINDOW: terminate_pid runs from the windowless pythonw.exe
         # gateway/desktop backend, so a bare taskkill spawn would flash a
         # conhost window on every force-kill.
-        from thefool_cli._subprocess_compat import windows_hide_flags
+        from fool_cli._subprocess_compat import windows_hide_flags
 
         try:
             result = subprocess.run(
@@ -430,7 +430,7 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
 
     Lifecycle decisions (is the gateway up? did restart relaunch it?) must not
     fire on loose substring matches.  The previous ``"... gateway" in cmdline``
-    test also matched ``thefool_cli.main gateway status`` and even unrelated
+    test also matched ``fool_cli.main gateway status`` and even unrelated
     processes like ``python -m tui_gateway`` -- which made ``restart()`` race
     against a still-draining old process and ``status``/``start`` report false
     positives.  This requires the actual ``gateway`` subcommand followed by
@@ -467,8 +467,8 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
 
     joined = " ".join(tokens)
     has_gateway_entry = (
-        "thefool_cli.main" in joined
-        or "thefool_cli/main.py" in joined
+        "fool_cli.main" in joined
+        or "fool_cli/main.py" in joined
         or any(t.rsplit("/", 1)[-1] in ("hermes", "hermes.exe") for t in tokens)
     )
     if not has_gateway_entry:
@@ -540,10 +540,10 @@ def _record_looks_like_gateway(record: dict[str, Any]) -> bool:
 
 
 def _profile_name_for_home(profile_home: Path) -> Optional[str]:
-    """Return the profile id a THEFOOL_HOME directory represents, or None.
+    """Return the profile id a FOOL_HOME directory represents, or None.
 
     A named profile's home is ``<root>/profiles/<name>`` (immediate parent is
-    ``profiles``).  The root/default home (``~/.hermes`` or ``$THEFOOL_HOME``)
+    ``profiles``).  The root/default home (``~/.hermes`` or ``$FOOL_HOME``)
     has no such parent, so it maps to the default profile (``None`` here, which
     callers treat as "the bare, flag-less gateway").
     """
@@ -555,18 +555,18 @@ def _profile_name_for_home(profile_home: Path) -> Optional[str]:
 def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
     """Return True when a gateway command line belongs to ``profile_home``.
 
-    Mirrors ``thefool_cli.gateway._matches_current_profile`` so the dashboard's
+    Mirrors ``fool_cli.gateway._matches_current_profile`` so the dashboard's
     cross-profile liveness fallback scopes a live PID to the *right* profile.
     In a per-profile container, one profile's stale ``gateway_state.json`` can
     record a PID that the OS has since recycled onto a DIFFERENT profile's live
     gateway.  That recycled PID's command line still ``looks_like_gateway`` —
     so without a profile check the dead profile is reported running.  A named
     profile gateway carries ``-p <name>``/``--profile <name>`` (or, rarely, an
-    explicit ``THEFOOL_HOME=<path>``) on its argv; the default/root gateway runs
+    explicit ``FOOL_HOME=<path>``) on its argv; the default/root gateway runs
     bare with no profile flag.
     """
     # Normalize separators before the substring match: on Windows,
-    # str(Path) renders backslashes while a THEFOOL_HOME= value on the argv
+    # str(Path) renders backslashes while a FOOL_HOME= value on the argv
     # may carry forward slashes (Git Bash, JSON configs) — and vice versa.
     command_lc = command.lower().replace("\\", "/")
     profile_name = _profile_name_for_home(profile_home)
@@ -582,7 +582,7 @@ def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
 
     # Default/root profile: the gateway runs with no profile flag. Accept unless
     # the command advertises *some other* profile (an explicit -p/--profile) or
-    # a non-matching explicit THEFOOL_HOME= on the argv. THEFOOL_HOME is usually
+    # a non-matching explicit FOOL_HOME= on the argv. FOOL_HOME is usually
     # passed via the environment (not visible on the command line), so its mere
     # absence is not disqualifying — only a conflicting explicit value is.
     if "--profile " in command_lc or " -p " in command_lc:
@@ -631,7 +631,7 @@ def _build_pid_record() -> dict:
         "argv": list(sys.argv),
         "start_time": _get_process_start_time(os.getpid()),
         # Scoped credential locks are machine-global rather than
-        # THEFOOL_HOME-local.  Persist the owning gateway's process home so an
+        # FOOL_HOME-local.  Persist the owning gateway's process home so an
         # explicit cross-profile --replace can place its planned-takeover
         # marker where the target process will actually read it.
         "hermes_home": str(_canonical_hermes_home(_get_process_hermes_home())),
@@ -1136,7 +1136,7 @@ def read_runtime_status(path: Optional[Path] = None) -> Optional[dict[str, Any]]
 
     ``path`` is optional so callers that need to inspect a *different*
     profile's state file (e.g. the dashboard enumerating every profile)
-    can do so without mutating ``THEFOOL_HOME`` in-process.  Defaults to
+    can do so without mutating ``FOOL_HOME`` in-process.  Defaults to
     the active profile's ``gateway_state.json``.
     """
     return _read_json_file(path or _get_runtime_status_path())
@@ -1308,7 +1308,7 @@ def resolve_gateway_liveness(
 
     ``pid_probe`` / ``runtime_reader`` / ``runtime_pid_probe`` let a caller
     inject its own module-level references to these helpers.  The dashboard
-    passes its ``thefool_cli.web_server`` bindings so the long-standing
+    passes its ``fool_cli.web_server`` bindings so the long-standing
     monkeypatch seam in the test-suite keeps working; production callers
     leave them ``None`` and get this module's implementations.
     """
@@ -1401,7 +1401,7 @@ def get_runtime_status_running_pid(
     OS process identity.
 
     ``expected_home`` scopes the OS-identity check to a specific profile's
-    THEFOOL_HOME.  Pass it when validating *another* profile's state file (the
+    FOOL_HOME.  Pass it when validating *another* profile's state file (the
     dashboard enumerating every profile): a stale record whose PID the OS has
     recycled onto a different profile's live gateway must not be reported
     running for the dead profile.  Omit it (the default) for the active
@@ -1460,7 +1460,7 @@ def acquire_scoped_lock(scope: str, identity: str, metadata: Optional[dict[str, 
     """Acquire a machine-local lock keyed by scope + identity.
 
     Used to prevent multiple local gateways from using the same external identity
-    at once (e.g. the same Telegram bot token across different THEFOOL_HOME dirs).
+    at once (e.g. the same Telegram bot token across different FOOL_HOME dirs).
     """
     lock_path = _get_scope_lock_path(scope, identity)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1752,7 +1752,7 @@ def _consume_pid_marker_for_self(
         return False
 
     # Cross-profile guard (#29092): new markers explicitly name the verified
-    # TARGET home.  That permits a deliberate cross-THEFOOL_HOME --replace while
+    # TARGET home.  That permits a deliberate cross-FOOL_HOME --replace while
     # ensuring a marker accidentally written into another profile's directory
     # is ignored.  Legacy markers have no target field, so retain the original
     # same-replacer-home rule for backwards compatibility.
@@ -1813,7 +1813,7 @@ def write_takeover_marker(
 
     A verified scoped-lock handoff supplies ``target_home`` and the already
     validated ``target_start_time`` so the marker is written into the target
-    gateway's THEFOOL_HOME rather than the replacer's.  Same-home callers omit
+    gateway's FOOL_HOME rather than the replacer's.  Same-home callers omit
     both arguments and preserve the historical behavior.
 
     Returns True on successful write, False on any failure. Historical
@@ -1877,7 +1877,7 @@ def _validated_scoped_lock_gateway_owner(
 
     A machine-global scoped-lock file is only a claim; it is not sufficient
     authority to terminate a process or choose a marker destination.  Require
-    the lock record, the target THEFOOL_HOME's gateway PID record, and the live
+    the lock record, the target FOOL_HOME's gateway PID record, and the live
     OS process to agree on PID, start-time fingerprint, gateway identity, and
     process home.  Missing legacy metadata fails closed and leaves the normal
     retryable lock-conflict path in charge.

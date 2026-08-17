@@ -84,7 +84,7 @@ If you set a custom `num_ctx` in Ollama (e.g., `ollama run --num_ctx 64000`), ma
 :::
 
 :::tip Timeouts with local models
-Hermes auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, set `THEFOOL_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
+Hermes auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, set `FOOL_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
 :::
 
 ### How much does it cost?
@@ -284,7 +284,7 @@ Make sure the key matches the provider. An OpenAI key won't work with OpenRouter
 hermes model
 
 # Set a valid model
-hermes config set THEFOOL_MODEL anthropic/claude-opus-4.7
+hermes config set FOOL_MODEL anthropic/claude-opus-4.7
 
 # Or specify per-session
 hermes chat --model openrouter/meta-llama/llama-3.1-70b-instruct
@@ -620,9 +620,9 @@ If an MCP server crashes mid-request, Hermes will report a timeout. Check the se
 
 ## Profiles
 
-### How do profiles differ from just setting THEFOOL_HOME?
+### How do profiles differ from just setting FOOL_HOME?
 
-Profiles are a managed layer on top of `THEFOOL_HOME`. You *could* manually set `THEFOOL_HOME=/some/path` before every command, but profiles handle all the plumbing for you: creating the directory structure, generating shell aliases (`hermes-work`), tracking the active profile in `~/.hermes/active_profile`, and syncing skill updates across all profiles automatically. They also integrate with tab completion so you don't have to remember paths.
+Profiles are a managed layer on top of `FOOL_HOME`. You *could* manually set `FOOL_HOME=/some/path` before every command, but profiles handle all the plumbing for you: creating the directory structure, generating shell aliases (`hermes-work`), tracking the active profile in `~/.hermes/active_profile`, and syncing skill updates across all profiles automatically. They also integrate with tab completion so you don't have to remember paths.
 
 ### Can two profiles share the same bot token?
 

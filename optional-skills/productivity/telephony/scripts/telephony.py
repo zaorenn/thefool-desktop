@@ -2,7 +2,7 @@
 """Telephony helper for the Hermes optional telephony skill.
 
 Capabilities:
-- Persist telephony provider credentials to the Hermes .env file ($THEFOOL_HOME/.env)
+- Persist telephony provider credentials to the Hermes .env file ($FOOL_HOME/.env)
 - Search for, buy, and remember Twilio phone numbers
 - Make direct Twilio calls (TwiML <Say> or <Play>)
 - Send SMS / MMS via Twilio
@@ -69,7 +69,7 @@ class OwnedTwilioNumber:
 
 
 def _hermes_home() -> Path:
-    return Path(os.environ.get("THEFOOL_HOME", "~/.hermes")).expanduser()
+    return Path(os.environ.get("FOOL_HOME", "~/.hermes")).expanduser()
 
 
 def _env_path() -> Path:

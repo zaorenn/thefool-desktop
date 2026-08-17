@@ -17,7 +17,7 @@ All three are **drop-in at runtime**: no repo clone, no `npm run build`, no patc
 If you just want to use the dashboard, see [Web Dashboard](./web-dashboard). If you want to reskin the terminal CLI (not the web dashboard), see [Skins & Themes](./skins) — the CLI skin system is unrelated to dashboard themes.
 
 :::note Not the desktop app
-This page covers the **web dashboard** (`hermes dashboard`) plugin system — `window.__HERMES_PLUGIN_SDK__`, a `manifest.json`, and a pre-built JS bundle. The **native desktop app** (`hermes desktop`) has its own, unrelated SDK — `@thefool/plugin-sdk`, a single ESM file, no build step — documented at [Desktop Plugin SDK](/developer-guide/desktop-plugin-sdk). Only the backend `plugin_api.py` namespace (`/api/plugins/<name>`) is shared between them.
+This page covers the **web dashboard** (`hermes dashboard`) plugin system — `window.__HERMES_PLUGIN_SDK__`, a `manifest.json`, and a pre-built JS bundle. The **native desktop app** (`hermes desktop`) has its own, unrelated SDK — `@fool/plugin-sdk`, a single ESM file, no build step — documented at [Desktop Plugin SDK](/developer-guide/desktop-plugin-sdk). Only the backend `plugin_api.py` namespace (`/api/plugins/<name>`) is shared between them.
 :::
 
 :::note How the pieces compose
@@ -755,8 +755,8 @@ Backend routes run inside the dashboard process, so they can import from the her
 
 ```python
 from fastapi import APIRouter
-from thefool_state import SessionDB
-from thefool_cli.config import load_config
+from fool_state import SessionDB
+from fool_cli.config import load_config
 
 router = APIRouter()
 
@@ -811,7 +811,7 @@ The dashboard scans three directories for `dashboard/manifest.json`:
 | 1 (wins on conflict) | `~/.hermes/plugins/<name>/dashboard/` | `user` |
 | 2 | `<repo>/plugins/memory/<name>/dashboard/` | `bundled` |
 | 2 | `<repo>/plugins/<name>/dashboard/` | `bundled` |
-| 3 | `./.hermes/plugins/<name>/dashboard/` | `project` — only when `THEFOOL_ENABLE_PROJECT_PLUGINS` is set |
+| 3 | `./.hermes/plugins/<name>/dashboard/` | `project` — only when `FOOL_ENABLE_PROJECT_PLUGINS` is set |
 
 Discovery results are cached per dashboard process. After adding a new plugin, either:
 

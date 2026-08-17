@@ -182,7 +182,7 @@ class TestFallbackChainAdvancement:
                 ),
             ),
             patch(
-                "thefool_cli.model_normalize.normalize_model_for_provider",
+                "fool_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
             patch(
@@ -218,7 +218,7 @@ class TestFallbackChainAdvancement:
                 ),
             ),
             patch(
-                "thefool_cli.model_normalize.normalize_model_for_provider",
+                "fool_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ),
             patch(
@@ -283,7 +283,7 @@ class TestFallbackChainDedup:
             called.append((provider, model))
             return _mock_client(), model
         with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
-            with patch("thefool_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
+            with patch("fool_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
                 ok = agent._try_activate_fallback()
 
         assert ok is True
@@ -336,7 +336,7 @@ class TestFallbackChainDedup:
 
         with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
             with patch(
-                "thefool_cli.model_normalize.normalize_model_for_provider",
+                "fool_cli.model_normalize.normalize_model_for_provider",
                 side_effect=lambda m, p: m,
             ):
                 ok = agent._try_activate_fallback()

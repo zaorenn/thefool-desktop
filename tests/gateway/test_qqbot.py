@@ -913,7 +913,7 @@ class TestDefaultInteractionDispatch:
         hermes_home = tmp_path / "hermes_home"
         hermes_home.mkdir()
         monkeypatch.setattr(
-            "thefool_constants.get_hermes_home",
+            "fool_constants.get_hermes_home",
             lambda: hermes_home,
         )
 

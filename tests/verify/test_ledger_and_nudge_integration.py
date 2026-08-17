@@ -21,7 +21,7 @@ from agent.verification_evidence import (
     verification_status,
 )
 from agent.verification_stop import build_verify_on_stop_nudge
-from thefool_cli.verify_cmd import run_verify_command
+from fool_cli.verify_cmd import run_verify_command
 
 
 def make_args(path, **overrides):
@@ -42,8 +42,8 @@ def make_args(path, **overrides):
 
 @pytest.fixture
 def hermes_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes-home"))
-    monkeypatch.delenv("THEFOOL_SESSION_ID", raising=False)
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path / ".hermes-home"))
+    monkeypatch.delenv("FOOL_SESSION_ID", raising=False)
     return tmp_path
 
 
@@ -114,7 +114,7 @@ def test_cli_partial_run_records_targeted_scope(hermes_home, capsys):
 
 
 def test_cli_run_uses_hermes_session_id_env(hermes_home, capsys, monkeypatch):
-    monkeypatch.setenv("THEFOOL_SESSION_ID", "sess-42")
+    monkeypatch.setenv("FOOL_SESSION_ID", "sess-42")
     project = _workspace(hermes_home, manifest_recipe={"name": "Fake", "test": ["echo ok"]})
     run_verify_command(make_args(project))
     assert verification_status(session_id="sess-42", cwd=project)["status"] == "passed"

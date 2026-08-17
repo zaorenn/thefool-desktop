@@ -1,4 +1,4 @@
-import { JsonRpcGatewayError } from '@thefool/shared'
+import { JsonRpcGatewayError } from '@fool/shared'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import type { MutableRefObject } from 'react'
 import { useEffect, useRef } from 'react'

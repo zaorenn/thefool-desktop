@@ -51,7 +51,7 @@ Use the desktop installer when you want a familiar Windows install experience or
 
 ### Dependency bootstrap (`dep_ensure`)
 
-On first launch (and on demand when a missing tool is detected), Hermes runs a small Python bootstrapper — `thefool_cli/dep_ensure.py` — that checks for and lazily installs the non-Python dependencies it needs. On Windows, the relevant ones are:
+On first launch (and on demand when a missing tool is detected), Hermes runs a small Python bootstrapper — `fool_cli/dep_ensure.py` — that checks for and lazily installs the non-Python dependencies it needs. On Windows, the relevant ones are:
 
 | Dependency | Why Hermes needs it |
 |---|---|
@@ -74,8 +74,8 @@ Top-to-bottom, in order:
 5. **Clones the repo** to `%LOCALAPPDATA%\hermes\hermes-agent` and creates a virtualenv inside it.
 6. **Tiered `uv pip install`** — tries `.[all]` first, falls back to progressively smaller sets (`[messaging,dashboard,ext]` → `[messaging]` → `.`) if a `git+https` dep flakes on rate-limited GitHub. Prevents "single flake drops you to a bare install" failure mode.
 7. **Auto-installs messaging SDKs** keyed off `.env` — if `TELEGRAM_BOT_TOKEN` / `DISCORD_BOT_TOKEN` / `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN` / `WHATSAPP_ENABLED` are present, runs `python -m ensurepip --upgrade` and targeted `pip install` calls so each platform's SDK is actually importable.
-8. **Sets `THEFOOL_GIT_BASH_PATH`** to the resolved `bash.exe` so Hermes finds it deterministically in fresh shells.
-9. **Adds `%LOCALAPPDATA%\hermes\hermes-agent\bin` to User PATH and sets `THEFOOL_HOME=%LOCALAPPDATA%\hermes`** — exposes the `hermes` command (and points it at your data dir) after you open a new terminal. Only the `hermes.exe` / `hermes-acp.exe` launchers are copied into this `bin` directory; the full `venv\Scripts` is deliberately **not** placed on PATH so Hermes never shadows your own `python` command.
+8. **Sets `FOOL_GIT_BASH_PATH`** to the resolved `bash.exe` so Hermes finds it deterministically in fresh shells.
+9. **Adds `%LOCALAPPDATA%\hermes\hermes-agent\bin` to User PATH and sets `FOOL_HOME=%LOCALAPPDATA%\hermes`** — exposes the `hermes` command (and points it at your data dir) after you open a new terminal. Only the `hermes.exe` / `hermes-acp.exe` launchers are copied into this `bin` directory; the full `venv\Scripts` is deliberately **not** placed on PATH so Hermes never shadows your own `python` command.
 10. **Runs `hermes setup`** — the normal first-run wizard (model, provider, toolsets). Skip with `-SkipSetup`.
 
 :::tip Skip provider hunting on Windows
@@ -107,13 +107,13 @@ Hermes's terminal tool runs commands through **Git Bash**, same strategy Claude 
 
 Resolution order for `bash.exe`:
 
-1. `THEFOOL_GIT_BASH_PATH` environment variable if set.
+1. `FOOL_GIT_BASH_PATH` environment variable if set.
 2. `%LOCALAPPDATA%\hermes\git\usr\bin\bash.exe` (installer-managed PortableGit).
 3. `%LOCALAPPDATA%\hermes\git\bin\bash.exe` (older Git-for-Windows layout).
 4. System Git-for-Windows install (`%ProgramFiles%\Git\bin\bash.exe`, etc.).
 5. MSYS2, Cygwin, or any `bash.exe` on PATH as a last resort.
 
-The installer sets `THEFOOL_GIT_BASH_PATH` explicitly so fresh PowerShell sessions don't have to re-discover. Override it if you want Hermes to use a specific bash — for example, your system Git Bash or a WSL-hosted bash via a symlink.
+The installer sets `FOOL_GIT_BASH_PATH` explicitly so fresh PowerShell sessions don't have to re-discover. Override it if you want Hermes to use a specific bash — for example, your system Git Bash or a WSL-hosted bash via a symlink.
 
 **Pitfall:** MinGit's layout is different from the full Git-for-Windows installer — bash lives under `usr\bin\bash.exe`, not `bin\bash.exe`. Hermes checks both. If you're manually unpacking a MinGit zip, make sure you pick the **non-busybox** variant (`MinGit-*-64-bit.zip`, not `MinGit-*-busybox*.zip`) — busybox builds ship `ash` instead of `bash` and most coreutils are missing.
 
@@ -121,7 +121,7 @@ The installer sets `THEFOOL_GIT_BASH_PATH` explicitly so fresh PowerShell sessio
 
 Python's default stdio on Windows uses the console's active code page (usually cp1252 or cp437). Hermes's banner, slash-command list, tool feed, Rich panels, and skill descriptions all contain Unicode. Without intervention, any of that crashes with `UnicodeEncodeError: 'charmap' codec can't encode character…`.
 
-The fix is in `thefool_cli/stdio.py::configure_windows_stdio()`, called early in every entry point (`cli.py::main`, `thefool_cli/main.py::main`, `gateway/run.py::main`). It:
+The fix is in `fool_cli/stdio.py::configure_windows_stdio()`, called early in every entry point (`cli.py::main`, `fool_cli/main.py::main`, `gateway/run.py::main`). It:
 
 1. Flips the console code page to CP_UTF8 (65001) via `kernel32.SetConsoleCP` / `SetConsoleOutputCP`.
 2. Reconfigures `sys.stdout` / `sys.stderr` / `sys.stdin` to UTF-8 with `errors='replace'`.
@@ -130,7 +130,7 @@ The fix is in `thefool_cli/stdio.py::configure_windows_stdio()`, called early in
 
 Idempotent. No-op on non-Windows.
 
-**Opt out:** `THEFOOL_DISABLE_WINDOWS_UTF8=1` in the environment falls back to the legacy cp1252 stdio path. Useful for bisecting an encoding bug; unlikely to be the right setting in normal operation.
+**Opt out:** `FOOL_DISABLE_WINDOWS_UTF8=1` in the environment falls back to the legacy cp1252 stdio path. Useful for bisecting an encoding bug; unlikely to be the right setting in normal operation.
 
 ## The editor (`Ctrl-X Ctrl-E`, `/edit`)
 
@@ -208,9 +208,9 @@ Services require admin rights to install and tie the gateway's lifecycle to mach
 | `%LOCALAPPDATA%\hermes\bin\` | Hermes's managed `uv.exe` (the Python manager it uses for updates). |
 | `%LOCALAPPDATA%\hermes\` (root) | Your config, auth, skills, sessions, logs (`config.yaml`, `.env`, `skills\`, `sessions\`, `logs\`, …). **Survives reinstalls.** |
 
-On native Windows the installer sets `THEFOOL_HOME=%LOCALAPPDATA%\hermes`, so your data and the disposable install live under the **same** `%LOCALAPPDATA%\hermes` root: the install/runtime is the `hermes-agent\`, `git\`, `node\`, and `bin\` subdirectories, while your data files sit directly in `%LOCALAPPDATA%\hermes`. Reinstalling only replaces the `hermes-agent\` checkout, so your data survives — but because the two share a root, **don't** `Remove-Item -Recurse %LOCALAPPDATA%\hermes` if you want to keep your data; delete the `hermes-agent\` subdirectory instead. Your data directory is identical in shape to a Linux `~/.hermes`, so you can mirror it between machines.
+On native Windows the installer sets `FOOL_HOME=%LOCALAPPDATA%\hermes`, so your data and the disposable install live under the **same** `%LOCALAPPDATA%\hermes` root: the install/runtime is the `hermes-agent\`, `git\`, `node\`, and `bin\` subdirectories, while your data files sit directly in `%LOCALAPPDATA%\hermes`. Reinstalling only replaces the `hermes-agent\` checkout, so your data survives — but because the two share a root, **don't** `Remove-Item -Recurse %LOCALAPPDATA%\hermes` if you want to keep your data; delete the `hermes-agent\` subdirectory instead. Your data directory is identical in shape to a Linux `~/.hermes`, so you can mirror it between machines.
 
-**Override `THEFOOL_HOME`:** set the environment variable to point at a different data dir (e.g. `%USERPROFILE%\.hermes` to match a Linux/WSL layout). Works the same as on Linux.
+**Override `FOOL_HOME`:** set the environment variable to point at a different data dir (e.g. `%USERPROFILE%\.hermes` to match a Linux/WSL layout). Works the same as on Linux.
 
 ## Browser tool
 
@@ -235,7 +235,7 @@ hermes --version
 
 ### Environment variables
 
-Hermes honors both `$env:X` (process-scope) and User environment variables (permanent, set in System Properties → Environment Variables). Setting API keys in `%LOCALAPPDATA%\hermes\.env` (your `THEFOOL_HOME`) is the normal path — same as Linux:
+Hermes honors both `$env:X` (process-scope) and User environment variables (permanent, set in System Properties → Environment Variables). Setting API keys in `%LOCALAPPDATA%\hermes\.env` (your `FOOL_HOME`) is the normal path — same as Linux:
 
 ```
 OPENROUTER_API_KEY=sk-or-...
@@ -250,8 +250,8 @@ These only affect native Windows installs:
 
 | Variable | Effect |
 |---|---|
-| `THEFOOL_GIT_BASH_PATH` | Override bash.exe discovery. Point at any bash — full Git-for-Windows, WSL bash via symlink, MSYS2, Cygwin. The installer sets this automatically. |
-| `THEFOOL_DISABLE_WINDOWS_UTF8` | Set to `1` to disable the UTF-8 stdio shim and fall back to the locale code page. Useful for bisecting an encoding bug. |
+| `FOOL_GIT_BASH_PATH` | Override bash.exe discovery. Point at any bash — full Git-for-Windows, WSL bash via symlink, MSYS2, Cygwin. The installer sets this automatically. |
+| `FOOL_DISABLE_WINDOWS_UTF8` | Set to `1` to disable the UTF-8 stdio shim and fall back to the locale code page. Useful for bisecting an encoding bug. |
 | `EDITOR` / `VISUAL` | Your editor for `/edit` and `Ctrl-X Ctrl-E`. Hermes defaults to `notepad` if both are unset. |
 
 ## Uninstall
@@ -297,7 +297,7 @@ You hit a shebang-script invocation that bypassed the `.cmd` shim. Hermes resolv
 Your download of `install.ps1` picked up a UTF-8 BOM. The `irm | iex` form strips BOMs automatically; `[scriptblock]::Create((irm ...))` does not. Re-run with the simple `irm | iex` form, or download the script manually and save it without a BOM via `[IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $false))`.
 
 **Gateway won't stay running after restart.**
-Check `hermes gateway status` — it merges the schtasks entry, the Startup-folder shortcut (if used), and the live PID. If schtasks is registered but not running, group policy may be blocking `ONLOGON` triggers. Run `schtasks /Query /TN HermesGateway /V /FO LIST` to see the task's failure reason, or fall back to the Startup-folder path by uninstalling and reinstalling with `THEFOOL_GATEWAY_FORCE_STARTUP=1`.
+Check `hermes gateway status` — it merges the schtasks entry, the Startup-folder shortcut (if used), and the live PID. If schtasks is registered but not running, group policy may be blocking `ONLOGON` triggers. Run `schtasks /Query /TN HermesGateway /V /FO LIST` to see the task's failure reason, or fall back to the Startup-folder path by uninstalling and reinstalling with `FOOL_GATEWAY_FORCE_STARTUP=1`.
 
 **`/edit` still does nothing after setting `$env:EDITOR`.**
 You set it in the current process only; close and reopen the shell, or set it at User scope in System Properties → Environment Variables. Verify with `echo $env:EDITOR` in a new PowerShell window.
@@ -309,7 +309,7 @@ Chromium is auto-installed on first run. If the install failed (rate-limited Git
 The installer provisions Node 26 at `%LOCALAPPDATA%\hermes\node` but your PATH may have an older system Node 18 first. Either move Hermes's node dir earlier on PATH, or delete the system install if you don't use Node elsewhere.
 
 **Chinese / Japanese / Arabic characters show as `?` in the CLI.**
-The UTF-8 stdio shim didn't activate. Check that `THEFOOL_DISABLE_WINDOWS_UTF8` is NOT set (`Get-ChildItem env:THEFOOL_DISABLE_WINDOWS_UTF8`). If it's empty and you still see `?`, the console host (very old `cmd.exe`) may not support UTF-8 at all — switch to Windows Terminal.
+The UTF-8 stdio shim didn't activate. Check that `FOOL_DISABLE_WINDOWS_UTF8` is NOT set (`Get-ChildItem env:FOOL_DISABLE_WINDOWS_UTF8`). If it's empty and you still see `?`, the console host (very old `cmd.exe`) may not support UTF-8 at all — switch to Windows Terminal.
 
 **Gateway can't send Telegram photos — "`BadRequest: payload contains invalid characters`".**
 This is unrelated to Windows but sometimes surfaces first there. Usually it means your file path contains unescaped backslashes in a JSON body. Telegram should be receiving paths Hermes normalizes, not raw Windows paths — if you're seeing this inside a custom plugin, make sure you're passing the Hermes-provided path, not `str(Path(...))` from user input.

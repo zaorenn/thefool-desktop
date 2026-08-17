@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 
-import type { ScrollBoxHandle } from '@thefool/ink'
-import { evictInkCaches } from '@thefool/ink'
+import type { ScrollBoxHandle } from '@fool/ink'
+import { evictInkCaches } from '@fool/ink'
 import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'
@@ -43,7 +43,7 @@ const statusFromLiveSession = (status?: string, running = false) => {
   return running || status === 'working' ? 'running…' : 'ready'
 }
 
-export const writeActiveSessionFile = (sessionId: null | string, file = process.env.THEFOOL_TUI_ACTIVE_SESSION_FILE) => {
+export const writeActiveSessionFile = (sessionId: null | string, file = process.env.FOOL_TUI_ACTIVE_SESSION_FILE) => {
   if (!file || !sessionId) {
     return
   }

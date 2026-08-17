@@ -14,7 +14,7 @@ import type {
   SubscriptionTierOption,
   UsageBarData,
   UsageModelData
-} from '@thefool/shared/billing'
+} from '@fool/shared/billing'
 
 export type {
   BillingAutoReload,

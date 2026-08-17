@@ -13,7 +13,7 @@ The fix has two halves:
     delivers a loud actionable error.
 
 These tests exercise the full run_job path (real imports, mocked AIAgent +
-resolve_runtime_provider against a temp THEFOOL_HOME) and the create_job
+resolve_runtime_provider against a temp FOOL_HOME) and the create_job
 snapshot capture. They are load-bearing: without the guard, cases (b) call the
 agent and "succeed" instead of failing closed.
 """
@@ -52,11 +52,11 @@ def _run_with_current_provider(job, current_provider, tmp_path):
     fake_db = MagicMock()
     with patch("cron.scheduler._hermes_home", tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-         patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-         patch("thefool_state.SessionDB", return_value=fake_db), \
+         patch("fool_cli.env_loader.load_hermes_dotenv"), \
+         patch("fool_cli.env_loader.reset_secret_source_cache"), \
+         patch("fool_state.SessionDB", return_value=fake_db), \
          patch(
-             "thefool_cli.runtime_provider.resolve_runtime_provider",
+             "fool_cli.runtime_provider.resolve_runtime_provider",
              return_value={
                  "api_key": "test-key",
                  "base_url": "https://example.invalid/v1",
@@ -145,7 +145,7 @@ class TestProviderDriftGuard:
 
     def test_missing_model_guides_to_user_owned_cli(self, tmp_path, monkeypatch):
         """A missing-model failure cannot advertise agent-owned pinning."""
-        monkeypatch.delenv("THEFOOL_MODEL", raising=False)
+        monkeypatch.delenv("FOOL_MODEL", raising=False)
         success, _output, _final_response, error, agent_constructed = \
             _run_with_current_provider(_base_job(), "openrouter", tmp_path)
 
@@ -195,7 +195,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         with patch(
-            "thefool_cli.runtime_provider.resolve_runtime_provider",
+            "fool_cli.runtime_provider.resolve_runtime_provider",
             return_value={"provider": "openrouter"},
         ):
             job = jobs.create_job(prompt="do a thing", schedule="every 1 hour")
@@ -207,7 +207,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         resolver = MagicMock(return_value={"provider": "openrouter"})
-        with patch("thefool_cli.runtime_provider.resolve_runtime_provider", resolver):
+        with patch("fool_cli.runtime_provider.resolve_runtime_provider", resolver):
             job = jobs.create_job(
                 prompt="do a thing", schedule="every 1 hour", provider="nous"
             )
@@ -222,7 +222,7 @@ class TestCreateJobSnapshot:
         jobs = self._isolate_storage(monkeypatch)
 
         with patch(
-            "thefool_cli.runtime_provider.resolve_runtime_provider",
+            "fool_cli.runtime_provider.resolve_runtime_provider",
             side_effect=RuntimeError("no creds"),
         ):
             job = jobs.create_job(prompt="do a thing", schedule="every 1 hour")
@@ -257,11 +257,11 @@ def _run_with_current_provider_and_model(
     with patch("cron.scheduler._hermes_home", tmp_path), \
          patch("cron.scheduler._get_hermes_home", return_value=tmp_path), \
          patch("cron.scheduler._resolve_origin", return_value=None), \
-         patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-         patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-         patch("thefool_state.SessionDB", return_value=fake_db), \
+         patch("fool_cli.env_loader.load_hermes_dotenv"), \
+         patch("fool_cli.env_loader.reset_secret_source_cache"), \
+         patch("fool_state.SessionDB", return_value=fake_db), \
          patch(
-             "thefool_cli.runtime_provider.resolve_runtime_provider",
+             "fool_cli.runtime_provider.resolve_runtime_provider",
              return_value={
                  "api_key": "test-key",
                  "base_url": "https://example.invalid/v1",
@@ -421,11 +421,11 @@ class TestRuntimeResolutionTargetModel:
         fake_db = MagicMock()
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  side_effect=_capture,
              ), \
              patch("run_agent.AIAgent") as mock_agent_cls:

@@ -24,10 +24,10 @@ def hermes_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
 
-    # Bust the goal-module DB cache so it re-resolves THEFOOL_HOME.
-    from thefool_cli import goals
+    # Bust the goal-module DB cache so it re-resolves FOOL_HOME.
+    from fool_cli import goals
 
     goals._DB_CACHE.clear()
     yield home
@@ -41,13 +41,13 @@ def server(hermes_home, monkeypatch):
     with patch.dict(
         "sys.modules",
         {
-            "thefool_cli.env_loader": MagicMock(),
-            "thefool_cli.banner": MagicMock(),
+            "fool_cli.env_loader": MagicMock(),
+            "fool_cli.banner": MagicMock(),
         },
     ):
         mod = importlib.import_module("tui_gateway.server")
 
-    # Pin config resolution to the isolated THEFOOL_HOME. Sibling test
+    # Pin config resolution to the isolated FOOL_HOME. Sibling test
     # files (test_billing_rpc, test_delegation_session_lifecycle,
     # test_gateway_owned_session_reap, ...) import tui_gateway.server at
     # collection time — BEFORE the conftest env isolation runs — so the
@@ -208,7 +208,7 @@ def test_pending_input_commands_includes_goal(server):
 def test_active_goal_retries_once_without_judging_failed_turn(
     server, turn_env, monkeypatch
 ):
-    from thefool_cli.goals import GoalManager
+    from fool_cli.goals import GoalManager
 
     session_key = "goal-compression-retry"
     mgr = GoalManager(session_key)
@@ -248,7 +248,7 @@ def test_active_goal_retries_once_without_judging_failed_turn(
 def test_second_consecutive_exhaustion_pauses_goal_instead_of_looping(
     server, turn_env, monkeypatch
 ):
-    from thefool_cli.goals import GoalManager
+    from fool_cli.goals import GoalManager
 
     session_key = "goal-compression-pause"
     GoalManager(session_key).set("finish the current task")
@@ -292,7 +292,7 @@ def test_second_consecutive_exhaustion_pauses_goal_instead_of_looping(
 def test_real_queued_prompt_preempts_goal_compression_retry(
     server, turn_env, monkeypatch
 ):
-    from thefool_cli.goals import GoalManager
+    from fool_cli.goals import GoalManager
 
     session_key = "goal-compression-user-preempts"
     mgr = GoalManager(session_key)
@@ -329,7 +329,7 @@ def test_real_queued_prompt_preempts_goal_compression_retry(
 
 
 def test_compression_deferred_is_not_treated_as_exhaustion(server):
-    from thefool_cli.goals import GoalManager
+    from fool_cli.goals import GoalManager
 
     session_key = "goal-compression-deferred"
     GoalManager(session_key).set("finish the current task")
@@ -363,7 +363,7 @@ def test_exhaustion_without_active_goal_keeps_error_only_behavior(server):
 
 
 def test_new_goal_does_not_inherit_previous_goal_recovery_attempt(server):
-    from thefool_cli.goals import GoalManager
+    from fool_cli.goals import GoalManager
 
     session_key = "goal-compression-replaced"
     mgr = GoalManager(session_key)

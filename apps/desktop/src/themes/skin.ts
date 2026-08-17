@@ -1,8 +1,8 @@
 /**
  * Hermes skin → DesktopTheme converter.
  *
- * A "skin" is the CLI/TUI theme unit: a YAML file in `$THEFOOL_HOME/skins/` (or a
- * built-in) resolved by `thefool_cli/skin_engine.py` and pushed to every surface
+ * A "skin" is the CLI/TUI theme unit: a YAML file in `$FOOL_HOME/skins/` (or a
+ * built-in) resolved by `fool_cli/skin_engine.py` and pushed to every surface
  * over JSON-RPC (`gateway.ready`, `skin.changed`, `config.get skin`). This is the
  * one place the desktop turns that CLI-shaped palette into a `DesktopTheme`, so a
  * skin Hermes authors from a prompt lights up all three surfaces from one file.
@@ -15,7 +15,7 @@
  * still picks `.dark` from the real background luminance.
  */
 
-import type { HermesSkin, SkinColors } from '@thefool/shared/skin'
+import type { HermesSkin, SkinColors } from '@fool/shared/skin'
 
 import { ensureContrast, luminance, mix, normalizeHex, readableOn } from './color'
 import type { DesktopTheme, DesktopThemeColors } from './types'

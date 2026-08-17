@@ -1,7 +1,7 @@
 export type ParentWatchdogEnv = {
-  THEFOOL_PARENT_PID: string
-  THEFOOL_PARENT_START_MARKER?: string
-  THEFOOL_PARENT_NONCE?: string
+  FOOL_PARENT_PID: string
+  FOOL_PARENT_START_MARKER?: string
+  FOOL_PARENT_NONCE?: string
 }
 
 export interface ParentStartMarkerResolverOptions {
@@ -68,7 +68,7 @@ export function parentWatchdogEnv(pid: number, startMarker: string | null, nonce
     throw new Error('Parent watchdog requires a positive process ID.')
   }
 
-  const env: ParentWatchdogEnv = { THEFOOL_PARENT_PID: String(pid) }
+  const env: ParentWatchdogEnv = { FOOL_PARENT_PID: String(pid) }
 
   if (startMarker === null) {
     return env
@@ -78,8 +78,8 @@ export function parentWatchdogEnv(pid: number, startMarker: string | null, nonce
     throw new Error('Parent watchdog marker and nonce must be non-empty.')
   }
 
-  env.THEFOOL_PARENT_START_MARKER = startMarker
-  env.THEFOOL_PARENT_NONCE = nonce
+  env.FOOL_PARENT_START_MARKER = startMarker
+  env.FOOL_PARENT_NONCE = nonce
 
   return env
 }

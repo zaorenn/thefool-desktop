@@ -53,9 +53,9 @@ CLI: Final[str] = "fool"
 #: Veri dizini adı — ``~/.thefool``.
 HOME_DIR_NAME: Final[str] = ".fool"
 #: electron-builder appId.
-APP_ID: Final[str] = "com.thefool.desktop"
+APP_ID: Final[str] = "com.fool.desktop"
 #: Derin bağlantı şeması.
-PROTOCOL: Final[str] = "thefool"
+PROTOCOL: Final[str] = "fool"
 
 #: Kullanıcının kendi deposu — güncellemeler buradan gelir.
 #: (Henüz yayınlanmadı; yerel çalışırken yalnızca bir yer tutucu.)

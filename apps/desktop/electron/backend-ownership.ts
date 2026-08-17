@@ -247,7 +247,7 @@ export function createBackendOwnership(deps: BackendOwnershipDeps) {
 }
 
 export function backendCommandMatches(command: unknown): boolean {
-  return /(?:^|[\s/\\"])(?:hermes(?:\.exe)?|thefool_cli\.main|thefool_cli[/\\]main\.py)"?(?:\s+(?:--profile|-p)\s+\S+)?\s+(?:serve|dashboard)(?:\s|$)/i.test(
+  return /(?:^|[\s/\\"])(?:hermes(?:\.exe)?|fool_cli\.main|fool_cli[/\\]main\.py)"?(?:\s+(?:--profile|-p)\s+\S+)?\s+(?:serve|dashboard)(?:\s|$)/i.test(
     String(command ?? '')
   )
 }

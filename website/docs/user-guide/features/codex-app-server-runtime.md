@@ -95,11 +95,11 @@ What works inside a codex-runtime worker:
 - The Hermes tool callback for browser_*, vision, image_gen, skills, TTS
 
 What also works because the MCP callback exposes them:
-- **`kanban_complete` / `kanban_block` / `kanban_comment` / `kanban_heartbeat`** — the worker handoff tools. These read `THEFOOL_KANBAN_TASK` from env (set by the dispatcher), gate access correctly, and write to the per-board SQLite DB pinned by `THEFOOL_KANBAN_DB`. Without these in the callback, a worker on this runtime could do its task but couldn't report back, hanging until the dispatcher's timeout.
+- **`kanban_complete` / `kanban_block` / `kanban_comment` / `kanban_heartbeat`** — the worker handoff tools. These read `FOOL_KANBAN_TASK` from env (set by the dispatcher), gate access correctly, and write to the per-board SQLite DB pinned by `FOOL_KANBAN_DB`. Without these in the callback, a worker on this runtime could do its task but couldn't report back, hanging until the dispatcher's timeout.
 - **`kanban_show` / `kanban_list`** — read-only board queries for the worker to check its own context.
 - **`kanban_create` / `kanban_unblock` / `kanban_link`** — orchestrator-only operations. Available for orchestrator agents running on the codex runtime that need to dispatch new tasks.
 
-The kanban tools are gated by `THEFOOL_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawned `hermes-tools` MCP server subprocess. So the tools see the right task id and gate correctly. For Codex app-server workers, Hermes also passes narrow app-server sandbox overrides when `THEFOOL_KANBAN_TASK` is present: keep `workspace-write` sandboxing, add the **board DB directory plus every Kanban path the dispatcher pinned** as extra writable roots (`THEFOOL_KANBAN_WORKSPACES_ROOT`, `THEFOOL_KANBAN_WORKSPACE`, legacy `THEFOOL_KANBAN_ROOT` — deduplicated, DB-dir first), and keep network disabled by default. This avoids the brittle `:danger-no-sandbox` workaround while letting `kanban_complete` / `kanban_block` update the board DB **and** letting workers write reports/artifacts under workspace mounts that live outside the DB directory (e.g. `/media/.../kanban-workspaces/...` on a separate drive — [issue #27941](https://github.com/NousResearch/hermes-agent/issues/27941)).
+The kanban tools are gated by `FOOL_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawned `hermes-tools` MCP server subprocess. So the tools see the right task id and gate correctly. For Codex app-server workers, Hermes also passes narrow app-server sandbox overrides when `FOOL_KANBAN_TASK` is present: keep `workspace-write` sandboxing, add the **board DB directory plus every Kanban path the dispatcher pinned** as extra writable roots (`FOOL_KANBAN_WORKSPACES_ROOT`, `FOOL_KANBAN_WORKSPACE`, legacy `FOOL_KANBAN_ROOT` — deduplicated, DB-dir first), and keep network disabled by default. This avoids the brittle `:danger-no-sandbox` workaround while letting `kanban_complete` / `kanban_block` update the board DB **and** letting workers write reports/artifacts under workspace mounts that live outside the DB directory (e.g. `/media/.../kanban-workspaces/...` on a separate drive — [issue #27941](https://github.com/NousResearch/hermes-agent/issues/27941)).
 
 ### Cron jobs
 
@@ -312,7 +312,7 @@ Anything you add **inside** the managed block will get clobbered on the next mig
 
 By default, Hermes points the codex subprocess at `~/.codex/` regardless of which Hermes profile is active. This means `hermes -p work` and `hermes -p personal` share the same Codex auth, plugins, and config. For most users this is the right behavior — it matches what running `codex` CLI directly would do.
 
-If you want per-profile Codex isolation (separate auth, separate installed plugins, separate config), set `CODEX_HOME` explicitly per profile. The cleanest way is to point at a directory under your `THEFOOL_HOME`:
+If you want per-profile Codex isolation (separate auth, separate installed plugins, separate config), set `CODEX_HOME` explicitly per profile. The cleanest way is to point at a directory under your `FOOL_HOME`:
 
 ```bash
 # Inside the work profile, you might wrap hermes:
@@ -369,7 +369,7 @@ Codex's built-in toolset covers shell/file ops/patches but doesn't have web sear
 [mcp_servers.hermes-tools]
 command = "/path/to/python"
 args = ["-m", "agent.transports.hermes_tools_mcp_server"]
-env = { THEFOOL_HOME = "/your/.hermes", PYTHONPATH = "...", THEFOOL_QUIET = "1" }
+env = { FOOL_HOME = "/your/.hermes", PYTHONPATH = "...", FOOL_QUIET = "1" }
 startup_timeout_sec = 30.0
 tool_timeout_sec = 600.0
 ```

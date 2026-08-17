@@ -117,7 +117,7 @@ _STARTUP_GRACE_SECONDS = 5
 # ``<hermes_home>/proxy/management.token`` (0600), and injected into the
 # daemon's env under this name at start.  v0.39 validates at startup that
 # the named env var is non-empty when management.listen is set.
-_MGMT_API_KEY_ENV = "THEFOOL_IRON_PROXY_MGMT_KEY"
+_MGMT_API_KEY_ENV = "FOOL_IRON_PROXY_MGMT_KEY"
 # The management listener binds loopback at tunnel_port + 2 (tunnel_port
 # is CONNECT/MITM, +1 is the plain-HTTP forward listener).
 _MGMT_PORT_OFFSET = 2
@@ -357,7 +357,7 @@ class TokenMapping:
 
 
 def _hermes_bin_dir() -> Path:
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     return get_hermes_home() / "bin"
 
@@ -369,7 +369,7 @@ def _proxy_state_dir_ro() -> Path:
     this — there's no reason to materialize ``~/.hermes/proxy/`` just to
     check whether a pidfile exists.
     """
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     return get_hermes_home() / "proxy"
 
@@ -846,7 +846,7 @@ def ensure_management_token(*, force: bool = False) -> str:
     """Return the management-API bearer key, minting it on first call.
 
     Stored at ``<hermes_home>/proxy/management.token`` with 0600 perms.
-    The daemon receives it via the ``THEFOOL_IRON_PROXY_MGMT_KEY`` env var
+    The daemon receives it via the ``FOOL_IRON_PROXY_MGMT_KEY`` env var
     (named in the generated config's ``management.api_key_env``);
     ``hermes egress reload`` reads the same file to authenticate.
     """
@@ -1589,7 +1589,7 @@ def _read_pid() -> Optional[int]:
 # by ``_pid_alive`` to confirm a candidate PID still refers to *our* managed
 # binary even across PID recycling (a fresh process can't inherit our
 # arbitrary env value).
-_HERMES_IRON_PROXY_NONCE_ENV = "THEFOOL_IRON_PROXY_NONCE"
+_HERMES_IRON_PROXY_NONCE_ENV = "FOOL_IRON_PROXY_NONCE"
 _proxy_nonce: Optional[str] = None
 
 

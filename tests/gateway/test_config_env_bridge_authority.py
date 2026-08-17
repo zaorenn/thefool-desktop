@@ -1,6 +1,6 @@
 """Regression tests for the config.yaml → env var bridge in gateway/run.py.
 
-Guards against the 60-vs-500 bug where a stale `.env THEFOOL_MAX_ITERATIONS=60`
+Guards against the 60-vs-500 bug where a stale `.env FOOL_MAX_ITERATIONS=60`
 entry silently shadowed `agent.max_turns: 500` in config.yaml because the
 bridge used `if X not in os.environ` guards. After PR#18413 the bridge
 treats config.yaml as authoritative and unconditionally overwrites .env
@@ -41,15 +41,15 @@ def _run_gateway_import(hermes_home: Path, initial_env: dict[str, str]) -> dict[
             sys.exit(2)
 
         for k in (
-            "THEFOOL_MAX_ITERATIONS",
-            "THEFOOL_AGENT_TIMEOUT",
-            "THEFOOL_AGENT_TIMEOUT_WARNING",
-            "THEFOOL_TURN_LEASE_TIMEOUT",
-            "THEFOOL_SESSION_STALL_TIMEOUT",
-            "THEFOOL_GATEWAY_BUSY_INPUT_MODE",
-            "THEFOOL_GATEWAY_BUSY_TEXT_MODE",
-            "THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT",
-            "THEFOOL_TIMEZONE",
+            "FOOL_MAX_ITERATIONS",
+            "FOOL_AGENT_TIMEOUT",
+            "FOOL_AGENT_TIMEOUT_WARNING",
+            "FOOL_TURN_LEASE_TIMEOUT",
+            "FOOL_SESSION_STALL_TIMEOUT",
+            "FOOL_GATEWAY_BUSY_INPUT_MODE",
+            "FOOL_GATEWAY_BUSY_TEXT_MODE",
+            "FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT",
+            "FOOL_TIMEZONE",
         ):
             v = os.environ.get(k)
             if v is not None:
@@ -57,7 +57,7 @@ def _run_gateway_import(hermes_home: Path, initial_env: dict[str, str]) -> dict[
         """
     )
     env = dict(initial_env)
-    env["THEFOOL_HOME"] = str(hermes_home)
+    env["FOOL_HOME"] = str(hermes_home)
     # Keep interpreter paths plus the Windows bootstrap variables required by
     # stdlib platform detection and native dependency loading.  The child is
     # otherwise intentionally clean so stale Hermes settings cannot leak in.
@@ -133,16 +133,16 @@ def test_config_gateway_timeout_wins_over_stale_env(hermes_home: Path) -> None:
         "session_stall_timeout": 300,
     })
     _write_env(hermes_home, {
-        "THEFOOL_AGENT_TIMEOUT": "60",
-        "THEFOOL_AGENT_TIMEOUT_WARNING": "30",
-        "THEFOOL_SESSION_STALL_TIMEOUT": "15",
+        "FOOL_AGENT_TIMEOUT": "60",
+        "FOOL_AGENT_TIMEOUT_WARNING": "30",
+        "FOOL_SESSION_STALL_TIMEOUT": "15",
     })
 
     env = _run_gateway_import(hermes_home, initial_env={})
 
-    assert env.get("THEFOOL_AGENT_TIMEOUT") == "1800"
-    assert env.get("THEFOOL_AGENT_TIMEOUT_WARNING") == "900"
-    assert env.get("THEFOOL_SESSION_STALL_TIMEOUT") == "300"
+    assert env.get("FOOL_AGENT_TIMEOUT") == "1800"
+    assert env.get("FOOL_AGENT_TIMEOUT_WARNING") == "900"
+    assert env.get("FOOL_SESSION_STALL_TIMEOUT") == "300"
 
 
 def test_config_turn_lease_timeout_wins_over_stale_env(hermes_home: Path) -> None:
@@ -153,12 +153,12 @@ def test_config_turn_lease_timeout_wins_over_stale_env(hermes_home: Path) -> Non
     )
     _write_env(
         hermes_home,
-        {"THEFOOL_TURN_LEASE_TIMEOUT": "60"},
+        {"FOOL_TURN_LEASE_TIMEOUT": "60"},
     )
 
     env = _run_gateway_import(hermes_home, initial_env={})
 
-    assert env.get("THEFOOL_TURN_LEASE_TIMEOUT") == "600"
+    assert env.get("FOOL_TURN_LEASE_TIMEOUT") == "600"
 
 
 def test_default_turn_lease_timeout_overrides_stale_env_when_key_is_omitted(
@@ -167,12 +167,12 @@ def test_default_turn_lease_timeout_overrides_stale_env_when_key_is_omitted(
     """The internal env mirror must never become a second config source."""
     _write_env(
         hermes_home,
-        {"THEFOOL_TURN_LEASE_TIMEOUT": "60"},
+        {"FOOL_TURN_LEASE_TIMEOUT": "60"},
     )
 
     env = _run_gateway_import(hermes_home, initial_env={})
 
-    assert env.get("THEFOOL_TURN_LEASE_TIMEOUT") == "1800"
+    assert env.get("FOOL_TURN_LEASE_TIMEOUT") == "1800"
 
 
 def test_default_turn_lease_timeout_matches_the_runtime_fallback() -> None:
@@ -182,7 +182,7 @@ def test_default_turn_lease_timeout_matches_the_runtime_fallback() -> None:
     lease registry's DEFAULT_LEASE_WAIT must move together.
     """
     from gateway.turn_lease import DEFAULT_LEASE_WAIT
-    from thefool_cli.config import DEFAULT_CONFIG
+    from fool_cli.config import DEFAULT_CONFIG
 
     assert (
         float(DEFAULT_CONFIG["agent"]["gateway_turn_lease_timeout"])
@@ -198,19 +198,19 @@ def test_config_platform_connect_timeout_supplies_env_when_unset(hermes_home: Pa
 
     env = _run_gateway_import(hermes_home, initial_env={})
 
-    assert env.get("THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT") == "90"
+    assert env.get("FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT") == "90"
 
 
 def test_env_platform_connect_timeout_wins_over_config(hermes_home: Path) -> None:
     """Unlike the agent.*/display.*/timezone bridges (config-authoritative),
-    THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT is the manual-override escape hatch:
+    FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT is the manual-override escape hatch:
     an explicitly-set env var WINS over config.yaml. This divergence is
     intentional (#19776) — the env var is the operator's emergency knob."""
     _write_config(hermes_home, gateway_cfg={"platform_connect_timeout": 90})
 
     env = _run_gateway_import(
         hermes_home,
-        initial_env={"THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT": "120"},
+        initial_env={"FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT": "120"},
     )
 
-    assert env.get("THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT") == "120"
+    assert env.get("FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT") == "120"

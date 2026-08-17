@@ -18,7 +18,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient
-} from '@thefool/plugin-sdk'
+} from '@fool/plugin-sdk'
 import { useState } from 'react'
 
 import {

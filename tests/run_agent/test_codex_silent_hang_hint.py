@@ -32,7 +32,7 @@ def _make_agent(tmp_path: Path, **overrides):
 
 @pytest.fixture(autouse=True)
 def _isolate_hermes_home(monkeypatch, tmp_path):
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
 
 

@@ -31,7 +31,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import thefool_cli.plugins as plugins_mod
+import fool_cli.plugins as plugins_mod
 from tools import transcription_tools
 
 
@@ -58,8 +58,8 @@ def _fake_hooks(monkeypatch, results):
         captured["kwargs"] = kw
         return list(results)
 
-    monkeypatch.setattr("thefool_cli.plugins.has_hook", lambda name: True)
-    monkeypatch.setattr("thefool_cli.plugins.invoke_hook", _invoke)
+    monkeypatch.setattr("fool_cli.plugins.has_hook", lambda name: True)
+    monkeypatch.setattr("fool_cli.plugins.invoke_hook", _invoke)
     return captured
 
 
@@ -70,8 +70,8 @@ def _no_hooks(monkeypatch):
             "invoke_hook must not be called when has_hook() is False"
         )
 
-    monkeypatch.setattr("thefool_cli.plugins.has_hook", lambda name: False)
-    monkeypatch.setattr("thefool_cli.plugins.invoke_hook", _boom)
+    monkeypatch.setattr("fool_cli.plugins.has_hook", lambda name: False)
+    monkeypatch.setattr("fool_cli.plugins.invoke_hook", _boom)
 
 
 def _dispatch_ctx(stt_config, provider):
@@ -583,7 +583,7 @@ def test_real_fixture_plugins_thread_prompt_in_registration_order(
 
     import yaml
 
-    hermes_home = Path(os.environ["THEFOOL_HOME"])
+    hermes_home = Path(os.environ["FOOL_HOME"])
     plugin_dir = hermes_home / "plugins" / "stt_vocab"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text("name: stt_vocab\n", encoding="utf-8")

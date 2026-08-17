@@ -26,7 +26,7 @@ kanban:
   dispatch_in_gateway: false
 ```
 
-Or set the env var: `THEFOOL_KANBAN_DISPATCH_IN_GATEWAY=false`
+Or set the env var: `FOOL_KANBAN_DISPATCH_IN_GATEWAY=false`
 
 ## What each gateway does
 

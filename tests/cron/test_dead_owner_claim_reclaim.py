@@ -8,7 +8,7 @@ blocking every future run.
 
 Two-part fix under test here:
 
-1. ``thefool_cli.cron._job_action("run", ...)`` declares the channel stateless
+1. ``fool_cli.cron._job_action("run", ...)`` declares the channel stateless
    before invoking the cron API, so the background-dispatch path is gated off
    and the run executes synchronously to completion in the CLI process.
 2. ``cron.scheduler.tick`` periodically reaps execution rows whose owner
@@ -158,7 +158,7 @@ class TestOneShotCliRunIsSynchronous:
         """`hermes cron run` must gate off async delivery so the run executes
         synchronously in the CLI process instead of on a doomed daemon thread."""
         from gateway.session_context import async_delivery_supported
-        from thefool_cli import cron as cron_cli
+        from fool_cli import cron as cron_cli
 
         observed = {}
 
@@ -176,7 +176,7 @@ class TestOneShotCliRunIsSynchronous:
 
     def test_non_run_actions_leave_channel_capability_alone(self, monkeypatch):
         from gateway.session_context import async_delivery_supported
-        from thefool_cli import cron as cron_cli
+        from fool_cli import cron as cron_cli
 
         observed = {}
 
@@ -197,7 +197,7 @@ class TestOneShotCliRunIsSynchronous:
         from tools.cronjob_tools import _try_dispatch_background_run
 
         declare_stateless_channel()
-        monkeypatch.setenv("THEFOOL_SESSION_KEY", "inherited-gateway-session")
+        monkeypatch.setenv("FOOL_SESSION_KEY", "inherited-gateway-session")
 
         result = _try_dispatch_background_run(
             {"id": "job-x", "name": "job-x"}, session_id="sess-1"

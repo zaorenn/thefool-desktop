@@ -1,4 +1,4 @@
-import { JsonRpcGatewayClient } from '@thefool/shared'
+import { JsonRpcGatewayClient } from '@fool/shared'
 
 import type { HermesConnection } from '@/global'
 import { reconnectBackoffDelayMs } from '@/lib/reconnect-backoff'
@@ -250,7 +250,7 @@ export class HermesGateway extends JsonRpcGatewayClient {
 // should target. Mirrors $activeGatewayProfile, pushed in from the store via
 // setApiRequestProfile so this module needs no store import (avoids a cycle).
 // Electron main consumes request.profile to pick which backend *process* serves
-// the call; each pooled backend already has its own THEFOOL_HOME, so no backend
+// the call; each pooled backend already has its own FOOL_HOME, so no backend
 // change is needed. Null → primary, so single-profile users are unaffected.
 let _apiProfile: null | string = null
 
@@ -1544,7 +1544,7 @@ export function setWebhookEnabled(
   })
 }
 
-// Cron jobs are stored per-profile (<THEFOOL_HOME>/cron/jobs.json), and the
+// Cron jobs are stored per-profile (<FOOL_HOME>/cron/jobs.json), and the
 // backend's list endpoint defaults to 'all'. Pass a concrete profile key to
 // list just that profile's jobs, or 'all' for the unified cross-profile view.
 // Omitting the arg keeps the legacy 'all' default for non-profile callers.

@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set
 
-from thefool_constants import hermes_home_key
+from fool_constants import hermes_home_key
 
 logger = logging.getLogger(__name__)
 
@@ -166,8 +166,8 @@ def _discovery_cache_path() -> Optional[Path]:
     """Path of the tool-discovery verdict cache, or None if unresolvable."""
     try:
         # Deferred import keeps tools/registry.py a no-deps leaf at module
-        # import time (thefool_constants itself is stdlib-only, so no cycle).
-        from thefool_constants import get_hermes_home
+        # import time (fool_constants itself is stdlib-only, so no cycle).
+        from fool_constants import get_hermes_home
 
         return Path(get_hermes_home()) / "cache" / "tool_discovery_cache.json"
     except Exception:
@@ -309,7 +309,7 @@ def check_fn_cache_scope() -> Optional[str]:
 
         if not is_multiplex_active():
             return None
-        from thefool_constants import get_hermes_home_override
+        from fool_constants import get_hermes_home_override
 
         override = get_hermes_home_override()
         if not override:
@@ -429,7 +429,7 @@ class ToolRegistry:
     def __init__(self):
         # Built-in and other process-global registrations.
         self._tools: Dict[str, ToolEntry] = {}
-        # Plugin registrations are overlays keyed by resolved THEFOOL_HOME. A
+        # Plugin registrations are overlays keyed by resolved FOOL_HOME. A
         # profile sees its own overlay first and then the global built-ins.
         self._scoped_tools: Dict[str, Dict[str, ToolEntry]] = {}
         # Plugin module namespace -> operator opt-in for built-in override.

@@ -216,9 +216,9 @@ class TestTickerLoopRecordsErrors:
 
 class TestCronStatusSurfacesError:
     def test_status_shows_last_error_and_permission_hint(self, monkeypatch, capsys):
-        from thefool_cli import cron as cron_cli
+        from fool_cli import cron as cron_cli
 
-        monkeypatch.setattr("thefool_cli.gateway.find_gateway_pids", lambda: [4321])
+        monkeypatch.setattr("fool_cli.gateway.find_gateway_pids", lambda: [4321])
         monkeypatch.setattr(jobs, "get_ticker_heartbeat_age", lambda: 5.0)   # alive
         monkeypatch.setattr(jobs, "get_ticker_success_age", lambda: 9_999.0)  # failing
         monkeypatch.setattr(

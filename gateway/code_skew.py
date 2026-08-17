@@ -26,12 +26,12 @@ _boot_fingerprint: str | None = None
 def _fingerprint() -> str | None:
     """Current checkout fingerprint, reusing the CLI's git-rev reader.
 
-    ``thefool_cli.main`` is always already imported in a gateway process (it's
+    ``fool_cli.main`` is always already imported in a gateway process (it's
     the entry point), so this import is free and avoids duplicating the
     worktree-aware ref resolution.
     """
     try:
-        from thefool_cli.main import _read_git_revision_fingerprint
+        from fool_cli.main import _read_git_revision_fingerprint
 
         return _read_git_revision_fingerprint(_PROJECT_ROOT)
     except Exception:

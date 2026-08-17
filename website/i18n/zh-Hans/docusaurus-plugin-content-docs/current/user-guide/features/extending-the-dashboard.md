@@ -735,8 +735,8 @@ async def do_action(body: dict):
 
 ```python
 from fastapi import APIRouter
-from thefool_state import SessionDB
-from thefool_cli.config import load_config
+from fool_state import SessionDB
+from fool_cli.config import load_config
 
 router = APIRouter()
 
@@ -791,7 +791,7 @@ Dashboard 扫描三个目录中的 `dashboard/manifest.json`：
 | 1（冲突时优先） | `~/.hermes/plugins/<name>/dashboard/` | `user` |
 | 2 | `<repo>/plugins/memory/<name>/dashboard/` | `bundled` |
 | 2 | `<repo>/plugins/<name>/dashboard/` | `bundled` |
-| 3 | `./.hermes/plugins/<name>/dashboard/` | `project`——仅在设置 `THEFOOL_ENABLE_PROJECT_PLUGINS` 时生效 |
+| 3 | `./.hermes/plugins/<name>/dashboard/` | `project`——仅在设置 `FOOL_ENABLE_PROJECT_PLUGINS` 时生效 |
 
 发现结果在每个 dashboard 进程中缓存。添加新插件后，可以：
 

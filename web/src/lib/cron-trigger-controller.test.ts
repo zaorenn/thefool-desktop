@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createCronTriggerController } from "@thefool/shared";
+import { createCronTriggerController } from "@fool/shared";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

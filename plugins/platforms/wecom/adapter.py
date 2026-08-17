@@ -211,8 +211,8 @@ class WeComAdapter(BasePlatformAdapter):
 
         # Text batching: merge rapid successive messages (Telegram-style).
         # WeCom clients split long messages around 4000 chars.
-        self._text_batch_delay_seconds = env_float("THEFOOL_WECOM_TEXT_BATCH_DELAY_SECONDS", 0.6)
-        self._text_batch_split_delay_seconds = env_float("THEFOOL_WECOM_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
+        self._text_batch_delay_seconds = env_float("FOOL_WECOM_TEXT_BATCH_DELAY_SECONDS", 0.6)
+        self._text_batch_split_delay_seconds = env_float("FOOL_WECOM_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
         self._pending_text_batches: Dict[str, MessageEvent] = {}
         self._pending_text_batch_tasks: Dict[str, asyncio.Task] = {}
         self._device_id = uuid.uuid4().hex
@@ -1704,7 +1704,7 @@ def qr_scan_for_bot_info(
 # plugin. register() exposes BOTH platforms via the registry, replacing the
 # Platform.WECOM / Platform.WECOM_CALLBACK elifs in gateway/run.py, the
 # _PLATFORM_CONNECTED_CHECKERS entries in gateway/config.py, the _setup_wecom
-# wizard + _PLATFORMS["wecom"] static dict in thefool_cli/gateway.py, and the
+# wizard + _PLATFORMS["wecom"] static dict in fool_cli/gateway.py, and the
 # _send_wecom dispatch in tools/send_message_tool.py. Env→PlatformConfig
 # seeding stays in core, same as prior migrations.
 # ──────────────────────────────────────────────────────────────────────────
@@ -1752,12 +1752,12 @@ async def _standalone_send(
 def interactive_setup() -> None:
     """Interactive setup for WeCom — QR scan or manual credential input.
 
-    Replaces thefool_cli/gateway.py::_setup_wecom and the static
+    Replaces fool_cli/gateway.py::_setup_wecom and the static
     _PLATFORMS["wecom"] dict. CLI helpers are lazy-imported.
     """
-    from thefool_cli.config import get_env_value, remove_env_value, save_env_value
-    from thefool_cli.setup import prompt_choice
-    from thefool_cli.cli_output import (
+    from fool_cli.config import get_env_value, remove_env_value, save_env_value
+    from fool_cli.setup import prompt_choice
+    from fool_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,

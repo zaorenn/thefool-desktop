@@ -1,4 +1,4 @@
-import { Text } from '@thefool/ink'
+import { Text } from '@fool/ink'
 
 import { Dialog, Overlay, type OverlayZone } from '../../components/overlay.js'
 import { defineWidgetApp } from '../registry.js'

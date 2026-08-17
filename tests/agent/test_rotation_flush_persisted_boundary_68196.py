@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 def _build_agent_with_db(db: SessionDB, session_id: str):

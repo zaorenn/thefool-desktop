@@ -28,12 +28,12 @@ import {
 } from './ssh-connection'
 
 test('redactSecrets scrubs the spawn-time session token env var', () => {
-  const line = 'setsid env THEFOOL_DASHBOARD_SESSION_TOKEN=abc123deadbeef THEFOOL_DESKTOP=1 hermes dashboard'
+  const line = 'setsid env FOOL_DASHBOARD_SESSION_TOKEN=abc123deadbeef FOOL_DESKTOP=1 hermes dashboard'
   const out = redactSecrets(line)
   assert.ok(!out.includes('abc123deadbeef'))
-  assert.match(out, /THEFOOL_DASHBOARD_SESSION_TOKEN=<redacted>/)
+  assert.match(out, /FOOL_DASHBOARD_SESSION_TOKEN=<redacted>/)
   // non-secret env vars are preserved
-  assert.match(out, /THEFOOL_DESKTOP=1/)
+  assert.match(out, /FOOL_DESKTOP=1/)
 })
 
 test('redactSecrets scrubs ?token= and ?ticket= URL params', () => {

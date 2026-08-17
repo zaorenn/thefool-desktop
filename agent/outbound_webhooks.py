@@ -24,7 +24,7 @@ Design notes
   GitHub webhooks.
 * No consent prompt: unlike shell hooks, an outbound target executes no
   code on this machine — it POSTs JSON to a URL the user themselves put
-  in config.  ``THEFOOL_SAFE_MODE=1`` still skips registration, matching
+  in config.  ``FOOL_SAFE_MODE=1`` still skips registration, matching
   plugins / MCP / shell hooks.
 * Registration is idempotent — safe to invoke from both the CLI entry
   point and the gateway entry point.
@@ -36,7 +36,7 @@ Config schema (``~/.hermes/config.yaml``)::
         - url: https://ci.example.com/hermes-events
           events: [on_session_end, subagent_stop]
           # secret literal (discouraged) or env var name (preferred):
-          secret_env: THEFOOL_OUTBOUND_WEBHOOK_SECRET
+          secret_env: FOOL_OUTBOUND_WEBHOOK_SECRET
           # optional regex, honored for pre/post_tool_call only:
           matcher: "terminal|delegate_task"
           timeout: 10       # per-attempt seconds, clamped to [1, 60]
@@ -168,8 +168,8 @@ def register_from_config(cfg: Optional[Dict[str, Any]]) -> List[WebhookTarget]:
 
     from utils import env_var_enabled
 
-    if env_var_enabled("THEFOOL_SAFE_MODE"):
-        logger.info("THEFOOL_SAFE_MODE=1 — outbound webhook registration skipped")
+    if env_var_enabled("FOOL_SAFE_MODE"):
+        logger.info("FOOL_SAFE_MODE=1 — outbound webhook registration skipped")
         return []
 
     hooks_cfg = cfg.get("hooks")
@@ -179,7 +179,7 @@ def register_from_config(cfg: Optional[Dict[str, Any]]) -> List[WebhookTarget]:
     if not targets:
         return []
 
-    from thefool_cli.plugins import get_plugin_manager
+    from fool_cli.plugins import get_plugin_manager
 
     manager = get_plugin_manager()
 
@@ -266,7 +266,7 @@ def _parse_outbound_block(raw: Any) -> List[WebhookTarget]:
 
 
 def _parse_single_target(index: int, raw: Any) -> Optional[WebhookTarget]:
-    from thefool_cli.plugins import VALID_HOOKS
+    from fool_cli.plugins import VALID_HOOKS
 
     if not isinstance(raw, dict):
         logger.warning(

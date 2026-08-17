@@ -1,4 +1,4 @@
-import type { Key } from '@thefool/ink'
+import type { Key } from '@fool/ink'
 import type { ReactNode } from 'react'
 
 import type { Theme } from '../theme.js'

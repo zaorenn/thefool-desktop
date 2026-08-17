@@ -16,8 +16,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from thefool_cli import kanban_db as kb
-from thefool_cli import projects_db as pdb
+from fool_cli import kanban_db as kb
+from fool_cli import projects_db as pdb
 
 
 def _load_plugin_router():
@@ -34,7 +34,7 @@ def _load_plugin_router():
 def kanban_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

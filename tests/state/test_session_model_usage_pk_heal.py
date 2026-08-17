@@ -20,8 +20,8 @@ import sqlite3
 
 import pytest
 
-from thefool_state import SessionDB
-from thefool_state_common import SCHEMA_VERSION
+from fool_state import SessionDB
+from fool_state_common import SCHEMA_VERSION
 
 LEGACY_SQL = """
     CREATE TABLE session_model_usage (

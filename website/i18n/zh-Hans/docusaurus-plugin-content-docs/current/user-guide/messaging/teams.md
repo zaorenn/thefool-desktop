@@ -96,7 +96,7 @@ TEAMS_ALLOWED_USERS=<your-aad-object-id>
 ## 第五步：启动 Gateway
 
 ```bash
-THEFOOL_UID=$(id -u) THEFOOL_GID=$(id -g) docker compose up -d gateway
+FOOL_UID=$(id -u) FOOL_GID=$(id -g) docker compose up -d gateway
 ```
 
 此命令启动 gateway。默认 webhook 端口为 `3978`（可通过 `TEAMS_PORT` 覆盖）。检查运行状态：

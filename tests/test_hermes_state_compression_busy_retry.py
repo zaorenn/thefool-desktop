@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from thefool_state import (
+from fool_state import (
     CompressionSessionBusyError,
     SessionCompressionInProgressError,
     SessionDB,

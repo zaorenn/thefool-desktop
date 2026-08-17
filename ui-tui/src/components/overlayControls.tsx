@@ -1,4 +1,4 @@
-import { Text, useInput } from '@thefool/ink'
+import { Text, useInput } from '@fool/ink'
 
 import type { Theme } from '../theme.js'
 

@@ -24,7 +24,7 @@ Config via environment variables:
   HINDSIGHT_RETAIN_USER_PREFIX     — label used before user turns in retained transcripts
   HINDSIGHT_RETAIN_ASSISTANT_PREFIX — label used before assistant turns in retained transcripts
 
-Or via $THEFOOL_HOME/hindsight/config.json (profile-scoped), falling back to
+Or via $FOOL_HOME/hindsight/config.json (profile-scoped), falling back to
 ~/.hindsight/config.json (legacy, shared) for backward compatibility.
 """
 
@@ -48,9 +48,9 @@ from typing import Any, Callable, Dict, List, Optional
 from agent.secret_scope import get_secret
 
 from agent.memory_provider import MemoryProvider, RecallStatus
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 from tools.registry import tool_error
-from thefool_cli.config import cfg_get
+from fool_cli.config import cfg_get
 
 logger = logging.getLogger(__name__)
 
@@ -410,7 +410,7 @@ def _load_config() -> dict:
     """Load config from profile-scoped path, legacy path, or env vars.
 
     Resolution order:
-      1. $THEFOOL_HOME/hindsight/config.json  (profile-scoped)
+      1. $FOOL_HOME/hindsight/config.json  (profile-scoped)
       2. ~/.hindsight/config.json             (legacy, shared)
       3. Environment variables
     """
@@ -907,7 +907,7 @@ class HindsightMemoryProvider(MemoryProvider):
         return _local_runtime_hint(reason).strip()
 
     def save_config(self, values, hermes_home):
-        """Write config to $THEFOOL_HOME/hindsight/config.json."""
+        """Write config to $FOOL_HOME/hindsight/config.json."""
         import json
         from pathlib import Path
         config_dir = Path(hermes_home) / "hindsight"
@@ -930,10 +930,10 @@ class HindsightMemoryProvider(MemoryProvider):
         import sys
         from pathlib import Path
 
-        from thefool_cli.config import save_config
-        from thefool_cli.secret_prompt import masked_secret_prompt
+        from fool_cli.config import save_config
+        from fool_cli.secret_prompt import masked_secret_prompt
 
-        from thefool_cli.memory_setup import _CANCELLED, _curses_select, _print_cancelled_setup
+        from fool_cli.memory_setup import _CANCELLED, _curses_select, _print_cancelled_setup
 
         print("\n  Configuring Hindsight memory:\n")
 
@@ -1146,7 +1146,7 @@ class HindsightMemoryProvider(MemoryProvider):
 
     def _offer_starter_template(self, mode: str, provider_config: dict, env_writes: dict) -> None:
         """Offer to seed the bank with a Hermes starter template (best-effort)."""
-        from thefool_cli.memory_setup import _CANCELLED, _curses_select
+        from fool_cli.memory_setup import _CANCELLED, _curses_select
 
         from . import templates as _hs_templates
 

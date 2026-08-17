@@ -9,7 +9,7 @@ change-detector.
 from __future__ import annotations
 
 from agent import learning_graph
-from thefool_constants import reset_hermes_home_override, set_hermes_home_override
+from fool_constants import reset_hermes_home_override, set_hermes_home_override
 
 
 def _node(name: str, category: str, related=None):

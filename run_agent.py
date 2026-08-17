@@ -20,12 +20,12 @@ Usage:
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
 
-# IMPORTANT: thefool_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See thefool_bootstrap.py for full rationale.
+# IMPORTANT: fool_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See fool_bootstrap.py for full rationale.
 try:
-    import thefool_bootstrap  # noqa: F401
+    import fool_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when thefool_bootstrap isn't registered in the venv
+    # Graceful fallback when fool_bootstrap isn't registered in the venv
     # yet — happens during partial ``hermes update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
@@ -63,7 +63,7 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 
 
 def _launch_cwd_for_session(source: str) -> Optional[str]:
@@ -94,9 +94,9 @@ def _session_source_for_agent(platform: Optional[str]) -> str:
     try:
         from gateway.session_context import get_session_env
 
-        source = get_session_env("THEFOOL_SESSION_SOURCE", "")
+        source = get_session_env("FOOL_SESSION_SOURCE", "")
     except Exception:
-        source = os.environ.get("THEFOOL_SESSION_SOURCE", "")
+        source = os.environ.get("FOOL_SESSION_SOURCE", "")
     source = str(source or "").strip()
     if source:
         return source
@@ -118,8 +118,8 @@ from agent.iteration_budget import IterationBudget
 from agent.interrupt_compat import request_hard_interrupt
 
 
-from thefool_cli.env_loader import load_hermes_dotenv
-from thefool_cli.timeouts import (
+from fool_cli.env_loader import load_hermes_dotenv
+from fool_cli.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
 )
@@ -300,7 +300,7 @@ _QWEN_CODE_VERSION = "0.14.1"
 
 def _routermint_headers() -> dict:
     """Return the User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
-    from thefool_cli import __version__ as _HERMES_VERSION
+    from fool_cli import __version__ as _HERMES_VERSION
 
     return {
         "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
@@ -616,7 +616,7 @@ class AIAgent:
         if self._session_db is not None:
             return self._session_db
         try:
-            from thefool_state import SessionDB
+            from fool_state import SessionDB
 
             self._session_db = SessionDB()
             # We opened it here, so nothing else holds a reference — this agent
@@ -636,7 +636,7 @@ class AIAgent:
         source = _session_source_for_agent(self.platform)
         try:
             try:
-                from thefool_cli.profiles import get_active_profile_name
+                from fool_cli.profiles import get_active_profile_name
                 _profile_for_session = get_active_profile_name()
                 if _profile_for_session == "default":
                     _profile_for_session = None
@@ -866,7 +866,7 @@ class AIAgent:
             logger.debug("LM Studio explicit preload skipped: lmstudio_load_mode=jit")
             return None
 
-        from thefool_cli.models import ensure_lmstudio_model_loaded
+        from fool_cli.models import ensure_lmstudio_model_loaded
 
         if config_context_length is None:
             config_context_length = getattr(self, "_config_context_length", None)
@@ -1379,19 +1379,19 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.timeout_seconds`` (per-model override)
           2. ``providers.<id>.request_timeout_seconds`` (provider-wide)
-          3. ``THEFOOL_API_TIMEOUT`` env var (legacy escape hatch)
+          3. ``FOOL_API_TIMEOUT`` env var (legacy escape hatch)
           4. 1800.0s default
 
         Used by OpenAI-wire chat completions (streaming and non-streaming) so
         the per-provider config knob wins over the 1800s default.  Without this
-        helper, the hardcoded ``THEFOOL_API_TIMEOUT`` fallback would always be
+        helper, the hardcoded ``FOOL_API_TIMEOUT`` fallback would always be
         passed as a per-call ``timeout=`` kwarg, overriding the client-level
         timeout the AIAgent.__init__ path configured.
         """
         cfg = get_provider_request_timeout(self.provider, self.model)
         if cfg is not None:
             return cfg
-        return env_float("THEFOOL_API_TIMEOUT", 1800.0)
+        return env_float("FOOL_API_TIMEOUT", 1800.0)
 
     def _resolved_api_call_stale_timeout_base(self) -> tuple[float, bool]:
         """Resolve the base non-stream stale timeout and whether it is implicit.
@@ -1399,7 +1399,7 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.stale_timeout_seconds``
           2. ``providers.<id>.stale_timeout_seconds``
-          3. ``THEFOOL_API_CALL_STALE_TIMEOUT`` env var
+          3. ``FOOL_API_CALL_STALE_TIMEOUT`` env var
           4. 90.0s default (time-to-first-byte for non-streaming / Codex
              internal-streaming requests; lowered from 300s in May 2026 so
              fallback providers kick in faster when upstream providers
@@ -1415,7 +1415,7 @@ class AIAgent:
         if cfg is not None:
             return cfg, False
 
-        env_timeout = os.getenv("THEFOOL_API_CALL_STALE_TIMEOUT")
+        env_timeout = os.getenv("FOOL_API_CALL_STALE_TIMEOUT")
         if env_timeout is not None:
             return float(env_timeout), False
 
@@ -1606,7 +1606,7 @@ class AIAgent:
             return False
         if normalized_provider == "copilot":
             try:
-                from thefool_cli.models import _should_use_copilot_responses_api
+                from fool_cli.models import _should_use_copilot_responses_api
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 # Fall back to the generic GPT-5 rule if Copilot-specific
@@ -2340,7 +2340,7 @@ class AIAgent:
             # before it is swallowed into a bare ``False`` — classify it here
             # so the turn-end explanation can distinguish lock contention
             # ("storage was busy, send it again") from disk-full/read-only.
-            from thefool_state import (
+            from fool_state import (
                 CompressionSessionClosedError,
                 classify_persistence_error,
             )
@@ -2779,7 +2779,7 @@ class AIAgent:
 
     @staticmethod
     def _hook_payload_max_chars() -> int:
-        raw = os.getenv("THEFOOL_PLUGIN_PAYLOAD_MAX_CHARS", "50000")
+        raw = os.getenv("FOOL_PLUGIN_PAYLOAD_MAX_CHARS", "50000")
         try:
             return max(1000, int(raw))
         except (TypeError, ValueError):
@@ -2996,7 +2996,7 @@ class AIAgent:
         # dispatch at this call site. After first call the import is a
         # ``sys.modules`` dict lookup, so retries don't repay any real cost.
         try:
-            from thefool_cli import lifecycle as _lifecycle
+            from fool_cli import lifecycle as _lifecycle
 
             if not _lifecycle.has_hook("api_request_error"):
                 return
@@ -3061,7 +3061,7 @@ class AIAgent:
         parts. Image / binary parts are left untouched; only text fields are
         passed through ``redact_sensitive_text``.
 
-        Respects ``THEFOOL_REDACT_SECRETS`` via ``redact_sensitive_text`` —
+        Respects ``FOOL_REDACT_SECRETS`` via ``redact_sensitive_text`` —
         when disabled the helper is effectively a no-op.
         """
         if content is None:
@@ -3127,7 +3127,7 @@ class AIAgent:
                 # Defence-in-depth: redact credentials from every message
                 # content before persistence. Catches PATs / API keys / Bearer
                 # tokens that may have leaked into assistant responses, tool
-                # output, or user paste. Respects THEFOOL_REDACT_SECRETS via
+                # output, or user paste. Respects FOOL_REDACT_SECRETS via
                 # redact_sensitive_text — no-op when disabled. (#19798, #19845)
                 if "content" in msg:
                     msg = dict(msg)
@@ -3597,7 +3597,7 @@ class AIAgent:
         """Check whether the per-turn file-mutation verifier footer is on.
 
         Config path: ``display.file_mutation_verifier`` (bool, default True).
-        ``THEFOOL_FILE_MUTATION_VERIFIER`` env var overrides config.  Exposed
+        ``FOOL_FILE_MUTATION_VERIFIER`` env var overrides config.  Exposed
         as a method so tests can patch a single seam without reaching into
         the private ``_turn_failed_file_mutations`` state dict.
 
@@ -3609,7 +3609,7 @@ class AIAgent:
         """
         try:
             import os as _os
-            env = _os.environ.get("THEFOOL_FILE_MUTATION_VERIFIER")
+            env = _os.environ.get("FOOL_FILE_MUTATION_VERIFIER")
             if env is not None:
                 return env.strip().lower() not in {"0", "false", "no", "off"}
             cached = getattr(self, "_file_mutation_verifier_enabled_cache", None)
@@ -3618,7 +3618,7 @@ class AIAgent:
             # Read from the persisted config.yaml so gateway and CLI share
             # the same setting.  Import lazily to avoid a startup-time cycle.
             try:
-                from thefool_cli.config import load_config as _load_config
+                from fool_cli.config import load_config as _load_config
                 _cfg = _load_config() or {}
             except Exception:
                 _cfg = {}
@@ -3707,7 +3707,7 @@ class AIAgent:
         """Check whether the end-of-turn completion explainer footer is on.
 
         Config path: ``display.turn_completion_explainer`` (bool, default
-        True).  ``THEFOOL_TURN_COMPLETION_EXPLAINER`` env var overrides
+        True).  ``FOOL_TURN_COMPLETION_EXPLAINER`` env var overrides
         config.  Exposed as a method so tests can patch a single seam,
         mirroring ``_file_mutation_verifier_enabled``.
 
@@ -3719,7 +3719,7 @@ class AIAgent:
         """
         try:
             import os as _os
-            env = _os.environ.get("THEFOOL_TURN_COMPLETION_EXPLAINER")
+            env = _os.environ.get("FOOL_TURN_COMPLETION_EXPLAINER")
             if env is not None:
                 return env.strip().lower() not in {"0", "false", "no", "off"}
             cached = getattr(self, "_turn_completion_explainer_enabled_cache", None)
@@ -3728,7 +3728,7 @@ class AIAgent:
             # Read from the persisted config.yaml so gateway and CLI share
             # the same setting.  Import lazily to avoid a startup-time cycle.
             try:
-                from thefool_cli.config import load_config as _load_config
+                from fool_cli.config import load_config as _load_config
                 _cfg = _load_config() or {}
             except Exception:
                 _cfg = {}
@@ -3923,7 +3923,7 @@ class AIAgent:
         """Update the last-activity timestamp and description (thread-safe).
 
         Also bridges to the kanban board's heartbeat fields when this
-        process is a dispatcher-spawned worker (THEFOOL_KANBAN_TASK set),
+        process is a dispatcher-spawned worker (FOOL_KANBAN_TASK set),
         so the dispatcher watchdog doesn't reclaim an actively-running
         worker as stale (#31752). Bridge is rate-limited (60s) and
         best-effort — it never raises into the agent loop.
@@ -3948,7 +3948,7 @@ class AIAgent:
         self._last_activity_ts = time.time()
         self._last_activity_desc = bound_activity_description(desc)
         self._last_activity_provenance = normalize_activity_provenance(provenance)
-        if os.environ.get("THEFOOL_KANBAN_TASK"):
+        if os.environ.get("FOOL_KANBAN_TASK"):
             try:
                 from tools.kanban_tools import (
                     heartbeat_current_worker_from_env,
@@ -4080,7 +4080,7 @@ class AIAgent:
         EVALUATION/EMIT is a SEPARATE block that WARNS on failure (R1-M2): a bug in the
         depletion-notice path must not vanish silently under the parse swallow.
         """
-        # Dev test fixture (THEFOOL_DEV_CREDITS_FIXTURE): inject a chosen notice state
+        # Dev test fixture (FOOL_DEV_CREDITS_FIXTURE): inject a chosen notice state
         # each turn for repeatable testing, bypassing real headers. Throwaway scaffolding.
         try:
             from agent.credits_tracker import dev_fixture_credits_state
@@ -4100,7 +4100,7 @@ class AIAgent:
             _used = _fixture.used_fraction
             logger.info(
                 "credits ▸ [FIXTURE] remaining=%d (%s) · paid=%s · denom=%s · used=%s "
-                "(real headers bypassed — `echo clear` / unset THEFOOL_DEV_CREDITS_FIXTURE to restore)",
+                "(real headers bypassed — `echo clear` / unset FOOL_DEV_CREDITS_FIXTURE to restore)",
                 _fixture.remaining_micros,
                 _fixture.remaining_usd or "?",
                 _fixture.paid_access,
@@ -4114,7 +4114,7 @@ class AIAgent:
         headers = getattr(http_response, "headers", None)
         if not headers:
             return
-        _dev = is_truthy_value(os.environ.get("THEFOOL_DEV_CREDITS"))
+        _dev = is_truthy_value(os.environ.get("FOOL_DEV_CREDITS"))
 
         # ── Parse (fail-open → miss; never overwrite good state with None) ──
         try:
@@ -4136,7 +4136,7 @@ class AIAgent:
         if self._credits_session_start_micros is None:
             self._credits_session_start_micros = state.remaining_micros
         if _dev:
-            # THEFOOL_DEV_CREDITS: stream each capture to agent.log — watch live with
+            # FOOL_DEV_CREDITS: stream each capture to agent.log — watch live with
             # `hermes logs -f` (grep 'credits ▸'). Dev-only; silent for normal users.
             spent = self.get_credits_spent_micros()
             used = state.used_fraction
@@ -4206,7 +4206,7 @@ class AIAgent:
             return cached
         enabled = True
         try:
-            from thefool_cli.config import load_config as _load_config
+            from fool_cli.config import load_config as _load_config
             _cfg = _load_config() or {}
             _display = _cfg.get("display") if isinstance(_cfg, dict) else None
             if isinstance(_display, dict) and "credits_notices" in _display:
@@ -4582,7 +4582,7 @@ class AIAgent:
         # heap pages immediately instead of retaining the process RSS high-water
         # mark until exit.  This helper is a safe no-op on other allocators.
         try:
-            from thefool_cli.mem_trim import trim_memory
+            from fool_cli.mem_trim import trim_memory
             trim_memory(force=True, reason="agent close")
         except Exception:
             pass
@@ -5053,7 +5053,7 @@ class AIAgent:
         preserves OS TCP defaults (including ``TCP_NODELAY``).
 
         ``verify`` carries per-provider ``ssl_ca_cert`` / ``ssl_verify`` and
-        ``THEFOOL_CA_BUNDLE`` settings.  It is passed on the client AND on
+        ``FOOL_CA_BUNDLE`` settings.  It is passed on the client AND on
         the plain no-proxy mounts (a mounted transport owns the SSL context
         for its scheme).
         """
@@ -5281,7 +5281,7 @@ class AIAgent:
         return any(_contains_image(item) for item in candidates)
 
     def _copilot_headers_for_request(self, *, is_vision: bool) -> dict:
-        from thefool_cli.copilot_auth import copilot_request_headers
+        from fool_cli.copilot_auth import copilot_request_headers
 
         return copilot_request_headers(is_agent_turn=True, is_vision=is_vision)
 
@@ -5720,13 +5720,13 @@ class AIAgent:
         # MUST only fire when the agent really is on singleton tokens.
         try:
             if self.provider == "openai-codex":
-                from thefool_cli.auth import resolve_codex_runtime_credentials
+                from fool_cli.auth import resolve_codex_runtime_credentials
 
                 singleton_now = resolve_codex_runtime_credentials(
                     refresh_if_expiring=False,
                 )
             else:
-                from thefool_cli.auth import resolve_xai_oauth_runtime_credentials
+                from fool_cli.auth import resolve_xai_oauth_runtime_credentials
 
                 singleton_now = resolve_xai_oauth_runtime_credentials(
                     refresh_if_expiring=False,
@@ -5748,12 +5748,12 @@ class AIAgent:
 
         try:
             if self.provider == "openai-codex":
-                from thefool_cli.auth import resolve_codex_runtime_credentials
+                from fool_cli.auth import resolve_codex_runtime_credentials
 
                 old_key = str(self.api_key or "").strip()
                 creds = resolve_codex_runtime_credentials(force_refresh=force)
             else:
-                from thefool_cli.auth import resolve_xai_oauth_runtime_credentials
+                from fool_cli.auth import resolve_xai_oauth_runtime_credentials
 
                 old_key = str(self.api_key or "").strip()
                 creds = resolve_xai_oauth_runtime_credentials(force_refresh=force)
@@ -5805,10 +5805,10 @@ class AIAgent:
             return False
 
         try:
-            from thefool_cli.auth import resolve_nous_runtime_credentials
+            from fool_cli.auth import resolve_nous_runtime_credentials
 
             creds = resolve_nous_runtime_credentials(
-                timeout_seconds=env_float("THEFOOL_NOUS_TIMEOUT_SECONDS", 15),
+                timeout_seconds=env_float("FOOL_NOUS_TIMEOUT_SECONDS", 15),
                 force_refresh=force,
             )
         except Exception as exc:
@@ -5873,7 +5873,7 @@ class AIAgent:
             return False
         try:
             from agent.credential_pool import get_env_prefer_dotenv
-            from thefool_cli.auth import PROVIDER_REGISTRY
+            from fool_cli.auth import PROVIDER_REGISTRY
         except ImportError:
             return False
 
@@ -5897,13 +5897,13 @@ class AIAgent:
             default_base = (pconfig.inference_base_url or "").strip().rstrip("/")
             base_url = env_url or default_base
             if self.provider == "kimi-coding":
-                from thefool_cli.auth import _resolve_kimi_base_url
+                from fool_cli.auth import _resolve_kimi_base_url
 
                 base_url = _resolve_kimi_base_url(
                     api_key, pconfig.inference_base_url, env_url
                 ).rstrip("/")
             elif self.provider == "zai":
-                from thefool_cli.auth import _resolve_zai_base_url
+                from fool_cli.auth import _resolve_zai_base_url
 
                 base_url = _resolve_zai_base_url(
                     api_key, pconfig.inference_base_url, env_url
@@ -5916,7 +5916,7 @@ class AIAgent:
             # ``key_env`` (inline ``api_key``, pool-backed) have no
             # env-sourced credential to watch.
             try:
-                from thefool_cli.runtime_provider import _get_named_custom_provider
+                from fool_cli.runtime_provider import _get_named_custom_provider
             except ImportError:
                 return False
             custom_provider = _get_named_custom_provider(
@@ -5978,7 +5978,7 @@ class AIAgent:
             self._env_creds_seen = resolved
             return False
 
-        from thefool_cli.route_identity import normalize_route_base_url
+        from fool_cli.route_identity import normalize_route_base_url
 
         route_changed = normalize_route_base_url(self.base_url) != normalize_route_base_url(
             base_url
@@ -6083,7 +6083,7 @@ class AIAgent:
             return False
 
         try:
-            from thefool_cli.copilot_auth import (
+            from fool_cli.copilot_auth import (
                 resolve_copilot_token,
                 get_copilot_api_token,
                 evict_cached_exchanged_token,
@@ -6147,7 +6147,7 @@ class AIAgent:
             return False
 
         try:
-            from thefool_cli.copilot_auth import (
+            from fool_cli.copilot_auth import (
                 resolve_copilot_token,
                 get_copilot_api_token,
                 evict_cached_exchanged_token,
@@ -6264,7 +6264,7 @@ class AIAgent:
         elif base_url_host_matches(base_url, "api.routermint.com"):
             self._client_kwargs["default_headers"] = _routermint_headers()
         elif base_url_host_matches(base_url, "githubcopilot.com"):
-            from thefool_cli.models import copilot_default_headers
+            from fool_cli.models import copilot_default_headers
 
             self._client_kwargs["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "api.kimi.com"):
@@ -6308,7 +6308,7 @@ class AIAgent:
         # SECURITY: values may carry credentials — never log them.
         if self.api_mode not in ("anthropic_messages", "bedrock_converse"):
             try:
-                from thefool_cli.config import (
+                from fool_cli.config import (
                     apply_custom_provider_extra_headers_to_client_kwargs,
                 )
 
@@ -6352,7 +6352,7 @@ class AIAgent:
         runtime_key = getattr(entry, "runtime_api_key", None) or getattr(entry, "access_token", "")
         runtime_base = getattr(entry, "runtime_base_url", None) or getattr(entry, "base_url", None) or self.base_url
         self._credential_pool_entry_id = getattr(entry, "id", None)
-        from thefool_cli.route_identity import normalize_route_base_url
+        from fool_cli.route_identity import normalize_route_base_url
 
         route_changed = normalize_route_base_url(self.base_url) != normalize_route_base_url(
             runtime_base
@@ -6397,7 +6397,7 @@ class AIAgent:
         self._client_kwargs.pop("ssl_verify", None)
         self._client_kwargs.pop("ssl_ca_cert", None)
         try:
-            from thefool_cli.config import (
+            from fool_cli.config import (
                 apply_custom_provider_tls_to_client_kwargs,
                 get_compatible_custom_providers,
                 load_config_readonly,
@@ -7128,7 +7128,7 @@ class AIAgent:
         misclassified as non-vision and have their images stripped.
         """
         try:
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
             from agent.image_routing import _lookup_supports_vision
             cfg = load_config()
             provider = (getattr(self, "provider", "") or "").strip()
@@ -7561,7 +7561,7 @@ class AIAgent:
             or base_url_host_matches(self._base_url_lower, "githubcopilot.com")
         ):
             try:
-                from thefool_cli.models import github_model_reasoning_efforts
+                from fool_cli.models import github_model_reasoning_efforts
 
                 return bool(github_model_reasoning_efforts(self.model))
             except Exception:
@@ -7593,7 +7593,7 @@ class AIAgent:
         # cached; unknown (catalog unreachable / unlisted model) falls back
         # to the static list.
         try:
-            from thefool_cli.models import (
+            from fool_cli.models import (
                 openrouter_model_reasoning_capabilities,
                 warm_openrouter_reasoning_caps_async,
             )
@@ -7645,7 +7645,7 @@ class AIAgent:
             if opts or (_time.monotonic() - ts) < 60:
                 return opts
         try:
-            from thefool_cli.models import lmstudio_model_reasoning_options
+            from fool_cli.models import lmstudio_model_reasoning_options
             opts = lmstudio_model_reasoning_options(
                 self.model, self.base_url, getattr(self, "api_key", ""),
             )
@@ -7676,7 +7676,7 @@ class AIAgent:
             if supported is not None or (_time.monotonic() - ts) < 60:
                 return bool(supported)
         try:
-            from thefool_cli.models import ollama_model_supports_thinking
+            from fool_cli.models import ollama_model_supports_thinking
             supported = ollama_model_supports_thinking(
                 self.model, self.base_url, getattr(self, "api_key", "")
             )
@@ -7701,7 +7701,7 @@ class AIAgent:
     def _github_models_reasoning_extra_body(self) -> dict | None:
         """Format reasoning payload for GitHub Models/OpenAI-compatible routes."""
         try:
-            from thefool_cli.models import github_model_reasoning_efforts
+            from fool_cli.models import github_model_reasoning_efforts
         except Exception:
             return None
 
@@ -8090,12 +8090,12 @@ class AIAgent:
                 telemetry_agent=self,
             )
             # compress_context ran on a daemon pool worker thread; the session
-            # id rotation updated thefool_logging._session_context (a
+            # id rotation updated fool_logging._session_context (a
             # threading.local) on the WORKER thread, not this one. Propagate
             # the current session_id back so subsequent log lines on this
             # thread carry the rotated id (#34089).
             try:
-                from thefool_logging import set_session_context
+                from fool_logging import set_session_context
                 set_session_context(self.session_id)
             except Exception:
                 pass
@@ -8104,7 +8104,7 @@ class AIAgent:
             # never sees — and get_session_env() prefers an already-bound
             # ContextVar over os.environ. Rebind in the CALLER's context so
             # post-compression tools/subprocesses on this thread resolve
-            # THEFOOL_SESSION_ID to the child id after an out-of-place
+            # FOOL_SESSION_ID to the child id after an out-of-place
             # rotation (idempotent when no rotation happened).
             try:
                 from gateway.session_context import set_current_session_id
@@ -8358,7 +8358,7 @@ class AIAgent:
             reset_conversation_context,
             set_conversation_context,
         )
-        from thefool_cli.observability.relay_shared_metrics import (
+        from fool_cli.observability.relay_shared_metrics import (
             finish_task_run,
             start_task_run,
         )

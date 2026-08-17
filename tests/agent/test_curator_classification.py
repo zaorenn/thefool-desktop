@@ -26,12 +26,12 @@ def curator_env(tmp_path, monkeypatch):
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     import importlib
-    import thefool_constants
-    importlib.reload(thefool_constants)
+    import fool_constants
+    importlib.reload(fool_constants)
     from agent import curator
     importlib.reload(curator)
     yield curator

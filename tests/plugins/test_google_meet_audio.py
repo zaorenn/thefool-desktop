@@ -15,7 +15,7 @@ import pytest
 def _isolate_home(tmp_path, monkeypatch):
     hermes_home = tmp_path / ".hermes"
     hermes_home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+    monkeypatch.setenv("FOOL_HOME", str(hermes_home))
     yield hermes_home
 
 

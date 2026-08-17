@@ -1,6 +1,6 @@
 """xAI (Grok) provider profile."""
 
-from thefool_cli import __version__ as _HERMES_VERSION
+from fool_cli import __version__ as _HERMES_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 

@@ -1,6 +1,6 @@
 ---
 sidebar_label: "Desktop Plugin SDK"
-title: "Desktop Plugin SDK (@thefool/plugin-sdk)"
+title: "Desktop Plugin SDK (@fool/plugin-sdk)"
 description: "Extend the native Hermes Desktop app — panes, pages, sidebar nav, status bar, palette commands, keybinds, themes, and a scoped backend namespace, with one import and no build step."
 ---
 
@@ -13,17 +13,17 @@ its surfaces exactly the way a plugin does, so the plugin story is the real one,
 not a bolted-on afterthought.
 
 A **desktop plugin** is a single ESM file that default-exports a `HermesPlugin`.
-It imports one module — `@thefool/plugin-sdk` — and gets everything: the app's
+It imports one module — `@fool/plugin-sdk` — and gets everything: the app's
 live state, the gateway JSON-RPC door, a scoped REST/socket backend namespace,
 React Query, and the app's own UI kit so plugin UI looks native by default. No
 repo clone, no `npm run build`, no patching app source. Drop the file in
-`$THEFOOL_HOME/desktop-plugins/<id>/plugin.js` and the app loads it within seconds
+`$FOOL_HOME/desktop-plugins/<id>/plugin.js` and the app loads it within seconds
 and hot-reloads every save.
 
 :::warning This is not the web-dashboard plugin SDK
 "Plugin" means several unrelated things across Hermes. This page is the **native
-desktop app** (`hermes desktop`) SDK — the `@thefool/plugin-sdk` module and
-`$THEFOOL_HOME/desktop-plugins/`. The **web dashboard** (`hermes dashboard`) has
+desktop app** (`hermes desktop`) SDK — the `@fool/plugin-sdk` module and
+`$FOOL_HOME/desktop-plugins/`. The **web dashboard** (`hermes dashboard`) has
 its own, unrelated plugin system on `window.__HERMES_PLUGIN_SDK__` with a
 `manifest.json` — documented at
 [Extending the Dashboard](/user-guide/features/extending-the-dashboard). Python
@@ -54,8 +54,8 @@ plugin, and fail to resolve in a disk plugin). Capability comes in tiers:
 
 | Mode | Where | Who | Build step |
 |------|-------|-----|------------|
-| **Disk** (recommended) | `$THEFOOL_HOME/desktop-plugins/<id>/plugin.js` | users, agents | none — plain ESM, loaded uncompiled |
-| **Unified package** | `$THEFOOL_HOME/plugins/<id>/desktop/plugin.js` | plugins that also ship agent-side code | none — same disk pipeline |
+| **Disk** (recommended) | `$FOOL_HOME/desktop-plugins/<id>/plugin.js` | users, agents | none — plain ESM, loaded uncompiled |
+| **Unified package** | `$FOOL_HOME/plugins/<id>/desktop/plugin.js` | plugins that also ship agent-side code | none — same disk pipeline |
 | **Bundled** | `apps/desktop/src/plugins/<id>/plugin.tsx` | in-tree, shipped with the app | the app's own Vite build |
 
 All three take the same `HermesPlugin` contract, appear in **Settings → Plugins**,
@@ -71,13 +71,13 @@ repo.
 
 ## Quick start — your first plugin
 
-Create `$THEFOOL_HOME/desktop-plugins/hello/plugin.js` (that's `~/.hermes/...`
+Create `$FOOL_HOME/desktop-plugins/hello/plugin.js` (that's `~/.hermes/...`
 by default, or `~/.hermes/profiles/<name>/...` under a named profile). The folder
 name must equal the plugin `id`.
 
 ```javascript
 // ~/.hermes/desktop-plugins/hello/plugin.js
-import { host, haptic, useValue } from '@thefool/plugin-sdk'
+import { host, haptic, useValue } from '@fool/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 function HelloPane() {
@@ -133,7 +133,7 @@ save again.
 :::note No JSX, no build
 The disk file is loaded **uncompiled**, so JSX syntax will not parse. Write UI
 with `jsx()` / `jsxs()` calls from `react/jsx-runtime` (or `React.createElement`).
-The only importable specifiers are `@thefool/plugin-sdk`, `react`, and
+The only importable specifiers are `@fool/plugin-sdk`, `react`, and
 `react/jsx-runtime` — everything else fails to resolve, on purpose.
 :::
 
@@ -259,7 +259,7 @@ A route mounts a full page in the workspace pane, like any built-in view. Pair i
 with a sidebar nav row (and/or a palette command) to make it reachable.
 
 ```javascript
-import { ROUTES_AREA, SIDEBAR_NAV_AREA } from '@thefool/plugin-sdk'
+import { ROUTES_AREA, SIDEBAR_NAV_AREA } from '@fool/plugin-sdk'
 
 ctx.registerMany([
   {
@@ -286,7 +286,7 @@ Simplest is a `render` function; for a plain button use `data` as a
 `StatusbarItem` (`{ id, label?, icon?, detail?, variant?, menuItems?, … }`).
 
 ```javascript
-import { STATUSBAR_AREAS, TITLEBAR_AREAS } from '@thefool/plugin-sdk'
+import { STATUSBAR_AREAS, TITLEBAR_AREAS } from '@fool/plugin-sdk'
 
 ctx.register({
   id: 'count',
@@ -302,7 +302,7 @@ data (`{ id, label, icon, active?, onSelect? }`).
 ### Palette commands and keybinds
 
 ```javascript
-import { PALETTE_AREA, KEYBINDS_AREA } from '@thefool/plugin-sdk'
+import { PALETTE_AREA, KEYBINDS_AREA } from '@fool/plugin-sdk'
 
 ctx.registerMany([
   {
@@ -337,7 +337,7 @@ A theme contribution ships a full `DesktopTheme` as its `data` (name, label,
 colors, …). It appears in the theme picker like a built-in.
 
 ```javascript
-import { THEMES_AREA } from '@thefool/plugin-sdk'
+import { THEMES_AREA } from '@fool/plugin-sdk'
 
 ctx.register({ id: 'noir', area: THEMES_AREA, data: myDesktopTheme })
 ```
@@ -356,7 +356,7 @@ die with a component that's already on screen (a page's own title-bar control
 leaves when the page unmounts), render `<Contribute>` inside it instead:
 
 ```javascript
-import { Contribute, TITLEBAR_AREAS } from '@thefool/plugin-sdk'
+import { Contribute, TITLEBAR_AREAS } from '@fool/plugin-sdk'
 
 jsx(Contribute, {
   area: TITLEBAR_AREAS.center,
@@ -480,7 +480,7 @@ Plugins share the app's single `QueryClient`, so plugin queries cache, dedupe,
 poll, and invalidate exactly like core screens — never hand-roll a fetch loop.
 
 ```javascript
-import { useQuery, useMutation, useQueryClient, atom, computed, useValue } from '@thefool/plugin-sdk'
+import { useQuery, useMutation, useQueryClient, atom, computed, useValue } from '@fool/plugin-sdk'
 
 function MyPanel() {
   const { data, isLoading } = useQuery({
@@ -497,7 +497,7 @@ renders the value with `useValue`. To invalidate a query from **outside** React
 (e.g. a `ctx.socket` frame arriving), import the shared `queryClient`:
 
 ```javascript
-import { queryClient } from '@thefool/plugin-sdk'
+import { queryClient } from '@fool/plugin-sdk'
 
 ctx.socket('/events', () => {
   queryClient.invalidateQueries({ queryKey: ['my-plugin', 'items'] })
@@ -539,7 +539,7 @@ construction**.
 
 A feature that needs a desktop UI **and** agent-side code (a Python plugin, its
 backend routes, skills) doesn't have to ship as two co-dependent installs. The
-desktop app also scans `$THEFOOL_HOME/plugins/<id>/` — the regular agent-plugin
+desktop app also scans `$FOOL_HOME/plugins/<id>/` — the regular agent-plugin
 root — for a `desktop/plugin.js`, and loads it through the exact same pipeline
 as the standalone disk door (hot reload included):
 
@@ -603,7 +603,7 @@ async def action(body: dict):
 
 Routes mount under `/api/plugins/<id>/` (`GET /api/plugins/<id>/board`, …).
 Backend code runs inside the gateway process, so it can import from the
-hermes-agent codebase directly (`thefool_state`, `thefool_cli.config`, …). See
+hermes-agent codebase directly (`fool_state`, `fool_cli.config`, …). See
 [Extending the Dashboard → Backend API routes](/user-guide/features/extending-the-dashboard#backend-api-routes)
 for the full backend reference — the mount is identical.
 
@@ -672,8 +672,8 @@ no import, no registry edit — and shares the exact inventory + live
 enable/disable contract as a disk plugin. The two differences:
 
 1. It goes through the app's Vite build, so you can write **real JSX** and import
-   the SDK by its `@thefool/plugin-sdk` alias.
-2. It's still lint-fenced to `@thefool/plugin-sdk` + `react` only — no `@/…` app
+   the SDK by its `@fool/plugin-sdk` alias.
+2. It's still lint-fenced to `@fool/plugin-sdk` + `react` only — no `@/…` app
    internals.
 
 No desktop plugins ship in the core tree today; the shipped app stays uncluttered
@@ -701,7 +701,7 @@ not treat this pipeline as a trust boundary.
 - **JSX won't parse in a disk plugin.** The file loads uncompiled — use `jsx()` /
   `jsxs()` (or `React.createElement`), not JSX syntax. (Bundled plugins are built,
   so JSX is fine there.)
-- **Only three specifiers resolve:** `@thefool/plugin-sdk`, `react`,
+- **Only three specifiers resolve:** `@fool/plugin-sdk`, `react`,
   `react/jsx-runtime`. Any other import surfaces an up-front load error.
 - **Never hardcode colors** (`#000`, `black`, `rgb(...)`). Leave the background
   alone; use theme variables (`var(--ui-*)`) for everything.
@@ -743,12 +743,12 @@ human/developer reference; the skill is the working checklist.
 ## Troubleshooting
 
 **My plugin doesn't appear.** Confirm the file is at
-`$THEFOOL_HOME/desktop-plugins/<id>/plugin.js` and the folder name matches the
+`$FOOL_HOME/desktop-plugins/<id>/plugin.js` and the folder name matches the
 export `id`. Run ⌘K → **Reload desktop plugins**. Check the app for an error
 toast naming the failure, and tail `hermes logs gui -f`.
 
 **"unsupported import" on load.** A disk plugin may only import
-`@thefool/plugin-sdk`, `react`, and `react/jsx-runtime`. Remove any other import.
+`@fool/plugin-sdk`, `react`, and `react/jsx-runtime`. Remove any other import.
 
 **A `jsx` element renders nothing / throws `ReferenceError`.** An identifier used
 in a `jsx()` call isn't imported. Add it to the import line.

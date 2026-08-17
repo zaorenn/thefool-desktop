@@ -7,10 +7,10 @@ import { findGitBash } from './find-git-bash'
 const yes = () => true
 const no = () => false
 
-test('THEFOOL_GIT_BASH_PATH override takes precedence', () => {
+test('FOOL_GIT_BASH_PATH override takes precedence', () => {
   const result = findGitBash({
     isWindows: true,
-    env: { THEFOOL_GIT_BASH_PATH: 'D:\\CustomGit\\bin\\bash.exe' },
+    env: { FOOL_GIT_BASH_PATH: 'D:\\CustomGit\\bin\\bash.exe' },
     fileExists: yes,
     findOnPath: () => null
   })
@@ -18,9 +18,9 @@ test('THEFOOL_GIT_BASH_PATH override takes precedence', () => {
   assert.equal(result, 'D:\\CustomGit\\bin\\bash.exe')
 })
 
-test('THEFOOL_GIT_BASH_PATH invalid path falls through to candidates', () => {
+test('FOOL_GIT_BASH_PATH invalid path falls through to candidates', () => {
   const env = {
-    THEFOOL_GIT_BASH_PATH: 'X:\\Missing\\bash.exe',
+    FOOL_GIT_BASH_PATH: 'X:\\Missing\\bash.exe',
     LOCALAPPDATA: 'C:\\Users\\test\\AppData\\Local',
     ProgramFiles: 'C:\\Program Files',
     'ProgramFiles(x86)': 'C:\\Program Files (x86)'
@@ -31,10 +31,10 @@ test('THEFOOL_GIT_BASH_PATH invalid path falls through to candidates', () => {
   assert.equal(result, 'C:\\Program Files\\Git\\bin\\bash.exe')
 })
 
-test('THEFOOL_GIT_BASH_PATH empty string is ignored', () => {
+test('FOOL_GIT_BASH_PATH empty string is ignored', () => {
   const result = findGitBash({
     isWindows: true,
-    env: { THEFOOL_GIT_BASH_PATH: '', LOCALAPPDATA: '' },
+    env: { FOOL_GIT_BASH_PATH: '', LOCALAPPDATA: '' },
     fileExists: no,
     findOnPath: () => 'C:\\msys64\\usr\\bin\\bash.exe'
   })

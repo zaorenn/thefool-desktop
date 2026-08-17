@@ -173,11 +173,11 @@ class TestResolveTaskProviderModel:
         }
         monkeypatch.setattr("agent.auxiliary_client._get_auxiliary_task_config", lambda task: {})
         monkeypatch.setattr(
-            "thefool_cli.moa_config.resolve_moa_preset",
+            "fool_cli.moa_config.resolve_moa_preset",
             lambda cfg, name: preset,
         )
-        monkeypatch.setattr("thefool_cli.config.load_config", lambda: {"moa": {}})
-        monkeypatch.setattr("thefool_cli.config.load_config_readonly", lambda: {"moa": {}})
+        monkeypatch.setattr("fool_cli.config.load_config", lambda: {"moa": {}})
+        monkeypatch.setattr("fool_cli.config.load_config_readonly", lambda: {"moa": {}})
 
         resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
             task="title_generation",
@@ -209,11 +209,11 @@ class TestResolveTaskProviderModel:
             lambda task: {"provider": "moa", "model": "opus-gpt"} if task == "title_generation" else {},
         )
         monkeypatch.setattr(
-            "thefool_cli.moa_config.resolve_moa_preset",
+            "fool_cli.moa_config.resolve_moa_preset",
             lambda cfg, name: preset,
         )
-        monkeypatch.setattr("thefool_cli.config.load_config", lambda: {"moa": {}})
-        monkeypatch.setattr("thefool_cli.config.load_config_readonly", lambda: {"moa": {}})
+        monkeypatch.setattr("fool_cli.config.load_config", lambda: {"moa": {}})
+        monkeypatch.setattr("fool_cli.config.load_config_readonly", lambda: {"moa": {}})
 
         resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
             task="title_generation",
@@ -231,11 +231,11 @@ class TestResolveTaskProviderModel:
         (literal "moa") rather than crash resolve_provider_client() harder."""
         monkeypatch.setattr("agent.auxiliary_client._get_auxiliary_task_config", lambda task: {})
         monkeypatch.setattr(
-            "thefool_cli.moa_config.resolve_moa_preset",
+            "fool_cli.moa_config.resolve_moa_preset",
             lambda cfg, name: (_ for _ in ()).throw(KeyError("gone-preset")),
         )
-        monkeypatch.setattr("thefool_cli.config.load_config", lambda: {"moa": {}})
-        monkeypatch.setattr("thefool_cli.config.load_config_readonly", lambda: {"moa": {}})
+        monkeypatch.setattr("fool_cli.config.load_config", lambda: {"moa": {}})
+        monkeypatch.setattr("fool_cli.config.load_config_readonly", lambda: {"moa": {}})
 
         resolved_provider, model, base_url, api_key, api_mode = _resolve_task_provider_model(
             task="title_generation",
@@ -268,7 +268,7 @@ class TestResolveTaskProviderModel:
 class TestMoaAggregatorSharedResolution:
     """The shared MoA→aggregator helper and the layers that consume it.
 
-    Real-config tests: write an actual config.yaml under a temp THEFOOL_HOME
+    Real-config tests: write an actual config.yaml under a temp FOOL_HOME
     and exercise the genuine load_config() → resolve_moa_preset() boundary —
     no mocking of the configuration-resolution chain.
     """
@@ -310,7 +310,7 @@ class TestMoaAggregatorSharedResolution:
                 }
             )
         )
-        monkeypatch.setenv("THEFOOL_HOME", str(home))
+        monkeypatch.setenv("FOOL_HOME", str(home))
         return home
 
     def test_real_config_explicit_task_provider_moa(self, tmp_path, monkeypatch):
@@ -519,7 +519,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
         result = _read_codex_access_token()
         assert result == "tok-123"
 
@@ -550,7 +550,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _read_codex_access_token()
         assert result is None, "Expired JWT should return None"
@@ -575,7 +575,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
         result = _read_codex_access_token()
         assert result == valid_jwt
 
@@ -590,7 +590,7 @@ class TestResolveXaiOAuthForAux:
         because the singleton auth-store entry is absent.
         """
         from agent.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
-        from thefool_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+        from fool_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
         hermes_home = tmp_path / "hermes"
         hermes_home.mkdir(parents=True, exist_ok=True)
@@ -598,8 +598,8 @@ class TestResolveXaiOAuthForAux:
             "version": 1,
             "providers": {},
         }))
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
-        monkeypatch.delenv("THEFOOL_XAI_BASE_URL", raising=False)
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
+        monkeypatch.delenv("FOOL_XAI_BASE_URL", raising=False)
         monkeypatch.delenv("XAI_BASE_URL", raising=False)
 
         pool = load_pool("xai-oauth")
@@ -622,7 +622,7 @@ class TestResolveXaiOAuthForAux:
 
     def test_pool_backed_credentials_honor_base_url_env_override(self, tmp_path, monkeypatch):
         from agent.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
-        from thefool_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+        from fool_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
         hermes_home = tmp_path / "hermes"
         hermes_home.mkdir(parents=True, exist_ok=True)
@@ -630,8 +630,8 @@ class TestResolveXaiOAuthForAux:
             "version": 1,
             "providers": {},
         }))
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
-        monkeypatch.setenv("THEFOOL_XAI_BASE_URL", "https://example.x.ai/v1/")
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_XAI_BASE_URL", "https://example.x.ai/v1/")
 
         pool = load_pool("xai-oauth")
         pool.add_entry(PooledCredential(
@@ -884,7 +884,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
 
         # Set up Anthropic as fallback
         monkeypatch.setenv("ANTHROPIC_TOKEN", "sk-ant-oat01-test-fallback")
@@ -927,7 +927,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-test-key")
 
         with patch("agent.auxiliary_client.OpenAI") as mock_openai:
@@ -997,7 +997,7 @@ class TestOpenRouterPaidLaneGuard:
         """free_only=true + default (paid) model → OpenRouter skipped."""
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)), \
-             patch("thefool_cli.config.load_config_readonly", return_value={"auxiliary": {"free_only": True}}), \
+             patch("fool_cli.config.load_config_readonly", return_value={"auxiliary": {"free_only": True}}), \
              patch("agent.auxiliary_client.OpenAI") as mock_openai:
             client, model = _try_openrouter()
         assert client is None
@@ -1008,7 +1008,7 @@ class TestOpenRouterPaidLaneGuard:
         """free_only=true + :free model → OpenRouter used with that model."""
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)), \
-             patch("thefool_cli.config.load_config_readonly",
+             patch("fool_cli.config.load_config_readonly",
                    return_value={"auxiliary": {"free_only": True,
                                               "openrouter_model": "nvidia/nemotron-3-ultra-550b-a55b:free"}}), \
              patch("agent.auxiliary_client.OpenAI") as mock_openai:
@@ -1022,7 +1022,7 @@ class TestOpenRouterPaidLaneGuard:
         """auxiliary.openrouter_model replaces _OPENROUTER_MODEL."""
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)), \
-             patch("thefool_cli.config.load_config_readonly",
+             patch("fool_cli.config.load_config_readonly",
                    return_value={"auxiliary": {"openrouter_model": "some/vendor-model"}}), \
              patch("agent.auxiliary_client.OpenAI") as mock_openai:
             mock_client = MagicMock(name="openrouter_client")
@@ -1035,7 +1035,7 @@ class TestOpenRouterPaidLaneGuard:
         """Auxiliary.<task>.model (explicit) is also gated by free_only."""
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)), \
-             patch("thefool_cli.config.load_config_readonly", return_value={"auxiliary": {"free_only": True}}), \
+             patch("fool_cli.config.load_config_readonly", return_value={"auxiliary": {"free_only": True}}), \
              patch("agent.auxiliary_client.OpenAI") as mock_openai:
             client, model = _try_openrouter(model="google/gemini-3.6-flash")
         assert client is None
@@ -1049,7 +1049,7 @@ class TestOpenRouterPaidLaneGuard:
         _paid_lane_warned.discard(_OPENROUTER_MODEL)
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)), \
-             patch("thefool_cli.config.load_config_readonly", return_value={"auxiliary": {}}), \
+             patch("fool_cli.config.load_config_readonly", return_value={"auxiliary": {}}), \
              patch("agent.auxiliary_client.OpenAI") as mock_openai:
             mock_client = MagicMock(name="openrouter_client")
             mock_openai.return_value = mock_client
@@ -1060,7 +1060,7 @@ class TestOpenRouterPaidLaneGuard:
         assert any("PAID lane engaged" in r.getMessage() for r in caplog.records)
         # Second call logs nothing new.
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)), \
-             patch("thefool_cli.config.load_config_readonly", return_value={"auxiliary": {}}), \
+             patch("fool_cli.config.load_config_readonly", return_value={"auxiliary": {}}), \
              patch("agent.auxiliary_client.OpenAI") as mock_openai:
             caplog.clear()
             with caplog.at_level(logging.WARNING, logger="agent.auxiliary_client"):
@@ -1094,7 +1094,7 @@ class TestGetTextAuxiliaryClient:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
             patch("agent.auxiliary_client.OpenAI"),
-            patch("thefool_cli.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
+            patch("fool_cli.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
         ):
             from agent.auxiliary_client import _build_codex_client
 
@@ -1220,7 +1220,7 @@ class TestAuxiliaryPoolAwareness:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=pool),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
-            patch("thefool_cli.models.get_nous_recommended_aux_model", return_value=None),
+            patch("fool_cli.models.get_nous_recommended_aux_model", return_value=None),
         ):
             from agent.auxiliary_client import _try_nous
 
@@ -1431,7 +1431,7 @@ class TestRefreshNousRecommendedModel:
         def _boom(**kw):
             raise RuntimeError("portal down")
         monkeypatch.setattr(
-            "thefool_cli.models.get_nous_recommended_aux_model", _boom)
+            "fool_cli.models.get_nous_recommended_aux_model", _boom)
         out = _refresh_nous_recommended_model(
             vision=False, stale_model="some/dead-model")
         assert out == _NOUS_MODEL
@@ -1440,7 +1440,7 @@ class TestRefreshNousRecommendedModel:
         """When the failed model IS the default and the Portal has nothing
         else, there's no usable alternative."""
         monkeypatch.setattr(
-            "thefool_cli.models.get_nous_recommended_aux_model",
+            "fool_cli.models.get_nous_recommended_aux_model",
             lambda **kw: _NOUS_MODEL,
         )
         out = _refresh_nous_recommended_model(
@@ -1917,7 +1917,7 @@ class TestTryMainAgentModelFallback:
 def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
     """_resolve_api_key_provider must not try anthropic when user never configured it."""
     from collections import OrderedDict
-    from thefool_cli.auth import ProviderConfig
+    from fool_cli.auth import ProviderConfig
 
     # Build a minimal registry with only "anthropic" so the loop is guaranteed
     # to reach it without being short-circuited by earlier providers.
@@ -1938,9 +1938,9 @@ def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
         return None, None
 
     monkeypatch.setattr("agent.auxiliary_client._try_anthropic", mock_try_anthropic)
-    monkeypatch.setattr("thefool_cli.auth.PROVIDER_REGISTRY", fake_registry)
+    monkeypatch.setattr("fool_cli.auth.PROVIDER_REGISTRY", fake_registry)
     monkeypatch.setattr(
-        "thefool_cli.auth.is_provider_explicitly_configured",
+        "fool_cli.auth.is_provider_explicitly_configured",
         lambda pid: False,
     )
 
@@ -2258,7 +2258,7 @@ class TestAuxiliaryTaskExtraBody:
             }
         }
 
-        with patch("thefool_cli.config.load_config", return_value=config), patch("thefool_cli.config.load_config_readonly", return_value=config), patch(
+        with patch("fool_cli.config.load_config", return_value=config), patch("fool_cli.config.load_config_readonly", return_value=config), patch(
             "agent.auxiliary_client._get_cached_client",
             return_value=(client, "glm-4.5-air"),
         ):
@@ -2289,7 +2289,7 @@ class TestAuxiliaryTaskExtraBody:
             }
         }
 
-        with patch("thefool_cli.config.load_config", return_value=config), patch("thefool_cli.config.load_config_readonly", return_value=config), patch(
+        with patch("fool_cli.config.load_config", return_value=config), patch("fool_cli.config.load_config_readonly", return_value=config), patch(
             "agent.auxiliary_client._get_cached_client",
             return_value=(client, "glm-4.5-air"),
         ):
@@ -2315,7 +2315,7 @@ class TestAuxiliaryTaskExtraBody:
         from agent.auxiliary_client import _get_task_extra_body
 
         config = {"auxiliary": {moa_task: {"reasoning_effort": "xhigh"}}}
-        with patch("thefool_cli.config.load_config", return_value=config), patch("thefool_cli.config.load_config_readonly", return_value=config), \
+        with patch("fool_cli.config.load_config", return_value=config), patch("fool_cli.config.load_config_readonly", return_value=config), \
              caplog.at_level(logging.WARNING, logger="agent.auxiliary_client"):
             result = _get_task_extra_body(moa_task)
 
@@ -4133,7 +4133,7 @@ class TestCustomEndpointApiKeyInheritance:
             captured.update(kwargs)
             return MagicMock()
 
-        with patch("thefool_cli.config.load_config", return_value=fake_config), patch("thefool_cli.config.load_config_readonly", return_value=fake_config), \
+        with patch("fool_cli.config.load_config", return_value=fake_config), patch("fool_cli.config.load_config_readonly", return_value=fake_config), \
              patch.object(ac, "_create_openai_client", side_effect=_capture_create):
             client, model = resolve_provider_client(
                 "custom",
@@ -4161,7 +4161,7 @@ class TestCustomEndpointApiKeyInheritance:
             captured.update(kwargs)
             return MagicMock()
 
-        with patch("thefool_cli.config.load_config", return_value=fake_config), patch("thefool_cli.config.load_config_readonly", return_value=fake_config), \
+        with patch("fool_cli.config.load_config", return_value=fake_config), patch("fool_cli.config.load_config_readonly", return_value=fake_config), \
              patch.object(ac, "_create_openai_client", side_effect=_capture_create):
             client, model = resolve_provider_client(
                 "custom",
@@ -4188,7 +4188,7 @@ class TestCustomEndpointApiKeyInheritance:
 
         with patch.object(ac, "_RUNTIME_MAIN_API_KEY", "sk-runtime-key"), \
              patch.object(ac, "_RUNTIME_MAIN_BASE_URL", "https://gw.example.com/v1"), \
-             patch("thefool_cli.config.load_config", return_value={"model": {}}), patch("thefool_cli.config.load_config_readonly", return_value={"model": {}}), \
+             patch("fool_cli.config.load_config", return_value={"model": {}}), patch("fool_cli.config.load_config_readonly", return_value={"model": {}}), \
              patch.object(ac, "_create_openai_client", side_effect=_capture_create):
             client, model = resolve_provider_client(
                 "custom",
@@ -4220,7 +4220,7 @@ class TestCustomEndpointApiKeyInheritance:
             captured.update(kwargs)
             return MagicMock()
 
-        with patch("thefool_cli.config.load_config", return_value=fake_config), patch("thefool_cli.config.load_config_readonly", return_value=fake_config), \
+        with patch("fool_cli.config.load_config", return_value=fake_config), patch("fool_cli.config.load_config_readonly", return_value=fake_config), \
              patch.object(ac, "_create_openai_client", side_effect=_capture_create):
             client, model = resolve_provider_client(
                 "custom",
@@ -4519,7 +4519,7 @@ class TestFastModelTier:
             "~openai/gpt-mini-latest": {},
             "stepfun/step-3.7-flash:free": {},
         }
-        with patch("thefool_cli.models.fetch_models_with_pricing", return_value=catalog):
+        with patch("fool_cli.models.fetch_models_with_pricing", return_value=catalog):
             assert ac._fast_model_from_catalog("nous") == "~openai/gpt-mini-latest"
 
     def test_catalog_match_skips_reasoning_batch_and_embedding_lookalikes(self):
@@ -4532,7 +4532,7 @@ class TestFastModelTier:
             "sentence-transformers/all-minilm-l6-v2": {},
             "google/gemini-3.6-flash": {},
         }
-        with patch("thefool_cli.models.fetch_models_with_pricing", return_value=catalog):
+        with patch("fool_cli.models.fetch_models_with_pricing", return_value=catalog):
             assert ac._fast_model_from_catalog("nous") == "google/gemini-3.6-flash"
 
     def test_catalog_match_skips_the_non_chat_siblings_of_a_chat_model(self):
@@ -4546,7 +4546,7 @@ class TestFastModelTier:
             "openai/gpt-4o-mini-search-preview": {},
             "openai/gpt-4o-mini": {},
         }
-        with patch("thefool_cli.models.fetch_models_with_pricing", return_value=catalog):
+        with patch("fool_cli.models.fetch_models_with_pricing", return_value=catalog):
             assert ac._fast_model_from_catalog("nous") == "openai/gpt-4o-mini"
 
     def test_catalog_match_takes_the_newest_of_a_family(self):
@@ -4563,7 +4563,7 @@ class TestFastModelTier:
             "openai/gpt-9-mini": {},
             "openai/gpt-10-mini": {},
         }
-        with patch("thefool_cli.models.fetch_models_with_pricing", return_value=catalog):
+        with patch("fool_cli.models.fetch_models_with_pricing", return_value=catalog):
             assert ac._fast_model_from_catalog("nous") == "openai/gpt-10-mini"
 
     def test_catalog_fetch_is_authenticated(self):
@@ -4575,10 +4575,10 @@ class TestFastModelTier:
         from agent import auxiliary_client as ac
 
         with patch(
-            "thefool_cli.auth.resolve_api_key_provider_credentials",
+            "fool_cli.auth.resolve_api_key_provider_credentials",
             return_value={"api_key": "sk-test", "base_url": "https://api.example.com/v1"},
         ), patch(
-            "thefool_cli.models.fetch_models_with_pricing", return_value={}
+            "fool_cli.models.fetch_models_with_pricing", return_value={}
         ) as fetch:
             ac._fast_model_from_catalog("openai")
 

@@ -10,7 +10,7 @@ This is a library module (not an agent tool). It provides:
   - HubLockFile: Track provenance of installed hub skills
   - Hub state directory management (quarantine, audit log, taps, index cache)
 
-Used by thefool_cli/skills_hub.py for CLI commands and the /skills slash command.
+Used by fool_cli/skills_hub.py for CLI commands and the /skills slash command.
 """
 
 import hashlib
@@ -25,8 +25,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from thefool_constants import get_hermes_home
-from thefool_cli._subprocess_compat import windows_hide_flags
+from fool_constants import get_hermes_home
+from fool_cli._subprocess_compat import windows_hide_flags
 from agent.skill_utils import is_excluded_skill_path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, urljoin, urlparse, urlsplit, urlunparse
@@ -100,7 +100,7 @@ def _index_cache_dir() -> Path:
 
 
 _DYNAMIC_PATH_RESOLVERS = {
-    "THEFOOL_HOME": _hermes_home,
+    "FOOL_HOME": _hermes_home,
     "SKILLS_DIR": _skills_dir,
     "HUB_DIR": _hub_dir,
     "LOCK_FILE": _lock_file,
@@ -3284,7 +3284,7 @@ class OptionalSkillSource(SkillSource):
     OPTIONAL_SKILLS_PREFIX = "optional-skills"
 
     def __init__(self, auth: Optional[GitHubAuth] = None):
-        from thefool_constants import get_optional_skills_dir
+        from fool_constants import get_optional_skills_dir
 
         self._optional_dir = get_optional_skills_dir(
             Path(__file__).parent.parent / "optional-skills"
@@ -3868,7 +3868,7 @@ def _category_skill_dirs(directory: Path) -> List[str]:
     :func:`is_excluded_skill_path` so a lone ``node_modules`` or
     ``references/pkg/SKILL.md`` hit does not misclassify the directory as
     a category. Shared by the install-time category guard here and
-    ``thefool_cli.skills_hub._existing_categories``.
+    ``fool_cli.skills_hub._existing_categories``.
     """
     skill_dirs: List[str] = []
     for entry in directory.iterdir():
@@ -4167,8 +4167,8 @@ def check_for_skill_updates(
 # Hermes centralized index source
 # ---------------------------------------------------------------------------
 
-THEFOOL_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
-THEFOOL_INDEX_TTL = 6 * 3600  # 6 hours
+FOOL_INDEX_URL = "https://hermes-agent.nousresearch.com/docs/api/skills-index.json"
+FOOL_INDEX_TTL = 6 * 3600  # 6 hours
 
 
 def _hermes_index_cache_file() -> Path:
@@ -4179,7 +4179,7 @@ def _load_hermes_index() -> Optional[dict]:
     """Fetch the centralized skills index, with local cache.
 
     The index is a JSON file hosted on the docs site, rebuilt daily by CI.
-    We cache it locally for THEFOOL_INDEX_TTL seconds to avoid repeated
+    We cache it locally for FOOL_INDEX_TTL seconds to avoid repeated
     downloads within a session.
     """
     # Check local cache
@@ -4187,7 +4187,7 @@ def _load_hermes_index() -> Optional[dict]:
     if hermes_index_cache_file.exists():
         try:
             age = time.time() - hermes_index_cache_file.stat().st_mtime
-            if age < THEFOOL_INDEX_TTL:
+            if age < FOOL_INDEX_TTL:
                 return json.loads(hermes_index_cache_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             pass
@@ -4209,7 +4209,7 @@ def _load_hermes_index() -> Optional[dict]:
     for accept_encoding in ("gzip, deflate", "identity"):
         try:
             resp = httpx.get(
-                THEFOOL_INDEX_URL,
+                FOOL_INDEX_URL,
                 timeout=15,
                 follow_redirects=True,
                 headers={"Accept-Encoding": accept_encoding},

@@ -72,7 +72,7 @@ small host fact requested by the RFC. Settings writes use Hermes'
 profile-aware config loader/saver and atomic YAML replacement. The bridge
 validates the existing YAML before writing so malformed config is never
 silently replaced. Every operation resolves the active context-local
-`THEFOOL_HOME`, so one globally loaded plugin context follows multiplexed
+`FOOL_HOME`, so one globally loaded plugin context follows multiplexed
 profile turns without crossing profile data.
 
 ## Durable state API
@@ -89,7 +89,7 @@ def register(ctx):
 The facade stores one JSON object at:
 
 ```text
-<THEFOOL_HOME>/plugin-data/<plugin-data-namespace>/state.json
+<FOOL_HOME>/plugin-data/<plugin-data-namespace>/state.json
 ```
 
 Portable Agent Plugins use their existing `PLUGIN_DATA` namespace exactly.

@@ -1,4 +1,4 @@
-import type { ConnectionState } from '@thefool/shared'
+import type { ConnectionState } from '@fool/shared'
 import { atom, computed } from 'nanostores'
 
 import { lastVisibleMessageIsUser } from '@/app/chat/thread-loading'

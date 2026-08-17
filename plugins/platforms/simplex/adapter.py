@@ -32,7 +32,7 @@ Optional environment variables:
                                for any group. Omit to disable groups entirely.
     SIMPLEX_HOME_CHANNEL       Default contact/group ID for cron delivery
     SIMPLEX_HOME_CHANNEL_NAME  Human label for the home channel
-    THEFOOL_SIMPLEX_TEXT_BATCH_DELAY
+    FOOL_SIMPLEX_TEXT_BATCH_DELAY
                                Quiet-period seconds (default: 0.8) used to
                                concatenate rapid-fire inbound text messages
                                into a single MessageEvent — same pattern as
@@ -192,7 +192,7 @@ class SimplexAdapter(BasePlatformAdapter):
         # Text message batching — concatenate rapid-fire messages into one
         # event before dispatching, mirroring Telegram's batching.
         self._text_batch_delay = float(
-            os.getenv("THEFOOL_SIMPLEX_TEXT_BATCH_DELAY", "0.8")
+            os.getenv("FOOL_SIMPLEX_TEXT_BATCH_DELAY", "0.8")
         )
         self._pending_text_batches: Dict[str, MessageEvent] = {}
         self._pending_text_batch_tasks: Dict[str, asyncio.Task] = {}
@@ -1293,7 +1293,7 @@ def interactive_setup() -> None:
 
     Prompts for the WebSocket URL and the optional allowlist / groups /
     auto-accept / home channel. Writes to ``~/.hermes/.env`` via
-    ``thefool_cli.config``.
+    ``fool_cli.config``.
     """
     print()
     print("SimpleX Chat setup")
@@ -1304,10 +1304,10 @@ def interactive_setup() -> None:
     print()
 
     try:
-        from thefool_cli.config import get_env_value, save_env_value
+        from fool_cli.config import get_env_value, save_env_value
     except ImportError:
         print(
-            "thefool_cli.config not available; set SIMPLEX_* vars manually in "
+            "fool_cli.config not available; set SIMPLEX_* vars manually in "
             "~/.hermes/.env"
         )
         return
@@ -1317,7 +1317,7 @@ def interactive_setup() -> None:
         suffix = " [keep current]" if existing else ""
         try:
             if secret:
-                from thefool_cli.secret_prompt import masked_secret_prompt
+                from fool_cli.secret_prompt import masked_secret_prompt
                 value = masked_secret_prompt(f"{prompt}{suffix}: ")
             else:
                 value = input(f"{prompt}{suffix}: ").strip()

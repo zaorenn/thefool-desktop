@@ -206,7 +206,7 @@ class GatewayKanbanWatchersMixin:
         # only while this process holds the actual singleton dispatcher lock.
         from gateway.config import Platform as _Platform
         try:
-            from thefool_cli import kanban_db as _kb
+            from fool_cli import kanban_db as _kb
         except Exception:
             logger.warning("kanban notifier: kanban_db not importable; notifier disabled")
             return
@@ -273,7 +273,7 @@ class GatewayKanbanWatchersMixin:
                 if _gc_due:
                     _gc_next_at = time.monotonic() + _GC_INTERVAL_SECONDS
                     try:
-                        from thefool_cli.config import load_config as _load_cfg
+                        from fool_cli.config import load_config as _load_cfg
 
                         _kanban_cfg = (_load_cfg() or {}).get("kanban") or {}
                         _gc_retention_days = int(
@@ -321,7 +321,7 @@ class GatewayKanbanWatchersMixin:
 
                     # Enumerate every board on disk, but poll each resolved DB
                     # path once. Multiple slugs can point at the same DB when
-                    # THEFOOL_KANBAN_DB pins the board path; without this guard
+                    # FOOL_KANBAN_DB pins the board path; without this guard
                     # one gateway could collect the same subscription/event
                     # more than once before advancing the cursor.
                     try:
@@ -1019,7 +1019,7 @@ class GatewayKanbanWatchersMixin:
         ``board`` scopes the DB connection to the board that owns this
         subscription. Unsub cursors in one board can't touch another's.
         """
-        from thefool_cli import kanban_db as _kb
+        from fool_cli import kanban_db as _kb
         conn = _kb.connect(board=board)
         try:
             _kb.advance_notify_cursor(
@@ -1034,7 +1034,7 @@ class GatewayKanbanWatchersMixin:
             conn.close()
 
     def _kanban_unsub(self, sub: dict, board: Optional[str] = None) -> None:
-        from thefool_cli import kanban_db as _kb
+        from fool_cli import kanban_db as _kb
         conn = _kb.connect(board=board)
         try:
             _kb.remove_notify_sub(
@@ -1055,7 +1055,7 @@ class GatewayKanbanWatchersMixin:
         board: Optional[str] = None,
     ) -> None:
         """Sync helper: undo a claimed notification cursor after send failure."""
-        from thefool_cli import kanban_db as _kb
+        from fool_cli import kanban_db as _kb
         conn = _kb.connect(board=board)
         try:
             _kb.rewind_notify_cursor(
@@ -1199,16 +1199,16 @@ class GatewayKanbanWatchersMixin:
         """
         # Read config once at boot. If the user flips the flag later, they
         # restart the gateway; same pattern as every other background
-        # watcher here. Honours THEFOOL_KANBAN_DISPATCH_IN_GATEWAY env var
+        # watcher here. Honours FOOL_KANBAN_DISPATCH_IN_GATEWAY env var
         # as an escape hatch (false-y value disables without editing YAML).
         try:
-            from thefool_cli.config import load_config as _load_config
+            from fool_cli.config import load_config as _load_config
         except Exception:
             logger.warning("kanban dispatcher: config loader unavailable; disabled")
             return
-        env_override = os.environ.get("THEFOOL_KANBAN_DISPATCH_IN_GATEWAY", "").strip().lower()
+        env_override = os.environ.get("FOOL_KANBAN_DISPATCH_IN_GATEWAY", "").strip().lower()
         if env_override in {"0", "false", "no", "off"}:
-            logger.info("kanban dispatcher: disabled via THEFOOL_KANBAN_DISPATCH_IN_GATEWAY env")
+            logger.info("kanban dispatcher: disabled via FOOL_KANBAN_DISPATCH_IN_GATEWAY env")
             return
 
         try:
@@ -1224,7 +1224,7 @@ class GatewayKanbanWatchersMixin:
             return
 
         try:
-            from thefool_cli import kanban_db as _kb
+            from fool_cli import kanban_db as _kb
         except Exception:
             logger.warning("kanban dispatcher: kanban_db not importable; dispatcher disabled")
             return
@@ -1603,7 +1603,7 @@ class GatewayKanbanWatchersMixin:
             successfully decomposed or specified this tick.
             """
             try:
-                from thefool_cli import kanban_decompose as _decomp
+                from fool_cli import kanban_decompose as _decomp
             except Exception as exc:  # pragma: no cover
                 logger.warning(
                     "kanban auto-decompose: import failed (%s); skipping", exc,
@@ -1623,9 +1623,9 @@ class GatewayKanbanWatchersMixin:
                 # pattern as the dashboard specify endpoint. The
                 # decomposer module connects with no board kwarg and
                 # relies on the env var.
-                prev_env = os.environ.get("THEFOOL_KANBAN_BOARD")
+                prev_env = os.environ.get("FOOL_KANBAN_BOARD")
                 try:
-                    os.environ["THEFOOL_KANBAN_BOARD"] = slug
+                    os.environ["FOOL_KANBAN_BOARD"] = slug
                     try:
                         triage_ids = _decomp.list_triage_ids()
                     except Exception as exc:
@@ -1669,9 +1669,9 @@ class GatewayKanbanWatchersMixin:
                             )
                 finally:
                     if prev_env is None:
-                        os.environ.pop("THEFOOL_KANBAN_BOARD", None)
+                        os.environ.pop("FOOL_KANBAN_BOARD", None)
                     else:
-                        os.environ["THEFOOL_KANBAN_BOARD"] = prev_env
+                        os.environ["FOOL_KANBAN_BOARD"] = prev_env
             return successes
 
         logger.info(

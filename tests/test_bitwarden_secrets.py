@@ -43,11 +43,11 @@ def hermes_home(tmp_path, monkeypatch):
     """Point Hermes at an isolated home directory."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     # Some modules cache get_hermes_home; clear if needed.
-    import thefool_constants
-    if hasattr(thefool_constants, "_HERMES_HOME_CACHE"):
-        thefool_constants._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
+    import fool_constants
+    if hasattr(fool_constants, "_HERMES_HOME_CACHE"):
+        fool_constants._HERMES_HOME_CACHE = None  # type: ignore[attr-defined]
     return home
 
 
@@ -255,7 +255,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
         "    override_existing: false\n"
         "    auto_install: false\n"
     )
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "0.t")
     monkeypatch.delenv("MY_BSM_KEY", raising=False)
 
@@ -278,7 +278,7 @@ def test_env_loader_calls_bsm_when_enabled(tmp_path, monkeypatch):
 
     reg_module._reset_registry_for_tests()
 
-    from thefool_cli.env_loader import _apply_external_secret_sources
+    from fool_cli.env_loader import _apply_external_secret_sources
     _apply_external_secret_sources(home)
 
     assert called["n"] == 1

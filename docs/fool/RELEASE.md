@@ -18,7 +18,7 @@ Upstream'in kendi `publish` bloğu **yoktu** — Nous sürümlerini repo dışı
 
 ## Yayına geçerken sıra
 
-1. **GitHub'da depoyu aç** (`serhanogurlu/thefool-desktop`).
+1. **GitHub'da depoyu aç** (`zaorenn/thefool-desktop`).
    İsim değişirse şu üç yeri birlikte güncelle, yoksa güncellemeler kopar:
    - `apps/desktop/package.json` → `build.publish.owner` / `.repo`
    - `hermes_cli/update_cmd.py` → `OFFICIAL_REPO_URL(S)`
@@ -28,7 +28,7 @@ Upstream'in kendi `publish` bloğu **yoktu** — Nous sürümlerini repo dışı
 2. **`origin` ekle ve ilk push:**
 
    ```bash
-   git remote add origin https://github.com/serhanogurlu/thefool-desktop.git
+   git remote add origin https://github.com/zaorenn/thefool-desktop.git
    ```
 
    > **Blobsuz klon notu:** bu depo `--filter=blob:none` ile klonlandı (tam

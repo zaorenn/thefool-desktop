@@ -7,7 +7,7 @@
   "author": "Fool Labs",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/serhanogurlu/thefool-desktop.git"
+    "url": "git+https://github.com/zaorenn/thefool-desktop.git"
   },
   "type": "module",
   "main": "dist/electron-main.mjs",
@@ -199,7 +199,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "serhanogurlu",
+        "owner": "zaorenn",
         "repo": "thefool-desktop"
       }
     ],

@@ -1594,13 +1594,13 @@ def _discard_stashed_changes(
 # Güncellemeler The Fool deposundan gelir, Nous'tan değil. Bu dikiş kaybolursa
 # kullanıcılar sessizce upstream Hermes'e güncellenir ve markalaşma silinir.
 OFFICIAL_REPO_URLS = {
-    "https://github.com/serhanogurlu/thefool-desktop.git",
-    "git@github.com:serhanogurlu/thefool-desktop.git",
-    "https://github.com/serhanogurlu/thefool-desktop",
-    "git@github.com:serhanogurlu/thefool-desktop",
+    "https://github.com/zaorenn/thefool-desktop.git",
+    "git@github.com:zaorenn/thefool-desktop.git",
+    "https://github.com/zaorenn/thefool-desktop",
+    "git@github.com:zaorenn/thefool-desktop",
 }
 
-OFFICIAL_REPO_URL = "https://github.com/serhanogurlu/thefool-desktop.git"
+OFFICIAL_REPO_URL = "https://github.com/zaorenn/thefool-desktop.git"
 
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 

@@ -51,7 +51,10 @@ def test_build_welcome_banner_title_falls_back_when_no_tag():
         )
 
     raw = buf.getvalue()
-    assert "Hermes Agent v" in raw, "Version label missing from title"
+    # FOOL-SEAM: version-banner — the fork renders its own product name here.
+    from fool.branding import NAME as _FOOL_NAME
+
+    assert f"{_FOOL_NAME} v" in raw, "Version label missing from title"
     assert "\x1b]8;" not in raw, "OSC-8 hyperlink should not be emitted without a tag"
 
 

@@ -28,7 +28,25 @@ def _resp(*, status=200, body=b""):
 # ---------------------------------------------------------------------------
 
 class TestRequestUploadUrl:
+    def test_upload_is_disabled_when_no_endpoint_is_configured(self):
+        """FOOL-SEAM: diagnostics-endpoint — the shipped default must stay off.
+
+        Upstream uploaded the diagnostics bundle (system info + LOGS) to the
+        Nous portal. The Fool configures no collection endpoint, so the upload
+        path must refuse rather than silently ship logs somewhere. If someone
+        restores a default endpoint, this fails loudly.
+        """
+        import hermes_cli.diagnostics_upload as diag
+
+        assert diag.NAS_BASE == ""
+        with pytest.raises(RuntimeError, match="disabled in The Fool"):
+            diag.request_upload_url()
+
     def test_happy_path_posts_json_and_returns_dict(self):
+        # The upload mechanism itself is unchanged; it just needs an endpoint,
+        # which The Fool no longer ships (see the test above).
+        import hermes_cli.diagnostics_upload as diag
+
         from hermes_cli.diagnostics_upload import request_upload_url
 
         payload = {
@@ -40,10 +58,13 @@ class TestRequestUploadUrl:
         }
         resp = _resp(status=200, body=json.dumps(payload).encode())
 
-        with patch(
-            "hermes_cli.diagnostics_upload.urllib.request.urlopen",
-            return_value=resp,
-        ) as urlopen:
+        with (
+            patch.object(diag, "NAS_BASE", "https://collector.example.com"),
+            patch(
+                "hermes_cli.diagnostics_upload.urllib.request.urlopen",
+                return_value=resp,
+            ) as urlopen,
+        ):
             result = request_upload_url(content_type="application/gzip", size_bytes=512)
 
         assert result == payload

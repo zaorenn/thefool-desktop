@@ -241,7 +241,7 @@ def default_downgrade_notice() -> Optional[str]:
             pass
         return (
             "Browser Use CLI not found — using the built-in browser tools. "
-            "Run `hermes tools` (Browser Automation → Browser Use) to install it, "
+            "Run `fool tools` (Browser Automation → Browser Use) to install it, "
             "or `browser.backend: off` in config.yaml to silence this."
         )
     except Exception as e:  # pragma: no cover — a notice must never break startup
@@ -528,7 +528,7 @@ def _resolve_backend_cdp(
         return (
             f"Cloud browser provider {type(provider).__name__} failed to "
             f"provide a session: {e}. Fix the provider configuration or "
-            "switch backends via `hermes tools` → Browser Automation."
+            "switch backends via `fool tools` → Browser Automation."
         )
     cdp = str((session_info or {}).get("cdp_url") or "")
     if not cdp:

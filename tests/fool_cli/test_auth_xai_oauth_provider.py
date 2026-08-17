@@ -382,7 +382,7 @@ def test_refresh_xai_oauth_pure_403_marked_tier_denied_not_relogin(monkeypatch):
 
     Regression test for #26847 — xAI's backend has been seen to 403
     standard SuperGrok subscribers despite the in-app subscription
-    being active. Re-running ``hermes model`` won't help in that
+    being active. Re-running ``fool model`` won't help in that
     case, so the AuthError must NOT set ``relogin_required=True``,
     and must carry the dedicated ``xai_oauth_tier_denied`` code so
     ``format_auth_error`` doesn't append the misleading re-auth hint.
@@ -404,7 +404,7 @@ def test_refresh_xai_oauth_pure_403_marked_tier_denied_not_relogin(monkeypatch):
 def test_format_auth_error_tier_denied_does_not_suggest_relogin():
     """``xai_oauth_tier_denied`` must not append the re-authenticate hint.
 
-    Regression for #26847: telling a tier-gated user to ``hermes model``
+    Regression for #26847: telling a tier-gated user to ``fool model``
     is actively wrong — re-logging in won't change xAI's allowlist
     decision. The full message (with ``XAI_API_KEY`` fallback) is built
     into the error itself.
@@ -528,8 +528,8 @@ def test_xai_oauth_discovery_validates_endpoints(monkeypatch):
 
 
 def test_credential_pool_seeds_xai_oauth_from_singleton(tmp_path, monkeypatch):
-    """After `hermes model` -> xai-oauth, the singleton holds tokens.  load_pool
-    must surface that as a pool entry so `hermes auth list` reflects truth and
+    """After `fool model` -> xai-oauth, the singleton holds tokens.  load_pool
+    must surface that as a pool entry so `fool auth list` reflects truth and
     refreshes route through the pool consistently with codex.
 
     Device code is the only supported xAI OAuth flow, so the singleton is
@@ -572,7 +572,7 @@ def test_credential_pool_device_code_seed_respects_suppression(tmp_path, monkeyp
 
 
 def test_auth_remove_xai_oauth_clears_singleton_and_sticks(tmp_path, monkeypatch):
-    """End-to-end regression: ``hermes auth remove xai-oauth 1`` for a
+    """End-to-end regression: ``fool auth remove xai-oauth 1`` for a
     singleton-seeded entry must clear auth.json providers.xai-oauth AND
     suppress further re-seeding — otherwise the next ``load_pool`` call
     silently resurrects the entry from the still-present singleton, making
@@ -600,7 +600,7 @@ def test_auth_remove_xai_oauth_clears_singleton_and_sticks(tmp_path, monkeypatch
     raw = json.loads((hermes_home / "auth.json").read_text())
     assert "xai-oauth" in raw.get("providers", {})
 
-    # Act: the user runs `hermes auth remove xai-oauth 1`.
+    # Act: the user runs `fool auth remove xai-oauth 1`.
     auth_remove_command(SimpleNamespace(provider="xai-oauth", target="1"))
 
     # Post-state: auth.json singleton must be cleared so a re-seed has
@@ -622,12 +622,12 @@ def test_auth_remove_xai_oauth_clears_singleton_and_sticks(tmp_path, monkeypatch
 
 
 def test_login_xai_oauth_relogin_clears_suppression_and_reseeds(tmp_path, monkeypatch):
-    """remove -> ``hermes model`` re-login (``_login_xai_oauth``) must clear the
+    """remove -> ``fool model`` re-login (``_login_xai_oauth``) must clear the
     ``device_code`` suppression marker so the singleton seed re-creates the
     pool entry.
 
     Pre-fix: ``auth_remove_command`` set ``["device_code"]`` suppression but
-    only ``auth_add_command`` cleared it — the ``hermes model`` re-login path did
+    only ``auth_add_command`` cleared it — the ``fool model`` re-login path did
     not. So after remove -> re-login the seed kept skipping and ``hermes auth
     list`` showed no xAI entry even though the agent still worked via the
     singleton fallback. The fix calls ``unsuppress_credential_source`` on
@@ -817,7 +817,7 @@ def test_pool_refresh_recovers_when_other_process_already_refreshed(tmp_path, mo
 
 
 def test_pool_manual_entry_does_not_sync_back_to_singleton(tmp_path, monkeypatch):
-    """`hermes auth add xai-oauth` entries (source='manual:xai_pkce') are
+    """`fool auth add xai-oauth` entries (source='manual:xai_pkce') are
     independent credentials and must NOT write to the singleton.  Sync-back
     is restricted to entries seeded from the singleton.  Otherwise adding a
     second pool credential would silently overwrite the user's main login."""
@@ -941,7 +941,7 @@ def test_pool_sync_back_preserves_active_provider(tmp_path, monkeypatch):
     picking a provider.  ``_save_provider_state`` flips ``active_provider``;
     using it on the sync-back path means every xAI/Codex/Nous refresh in a
     multi-provider setup silently overrides the user's chosen active
-    provider (visible to ``hermes auth status``, ``hermes setup``, and the
+    provider (visible to ``fool auth status``, ``fool setup``, and the
     ``hermes`` no-arg dispatcher).  Pin the ``set_active=False`` contract so
     no future refactor regresses to the legacy semantic."""
     from agent.credential_pool import load_pool

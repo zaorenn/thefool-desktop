@@ -1323,7 +1323,7 @@ def _env_enablement() -> Optional[dict]:
     """Seed ``PlatformConfig.extra`` from env vars during gateway config load.
 
     Called BEFORE adapter construction so env-only setups show up in
-    ``hermes gateway status`` and ``get_connected_platforms()``.  Returns
+    ``fool gateway status`` and ``get_connected_platforms()``.  Returns
     ``None`` when Buzz isn't minimally configured.
 
     The special ``home_channel`` key is handled by the core hook — it becomes
@@ -1367,7 +1367,7 @@ async def _standalone_send(
 ) -> Dict[str, Any]:
     """One-shot send without a live adapter (out-of-process cron delivery).
 
-    Used by ``tools/send_message_tool`` when ``hermes cron`` runs separately
+    Used by ``tools/send_message_tool`` when ``fool cron`` runs separately
     from the gateway process.  Without this hook, ``deliver=buzz`` cron jobs
     fail with ``No live adapter for platform 'buzz'``.
     """
@@ -1408,7 +1408,7 @@ async def _standalone_send(
 
 
 def interactive_setup() -> None:
-    """Interactive ``hermes gateway setup`` flow for the Buzz platform.
+    """Interactive ``fool gateway setup`` flow for the Buzz platform.
 
     Lazy-imports ``fool_cli.setup`` helpers so the plugin stays importable
     in non-CLI contexts (gateway runtime, tests).

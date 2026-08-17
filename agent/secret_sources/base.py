@@ -81,7 +81,7 @@ DEFAULT_CLI_TIMEOUT_SECONDS = 30.0
 class ErrorKind(str, Enum):
     """Machine-readable failure taxonomy for :class:`FetchResult.error`.
 
-    A fixed vocabulary keeps startup warnings and ``hermes secrets status``
+    A fixed vocabulary keeps startup warnings and ``fool secrets status``
     uniform across backends, and lets the orchestrator implement
     kind-dependent policy (e.g. a future stale-cache fallback on
     ``NETWORK``/``TIMEOUT`` but not on ``AUTH_FAILED``) exactly once.
@@ -135,7 +135,7 @@ class SecretSource(ABC):
             Lowercase ``[a-z0-9_]+``.  Also the provenance label stored
             for every var this source supplies.
         label: Human-readable name used in startup messages and
-            ``hermes secrets status`` (e.g. ``"Bitwarden Secrets Manager"``).
+            ``fool secrets status`` (e.g. ``"Bitwarden Secrets Manager"``).
         shape: ``"mapped"`` when the user explicitly binds env-var names
             to refs (1Password ``env:`` map, command source) or
             ``"bulk"`` when the backend injects whole projects/folders
@@ -216,7 +216,7 @@ class SecretSource(ABC):
         status``) right after a fetch error is surfaced, so the user sees
         *what to run* next to fix it — not just what broke.  Sources
         should override this to point at their own CLI verbs (e.g.
-        ``hermes secrets bitwarden token`` for AUTH_FAILED).  Return an
+        ``fool secrets bitwarden token`` for AUTH_FAILED).  Return an
         empty string to suppress the hint.
 
         Must never raise and must not perform I/O — it's a pure

@@ -7,7 +7,7 @@ background worker and returns ``{session_id, auth_url, flow}``; a ``poll``
 primitive reports ``{status: pending|approved|error}`` until the tokens land on
 disk for that server in that profile.
 
-The underlying token machinery is the *same* one the CLI ``hermes mcp login``
+The underlying token machinery is the *same* one the CLI ``fool mcp login``
 uses — ``fool_cli.mcp_config._probe_single_server`` under
 ``tools.mcp_oauth.force_interactive_oauth`` — so no OAuth logic is reimplemented
 here. The only new piece is decoupling the two browser callbacks (authorization

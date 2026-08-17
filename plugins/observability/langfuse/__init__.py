@@ -8,7 +8,7 @@ observability/langfuse`` or ``hermes tools → Langfuse Observability``). At
 runtime the plugin also requires the ``langfuse`` SDK and credentials; if
 either is missing the hooks are inert.
 
-Required env vars (set via ``hermes tools`` or ~/.hermes/.env):
+Required env vars (set via ``fool tools`` or ~/.hermes/.env):
   FOOL_LANGFUSE_PUBLIC_KEY  - Langfuse project public key (pk-lf-...)
   FOOL_LANGFUSE_SECRET_KEY  - Langfuse project secret key (sk-lf-...)
   FOOL_LANGFUSE_BASE_URL    - Langfuse server URL (default: https://cloud.langfuse.com)
@@ -282,7 +282,7 @@ def _get_langfuse() -> Optional[Langfuse]:
         if Langfuse is None:
             logger.warning(
                 "Langfuse plugin is enabled but the langfuse SDK is unavailable; "
-                "tracing is disabled. Run `hermes tools` and configure Langfuse "
+                "tracing is disabled. Run `fool tools` and configure Langfuse "
                 "Observability to reinstall it."
             )
             _LANGFUSE_CLIENT = _INIT_FAILED
@@ -1027,7 +1027,7 @@ def _finalize_all_traces() -> None:
 
     Gateway turns normally end their root span via ``_finish_trace`` (final
     assistant message with no tool calls). But short-lived CLI processes —
-    kanban workers, ``hermes chat -q`` one-shots, cron jobs — can exit while
+    kanban workers, ``fool chat -q`` one-shots, cron jobs — can exit while
     the last LLM call still has tool calls queued, leaving the root span
     un-ended. Ended children DO export via the SDK's own atexit flush, so the
     backend shows an anonymous trace (no name/session/metadata) whose

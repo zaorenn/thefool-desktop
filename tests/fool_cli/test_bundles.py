@@ -1,4 +1,4 @@
-"""Tests for fool_cli/bundles.py — the `hermes bundles` CLI subcommand."""
+"""Tests for fool_cli/bundles.py — the `fool bundles` CLI subcommand."""
 
 import argparse
 

@@ -1271,7 +1271,7 @@ def get_honcho_client(config: HonchoClientConfig | None = None) -> Honcho:
             raise ImportError(
                 "honcho-ai is required for Honcho integration. "
                 "Install it with: pip install honcho-ai  "
-                "(or run `hermes honcho setup` to configure)."
+                "(or run `fool honcho setup` to configure)."
             )
 
         # Allow config.yaml honcho.base_url to override the SDK's environment

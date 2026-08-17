@@ -1,4 +1,4 @@
-"""Runtime-backed validation behind ``hermes plugins doctor``.
+"""Runtime-backed validation behind ``fool plugins doctor``.
 
 The Doctor originated in #46456 / contributor PR #46457 by 峯岸 亮
 (@zapabob).  This core command keeps that contribution's manifest/import/

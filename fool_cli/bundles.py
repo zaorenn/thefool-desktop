@@ -1,4 +1,4 @@
-"""Implementation of the ``hermes bundles`` CLI subcommand.
+"""Implementation of the ``fool bundles`` CLI subcommand.
 
 Mirrors the structure of ``fool_cli/skills_hub.py`` but for skill
 bundles. Bundles are tiny YAML files that name a set of skills to load
@@ -164,7 +164,7 @@ def _cmd_reload(args) -> None:
 
 
 def register_cli(subparser) -> None:
-    """Build the ``hermes bundles`` argparse tree.
+    """Build the ``fool bundles`` argparse tree.
 
     Called from ``fool_cli/main.py`` where it owns the top-level
     ``bundles`` subparser. Keeping registration here means the bundles
@@ -194,7 +194,7 @@ def register_cli(subparser) -> None:
     )
     p_create.add_argument(
         "--description", "-d", default="",
-        help="Human-readable description shown in /help and `hermes bundles list`",
+        help="Human-readable description shown in /help and `fool bundles list`",
     )
     p_create.add_argument(
         "--instruction", "-i", default="",

@@ -45,7 +45,7 @@ def is_connected(config) -> bool:
 
 
 def interactive_setup() -> None:
-    """`hermes gateway setup` flow for A2A."""
+    """`fool gateway setup` flow for A2A."""
     from fool_cli.setup import (
         prompt,
         prompt_yes_no,

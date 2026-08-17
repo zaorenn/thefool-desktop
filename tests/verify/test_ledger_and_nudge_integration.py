@@ -2,9 +2,9 @@
 
 Covers the closed loop the rescoped PR is about:
 
-- ``hermes verify`` records into the evidence ledger (pass and fail),
+- ``fool verify`` records into the evidence ledger (pass and fail),
 - a passing run satisfies the verify-on-stop guard,
-- the verify-on-stop nudge names ``hermes verify --json`` when the workspace
+- the verify-on-stop nudge names ``fool verify --json`` when the workspace
   has a runnable recipe (start command or saved manifest),
 - the CLI's detect path merges ``detect_project_facts`` verify commands the
   recipe missed.
@@ -137,7 +137,7 @@ def test_passing_verify_run_satisfies_stop_guard(hermes_home, capsys):
 
 
 # ---------------------------------------------------------------------------
-# nudge wording: recipe-aware `hermes verify --json` suggestion
+# nudge wording: recipe-aware `fool verify --json` suggestion
 # ---------------------------------------------------------------------------
 
 

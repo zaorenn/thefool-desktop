@@ -53,7 +53,7 @@ from fool_cli.config import (
 )
 
 # display_hermes_home is imported lazily at call sites to avoid ImportError
-# when fool_constants is cached from a pre-update version during `hermes update`.
+# when fool_constants is cached from a pre-update version during `fool update`.
 from fool_cli.setup import (
     print_header,
     print_info,
@@ -329,7 +329,7 @@ def _wait_for_pid_exit(pid: int, timeout: float) -> bool:
 # A gateway whose asyncio loop is stalled (e.g. an in-loop compression pass,
 # #72707) cannot process SIGTERM/SIGUSR1 shutdown: the drain wait then burns
 # the full drain budget (180s by default), warns "still running after 180.0s
-# — restart may fail", and `hermes update` can deadlock behind it.  The loop
+# — restart may fail", and `fool update` can deadlock behind it.  The loop
 # publishes a liveness signal precisely for this case: an asyncio task
 # rewrites ``state/gateway.heartbeat`` every 30s (#66892), so a frozen loop
 # stops refreshing the file while a busy-but-alive loop keeps refreshing it.
@@ -436,7 +436,7 @@ def _get_ancestor_pids() -> set[int]:
 
     Walks from the current PID up to PID 1 (init) so that process-table scans
     never match the calling CLI process or any of its parents.  This prevents
-    ``hermes gateway status`` from falsely counting the ``hermes`` CLI that
+    ``fool gateway status`` from falsely counting the ``hermes`` CLI that
     invoked it as a running gateway instance (see #13242).
     """
     ancestors: set[int] = set()
@@ -473,7 +473,7 @@ def _scan_gateway_pids(
     discover gateways outside the current profile.
     """
     # Exclude the entire ancestor chain so the CLI process that invoked this
-    # scan (e.g. ``hermes gateway status``) is never mistaken for a running
+    # scan (e.g. ``fool gateway status``) is never mistaken for a running
     # gateway.  See #13242.
     exclude_pids = exclude_pids | _get_ancestor_pids()
     pids: list[int] = []
@@ -535,7 +535,7 @@ def _scan_gateway_pids(
             # ``subprocess.run(timeout=...)`` — because on Windows ``run()``'s
             # post-timeout cleanup joins the pipe reader threads unbounded; a
             # descendant (conhost.exe) holding duplicated pipe handles then
-            # wedges the caller forever. ``hermes update`` hung exactly there
+            # wedges the caller forever. ``fool update`` hung exactly there
             # on slow-WMI machines where the full Win32_Process scan exceeds
             # its budget (#87134).
             # bounded_probe_run also hides the console window: this scan runs
@@ -719,7 +719,7 @@ def find_gateway_pids(
         exclude_pids: PIDs to exclude from the result (e.g. service-managed
             PIDs that should not be killed during a stale-process sweep).
         all_profiles: When ``True``, return gateway PIDs across **all**
-            profiles (the pre-7923 global behaviour).  ``hermes update``
+            profiles (the pre-7923 global behaviour).  ``fool update``
             needs this because a code update affects every profile.
             When ``False`` (default), only PIDs belonging to the current
             Hermes profile are returned.
@@ -823,7 +823,7 @@ def _capture_gateway_argv(pid: int) -> list[str] | None:
 
 
 def _prepare_profile_gateway_update_restart(profile: str, pid: int) -> str | None:
-    """Choose who relaunches a profile gateway after ``hermes update``.
+    """Choose who relaunches a profile gateway after ``fool update``.
 
     A gateway started with ``--external-supervisor`` must exit back to that
     manager. Starting Hermes's detached watcher as well would escape the
@@ -876,8 +876,8 @@ def _spawn_gateway_restart_watcher(old_pid: int, run_argv: list[str]) -> bool:
     #
     # Windows — ``start_new_session`` is silently accepted but does NOT
     # detach.  The watcher stays attached to the CLI's console and dies
-    # when the user closes the terminal, leaving ``hermes update`` users
-    # with no running gateway until they re-invoke ``hermes gateway``
+    # when the user closes the terminal, leaving ``fool update`` users
+    # with no running gateway until they re-invoke ``fool gateway``
     # manually.  The Win32 equivalent is the ``CREATE_NEW_PROCESS_GROUP |
     # DETACHED_PROCESS | CREATE_NO_WINDOW`` creationflags bundle.
     #
@@ -1527,14 +1527,14 @@ def _print_gateway_process_mismatch(snapshot: GatewayRuntimeSnapshot) -> None:
             "⚠ Gateway process is running for this profile, but the service is not active"
         )
         print(f"  PID(s): {_format_gateway_pids(snapshot.gateway_pids, limit=None)}")
-        print("  This is usually a manual foreground/tmux/nohup run, so `hermes gateway`")
+        print("  This is usually a manual foreground/tmux/nohup run, so `fool gateway`")
         print("  can refuse to start another copy until this process stops.")
 
 
 def _print_other_profiles_gateway_status() -> None:
     """Print a summary of gateway status across all profiles.
 
-    Shown at the bottom of ``hermes gateway status`` output so users with
+    Shown at the bottom of ``fool gateway status`` output so users with
     multiple profiles can tell at a glance which gateways are running and
     avoid confusing another profile's process with the current one.
     """
@@ -1712,7 +1712,7 @@ def _reap_unsupervised_gateway_orphans(extra_exclude: set | None = None) -> bool
         try:
             # The install-time task name is profile-aware (Fool_Gateway /
             # Fool_Gateway_<profile>) — never hardcode it, or the guard is
-            # dormant on every standard `hermes gateway install` deployment.
+            # dormant on every standard `fool gateway install` deployment.
             from fool_cli.gateway_windows import get_task_name
 
             _task_name = get_task_name()
@@ -2028,7 +2028,7 @@ def _windows_scheduled_task_supervises(task_name: str) -> bool:
 def _windows_gateway_should_absorb_console_controls() -> bool:
     """Return True for detached Windows gateway runs that should ignore Ctrl+C.
 
-    Foreground ``hermes gateway run`` must remain interruptible from
+    Foreground ``fool gateway run`` must remain interruptible from
     PowerShell/CMD. Detached service-style launches opt in via
     ``FOOL_GATEWAY_DETACHED=1``; older wrappers without the env marker are
     treated as detached when no interactive stdin is attached.
@@ -2800,8 +2800,8 @@ def install_linux_gateway_from_setup(force: bool = False, enable_on_startup: boo
 def ensure_gateway_service(context: str = "setup") -> bool:
     """Install and start the gateway service without prompting.
 
-    The zero-decision service path used by ``hermes setup`` (end of wizard)
-    and ``hermes import``: if this host supports a service manager and no
+    The zero-decision service path used by ``fool setup`` (end of wizard)
+    and ``fool import``: if this host supports a service manager and no
     gateway service exists yet, install a user-scope service and start it.
     A gateway with zero configured platforms is a supported degraded mode
     (it runs the cron scheduler and picks up platforms as tokens appear),
@@ -2814,7 +2814,7 @@ def ensure_gateway_service(context: str = "setup") -> bool:
     Scope choice: always the least-surprising, no-privilege option —
     user-scope systemd unit on Linux, LaunchAgent on macOS, Scheduled Task
     on Windows. Users who want a boot-time system service still run
-    ``hermes gateway install --system`` explicitly (that path prompts and
+    ``fool gateway install --system`` explicitly (that path prompts and
     requires root; we never self-elevate from an installer).
     """
     from fool_constants import is_container
@@ -3181,7 +3181,7 @@ def _stable_service_working_dir() -> str:
     resolution does not depend on cwd. Pinning ``WorkingDirectory`` to
     ``PROJECT_ROOT`` (``Path(__file__).parent.parent``) is actively harmful:
     when the unit is generated from a transient checkout — a ``.worktrees/``
-    dir, or a clone that ``hermes update`` later relocates/removes — the path
+    dir, or a clone that ``fool update`` later relocates/removes — the path
     rots. systemd then fails the start at the CHDIR step (``status=200/CHDIR``,
     "Changing to the requested working directory failed") *before* Python
     loads, so the on-boot ``refresh_systemd_unit_if_needed()`` self-heal never
@@ -3526,7 +3526,7 @@ def _temp_home_in_service_definition(definition: str) -> str | None:
     service file silently breaks the user's gateway on the next (re)start:
     the gateway comes back "active (running)" but pointed at an empty temp
     home ("No messaging platforms enabled"), deaf to every platform.
-    Seen live 2026-06-11: an E2E guard probe ran ``hermes gateway restart``
+    Seen live 2026-06-11: an E2E guard probe ran ``fool gateway restart``
     with ``FOOL_HOME=/tmp/hermes-e2e-<pr>`` exported; the restart path's
     unit refresh baked the temp path into the production unit and the
     post-update restart produced a zombie gateway for 7+ hours.
@@ -3921,7 +3921,7 @@ def systemd_stop(system: bool = False):
         label = _service_scope_label(system)
         print(
             f"Gateway {label} service is still stopping after 90s; "
-            "check `hermes gateway status` or logs for final shutdown state."
+            "check `fool gateway status` or logs for final shutdown state."
         )
         return
     print(f"✓ {_service_scope_label(system).capitalize()} service stopped")
@@ -4013,7 +4013,7 @@ def systemd_restart(system: bool = False):
             label = _service_scope_label(system)
             print(
                 f"Gateway {label} service is still restarting after 90s; "
-                "check `hermes gateway status` or logs for final state."
+                "check `fool gateway status` or logs for final state."
             )
             return
         _wait_for_systemd_service_restart(system=system, previous_pid=pid)
@@ -4043,7 +4043,7 @@ def systemd_restart(system: bool = False):
         label = _service_scope_label(system)
         print(
             f"Gateway {label} service is still restarting after 90s; "
-            "check `hermes gateway status` or logs for final state."
+            "check `fool gateway status` or logs for final state."
         )
         return
     _wait_for_systemd_service_restart(system=system, previous_pid=pid)
@@ -4497,7 +4497,7 @@ def _timestamped_stderr_gateway_command(
 
     ``external_supervisor=True`` is for launchd ProgramArguments only: the
     inner ``gateway run`` must carry ``--external-supervisor`` so
-    ``hermes update`` sees the flag on the live grandchild argv and hands
+    ``fool update`` sees the flag on the live grandchild argv and hands
     the process back to launchd instead of starting a detached watcher
     (#86893 / #87005). The detached nohup fallback stays unmarked.
     """
@@ -4617,7 +4617,7 @@ def generate_launchd_plist() -> str:
 
     # Persist the configured RLIMIT_NOFILE floor into the service definition
     # itself. launchd starts children with a soft limit of 256 by default;
-    # without this block every plist rewrite (e.g. `hermes gateway start`)
+    # without this block every plist rewrite (e.g. `fool gateway start`)
     # would silently strip a manually-added limit and reintroduce EMFILE
     # crashes under load. The in-process floor (resource_limits.py) still
     # applies as a second layer for non-launchd launches.
@@ -5047,7 +5047,7 @@ def launchd_stop():
     # bootout unloads the service definition so KeepAlive doesn't respawn
     # the process.  A plain `kill SIGTERM` only signals the process — launchd
     # immediately restarts it because KeepAlive is unconditionally true.
-    # `hermes gateway start` re-bootstraps when it detects the job is unloaded.
+    # `fool gateway start` re-bootstraps when it detects the job is unloaded.
     try:
         subprocess.run(["launchctl", "bootout", target], check=True, timeout=90)
     except subprocess.CalledProcessError as e:
@@ -5131,7 +5131,7 @@ def launchd_restart():
         if pid is not None and probe_gateway_loop_liveness(pid) == GATEWAY_LOOP_WEDGED:
             # Health probe says the event loop is provably dead (#81642):
             # the gateway cannot process a graceful shutdown, so waiting the
-            # full drain budget only stalls the restart (and `hermes update`
+            # full drain budget only stalls the restart (and `fool update`
             # behind it) for 180s. Bounded escalation instead: SIGTERM grace
             # → SIGKILL → proceed, ~10s worst case. Never taken for a
             # busy-but-alive gateway — a fresh heartbeat keeps the drain path
@@ -5327,7 +5327,7 @@ def _guard_named_profile_under_multiplexer(force: bool = False) -> None:
     it is the sole inbound process for EVERY profile on the host. Starting a
     separate gateway for a named profile would double-bind that profile's
     platforms (two pollers on one bot token, port fights). In that mode a
-    named-profile ``hermes gateway run`` is always a misconfiguration, so we
+    named-profile ``fool gateway run`` is always a misconfiguration, so we
     hard-error with a pointer to the multiplexer. ``--force`` overrides.
 
     Inert unless ALL of: (a) this invocation is a named profile, (b) a default-
@@ -5481,7 +5481,7 @@ def _guard_existing_gateway_process_conflict(replace: bool = False) -> None:
     ``gateway.run`` performs the authoritative PID/lock check, but importing it
     is expensive: it pulls in model_tools/plugin discovery first. On small
     instances, a supervisor or dashboard loop repeatedly running bare
-    ``hermes gateway run`` can burn memory/CPU just to fail with "already
+    ``fool gateway run`` can burn memory/CPU just to fail with "already
     running" after plugin discovery. This cheap PID-file preflight preserves the
     same user-facing contract while avoiding that startup work without scanning
     unrelated gateway processes from other FOOL_HOME roots.
@@ -5553,7 +5553,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
     sys.path.insert(0, str(PROJECT_ROOT))
 
     # Detached Windows gateway runs must ignore console-control broadcasts
-    # from sibling CLI processes, but foreground `hermes gateway run` still
+    # from sibling CLI processes, but foreground `fool gateway run` still
     # needs to obey the banner's "Press Ctrl+C to stop" contract.
     # Service-style launchers set FOOL_GATEWAY_DETACHED=1; older wrappers
     # without the marker are handled by the non-TTY fallback.
@@ -5601,7 +5601,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
     # Refresh the systemd unit definition on every boot so that restart
     # settings (RestartSec, StartLimitIntervalSec, etc.) stay current even
     # when the process was respawned via exit-code-75 (stale-code or
-    # /restart) rather than through `hermes gateway restart` which already
+    # /restart) rather than through `fool gateway restart` which already
     # calls refresh_systemd_unit_if_needed().  Without this, a code update
     # that ships new unit settings won't take effect until the next manual
     # `hermes gateway start/restart` — leaving the gateway vulnerable to
@@ -5739,7 +5739,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
         logger.debug("respawn-storm breaker check failed (non-fatal): %s", _be)
 
     def _hard_exit_after_gateway_teardown(code: int) -> None:
-        # ``hermes gateway run`` enters through this CLI wrapper, not through
+        # ``fool gateway run`` enters through this CLI wrapper, not through
         # ``gateway.run.main()``.  Mirror that module's wedge-proof exit path:
         # once start_gateway() has completed graceful teardown, bypass Python
         # finalization so non-daemon worker threads (notably in-flight cron
@@ -5997,7 +5997,7 @@ def _all_platforms() -> list[dict]:
     Combines the built-in ``_PLATFORMS`` with plugin platforms registered via
     ``platform_registry``. Plugins are discovered on first call so bundled
     platforms (like IRC, which auto-load via ``kind: platform``) appear in
-    ``hermes setup gateway`` without needing the gateway to be running.
+    ``fool setup gateway`` without needing the gateway to be running.
     Built-ins keep their dict shape; plugin entries are adapted to the same
     shape with ``_registry_entry`` holding the source.
 
@@ -6507,7 +6507,7 @@ def _setup_weixin():
 
     if not check_weixin_requirements():
         print_error("  Missing dependencies: Weixin needs aiohttp and cryptography.")
-        print_info("  Install them, then rerun `hermes gateway setup`.")
+        print_info("  Install them, then rerun `fool gateway setup`.")
         return
 
     print()
@@ -6561,7 +6561,7 @@ def _setup_weixin():
         save_env_value("WEIXIN_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
         print_info(
-            "  Unknown DM users can request access and you approve them with `hermes pairing approve`."
+            "  Unknown DM users can request access and you approve them with `fool pairing approve`."
         )
     elif access_idx == 1:
         save_env_value("WEIXIN_DM_POLICY", "open")
@@ -6736,7 +6736,7 @@ def _setup_qqbot():
             save_env_value("QQ_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
         print_info(
-            "  Unknown users can request access; approve with `hermes pairing approve`."
+            "  Unknown users can request access; approve with `fool pairing approve`."
         )
     elif access_idx == 1:
         save_env_value("QQ_ALLOW_ALL_USERS", "true")
@@ -7307,7 +7307,7 @@ def _dispatch_all_via_service_manager_if_s6(action: str) -> bool:
     Returns True iff dispatched (caller should ``return``); False
     otherwise — caller continues with the host-side code path.
 
-    Without this, ``hermes gateway stop --all`` and ``... restart --all``
+    Without this, ``fool gateway stop --all`` and ``... restart --all``
     fall through to ``kill_gateway_processes(all_profiles=True)``, which
     just ``pkill``s every gateway process. s6-supervise observes the
     crash and restarts each one ~1s later — so ``--all`` ends up
@@ -7391,7 +7391,7 @@ def _maybe_redirect_run_to_s6_supervision(args) -> bool:
 
       1. ``_dispatch_via_service_manager_if_s6`` returns False unless
          we're in a container with s6 as PID 1. Host runs of
-         ``hermes gateway run`` are unaffected.
+         ``fool gateway run`` are unaffected.
       2. ``FOOL_S6_SUPERVISED_CHILD`` is exported by
          ``S6ServiceManager._render_run_script`` for the supervised
          process itself — i.e. when s6-supervise execs ``hermes gateway
@@ -7736,7 +7736,7 @@ def _gateway_command_inner(args):
             print_error(
                 "Refusing to stop the gateway from inside the gateway process.\n"
                 "This command was blocked to prevent restart loops.\n"
-                "Use `hermes gateway stop` from a shell outside the running gateway."
+                "Use `fool gateway stop` from a shell outside the running gateway."
             )
             sys.exit(1)
 
@@ -7829,7 +7829,7 @@ def _gateway_command_inner(args):
             print_error(
                 "Refusing to restart the gateway from inside the gateway process.\n"
                 "This command was blocked to prevent restart loops.\n"
-                "Use `hermes gateway restart` from a shell outside the running gateway."
+                "Use `fool gateway restart` from a shell outside the running gateway."
             )
             sys.exit(1)
 

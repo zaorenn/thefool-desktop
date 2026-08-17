@@ -2970,7 +2970,7 @@ class MCPServerTask:
         if not _ensure_mcp_sdk():
             raise ImportError(
                 f"MCP server '{self.name}' requires the 'mcp' Python SDK, but "
-                "it is not installed. Run `hermes setup` to install MCP support, "
+                "it is not installed. Run `fool setup` to install MCP support, "
                 "then retry."
             )
 
@@ -3900,7 +3900,7 @@ class MCPServerTask:
                         # listener on ``_reconnect_event`` — so a 401 on the
                         # very first connect left the server unrevivable for
                         # the life of the process, even after the user
-                        # re-authenticated with ``hermes mcp login``. Parking
+                        # re-authenticated with ``fool mcp login``. Parking
                         # keeps the task alive so the 300s self-probe (and an
                         # explicit /mcp refresh) can pick up fresh tokens.
                         if _is_auth_error(root):
@@ -7569,7 +7569,7 @@ def get_mcp_status() -> List[dict]:
 def probe_mcp_server_tools() -> Dict[str, List[tuple]]:
     """Temporarily connect to configured MCP servers and list their tools.
 
-    Designed for ``hermes tools`` interactive configuration — connects to each
+    Designed for ``fool tools`` interactive configuration — connects to each
     enabled server, grabs tool names and descriptions, then disconnects.
     Does NOT register tools in the Hermes registry.
 

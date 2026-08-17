@@ -692,9 +692,9 @@ class TestResetBundledSkill:
 class TestNoBundledSkillsOptOut:
     """The .no-bundled-skills marker makes sync_skills() a no-op.
 
-    This is what `hermes profile create --no-skills` (named profiles) and the
+    This is what `fool profile create --no-skills` (named profiles) and the
     installer's `--no-skills` flag (default ~/.hermes) rely on so bundled
-    skills are never seeded at install time NOR re-injected by `hermes update`.
+    skills are never seeded at install time NOR re-injected by `fool update`.
     """
 
     def test_marker_skips_sync_and_removal_seeds_normally(self, tmp_path):

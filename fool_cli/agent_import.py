@@ -7,7 +7,7 @@ Usage:
     hermes import-agent claude-code --dry-run # preview only, no changes
     hermes import-agent codex --source /path/to/.codex
 
-Follows the OpenClaw migration pattern (``hermes claw migrate`` /
+Follows the OpenClaw migration pattern (``fool claw migrate`` /
 ``optional-skills/migration/openclaw-migration/scripts/openclaw_to_hermes.py``):
 detect → parse → map → apply, with a mandatory preview phase, per-item
 imported/skipped/conflict/error records, and a ``--dry-run`` that writes
@@ -33,7 +33,7 @@ codex (~/.codex):
 Secrets are NEVER imported: credential files (.credentials.json, auth.json)
 are ignored, and MCP server env vars with secret-looking names (KEY, TOKEN,
 SECRET, PASSWORD, ...) are stripped and reported so the user can re-add them
-deliberately via ``hermes setup`` or config.yaml.
+deliberately via ``fool setup`` or config.yaml.
 """
 
 from __future__ import annotations
@@ -132,7 +132,7 @@ def load_yaml_file(path: Path) -> Dict[str, Any]:
     except yaml.YAMLError as exc:
         raise ConfigReadError(
             f"Refusing to overwrite {path}: the existing file is not valid YAML "
-            f"({exc}). Fix it with `hermes config edit` (or move it aside), then "
+            f"({exc}). Fix it with `fool config edit` (or move it aside), then "
             f"re-run the import."
         ) from exc
     # An empty file parses to None — a legitimate state with nothing to lose.
@@ -142,7 +142,7 @@ def load_yaml_file(path: Path) -> Dict[str, Any]:
         raise ConfigReadError(
             f"Refusing to overwrite {path}: expected the existing file to hold a "
             f"YAML mapping but found {type(data).__name__}. Fix it with "
-            f"`hermes config edit` (or move it aside), then re-run the import."
+            f"`fool config edit` (or move it aside), then re-run the import."
         )
     return data
 
@@ -842,7 +842,7 @@ class AgentImporter:
 # ---------------------------------------------------------------------------
 
 def import_agent_command(args) -> None:
-    """Handle ``hermes import-agent`` (invoked from fool_cli.main)."""
+    """Handle ``fool import-agent`` (invoked from fool_cli.main)."""
     from fool_cli.config import get_config_path, load_config, save_config
     from fool_constants import get_hermes_home
     from fool_cli.setup import (

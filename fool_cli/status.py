@@ -36,7 +36,7 @@ def redact_key(key: str) -> str:
     """Redact an API key for display.
 
     Thin wrapper over :func:`agent.redact.mask_secret`. Preserves the
-    "(not set)" placeholder in dim color to match ``hermes config``'s
+    "(not set)" placeholder in dim color to match ``fool config``'s
     output (previously this variant was missing the DIM color —
     consolidated via PR that also introduced ``mask_secret``).
     """
@@ -113,7 +113,7 @@ from fool_constants import is_termux as _is_termux
 
 
 def _estop_status_line():
-    """One-line pause banner for `hermes status`, or None when not paused.
+    """One-line pause banner for `fool status`, or None when not paused.
 
     Cheap: a single stat on $FOOL_HOME/ESTOP via agent.estop.
     """
@@ -126,7 +126,7 @@ def _estop_status_line():
         return None
     reason = state.get("reason")
     suffix = f" — reason: {reason}" if reason else ""
-    return f"⏸️  PAUSED (global emergency stop{suffix}; `hermes resume` to lift)"
+    return f"⏸️  PAUSED (global emergency stop{suffix}; `fool resume` to lift)"
 
 
 def show_status(args):
@@ -231,7 +231,7 @@ def show_status(args):
             get_qwen_auth_status,
             get_minimax_oauth_auth_status,
         )
-        # Read-only display: use the refresh-free snapshot so `hermes status`
+        # Read-only display: use the refresh-free snapshot so `fool status`
         # never performs an OAuth refresh or burns a single-use refresh token.
         nous_status = get_nous_auth_status_local()
         codex_status = get_codex_auth_status()

@@ -852,7 +852,7 @@ class TestPruneCheckpointsOrphanAllowlist:
 
     def test_end_to_end_timing_change_during_confirmation_prompt(self, tmp_path, monkeypatch):
         """Reproduces the exact PR #69141 review scenario end-to-end through
-        `hermes checkpoints prune`: the preview shows one pre-v2 orphan; a
+        `fool checkpoints prune`: the preview shows one pre-v2 orphan; a
         second project's workdir is removed by the input() callback while
         the human is "answering" the prompt. Only the previewed orphan may
         be deleted.

@@ -683,7 +683,7 @@ class LSPService:
         )
 
     # ------------------------------------------------------------------
-    # status / introspection (used by ``hermes lsp status``)
+    # status / introspection (used by ``fool lsp status``)
     # ------------------------------------------------------------------
 
     def get_status(self) -> Dict[str, Any]:

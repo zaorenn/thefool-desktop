@@ -102,7 +102,7 @@ DEFAULT_CONFIG = {
         # so the requesting turn is not amputated by restart_drain_timeout.
         # 0 = legacy behaviour (enter stop()/drain immediately). Default
         # 30 min is a safety valve for wedged agents, not a target latency —
-        # an interactive `hermes gateway restart` must never block for hours
+        # an interactive `fool gateway restart` must never block for hours
         # on a turn that wedged (#79133). Long unattended turns can raise
         # this in config.yaml.
         "restart_after_turn_timeout": 1800,
@@ -270,7 +270,7 @@ DEFAULT_CONFIG = {
         # Long-lived reconnect-loop escalation (seconds). A platform that has
         # been continuously failing/reconnecting for this long gets
         # needs_attention flagged in gateway runtime status (visible in
-        # `hermes status` / fleet monitoring). Retries never stop — this is a
+        # `fool status` / fleet monitoring). Retries never stop — this is a
         # signal, not a circuit breaker. 0 = disable.
         "reconnect_attention_after": 7200,
         # Freshness window for the gateway auto-continue note (seconds).
@@ -518,7 +518,7 @@ DEFAULT_CONFIG = {
     #   - enabled: True -> False   (opt-in; most users never use /rollback)
     #   - max_snapshots: 50 -> 20  (now actually enforced via ref rewrite)
     #   - auto_prune:   False -> True (orphans/stale pruned automatically)
-    # Opt in via ``hermes chat --checkpoints`` or set enabled=True here.
+    # Opt in via ``fool chat --checkpoints`` or set enabled=True here.
     "checkpoints": {
         "enabled": False,
         # Max checkpoints to keep per working directory.  Pre-v2 this only
@@ -548,7 +548,7 @@ DEFAULT_CONFIG = {
         # external volume / network share / VPN is simply not mounted yet —
         # and this sweep runs unattended, so it must never guess. Orphan
         # cleanup is only available via the explicit
-        # ``hermes checkpoints prune`` command (add ``--keep-orphans`` to
+        # ``fool checkpoints prune`` command (add ``--keep-orphans`` to
         # skip it), where a human is looking at the output.
         "auto_prune": True,
         "retention_days": 7,
@@ -1067,7 +1067,7 @@ DEFAULT_CONFIG = {
         },
         # Triage specifier — flesh out a rough one-liner in the Kanban
         # Triage column into a concrete spec, then promote it to ``todo``.
-        # Invoked by ``hermes kanban specify`` (single id or --all). Set a
+        # Invoked by ``fool kanban specify`` (single id or --all). Set a
         # cheap, capable model here (gemini-flash works well); the main
         # model is overkill for short spec expansion.
         "triage_specifier": {
@@ -1081,7 +1081,7 @@ DEFAULT_CONFIG = {
         },
         # Kanban decomposer — decomposes a triage task into a graph of
         # child tasks routed to specialist profiles by description.
-        # Invoked by ``hermes kanban decompose`` and the kanban
+        # Invoked by ``fool kanban decompose`` and the kanban
         # auto-decompose dispatcher tick. Returns a JSON task graph;
         # uses more tokens than the specifier so allow more headroom.
         "kanban_decomposer": {
@@ -1121,7 +1121,7 @@ DEFAULT_CONFIG = {
         # Curator — skill-usage review fork. Timeout is generous because the
         # review pass can take several minutes on reasoning models (umbrella
         # building over hundreds of candidate skills). "auto" = use main chat
-        # model; override via `hermes model` → auxiliary → Curator to route
+        # model; override via `fool model` → auxiliary → Curator to route
         # to a cheaper aux model (e.g. openrouter google/gemini-3-flash-preview).
         "curator": {
             "provider": "auto",
@@ -1222,7 +1222,7 @@ DEFAULT_CONFIG = {
         # Set false to restore the legacy c-j submit fallback on unusual POSIX
         # PTYs whose plain Enter arrives as LF instead of CR.
         "cli_multiline_shortcuts": True,
-        # Which interface bare `hermes` (and `hermes chat`) launches by default:
+        # Which interface bare `hermes` (and `fool chat`) launches by default:
         #   "cli" — the classic prompt_toolkit REPL (default, preserves prior behavior)
         #   "tui" — the modern Ink TUI (same as passing `--tui`)
         # Explicit flags always win over this setting: `--cli` forces the classic
@@ -1426,7 +1426,7 @@ DEFAULT_CONFIG = {
         "copy_shortcut": "auto",  # "auto" (platform default) | "ctrl_c" | "ctrl_shift_c" | "disabled"
         # Petdex animated mascot (https://github.com/crafter-station/petdex).
         # A purely cosmetic sprite that reacts to agent activity across the
-        # CLI, TUI, and desktop app. Manage with `hermes pets`. Disabled until
+        # CLI, TUI, and desktop app. Manage with `fool pets`. Disabled until
         # a pet is installed + selected (no effect on prompt caching — this is
         # a display concern only).
         "pet": {
@@ -2005,7 +2005,7 @@ DEFAULT_CONFIG = {
         # — curator, agent, or user — appends one JSONL entry to
         # ~/.hermes/skills/.curator_ledger.jsonl with before/after file
         # hashes; file contents are stored content-addressed (deduped) under
-        # ~/.hermes/.curator_backups/blobs/. Enables `hermes curator ledger`
+        # ~/.hermes/.curator_backups/blobs/. Enables `fool curator ledger`
         # and single-mutation `hermes curator rollback <entry-id>`.
         # Telemetry, never a gate: ledger failures cannot block a mutation.
         "ledger": True,
@@ -2020,7 +2020,7 @@ DEFAULT_CONFIG = {
     # and patch drift. Runs inactivity-triggered from session start — no
     # cron daemon.
     #
-    # See `hermes curator status` for the last run summary.
+    # See `fool curator status` for the last run summary.
     "curator": {
         "enabled": True,
         # How long to wait between curator runs (hours).  Default: 7 days.
@@ -2037,12 +2037,12 @@ DEFAULT_CONFIG = {
         # (mark stale / archive long-unused skills) and skips the forked
         # aux-model review entirely — no umbrella-building, no aux-model cost.
         # Set to true to opt back into merging overlapping skills into
-        # class-level umbrellas. `hermes curator run --consolidate` overrides
+        # class-level umbrellas. `fool curator run --consolidate` overrides
         # this for a single invocation.
         "consolidate": False,
         # Also prune (archive) bundled built-in skills after the inactivity
         # period, not just agent-created ones. ON by default. Built-ins are
-        # normally restored on every `hermes update`, so pruning them only
+        # normally restored on every `fool update`, so pruning them only
         # sticks because a suppression list tells the re-seeder to leave them
         # archived. Hub-installed skills are NEVER pruned here — they have an
         # external upstream owner. Built-ins accrue usage telemetry and their
@@ -2052,14 +2052,14 @@ DEFAULT_CONFIG = {
         # to keep all bundled built-ins permanently.
         "prune_builtins": True,
         # TTL purge of skills/.archive/. 0 (default) = never purge — archived
-        # skills are kept forever. When > 0, `hermes curator purge` deletes
+        # skills are kept forever. When > 0, `fool curator purge` deletes
         # archived skills older than this many days (explicit command only,
         # never automatic; every purge is recorded in the audit ledger).
         "archive_ttl_days": 0,
         # Pre-run backup: before every real curator pass (dry-run is
         # skipped), snapshot ~/.hermes/skills/ into
         # ~/.hermes/skills/.curator_backups/<utc-iso>/skills.tar.gz so the
-        # user can roll back with `hermes curator rollback`.
+        # user can roll back with `fool curator rollback`.
         "backup": {
             "enabled": True,
             "keep": 5,  # retain last N regular snapshots
@@ -2663,7 +2663,7 @@ DEFAULT_CONFIG = {
         "enabled": True,
         "url": "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json",
         # Disk cache TTL in hours.  Beyond this, the CLI refetches on the
-        # next /model or `hermes model` invocation; network failures
+        # next /model or `fool model` invocation; network failures
         # silently fall back to the stale cache.
         "ttl_hours": 1,
         # Optional per-provider override URLs for third parties that want
@@ -2850,7 +2850,7 @@ DEFAULT_CONFIG = {
         # the breaker never tripped — e.g. the ~150s wedged-event-loop cycle in
         # #81642 (stall -> ~90s liveness-watchdog hard-exit -> respawn ->
         # auto-resume replays the same session), which also makes
-        # `hermes update` hang because it can never drain the gateway.
+        # `fool update` hang because it can never drain the gateway.
         "restart_loop_guard": {
             "max_restarts": 3,
             "window_seconds": 60,
@@ -2995,7 +2995,7 @@ DEFAULT_CONFIG = {
         # silently deleting it could surprise users.  Opt in explicitly.
         "auto_prune": False,
         # How many inactive days of ended-session history to keep. Matches
-        # the default of ``hermes sessions prune``.
+        # the default of ``fool sessions prune``.
         "retention_days": 90,
         # When true, auto-archive (soft-hide, never delete) sessions that
         # haven't been touched in ``auto_archive_days`` days, once per
@@ -3033,10 +3033,10 @@ DEFAULT_CONFIG = {
         # that drops duplicate content copies and stops trigram-indexing tool
         # output (typically reclaims ~60%+ of state.db on heavy users). It is
         # OPT-IN: existing databases keep their working legacy index until the
-        # user runs `hermes sessions optimize-storage`, because the rebuild is
+        # user runs `fool sessions optimize-storage`, because the rebuild is
         # disk-heavy and long on large DBs (see that command's disk preflight).
         #
-        #   "advise" (default): `hermes update` prints a one-line notice with
+        #   "advise" (default): `fool update` prints a one-line notice with
         #     the reclaimable size and the command, when a legacy index is
         #     detected. Nothing is changed automatically.
         #   "require": the notice is shown as a REQUIRED upgrade (firmer copy),
@@ -3068,7 +3068,7 @@ DEFAULT_CONFIG = {
         # may hold and still be resumed interactively (CLI/TUI/desktop).
         "max_resume_messages": 20000,
         # Max active messages a single session may hold for an in-memory
-        # (non-streaming) export such as `hermes sessions export`. Checked
+        # (non-streaming) export such as `fool sessions export`. Checked
         # per session, so full-DB backups of many small sessions still work.
         "max_export_messages": 20000,
     },
@@ -3094,14 +3094,14 @@ DEFAULT_CONFIG = {
         },
     },
 
-    # ``hermes doctor`` behaviour.
+    # ``fool doctor`` behaviour.
     "doctor": {
-        # Per-probe timeout (seconds) for the opt-in `hermes doctor --live`
+        # Per-probe timeout (seconds) for the opt-in `fool doctor --live`
         # real-call backend probes (Firecrawl/FAL/browser/MCP/TTS/STT).
         "live_probe_timeout": 10,
     },
 
-    # ``hermes update`` behaviour.
+    # ``fool update`` behaviour.
     "updates": {
         # Pre-update safety backup — ONE consolidated mechanism, three modes:
         #
@@ -3112,9 +3112,9 @@ DEFAULT_CONFIG = {
         #     warning so the snapshot stays fast. Restore via ``/snapshot``.
         #     This is the #15733 (lost pairing data) / #34600 (emptied cron
         #     jobs) safety net.
-        #   full — the quick snapshot PLUS a full ``hermes backup``-style zip
+        #   full — the quick snapshot PLUS a full ``fool backup``-style zip
         #     of FOOL_HOME into <FOOL_HOME>/backups/, restorable with
-        #     ``hermes import``. Can add minutes on large homes. This is the
+        #     ``fool import``. Can add minutes on large homes. This is the
         #     #48200 (wrong-path wipe) safety net. ``--backup`` forces this
         #     for a single run.
         #   off — no pre-update backup of any kind. ``--no-backup`` forces
@@ -3127,7 +3127,7 @@ DEFAULT_CONFIG = {
         # Values below 1 are floored to 1 — the backup just created is
         # always preserved. The quick snapshot always keeps exactly 1.
         "backup_keep": 5,
-        # What `hermes update` does with uncommitted local changes to the
+        # What `fool update` does with uncommitted local changes to the
         # source tree when it runs NON-interactively — i.e. triggered from
         # the desktop/chat app or the gateway, where there's no TTY to answer
         # a restore prompt. Interactive (terminal) updates are unaffected:
@@ -3143,7 +3143,7 @@ DEFAULT_CONFIG = {
         #               ignored paths — node_modules, venv, build outputs —
         #               are never touched.
         "non_interactive_local_changes": "stash",
-        # Refresh an already-installed cua-driver during `hermes update`.
+        # Refresh an already-installed cua-driver during `fool update`.
         # The refresh is best-effort and macOS-only. Turn this off if the
         # upstream installer is not appropriate for the machine, for example
         # on non-admin accounts where `/Applications` is not writable.
@@ -3209,7 +3209,7 @@ DEFAULT_CONFIG = {
     # X (Twitter) Search via xAI's built-in x_search Responses tool.
     # The tool registers when xAI credentials are available (SuperGrok
     # OAuth or XAI_API_KEY) AND the x_search toolset is enabled in
-    # `hermes tools`. These settings tune the backing Responses API call.
+    # `fool tools`. These settings tune the backing Responses API call.
     "x_search": {
         # xAI model used for the Responses call. grok-4.5 is the
         # recommended default; any Grok model with x_search tool
@@ -3279,7 +3279,7 @@ DEFAULT_CONFIG = {
             # https://vault.bitwarden.eu for EU Cloud, or your own URL
             # for self-hosted Bitwarden.  Plumbed into the bws subprocess
             # as BWS_SERVER_URL.  Prompted for during
-            # `hermes secrets bitwarden setup`.
+            # `fool secrets bitwarden setup`.
             "server_url": "",
         },
         "onepassword": {
@@ -3396,7 +3396,7 @@ DEFAULT_CONFIG = {
     # leaks tokens that only work behind the configured trusted proxy boundary
     # (CA private key + proxy endpoint integrity are part of that boundary).
     #
-    # Configure with `hermes egress setup`.  Disabled by default — the rest of
+    # Configure with `fool egress setup`.  Disabled by default — the rest of
     # Hermes works exactly as before with `enabled: false`.
     "proxy": {
         # Master switch.  When false, iron-proxy is never started, no docker
@@ -3447,7 +3447,7 @@ DEFAULT_CONFIG = {
     },
 
     # Hermes Desktop (Electron app) launch options. These only affect
-    # `hermes desktop`; they do not touch the CLI/gateway.
+    # `fool desktop`; they do not touch the CLI/gateway.
     "desktop": {
         # Git repository discovery for the Desktop Projects sidebar. Empty
         # roots preserve the historical bounded scan of the user's home.

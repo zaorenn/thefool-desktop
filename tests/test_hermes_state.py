@@ -2990,7 +2990,7 @@ class TestFTS5ToolCallMigration:
         try:
             assert session_db.fts_optimize_available() is True
 
-            # `hermes db optimize` performs the v23 transition; afterwards the
+            # `fool db optimize` performs the v23 transition; afterwards the
             # tool fields are searchable.
             result = session_db.optimize_fts_storage(vacuum=False)
             assert result["ok"] is True

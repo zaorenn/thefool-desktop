@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Protocol
 
 # Add parent directory to path for imports BEFORE repo-level imports.
-# Without this, standalone invocations (e.g. after `hermes update` reloads
+# Without this, standalone invocations (e.g. after `fool update` reloads
 # the module) fail with ModuleNotFoundError for fool_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -143,7 +143,7 @@ def _fallback_chain_phrase() -> str:
     if chain:
         return "Fallback chain was exhausted or unavailable."
     return (
-        "No fallback chain configured — add one with `hermes fallback add`, "
+        "No fallback chain configured — add one with `fool fallback add`, "
         "or set a cron fleet default via `cron.model` + `cron.model_provider` "
         "in config.yaml."
     )
@@ -430,7 +430,7 @@ def _resolve_cron_enabled_toolsets(job: dict, cfg: dict) -> list[str] | None:
        Keeps the agent's job-scoped toolset override intact — #6130. Enabled
        MCP servers are layered on per ``_merge_mcp_into_per_job_toolsets`` so a
        native-toolset allowlist does not silently strip MCP tools.
-    2. Per-platform ``hermes tools`` config for the ``cron`` platform.
+    2. Per-platform ``fool tools`` config for the ``cron`` platform.
        Mirrors gateway behavior (``_get_platform_tools(cfg, platform_key)``)
        so users can gate cron toolsets globally without recreating every job.
     3. ``None`` on any lookup failure — AIAgent loads the full default set
@@ -1377,7 +1377,7 @@ def _interpreter_shutting_down(exc: Optional[BaseException] = None) -> bool:
     """True when the Python interpreter is finalizing.
 
     A cron tick can fire while the gateway is tearing down — SIGTERM from
-    ``hermes update`` / ``hermes gateway stop`` / systemd restart, or an
+    ``fool update`` / ``fool gateway stop`` / systemd restart, or an
     OOM-kill. Once finalization starts, ``concurrent.futures`` refuses new
     work with ``RuntimeError: cannot schedule new futures after interpreter
     shutdown`` and asyncio's default executor is gone, so *any* attempt to
@@ -4181,7 +4181,7 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
     except AuthError as exc:
         return (
             f"provider credential missing: {exc}. "
-            "Set the provider API key in .env (or `hermes setup`), or pin a "
+            "Set the provider API key in .env (or `fool setup`), or pin a "
             "working provider via `hermes cron edit "
             f"{job.get('id')} --provider <p>`."
         )
@@ -4242,7 +4242,7 @@ def _preflight_check_delivery(job: dict) -> Optional[str]:
             return (
                 f"delivery platform '{platform_name}' has no gateway "
                 "credentials configured (not connected). Configure it via "
-                "`hermes setup` or change the job's `deliver` target."
+                "`fool setup` or change the job's `deliver` target."
             )
     return None
 
@@ -4944,7 +4944,7 @@ def run_job(
 
         # Mark this job as NOT the dispatcher-owned kanban worker.
         #
-        # A kanban worker is a normal `hermes chat -q` CLI agent whose default
+        # A kanban worker is a normal `fool chat -q` CLI agent whose default
         # toolset includes `cronjob`, running with FOOL_KANBAN_TASK
         # legitimately in its own env; `cronjob(action="run")` calls
         # run_one_job() -> run_job() right here in that process.  Without this
@@ -4997,7 +4997,7 @@ def run_job(
         # Model resolution precedence: per-job override > cron.model (the
         # cron-fleet default) > FOOL_MODEL env > config.yaml ``model:``
         # (string or ``{default: ...}``). The per-job value is intentionally
-        # re-read from storage every tick so a ``hermes cron edit --model``
+        # re-read from storage every tick so a ``fool cron edit --model``
         # after a failed run takes effect on the next tick — there is no
         # in-memory cache.
         model = job.get("model") or os.getenv("FOOL_MODEL") or ""
@@ -6676,9 +6676,9 @@ def tick(
         raise
 
     try:
-        # Global emergency stop (`hermes pause`): skip dispatch entirely while
+        # Global emergency stop (`fool pause`): skip dispatch entirely while
         # the ESTOP sentinel exists. Never touches in-flight runs — due jobs
-        # simply wait for the next tick after `hermes resume`. Logged once per
+        # simply wait for the next tick after `fool resume`. Logged once per
         # engagement (not every tick) by check_paused.
         try:
             from agent.estop import check_paused as _estop_check_paused
@@ -6693,7 +6693,7 @@ def tick(
 
         # Dead-owner claim reclaim (#86721): execution rows carry their owner
         # pid + process start time, but recovery previously ran only at
-        # scheduler STARTUP. A one-shot `hermes cron run` that claimed a job
+        # scheduler STARTUP. A one-shot `fool cron run` that claimed a job
         # and died mid-run (its runner thread lived in the exiting CLI
         # process) left the row 'claimed' forever while the long-lived
         # gateway ticker kept running — blocking every future run of that

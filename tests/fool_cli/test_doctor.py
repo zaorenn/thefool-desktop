@@ -37,7 +37,7 @@ class TestDoctorPlatformHints:
     def test_sqlite_upgrade_hint_keeps_git_runtime_repair(self):
         hint = doctor._sqlite_upgrade_hint("git")
 
-        assert "run `hermes update`" in hint
+        assert "run `fool update`" in hint
 
 
 class TestProviderEnvDetection:
@@ -65,7 +65,7 @@ class TestDoctorToolAvailabilitySummary:
 
 
 class TestDoctorEnvFileEncoding:
-    """Regression for #18637 (bug 3): `hermes doctor` crashed on Windows
+    """Regression for #18637 (bug 3): `fool doctor` crashed on Windows
     Chinese locale (GBK) because `.env` was read with Path.read_text() which
     defaults to the system locale encoding, not UTF-8."""
 
@@ -744,7 +744,7 @@ def test_run_doctor_reports_agent_browser_resolves_via_npx(monkeypatch, tmp_path
 def test_run_doctor_fix_warms_npx_cache_when_agent_browser_resolves_via_npx(
     monkeypatch, tmp_path
 ):
-    """`hermes doctor --fix` must actually call warm_agent_browser_npx_cache()
+    """`fool doctor --fix` must actually call warm_agent_browser_npx_cache()
     when agent-browser resolves via npx, and report success."""
     _doctor_env_for_agent_browser(monkeypatch, tmp_path)
 

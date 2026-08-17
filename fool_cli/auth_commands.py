@@ -318,7 +318,7 @@ def auth_add_command(args) -> None:
         # xai-oauth path below) instead of routing through the singleton
         # ``_save_codex_tokens`` save path.
         # The singleton round-trip collapsed every added account into the
-        # latest login: a second ``hermes auth add openai-codex`` overwrote
+        # latest login: a second ``fool auth add openai-codex`` overwrote
         # the first account's singleton-mirrored ``device_code`` entry rather
         # than creating an independent one (#39236). ``manual:device_code``
         # entries refresh from their own token pair, so they need no singleton
@@ -358,7 +358,7 @@ def auth_add_command(args) -> None:
         # openai-codex / qwen-oauth / minimax-oauth patterns) instead of
         # routing through the singleton ``_save_xai_oauth_tokens`` save path.
         # The singleton round-trip collapsed every added account into the
-        # latest login: a second ``hermes auth add xai-oauth`` overwrote the
+        # latest login: a second ``fool auth add xai-oauth`` overwrote the
         # first account's singleton-mirrored ``device_code`` entry rather than
         # creating an independent one. ``manual:device_code`` entries refresh
         # from their own token pair (``_sync_xai_oauth_entry_from_auth_store``
@@ -509,7 +509,7 @@ def auth_reset_command(args) -> None:
 def auth_status_command(args) -> None:
     provider = _normalize_provider(getattr(args, "provider", "") or "")
     if not provider:
-        raise SystemExit("Provider is required. Example: `hermes auth status spotify`.")
+        raise SystemExit("Provider is required. Example: `fool auth status spotify`.")
     status = auth_mod.get_auth_status(provider)
     if not status.get("logged_in"):
         reason = status.get("error")
@@ -545,7 +545,7 @@ def auth_spotify_command(args) -> None:
 
 
 def _interactive_auth() -> None:
-    """Interactive credential pool management when `hermes auth` is called bare."""
+    """Interactive credential pool management when `fool auth` is called bare."""
     # Show current pool status first
     print("Credential Pool Status")
     print("=" * 50)

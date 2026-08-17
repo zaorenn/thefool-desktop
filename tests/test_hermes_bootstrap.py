@@ -214,7 +214,7 @@ class TestEntryPointsImportBootstrap:
 
         Also lenient about a try/except wrapper around the import: entry
         points may guard the import against ``ModuleNotFoundError`` so a
-        half-finished ``hermes update`` (git-reset landed new code but
+        half-finished ``fool update`` (git-reset landed new code but
         ``uv pip install -e .`` didn't finish re-registering
         ``fool_bootstrap`` as a top-level module) leaves hermes
         recoverable instead of crashing on every invocation.  When the

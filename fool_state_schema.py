@@ -54,7 +54,7 @@ def schema_read_probe_statements() -> tuple:
     reconciler diffs against — so a column added there is covered here
     automatically. A hand-maintained probe list went stale within days of
     shipping (it never learned ``sessions.last_activity_at``, so the sidebar
-    served an empty session list after `hermes update` until the user's
+    served an empty session list after `fool update` until the user's
     first message forced a writable open).
 
     Each statement is ``LIMIT 0``: column resolution happens at prepare
@@ -1099,7 +1099,7 @@ class SessionSchemaMixin:
                 # enough — is the wrong default. So on an EXISTING install we
                 # touch nothing here: the v22 inline FTS keeps working exactly
                 # as before, and we only record a flag advertising that the
-                # optimization is available. `hermes sessions optimize-storage`
+                # optimization is available. `fool sessions optimize-storage`
                 # performs the whole transition as one deliberate, disk-checked,
                 # progress-reported foreground operation.
                 #
@@ -1204,7 +1204,7 @@ class SessionSchemaMixin:
             # an earlier no-FTS5 runtime.
             #
             # OPT-IN v23 boundary: a legacy v22 install (inline-content FTS,
-            # not yet opted into `hermes db optimize`) must keep its EXISTING
+            # not yet opted into `fool db optimize`) must keep its EXISTING
             # inline schema + triggers. Running the v23 external-content DDL
             # here would create the trigram source VIEW and leave the DB in a
             # mixed inline/external state. So for a legacy DB we only ensure

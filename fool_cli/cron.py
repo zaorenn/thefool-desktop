@@ -214,7 +214,7 @@ def cron_tick():
         # (#87644). For the one-shot CLI surface, report cleanly instead of
         # dumping a traceback; the gateway ticker loop handles its own retry.
         print(color(f"✗ Cron tick failed: {exc}", Colors.RED))
-        print("  Check `hermes cron status` and the gateway log for details.")
+        print("  Check `fool cron status` and the gateway log for details.")
         return 1
     return 0
 

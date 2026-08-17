@@ -217,7 +217,7 @@ def install_bws(*, force: bool = False) -> Path:
 
     Returns the path to the installed executable.  Raises on any
     failure (network, checksum, extraction) — callers in the auto-install
-    path catch these; the user-facing ``hermes secrets bitwarden setup``
+    path catch these; the user-facing ``fool secrets bitwarden setup``
     surface lets them propagate so the wizard can show a clear error.
     """
     bin_dir = _hermes_bin_dir()
@@ -567,7 +567,7 @@ def fetch_bitwarden_secrets(
             "bws binary not available — auto-install failed and `bws` is "
             "not on PATH.  Install manually from "
             "https://github.com/bitwarden/sdk-sm/releases or re-run "
-            "`hermes secrets bitwarden setup`."
+            "`fool secrets bitwarden setup`."
         )
 
     try:
@@ -793,14 +793,14 @@ def apply_bitwarden_secrets(
     if not access_token:
         result.error = (
             f"secrets.bitwarden.enabled is true but {access_token_env} is "
-            "not set.  Run `hermes secrets bitwarden setup`."
+            "not set.  Run `fool secrets bitwarden setup`."
         )
         return result
 
     if not project_id:
         result.error = (
             "secrets.bitwarden.project_id is empty.  "
-            "Run `hermes secrets bitwarden setup`."
+            "Run `fool secrets bitwarden setup`."
         )
         return result
 
@@ -809,7 +809,7 @@ def apply_bitwarden_secrets(
     if binary is None:
         result.error = (
             "bws binary not available and auto-install is disabled.  "
-            "Run `hermes secrets bitwarden setup` to install."
+            "Run `fool secrets bitwarden setup` to install."
         )
         return result
 
@@ -925,7 +925,7 @@ class BitwardenSource(SecretSource):
         if not access_token:
             result.error = (
                 f"secrets.bitwarden.enabled is true but {access_token_env} is "
-                "not set.  Run `hermes secrets bitwarden setup`."
+                "not set.  Run `fool secrets bitwarden setup`."
             )
             result.error_kind = ErrorKind.NOT_CONFIGURED
             return result
@@ -934,7 +934,7 @@ class BitwardenSource(SecretSource):
         if not project_id:
             result.error = (
                 "secrets.bitwarden.project_id is empty.  "
-                "Run `hermes secrets bitwarden setup`."
+                "Run `fool secrets bitwarden setup`."
             )
             result.error_kind = ErrorKind.NOT_CONFIGURED
             return result
@@ -945,7 +945,7 @@ class BitwardenSource(SecretSource):
         if binary is None:
             result.error = (
                 "bws binary not available and auto-install is disabled.  "
-                "Run `hermes secrets bitwarden setup` to install."
+                "Run `fool secrets bitwarden setup` to install."
             )
             result.error_kind = ErrorKind.BINARY_MISSING
             return result
@@ -994,10 +994,10 @@ class BitwardenSource(SecretSource):
     def remediation(self, kind, cfg: dict) -> str:
         if kind in (ErrorKind.AUTH_FAILED, ErrorKind.AUTH_EXPIRED):
             return (
-                "Run `hermes secrets bitwarden token` to paste a fresh access "
+                "Run `fool secrets bitwarden token` to paste a fresh access "
                 "token (create one in the Bitwarden web app: Secrets Manager → "
                 "Machine accounts → Access tokens).  Wrong region?  Re-run "
-                "`hermes secrets bitwarden setup` and pick EU/self-hosted."
+                "`fool secrets bitwarden setup` and pick EU/self-hosted."
             )
         return super().remediation(kind, cfg)
 
@@ -1032,7 +1032,7 @@ def _classify_bws_error(message: str) -> ErrorKind:
 def clear_caches(home_path: Optional[Path] = None) -> None:
     """Drop in-process AND disk caches (plaintext and encrypted).
 
-    Used after a token rotation (`hermes secrets bitwarden token`) so the
+    Used after a token rotation (`fool secrets bitwarden token`) so the
     next startup fetches fresh with the new credential instead of serving
     a pull cached under the old token's fingerprint.  The encrypted cache
     is keyed off the old token too, so it must go as well.

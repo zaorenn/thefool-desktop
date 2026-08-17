@@ -1,4 +1,4 @@
-"""``hermes import`` subcommand parser.
+"""``fool import`` subcommand parser.
 
 Extracted verbatim from ``fool_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.

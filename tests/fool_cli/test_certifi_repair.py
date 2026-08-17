@@ -8,11 +8,11 @@ and the gateway is down on all platforms.
 
 Behavior contracts pinned here:
 
-1. The venv-repair import probes (early recovery + `hermes update`) must
+1. The venv-repair import probes (early recovery + `fool update`) must
    classify certifi as BROKEN when the module imports but ``cacert.pem`` is
    missing or corrupt — an attribute probe alone passes in that state.
-2. ``hermes doctor`` must fail the certificate check in that state, and
-   ``hermes doctor --fix`` must repair by force-reinstalling certifi and
+2. ``fool doctor`` must fail the certificate check in that state, and
+   ``fool doctor --fix`` must repair by force-reinstalling certifi and
    re-verifying.
 """
 
@@ -70,7 +70,7 @@ class TestEarlyRecoveryCertifiBundleProbe:
 
 
 class TestUpdateProbeScriptChecksBundle:
-    """The subprocess probe used by `hermes update`'s venv repair must apply
+    """The subprocess probe used by `fool update`'s venv repair must apply
     the same bundle-file check inside the target venv's interpreter."""
 
     def _run_probe_script(self, monkeypatch, tmp_path, bundle_path):

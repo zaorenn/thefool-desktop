@@ -1,4 +1,4 @@
-"""Tests that `hermes model` always shows the model selection menu for custom
+"""Tests that `fool model` always shows the model selection menu for custom
 providers, even when a model is already saved.
 
 Regression test for the bug where _model_flow_named_custom() returned
@@ -440,7 +440,7 @@ class TestCustomProviderModelSwitch:
 
 
 class TestCustomProviderDiscoverModels:
-    """#18726: honor ``discover_models: false`` in the terminal ``hermes model``
+    """#18726: honor ``discover_models: false`` in the terminal ``fool model``
     named-custom flow so the picker shows the configured ``models:`` subset
     instead of the endpoint's full live catalog."""
 

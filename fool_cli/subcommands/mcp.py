@@ -1,4 +1,4 @@
-"""``hermes mcp`` subcommand parser.
+"""``fool mcp`` subcommand parser.
 
 Extracted from ``fool_cli/main.py:main()`` (god-file Phase 2 follow-up).
 Handler injected to avoid importing ``main``.
@@ -107,7 +107,7 @@ def build_mcp_parser(subparsers, *, cmd_mcp: Callable) -> None:
     # ── Catalog (Nous-approved MCPs shipped with the repo) ─────────────────
     mcp_sub.add_parser(
         "picker",
-        help="Interactive catalog picker (also the default for `hermes mcp`)",
+        help="Interactive catalog picker (also the default for `fool mcp`)",
     )
     mcp_sub.add_parser(
         "catalog",
@@ -115,7 +115,7 @@ def build_mcp_parser(subparsers, *, cmd_mcp: Callable) -> None:
     )
     mcp_install_p = mcp_sub.add_parser(
         "install",
-        help="Install a catalog MCP by name (e.g. `hermes mcp install n8n`)",
+        help="Install a catalog MCP by name (e.g. `fool mcp install n8n`)",
     )
     mcp_install_p.add_argument(
         "identifier",

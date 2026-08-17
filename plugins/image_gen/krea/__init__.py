@@ -471,11 +471,11 @@ class KreaImageGenProvider(ImageGenProvider):
             if not auth_token:
                 return error_response(
                     error=(
-                        "KREA_API_KEY not set. Run `hermes tools` → Image "
+                        "KREA_API_KEY not set. Run `fool tools` → Image "
                         "Generation → Krea to configure, get a key at "
                         "https://www.krea.ai/settings/api-tokens, or sign in to "
                         "a Nous account with the managed Krea gateway enabled "
-                        "(`hermes setup`)."
+                        "(`fool setup`)."
                     ),
                     error_type="auth_required",
                     provider="krea",
@@ -602,7 +602,7 @@ class KreaImageGenProvider(ImageGenProvider):
                         f"Model '{model_id}' may not be enabled/priced on the "
                         "Nous Portal's Krea gateway. Set KREA_API_KEY to use "
                         "Krea directly, or pick a different model via "
-                        "`hermes tools` → Image Generation."
+                        "`fool tools` → Image Generation."
                     )
                 )
                 return error_response(

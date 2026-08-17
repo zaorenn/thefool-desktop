@@ -1008,7 +1008,7 @@ def _try_dispatch_background_run(
         # fail closed and the completion could never be claimed.
         session_key = str(session_id)
     if not session_key:
-        # Direct Python callers (`hermes cron run`, tests) have no agent
+        # Direct Python callers (`fool cron run`, tests) have no agent
         # session to deliver a completion to — the process exits right after
         # the tool returns. Run synchronously.
         return None

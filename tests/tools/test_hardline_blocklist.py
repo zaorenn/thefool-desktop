@@ -243,7 +243,7 @@ def test_quoted_and_brace_paths_are_hardline_blocked(command):
 # inside quotes is part of the argument the shell passes to the program.
 # These previously tripped the hardline floor because the flat command-start
 # class treated every raw newline — even inside quotes — as a command
-# boundary, blocking `hermes send` message bodies, multi-line
+# boundary, blocking `fool send` message bodies, multi-line
 # `git commit -m` messages, and heredoc text that merely MENTION
 # shutdown/reboot commands.
 _QUOTED_NEWLINE_DATA_ALLOW = [

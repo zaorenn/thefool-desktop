@@ -1,6 +1,6 @@
 """Regression: the Windows Desktop update hand-off must run through python.exe.
 
-`scripts/desktop-update/windows.ps1` drives `hermes update` for the in-app
+`scripts/desktop-update/windows.ps1` drives `fool update` for the in-app
 Desktop updater. It used to invoke the update through the venv's
 `venv\\Scripts\\hermes.exe` console-script launcher. On Windows that launcher is
 a real process that keeps `hermes.exe` mapped as its running image and spawns

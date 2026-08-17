@@ -522,7 +522,7 @@ def _get_cdp_override_raw() -> str:
     This is the availability-check variant: callers that only need to know
     *whether* a CDP override is configured (tool ``check_fn`` gates,
     ``_is_local_mode`` / ``_is_local_backend`` routing decisions,
-    ``hermes doctor``) MUST use this instead of :func:`_get_cdp_override`.
+    ``fool doctor``) MUST use this instead of :func:`_get_cdp_override`.
 
     Rationale: ``_get_cdp_override`` resolves the endpoint over HTTP
     (``/json/version`` discovery, 10s timeout). Tool-schema assembly runs at
@@ -2511,7 +2511,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
     # Every candidate below is validated with ``agent_browser_runnable`` before
     # it is cached. A bare ``shutil.which`` hit is NOT trusted: agent-browser's
     # npm postinstall re-points a global install symlink at our local
-    # node_modules binary, which disappears on the next ``hermes update`` and
+    # node_modules binary, which disappears on the next ``fool update`` and
     # leaves a dangling link that ``which`` still reports but exec fails on with
     # exit 127 (issue #48521). Validating lets a dead candidate fall through to
     # the next working resolution (extended PATH → local .bin → npx) instead of
@@ -2672,7 +2672,7 @@ def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
     out of the npm workspace install graph entirely (nothing to prune it
     anymore) but means the first real invocation in a session would
     otherwise pay npx's registry-lookup/fetch cost. Calling this during
-    ``hermes update`` (or ``hermes doctor --fix``) warms npx's own cache
+    ``fool update`` (or ``fool doctor --fix``) warms npx's own cache
     ahead of time, restoring the "available before any session starts"
     property agent-browser had while it was an eager root dependency —
     without re-entangling it with the workspace graph.
@@ -2681,7 +2681,7 @@ def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
     other agent-browser subprocess spawn (see ``_build_browser_env``) —
     this used to inherit the full parent environment, including every
     provider/gateway credential Hermes holds, while running registry-fetched
-    npm code on every ``hermes update`` (the GHSA-m4m8-xjp4-5rmm class of
+    npm code on every ``fool update`` (the GHSA-m4m8-xjp4-5rmm class of
     risk ``_build_browser_env`` exists specifically to prevent). Runs in its
     own process group and kills the *whole* group — not just the top-level
     npx PID — on timeout, since a surviving descendant can otherwise hold a
@@ -2716,7 +2716,7 @@ def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
         # range, not an exact pin — a compromised future 0.26.x patch must
         # not get to run its own install-time lifecycle scripts here.
         "--ignore-scripts",
-        # --prefer-offline: once cached, repeat `hermes update`/`doctor
+        # --prefer-offline: once cached, repeat `fool update`/`doctor
         # --fix` runs shouldn't hit the registry just to re-confirm
         # "latest" is still latest — that would defeat the point of
         # warming the cache in the first place.

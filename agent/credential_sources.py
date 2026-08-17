@@ -10,7 +10,7 @@ Hermes seeds its credential pool from many places:
     gh_cli        — gh auth token
     config:<name> — custom_providers config entry
     model_config  — model.api_key when model.provider == "custom"
-    manual        — user ran `hermes auth add`
+    manual        — user ran `fool auth add`
 
 Each source has its own reader inside ``agent.credential_pool._seed_from_*``
 (which keep their existing shape — we haven't restructured them).  What we
@@ -208,7 +208,7 @@ def _remove_claude_code(provider: str, removed) -> RemovalResult:
     return RemovalResult(hints=[
         "Suppressed claude_code credential — it will not be re-seeded.",
         "Note: Claude Code credentials still live in ~/.claude/.credentials.json",
-        "Run `hermes auth add anthropic` to re-enable if needed.",
+        "Run `fool auth add anthropic` to re-enable if needed.",
     ])
 
 
@@ -249,9 +249,9 @@ def _remove_nous_device_code(provider: str, removed) -> RemovalResult:
     """Nous OAuth lives in auth.json providers.nous — clear it and suppress.
 
     We suppress in addition to clearing because nothing else stops a future
-    `hermes auth add nous` (or any other path that writes providers.nous)
+    `fool auth add nous` (or any other path that writes providers.nous)
     from re-seeding before the user has decided to.  Suppression forces
-    them to go through `hermes auth add nous` to re-engage, which is the
+    them to go through `fool auth add nous` to re-engage, which is the
     documented re-add path and clears the suppression atomically.
     """
     result = RemovalResult()
@@ -288,7 +288,7 @@ def _remove_xai_oauth_device_code(provider: str, removed) -> RemovalResult:
     if _clear_auth_store_provider(provider):
         result.cleaned.append(f"Cleared {provider} OAuth tokens from auth store")
     result.hints.append(
-        "Run `hermes model` → xAI Grok OAuth (SuperGrok / Premium+) to re-authenticate if needed."
+        "Run `fool model` → xAI Grok OAuth (SuperGrok / Premium+) to re-authenticate if needed."
     )
     return result
 
@@ -305,7 +305,7 @@ def _remove_codex_device_code(provider: str, removed) -> RemovalResult:
     The canonical source name in ``_seed_from_singletons`` is
     ``"device_code"`` (no prefix).  Entries may show up in the pool as
     either ``"device_code"`` (seeded) or ``"manual:device_code"`` (added
-    via ``hermes auth add openai-codex``), but in both cases the re-seed
+    via ``fool auth add openai-codex``), but in both cases the re-seed
     gate lives at the ``"device_code"`` suppression key.  We suppress
     that canonical key here; the central dispatcher also suppresses
     ``removed.source`` which is fine — belt-and-suspenders, idempotent.
@@ -322,7 +322,7 @@ def _remove_codex_device_code(provider: str, removed) -> RemovalResult:
     result.hints.extend([
         "Suppressed openai-codex device_code source — it will not be re-seeded.",
         "Note: Codex CLI credentials still live in ~/.codex/auth.json",
-        "Run `hermes auth add openai-codex` to re-enable if needed.",
+        "Run `fool auth add openai-codex` to re-enable if needed.",
     ])
     return result
 
@@ -336,7 +336,7 @@ def _remove_qwen_cli(provider: str, removed) -> RemovalResult:
     return RemovalResult(hints=[
         "Suppressed qwen-cli credential — it will not be re-seeded.",
         "Note: Qwen CLI credentials still live in ~/.qwen/oauth_creds.json",
-        "Run `hermes auth add qwen-oauth` to re-enable if needed.",
+        "Run `fool auth add qwen-oauth` to re-enable if needed.",
     ])
 
 
@@ -365,7 +365,7 @@ def _remove_copilot_gh(provider: str, removed) -> RemovalResult:
     return RemovalResult(hints=[
         "Suppressed all copilot token sources (gh_cli + env vars) — they will not be re-seeded.",
         "Note: Your gh CLI / shell environment is unchanged.",
-        "Run `hermes auth add copilot` to re-enable if needed.",
+        "Run `fool auth add copilot` to re-enable if needed.",
     ])
 
 

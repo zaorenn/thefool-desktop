@@ -1,4 +1,4 @@
-"""Tests for the specifier module + `hermes kanban specify` CLI surface.
+"""Tests for the specifier module + `fool kanban specify` CLI surface.
 
 The auxiliary LLM client is mocked — these tests don't hit any network or
 real provider. They exercise the prompt plumbing, response parsing, DB

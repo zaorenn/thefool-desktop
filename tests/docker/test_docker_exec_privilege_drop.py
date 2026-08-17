@@ -115,7 +115,7 @@ def test_shim_drops_root_to_hermes_uid(sleep_container: str) -> None:
     into it without forking subcommands. Simplest approach: have `hermes`
     do anything that writes to disk, then check the file's owner.
 
-    Use `hermes config set` which writes config.yaml under FOOL_HOME.
+    Use `fool config set` which writes config.yaml under FOOL_HOME.
     The resulting file ownership tells us what UID the shim ended up at.
     """
     # Wipe any prior state.
@@ -186,20 +186,20 @@ def test_e2e_login_then_supervised_gateway_can_read_auth(
     "Hermes is not logged into Nous Portal" on every message.
 
     We can't do a real OAuth login in a unit test, but we can stand in
-    for it by writing the same file shape via `hermes config set`-style
+    for it by writing the same file shape via `fool config set`-style
     writes — what matters is the *file ownership invariant* downstream
     of `_save_auth_store`. If the shim works, every file the
     `docker exec` path produces is hermes-readable.
 
-    Specifically: pretend the operator ran `hermes login` (writes
+    Specifically: pretend the operator ran `fool login` (writes
     auth.json) and verify (a) the file exists and (b) it's readable by
-    the hermes UID. We use `hermes auth list` since that touches the
+    the hermes UID. We use `fool auth list` since that touches the
     auth store on the read side and would fail with the same
     'not logged in' shape if the file was unreadable to uid 10000.
     """
     # Have the shim-protected `docker exec` write the auth store.
-    # `hermes auth list` is read-only but still exercises _load_auth_store
-    # under the shim's UID. We invoke `hermes config set` first to
+    # `fool auth list` is read-only but still exercises _load_auth_store
+    # under the shim's UID. We invoke `fool config set` first to
     # provoke a write into FOOL_HOME so we have something concrete to
     # owner-check.
     r = subprocess.run(

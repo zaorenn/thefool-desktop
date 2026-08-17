@@ -2,7 +2,7 @@
 
 Mirrors the optional-skills/ pattern: each catalog entry lives under
 ``optional-mcps/<name>/manifest.yaml`` and ships disabled. Users discover
-entries via ``hermes mcp catalog`` or the interactive ``hermes mcp picker``,
+entries via ``fool mcp catalog`` or the interactive ``fool mcp picker``,
 and install them with ``hermes mcp install <name>`` (or by toggling in the
 picker, which flows them through any required env/OAuth setup).
 

@@ -1736,7 +1736,7 @@ class SlackAdapter(BasePlatformAdapter):
                     "and 'message.mpim' event. Add 'mpim:history' (and "
                     "'mpim:read') to bot scopes, add 'message.mpim' to event "
                     "subscriptions, then REINSTALL the app to the workspace. "
-                    "Regenerating the app from `hermes slack` produces a "
+                    "Regenerating the app from `fool slack` produces a "
                     "manifest with these already included.",
                     team_key or "this workspace",
                 )
@@ -1832,13 +1832,13 @@ class SlackAdapter(BasePlatformAdapter):
         if not raw_token:
             logger.error(
                 "[Slack] SLACK_BOT_TOKEN not set — this is a permanent config "
-                "error; set SLACK_BOT_TOKEN via `hermes gateway setup` "
+                "error; set SLACK_BOT_TOKEN via `fool gateway setup` "
                 "or in the active profile's ~/.hermes/.env file, then restart "
                 "the gateway.",
             )
             self._set_fatal_error(
                 "missing_slack_bot_token",
-                "SLACK_BOT_TOKEN not configured. Use `hermes gateway setup` "
+                "SLACK_BOT_TOKEN not configured. Use `fool gateway setup` "
                 "or add it to your active profile's ~/.hermes/.env file, "
                 "then restart the gateway.",
                 retryable=False,
@@ -1847,13 +1847,13 @@ class SlackAdapter(BasePlatformAdapter):
         if not app_token:
             logger.error(
                 "[Slack] SLACK_APP_TOKEN not set — this is a permanent config "
-                "error; set SLACK_APP_TOKEN via `hermes gateway setup` "
+                "error; set SLACK_APP_TOKEN via `fool gateway setup` "
                 "or in the active profile's ~/.hermes/.env file, then restart "
                 "the gateway.",
             )
             self._set_fatal_error(
                 "missing_slack_app_token",
-                "SLACK_APP_TOKEN not configured. Use `hermes gateway setup` "
+                "SLACK_APP_TOKEN not configured. Use `fool gateway setup` "
                 "or add it to your active profile's ~/.hermes/.env file, "
                 "then restart the gateway.",
                 retryable=False,
@@ -2088,7 +2088,7 @@ class SlackAdapter(BasePlatformAdapter):
                     "[Slack] Ignoring unhandled event type=%s (no listener "
                     "registered; subscribed events not handled by Hermes can "
                     "be removed from the Slack app manifest via "
-                    "`hermes slack manifest`)",
+                    "`fool slack manifest`)",
                     (event or {}).get(
                         "type",
                         (body or {}).get("event", {}).get("type", "unknown"),
@@ -2104,7 +2104,7 @@ class SlackAdapter(BasePlatformAdapter):
             # N identical @app.command() decorators.
             #
             # The slash commands must ALSO be declared in the Slack app
-            # manifest (see `hermes slack manifest`). In Socket Mode, Slack
+            # manifest (see `fool slack manifest`). In Socket Mode, Slack
             # routes the command event through the socket regardless of the
             # manifest's request URL, but it will not deliver an event for
             # a slash command the manifest doesn't declare.
@@ -9409,7 +9409,7 @@ def interactive_setup() -> None:
                 "reinstall if scopes or slash commands changed."
             )
             print_info(
-                "   Re-run `hermes slack manifest --write` anytime to refresh after "
+                "   Re-run `fool slack manifest --write` anytime to refresh after "
                 "Hermes adds new commands."
             )
         except Exception as e:
@@ -9424,7 +9424,7 @@ def interactive_setup() -> None:
             # new commands (e.g. /btw, /stop, ...) get registered in Slack.
             if prompt_yes_no(
                 "Regenerate the Slack app manifest with the latest command "
-                "list? (recommended after `hermes update`)",
+                "list? (recommended after `fool update`)",
                 True,
             ):
                 _write_slack_manifest_and_instruct()
@@ -9581,7 +9581,7 @@ def register(ctx) -> None:
         ensure_deps_fn=check_slack_requirements,
         is_connected=_is_connected,
         required_env=["SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"],
-        install_hint="Run `hermes setup` to install Slack support.",
+        install_hint="Run `fool setup` to install Slack support.",
         # Interactive setup wizard — replaces fool_cli/setup.py::_setup_slack
         # and the static _PLATFORMS["slack"] dict in fool_cli/gateway.py.
         setup_fn=interactive_setup,

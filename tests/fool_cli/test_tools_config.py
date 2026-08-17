@@ -768,7 +768,7 @@ class TestImagegenModelPicker:
 def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
     """Bundled plugins (plugins/spotify) share their toolset key with the
     built-in CONFIGURABLE_TOOLSETS entry. The effective list must not list
-    them twice — otherwise `hermes tools` → "reconfigure existing" shows
+    them twice — otherwise `fool tools` → "reconfigure existing" shows
     the same toolset two rows in a row.
     """
     from fool_cli.tools_config import _get_effective_configurable_toolsets
@@ -804,13 +804,13 @@ def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
 
 
 # ── Checklist diff scope: non-configurable toolsets (kanban) must not be
-#    reported as added/removed by `hermes tools` ──────────────────────────
+#    reported as added/removed by `fool tools` ──────────────────────────
 
 
 
 
 def test_kanban_not_reported_as_removed_in_diff():
-    """Reproduces the false-signal bug: `hermes tools` printed ``- kanban``
+    """Reproduces the false-signal bug: `fool tools` printed ``- kanban``
     when saving a platform that resolves kanban as enabled, even though the
     checklist never offered kanban as a toggle.
 
@@ -973,7 +973,7 @@ def test_visible_providers_reuses_pool_video_feature_snapshot(monkeypatch):
 # ("browserbase") only the CLI, and camofox its npm package.
 
 
-# ── Toolsets that shipped after a platform's last `hermes tools` save ────────
+# ── Toolsets that shipped after a platform's last `fool tools` save ────────
 #
 # Saving the picker (or one toggle in the desktop Toolsets UI) replaces a
 # platform's composite (``[hermes-cli]``) with a frozen explicit list, and

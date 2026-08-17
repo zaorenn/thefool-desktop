@@ -1,6 +1,6 @@
 """Import sessions from foreign coding agents (Claude Code, Codex CLI).
 
-``hermes sessions import`` (and ``--resume @claude`` / ``--resume @codex``)
+``fool sessions import`` (and ``--resume @claude`` / ``--resume @codex``)
 let a user pull a conversation they started in another agent CLI into
 Hermes and continue it here.
 
@@ -451,7 +451,7 @@ def pick_foreign_session(
 
 
 def run_sessions_import(args, db=None) -> Optional[str]:
-    """`hermes sessions import` entry point. Returns new session id or None."""
+    """`fool sessions import` entry point. Returns new session id or None."""
     source = getattr(args, "from_source", None)
     path = getattr(args, "path", None)
 

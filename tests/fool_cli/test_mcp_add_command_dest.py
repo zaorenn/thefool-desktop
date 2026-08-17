@@ -1,4 +1,4 @@
-"""Regression test: ``hermes mcp add --command`` must not clobber the
+"""Regression test: ``fool mcp add --command`` must not clobber the
 top-level ``args.command`` subparser dest.
 
 The top-level argparse parser uses ``dest="command"`` for its subparsers

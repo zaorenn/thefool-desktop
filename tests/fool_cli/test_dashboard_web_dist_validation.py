@@ -1,4 +1,4 @@
-"""Regression tests: `hermes dashboard` validates FOOL_WEB_DIST before serving.
+"""Regression tests: `fool dashboard` validates FOOL_WEB_DIST before serving.
 
 A custom FOOL_WEB_DIST without --skip-build previously skipped BOTH the
 build and any validation, so the server started and served 404s with no

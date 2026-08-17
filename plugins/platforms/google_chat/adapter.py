@@ -51,7 +51,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 # Heavy google-cloud + googleapiclient imports are deferred to first
 # adapter use. Importing them eagerly here added ~110ms wall and ~33MB
 # RSS to *every* CLI invocation (the plugin loader imports this module at
-# ``model_tools`` import time, so ``hermes status``, ``hermes chat``, etc.
+# ``model_tools`` import time, so ``fool status``, ``fool chat``, etc.
 # all paid the cost even though they never instantiate the adapter).
 #
 # All names below are module globals that ``_load_google_modules()``
@@ -3430,7 +3430,7 @@ def _env_enablement() -> Optional[Dict[str, Any]]:
 
 
 def interactive_setup() -> None:
-    """Walk the user through Google Chat configuration via ``hermes setup``.
+    """Walk the user through Google Chat configuration via ``fool setup``.
 
     The setup wizard at ``fool_cli/gateway.py`` calls this for plugin
     platforms instead of using the in-tree ``_PLATFORMS`` data block. The
@@ -3540,8 +3540,8 @@ async def _standalone_send(
     """POST a single Google Chat message via the REST API without the SDK.
 
     Used by ``tools/send_message_tool._send_via_adapter`` when the gateway
-    runner is not in this process (e.g. ``hermes cron`` running as a
-    separate process from ``hermes gateway``).  Without this hook,
+    runner is not in this process (e.g. ``fool cron`` running as a
+    separate process from ``fool gateway``).  Without this hook,
     ``deliver=google_chat`` cron jobs fail with ``No live adapter for
     platform``.
 
@@ -3698,7 +3698,7 @@ def register(ctx) -> None:
         required_env=[
             "GOOGLE_CHAT_SERVICE_ACCOUNT_JSON",
         ],
-        install_hint="Run `hermes setup` to install Google Chat support.",
+        install_hint="Run `fool setup` to install Google Chat support.",
         setup_fn=interactive_setup,
         # Env-driven auto-configuration — the core env-populator hook calls
         # this during ``_apply_env_overrides`` and seeds

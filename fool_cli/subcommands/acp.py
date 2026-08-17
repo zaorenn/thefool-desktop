@@ -1,4 +1,4 @@
-"""``hermes acp`` subcommand parser.
+"""``fool acp`` subcommand parser.
 
 Extracted from ``fool_cli/main.py:main()`` (god-file Phase 2 follow-up).
 Handler injected to avoid importing ``main``.

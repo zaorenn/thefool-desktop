@@ -148,7 +148,7 @@ class TestUnicodeDecodeErrorInUpdatePrompts:
     interactive update prompts call input() directly -- the config-
     migration prompt, the stash-restore prompt, and the upstream-remote
     prompt -- and each must fail safe (skip, don't crash) rather than let
-    the exception escape and crash `hermes update` mid-flight.
+    the exception escape and crash `fool update` mid-flight.
     """
 
     @patch("fool_cli.update_cmd._reload_config_modules")

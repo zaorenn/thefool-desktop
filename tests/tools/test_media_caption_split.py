@@ -1,6 +1,6 @@
 """Guard test for the MEDIA:<path> caption chokepoint (_media_caption_split).
 
-`hermes send` strips the MEDIA: tag and leaves the remaining prose as the
+`fool send` strips the MEDIA: tag and leaves the remaining prose as the
 accompanying text. Historically every standalone sender posted that text as a
 *separate* message before an uncaptioned media bubble, splitting
 ``hermes send --to whatsapp "MEDIA:/x.png This Caption"`` into two parts.

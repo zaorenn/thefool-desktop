@@ -3437,7 +3437,7 @@ class OptionalSkillSource(SkillSource):
 
         Local installs lag `main` — a freshly merged optional skill isn't in
         the user's `optional-skills/` checkout until they run
-        ``hermes update``. Rather than telling them to update first, resolve
+        ``fool update``. Rather than telling them to update first, resolve
         the skill against the live default branch.
 
         ``rel`` is the identifier without the ``official/`` prefix — either

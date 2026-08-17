@@ -1,6 +1,6 @@
-"""Tests for the stale-dashboard handling run at the end of ``hermes update``.
+"""Tests for the stale-dashboard handling run at the end of ``fool update``.
 
-``hermes update`` detects ``hermes dashboard`` processes left over from the
+``fool update`` detects ``fool dashboard`` processes left over from the
 previous version and kills them (SIGTERM + SIGKILL grace, or ``taskkill /F``
 on Windows).  Without this, the running backend silently serves stale Python
 against a freshly-updated JS bundle, producing 401s / empty data.
@@ -252,7 +252,7 @@ class TestDashboardUpdateCleanup:
 
 class TestWindowsWmicEncoding:
     """Regression tests for #17049 — the Windows wmic branch must not crash
-    `hermes update` on non-UTF-8 system locales (e.g. cp936 on zh-CN).
+    `fool update` on non-UTF-8 system locales (e.g. cp936 on zh-CN).
     """
 
     def test_wmic_routed_through_bounded_probe_run_with_ignore_errors(self):
@@ -690,7 +690,7 @@ class TestCmdlineCapture:
 class TestPostUpdateStaleModuleReload:
     """Regression tests for the post-update stale-module ImportError.
 
-    ``hermes update`` runs in the PRE-pull Python process. When the update
+    ``fool update`` runs in the PRE-pull Python process. When the update
     adds a new symbol to ``fool_cli._subprocess_compat`` (as #87134 added
     ``bounded_probe_run``), the post-update dashboard cleanup's lazy
     ``from fool_cli._subprocess_compat import bounded_probe_run`` hits the

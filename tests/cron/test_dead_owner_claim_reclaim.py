@@ -59,7 +59,7 @@ def _dead_pid() -> int:
 def _orphan_claimed_row(executions, job_id: str) -> str:
     """Persist a claimed execution owned by a process that no longer exists.
 
-    Mirrors what a one-shot ``hermes cron run`` leaves behind: a row stuck in
+    Mirrors what a one-shot ``fool cron run`` leaves behind: a row stuck in
     ``claimed`` whose owner pid is dead.
     """
     record = executions.create_execution(job_id, source="direct")
@@ -155,7 +155,7 @@ class TestOneShotCliRunIsSynchronous:
         _SESSION_ASYNC_DELIVERY.reset(token)
 
     def test_cli_run_declares_stateless_channel_before_dispatch(self, monkeypatch):
-        """`hermes cron run` must gate off async delivery so the run executes
+        """`fool cron run` must gate off async delivery so the run executes
         synchronously in the CLI process instead of on a doomed daemon thread."""
         from gateway.session_context import async_delivery_supported
         from fool_cli import cron as cron_cli

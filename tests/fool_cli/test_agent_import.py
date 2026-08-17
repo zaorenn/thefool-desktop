@@ -1,4 +1,4 @@
-"""Tests for fool_cli.agent_import — ``hermes import-agent``.
+"""Tests for fool_cli.agent_import — ``fool import-agent``.
 
 Covers: source detection, Claude Code and Codex parsing, mapping into the
 real Hermes stores (memories/MEMORY.md, config.yaml command_allowlist /

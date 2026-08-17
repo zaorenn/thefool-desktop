@@ -109,10 +109,10 @@ def _models_config_is_allowlist(value: Any) -> bool:
     """Return True when ``models:`` is an intentional ID allowlist.
 
     A mapping like ``{model_id: {context_length: N}}`` is per-model *metadata*
-    written by ``_save_custom_provider`` / the ``hermes model`` wizard — not a
+    written by ``_save_custom_provider`` / the ``fool model`` wizard — not a
     catalog narrow. Treating that shape as an allowlist made Desktop/Telegram
     pickers show only the saved default for local Ollama (no ``api_key``),
-    while ``hermes model`` still live-probed the full ``/v1/models`` list.
+    while ``fool model`` still live-probed the full ``/v1/models`` list.
     Refresh could not help because the same gate skipped probing.
 
     List/string shapes remain allowlists for no-key endpoints. To pin a
@@ -2628,7 +2628,7 @@ def list_authenticated_providers(
             continue
 
         # Unified pathway: route through cached_provider_model_ids() so the
-        # /model picker sees the SAME list `hermes model` would build, with
+        # /model picker sees the SAME list `fool model` would build, with
         # disk caching to keep the picker open snappy. Falls back to the
         # curated static list when the live fetcher returns nothing.
         model_ids = cached_provider_model_ids(hermes_id)
@@ -2794,7 +2794,7 @@ def list_authenticated_providers(
         elif hermes_slug == "nous":
             # Nous serves a large live /v1/models catalog (vendor-prefixed
             # models from many providers, returned alphabetically). The
-            # `hermes model` picker deliberately shows ONLY the curated agentic
+            # `fool model` picker deliberately shows ONLY the curated agentic
             # list — augmented with the Portal's free/paid recommendations so
             # newly-launched models surface without a CLI release — in curated
             # order. Mirror that exactly (see _model_flow_nous in main.py) so
@@ -2859,7 +2859,7 @@ def list_authenticated_providers(
     # --- 2b. Cross-check canonical provider list ---
     # Catches providers that are in CANONICAL_PROVIDERS but weren't found
     # in PROVIDER_TO_MODELS_DEV or FOOL_OVERLAYS (keeps /model in sync
-    # with `hermes model`).
+    # with `fool model`).
     try:
         from fool_cli.models import CANONICAL_PROVIDERS as _canon_provs
     except ImportError:
@@ -3059,7 +3059,7 @@ def list_authenticated_providers(
             # list: a singular ``default_model``/``model`` is only the active
             # selection and must not suppress discovery (see #40542 / PR
             # #61928). Dict-shaped ``models:`` is context_length metadata from
-            # ``hermes model``, not an allowlist — see
+            # ``fool model``, not an allowlist — see
             # ``_models_config_is_allowlist``.
             if _models_config_is_allowlist(ep_cfg.get("models")):
                 ep_groups[group_key]["has_explicit_models"] = True
@@ -3094,7 +3094,7 @@ def list_authenticated_providers(
             #   narrowing (mirrors section 4 / #40542).
             # - A dict-shaped ``models:`` is per-model metadata
             #   (context_length), not an allowlist — still probe so local
-            #   Ollama/llama.cpp match ``hermes model``. Pin with
+            #   Ollama/llama.cpp match ``fool model``. Pin with
             #   ``discover_models: false`` instead.
             # - Without an api_key AND no allowlist: probe anyway so bare
             #   local endpoints still show their full model catalog.
@@ -3434,7 +3434,7 @@ def list_authenticated_providers(
             # - A dict-shaped ``models:`` is per-model metadata written by
             #   ``_save_custom_provider`` for context_length — not an
             #   allowlist. Still probe so Desktop/Telegram match
-            #   ``hermes model``. Pin a dict catalog with
+            #   ``fool model``. Pin a dict catalog with
             #   ``discover_models: false``.
             # - The singular ``model:`` field is only the current active
             #   selection and must not suppress discovery.

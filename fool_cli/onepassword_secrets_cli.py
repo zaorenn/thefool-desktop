@@ -356,7 +356,7 @@ def cmd_token(args: argparse.Namespace) -> int:
     if not op_cfg.get("enabled"):
         console.print(
             "[yellow]Note: the 1Password integration is currently disabled — "
-            "run `hermes secrets onepassword setup` to turn it on.[/yellow]"
+            "run `fool secrets onepassword setup` to turn it on.[/yellow]"
         )
     return 0
 
@@ -368,7 +368,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
     if not op_cfg.get("enabled"):
         console.print(
             "[yellow]1Password integration is disabled.  Run "
-            "`hermes secrets onepassword setup` first.[/yellow]"
+            "`fool secrets onepassword setup` first.[/yellow]"
         )
         return 1
 

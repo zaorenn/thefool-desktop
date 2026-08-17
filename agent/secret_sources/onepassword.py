@@ -624,7 +624,7 @@ class OnePasswordSource(SecretSource):
             if isinstance(cfg, dict):
                 token_env = str(cfg.get("service_account_token_env") or token_env)
             return (
-                "Run `hermes secrets onepassword token` to paste a fresh "
+                "Run `fool secrets onepassword token` to paste a fresh "
                 f"service-account token ({token_env}), or `op signin` for an "
                 "interactive session."
             )
@@ -665,7 +665,7 @@ def _classify_op_error(message: str) -> ErrorKind:
 def clear_caches(home_path: Optional[Path] = None) -> None:
     """Drop in-process AND disk caches.
 
-    Used after a token rotation (`hermes secrets onepassword token`) so
+    Used after a token rotation (`fool secrets onepassword token`) so
     the next startup resolves fresh with the new credential instead of
     serving values cached under the old token's fingerprint.
     """

@@ -1,4 +1,4 @@
-"""Tests for fool_cli.plugins_cmd — the ``hermes plugins`` CLI subcommand."""
+"""Tests for fool_cli.plugins_cmd — the ``fool plugins`` CLI subcommand."""
 
 from __future__ import annotations
 

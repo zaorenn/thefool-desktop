@@ -97,7 +97,7 @@ def _media_caption_split(text, media_files, *, max_caption_len):
     """Decide whether the accompanying text should ride on the media bubble.
 
     Single enforced chokepoint for the ``MEDIA:<path> caption`` behavior
-    across every standalone sender. ``hermes send`` (and the send_message
+    across every standalone sender. ``fool send`` (and the send_message
     tool / cron) strips the ``MEDIA:`` tag and leaves the remaining prose as
     ``text``; historically each platform sent that ``text`` as a *separate*
     message before an uncaptioned media bubble, splitting the reported case
@@ -1961,7 +1961,7 @@ async def _send_matrix_via_adapter(pconfig, chat_id, message, media_files=None, 
     that exhaust recipient OTKs and silently drop messages (issue #46310).
 
     Falls back to an ephemeral connect/disconnect cycle only when no gateway
-    is running (standalone cron, ``hermes send`` CLI).
+    is running (standalone cron, ``fool send`` CLI).
     """
     media_files = media_files or []
     metadata = {"thread_id": thread_id} if thread_id else None
@@ -2267,7 +2267,7 @@ from tools.registry import tool_error
 # ``_send_via_adapter``, ``_parse_target_ref``, the per-platform ``_send_*``
 # helpers) remains the shared transport used by:
 #   - cron delivery (cron/scheduler.py)
-#   - the ``hermes send`` CLI command (fool_cli/send_cmd.py)
+#   - the ``fool send`` CLI command (fool_cli/send_cmd.py)
 #   - the gateway kanban notifier (dashboard-toggled, outside agent control)
 #   - the standalone MCP server (mcp_serve.py), which is an opt-in surface
 # Those callers import the helpers directly; none of them need the registry

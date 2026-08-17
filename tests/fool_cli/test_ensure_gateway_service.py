@@ -1,5 +1,5 @@
 """Tests for fool_cli.gateway.ensure_gateway_service — the zero-prompt
-service install/start path used by `hermes setup` and `hermes import`.
+service install/start path used by `fool setup` and `fool import`.
 
 The helper's contract:
   * never prompts, never raises (returns False on any failure)

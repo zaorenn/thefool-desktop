@@ -708,7 +708,7 @@ def _org_mirror_write_guard(name: str, skill_path: Path, action: str) -> Optiona
 
     Now an edit lands in the mirror and is protected from being overwritten by
     the next org pull (see the baseline sidecar in skills_sync_client). It
-    reaches the organisation when the user runs `hermes sync propose`, or
+    reaches the organisation when the user runs `fool sync propose`, or
     immediately if `sync.org_auto_propose` is on.
 
     Deletion is still refused: the mirror is a materialized view of the org
@@ -1253,7 +1253,7 @@ def _delete_skill(name: str, absorbed_into: Optional[str] = None) -> Dict[str, A
     # During the curator consolidation pass, a verified consolidation must be
     # RECOVERABLE: archival into ~/.hermes/skills/.archive/ is documented as
     # the maximum destructive action the curator may take, and
-    # `hermes curator restore` promises the skill can be brought back. Route
+    # `fool curator restore` promises the skill can be brought back. Route
     # through the recoverable archive primitive instead of permanent rmtree so
     # a misjudged consolidation can be undone (#29912). Foreground,
     # user-directed deletes keep their existing hard-delete semantics.

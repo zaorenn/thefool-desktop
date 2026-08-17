@@ -570,7 +570,7 @@ def _billing_or_entitlement_message(
                 "/model <model> --provider <provider>.",
                 # The exhaustion latch replays the stored error without issuing
                 # a request, so a real fix looks like it didn't work.
-                "Retry with a fresh credential state: `hermes auth reset anthropic`. Until "
+                "Retry with a fresh credential state: `fool auth reset anthropic`. Until "
                 "that cooldown clears, this error can be replayed from cache without "
                 "contacting the API.",
             ]
@@ -1126,7 +1126,7 @@ _EMPTY_TOOL_RESPONSE_NUDGE = (
 # share one trailer to keep the guidance from drifting between the two sites.
 _CONTENT_POLICY_RECOVERY_HINT = (
     "Try rephrasing the request, narrowing the context, or "
-    "adding a fallback provider with `hermes fallback add`."
+    "adding a fallback provider with `fool fallback add`."
 )
 
 
@@ -4777,7 +4777,7 @@ def run_conversation(
                         # means Azure rejected the JWT (RBAC role missing,
                         # az login expired, IMDS unreachable, etc.).
                         print(f"{agent.log_prefix}   Auth method: Microsoft Entra ID (httpx event hook)")
-                        print(f"{agent.log_prefix}   Run `hermes doctor` for credential-chain diagnostics, or")
+                        print(f"{agent.log_prefix}   Run `fool doctor` for credential-chain diagnostics, or")
                         print(f"{agent.log_prefix}   `az login` if your developer session expired.")
                     else:
                         auth_method = "Bearer (OAuth/setup-token)" if _is_oauth_token(key) else "x-api-key (API key)"
@@ -5037,7 +5037,7 @@ def run_conversation(
                             f"it is missing its vendor prefix."
                         )
                         agent._buffer_vprint(
-                            f"      Did you mean '{_suggestion}'?  Re-pick it with `hermes model`."
+                            f"      Did you mean '{_suggestion}'?  Re-pick it with `fool model`."
                         )
 
                 # Check for interrupt before deciding to retry
@@ -5970,10 +5970,10 @@ def run_conversation(
                                 agent._vprint(f"{agent.log_prefix}   💡 Codex OAuth token was rejected (HTTP 401). Your token may have been", force=True)
                                 agent._vprint(f"{agent.log_prefix}      refreshed by another client (Codex CLI, VS Code). To fix:", force=True)
                                 agent._vprint(f"{agent.log_prefix}      1. Run `codex` in your terminal to generate fresh tokens.", force=True)
-                                agent._vprint(f"{agent.log_prefix}      2. Then run `hermes auth` to re-authenticate.", force=True)
+                                agent._vprint(f"{agent.log_prefix}      2. Then run `fool auth` to re-authenticate.", force=True)
                             elif _provider == "xai-oauth":
                                 agent._vprint(f"{agent.log_prefix}   💡 xAI OAuth token was rejected (HTTP 401). To fix:", force=True)
-                                agent._vprint(f"{agent.log_prefix}      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `hermes model`.", force=True)
+                                agent._vprint(f"{agent.log_prefix}      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `fool model`.", force=True)
                             else:  # nous
                                 agent._vprint(f"{agent.log_prefix}   💡 Nous Portal OAuth token was rejected (HTTP 401). Your token may be", force=True)
                                 agent._vprint(f"{agent.log_prefix}      expired, revoked, or your account may be out of credits. To fix:", force=True)
@@ -6012,7 +6012,7 @@ def run_conversation(
                             force=True,
                         )
                         agent._vprint(
-                            f"{agent.log_prefix}        hermes fallback add   (interactive picker — same as `hermes model`)",
+                            f"{agent.log_prefix}        hermes fallback add   (interactive picker — same as `fool model`)",
                             force=True,
                         )
                     # TLS certificate failures are environment problems, not

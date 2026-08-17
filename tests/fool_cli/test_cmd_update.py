@@ -112,7 +112,7 @@ class TestCmdUpdateNpmLockfileCache:
 
     def test_package_json_only_edit_defeats_skip(self, tmp_path, monkeypatch):
         """Reviewer scenario (#61580): dev edits package.json WITHOUT running
-        npm — lockfile unchanged. `hermes update` must still install (the
+        npm — lockfile unchanged. `fool update` must still install (the
         npm-install fallback is what syncs node_modules in that state)."""
         from fool_cli import main as hm
 
@@ -412,7 +412,7 @@ class TestConfigVersionCheckUsesFreshModules:
     """Regression: config migration must use freshly-reloaded modules, not the
     sys.modules cache from before git pull.
 
-    Before the fix, ``hermes update`` ran in the PRE-pull Python process.
+    Before the fix, ``fool update`` ran in the PRE-pull Python process.
     After ``git pull`` updated the source on disk, function-level imports
     returned the OLD cached ``fool_cli.config`` module — so
     ``DEFAULT_CONFIG["_config_version"]`` was stale and

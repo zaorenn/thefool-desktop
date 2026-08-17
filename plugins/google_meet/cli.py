@@ -32,7 +32,7 @@ def _auth_state_path() -> Path:
 # ---------------------------------------------------------------------------
 
 def register_cli(subparser: argparse.ArgumentParser) -> None:
-    """Build the ``hermes meet`` argparse tree.
+    """Build the ``fool meet`` argparse tree.
 
     Called by :func:`_register_cli_commands` at plugin load time.
     """

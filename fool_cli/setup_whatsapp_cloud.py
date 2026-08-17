@@ -1,7 +1,7 @@
 """
 Interactive setup wizard for the WhatsApp Cloud API adapter.
 
-Entry point: ``hermes whatsapp-cloud`` (dispatched from
+Entry point: ``fool whatsapp-cloud`` (dispatched from
 ``cmd_whatsapp_cloud`` in ``fool_cli/main.py``).
 
 Walks the user through the 6 credentials Meta requires + recipient

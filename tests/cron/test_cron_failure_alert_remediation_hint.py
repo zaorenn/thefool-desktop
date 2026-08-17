@@ -3,7 +3,7 @@
 Field report: a user whose cron died with "No fallback
 chain configured." still cannot self-serve — the alert names the problem but
 not the remedy. The empty-chain branch of _fallback_chain_phrase() must name
-the exact commands: `hermes fallback add` for the chain, and the
+the exact commands: `fool fallback add` for the chain, and the
 cron.model / cron.model_provider fleet-default keys as the operator-level
 alternative. The exhausted branch stays terse — the chain is intact and the
 problem is provider-side, so no config command applies.

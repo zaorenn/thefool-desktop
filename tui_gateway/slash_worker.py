@@ -60,7 +60,7 @@ def _is_orphaned(original_ppid, getppid=os.getppid) -> bool:
 def _prepare_slash_worker_runtime() -> None:
     """Start bounded MCP discovery before HermesCLI snapshots tools.
 
-    Each slash_worker child is its own process — the parent ``hermes serve``
+    Each slash_worker child is its own process — the parent ``fool serve``
     discovery thread does not populate this registry (issue #61891).
     """
     import logging

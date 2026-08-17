@@ -650,7 +650,7 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
 
     Inference credentials do not imply consent to paid speech generation.
     Users opt into cloud TTS by setting ``tts.provider`` (normally through
-    ``hermes tools``); otherwise the historical Edge backend remains active.
+    ``fool tools``); otherwise the historical Edge backend remains active.
     """
     return (tts_config.get("provider") or DEFAULT_PROVIDER).lower().strip()
 
@@ -1940,7 +1940,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     api_key = _resolve_provider_key("DEEPINFRA_API_KEY", "deepinfra")
     if not api_key:
         raise ValueError(
-            "DEEPINFRA_API_KEY not set. Run `hermes setup` to configure, "
+            "DEEPINFRA_API_KEY not set. Run `fool setup` to configure, "
             "or set the env var directly."
         )
 
@@ -2105,7 +2105,7 @@ def _generate_xai_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -
     creds = resolve_xai_http_credentials(prefer_api_key=True)
     api_key = str(creds.get("api_key") or "").strip()
     if not api_key:
-        raise ValueError("No xAI credentials found. Configure xAI OAuth in `hermes model` or set XAI_API_KEY.")
+        raise ValueError("No xAI credentials found. Configure xAI OAuth in `fool model` or set XAI_API_KEY.")
 
     xai_config = tts_config.get("xai") or {}
     voice_id = str(xai_config.get("voice_id", DEFAULT_XAI_VOICE_ID)).strip() or DEFAULT_XAI_VOICE_ID
@@ -3330,7 +3330,7 @@ def _text_to_speech_single(
                 return json.dumps({
                     "success": False,
                     "error": "Mistral provider selected but 'mistralai' package not installed. "
-                             "Run `hermes setup` to install Mistral support."
+                             "Run `fool setup` to install Mistral support."
                 }, ensure_ascii=False)
             logger.info("Generating speech with Mistral Voxtral TTS...")
             _generate_mistral_tts(text, file_str, tts_config)

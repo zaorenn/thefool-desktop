@@ -32,7 +32,7 @@ Supply-chain posture:
   capability-grant keys (a pack cannot pre-consent capabilities).
 * Capability consent is NEVER bulk-granted: after each plugin installs,
   its declared capabilities ride the exact same per-plugin consent flow
-  as a normal ``hermes plugins install`` (#64228).
+  as a normal ``fool plugins install`` (#64228).
 
 ``skills:`` is parsed and displayed but not installed — wiring skill-hub
 ids into the skills installer is a documented follow-up seam.
@@ -630,7 +630,7 @@ def export_pack(*, enabled_only: bool = False, pack_name: str = "my-hermes-pack"
 
     doc: dict[str, Any] = {
         "name": pack_name,
-        "description": "Exported by `hermes plugins pack export`.",
+        "description": "Exported by `fool plugins pack export`.",
         "version": "1.0.0",
         "plugins": entries,
     }

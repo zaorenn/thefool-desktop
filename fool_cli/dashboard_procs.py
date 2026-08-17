@@ -31,8 +31,8 @@ def _scan_dashboard_processes(
 ) -> list[tuple[int, str]]:
     """Return matching ``dashboard``/``serve`` processes with their cmdlines.
 
-    ``hermes dashboard`` is a long-lived server process commonly started and
-    forgotten.  When ``hermes update`` replaces files on disk, the running
+    ``fool dashboard`` is a long-lived server process commonly started and
+    forgotten.  When ``fool update`` replaces files on disk, the running
     process keeps the old Python backend in memory while the JS bundle on
     disk is updated, causing a silent frontend/backend mismatch (e.g. new
     auth headers the old backend doesn't recognise → every API call 401s).
@@ -44,7 +44,7 @@ def _scan_dashboard_processes(
 
     *exclude_pids* is an optional set of PIDs that must never be returned.
     This is used by the Hermes Desktop Electron app to protect its own
-    backend child process: when the desktop spawns ``hermes serve`` as
+    backend child process: when the desktop spawns ``fool serve`` as
     a backend and triggers an auto-update, the update must not kill the
     backend that the desktop itself manages.  The desktop sets the
     environment variable ``FOOL_DESKTOP_CHILD_PID`` on the spawned
@@ -57,7 +57,7 @@ def _scan_dashboard_processes(
         "hermes dashboard",
         "fool_cli.main dashboard",
         "fool_cli/main.py dashboard",
-        # The headless backend (`hermes serve`) is the same long-lived server
+        # The headless backend (`fool serve`) is the same long-lived server
         # under a different command name — the desktop app spawns it. Reap it
         # on update for the same frontend/backend-mismatch reason.
         "hermes serve",
@@ -171,7 +171,7 @@ def _is_ephemeral_port_zero_backend(argv: list[str]) -> bool:
 
     Ephemeral-port backends are owned by Hermes Desktop (or become PPID-1
     orphans after a prior update respawn).  Replaying them after
-    ``hermes update`` multiplies listening backends because ``--port 0``
+    ``fool update`` multiplies listening backends because ``--port 0``
     always binds a fresh free port.  Covers both ``serve`` and the legacy
     ``dashboard --no-open`` fallback older Desktop runtimes use.
     """
@@ -252,7 +252,7 @@ def _profile_key_for_respawn(
 def _filter_dashboard_respawn_candidates(
     candidates: list[tuple[int, list[str], str | None]],
 ) -> list[list[str]]:
-    """Select which killed manual backends to respawn after ``hermes update``.
+    """Select which killed manual backends to respawn after ``fool update``.
 
     Each candidate is ``(pid, argv, hermes_home)``.
 
@@ -266,7 +266,7 @@ def _filter_dashboard_respawn_candidates(
     3. Cap at most one managed backend per profile / ``FOOL_HOME``.
 
     Intentionally does **not** blanket-skip every PPID-1 process: a prior
-    ``hermes update`` respawn detaches with ``start_new_session=True``, so
+    ``fool update`` respawn detaches with ``start_new_session=True``, so
     fixed-port manual backends are reparented to init and must still be
     eligible for the next update's #40449 restart.
     """
@@ -298,10 +298,10 @@ def _kill_stale_dashboard_processes(
     restart_managed: bool = False,
     already_restarted_units: "set[str] | None" = None,
 ) -> dict[str, list]:
-    """Kill running ``hermes dashboard`` / ``hermes serve`` processes.
+    """Kill running ``fool dashboard`` / ``fool serve`` processes.
 
-    Called at the end of ``hermes update`` (default ``reason``) and also
-    from ``hermes dashboard --stop`` (which overrides ``reason``).  The
+    Called at the end of ``fool update`` (default ``reason``) and also
+    from ``fool dashboard --stop`` (which overrides ``reason``).  The
     dashboard has no service manager, so after a code update the running
     process is guaranteed to be serving stale Python against a
     freshly-updated JS bundle.  Leaving it alive produces silent
@@ -314,7 +314,7 @@ def _kill_stale_dashboard_processes(
 
     Manually-started dashboards are not auto-restarted because we don't know
     the original launch args (--host, --port, --insecure, --tui, --no-open).
-    When ``restart_managed`` is true (the ``hermes update`` path), a detected
+    When ``restart_managed`` is true (the ``fool update`` path), a detected
     ``hermes-dashboard.service`` is restarted through systemd; any OTHER
     killed PID that was supervised by a systemd unit (custom unit names —
     e.g. a remote backend's ``hermes-serve.service``) has its owning unit
@@ -322,7 +322,7 @@ def _kill_stale_dashboard_processes(
     stop and ``Restart=on-failure`` would never fire (#68934).
 
     *already_restarted_units* names units (no ``.service`` suffix) the
-    caller already restarted directly — e.g. ``hermes update``'s systemd
+    caller already restarted directly — e.g. ``fool update``'s systemd
     fleet-restart loop, which restarts ``hermes-serve*`` units before this
     function runs. Without excluding them, a Serve-only install's freshly
     restarted process is found again here and restarted a second time for
@@ -359,7 +359,7 @@ def _kill_stale_dashboard_processes(
     # Before killing, snapshot systemd cgroup info for each PID so we can
     # restart supervised services after the kill (the cgroup disappears
     # along with the process).  Only meaningful on Linux, and only when the
-    # caller asked for restarts (the `hermes update` path) — `--stop` must
+    # caller asked for restarts (the `fool update` path) — `--stop` must
     # stay a stop, not a restart.
     pid_cgroup: dict[int, str | None] = {}
     pid_service: dict[int, str | None] = {}
@@ -528,14 +528,14 @@ def _detect_concurrent_hermes_instances(
     Windows blocks DELETE/REPLACE on a running .exe — and even RENAME on the
     same .exe when another process opened it without ``FILE_SHARE_DELETE``.
     The Hermes Desktop Electron app spawns ``hermes.EXE`` as a backend child,
-    so during ``hermes update`` the user-invoked process and the desktop's
+    so during ``fool update`` the user-invoked process and the desktop's
     child both hold the same file. The quarantine rename then fails with
     ``[WinError 32]`` and uv inherits the lock.
 
     This helper enumerates processes whose ``exe`` matches one of the venv's
     shims (``hermes.exe`` / ``hermes-gateway.exe``) and returns ``(pid,
     process_name)`` pairs. The caller's own PID and its entire ancestor
-    chain are excluded so the running ``hermes update`` invocation never
+    chain are excluded so the running ``fool update`` invocation never
     reports itself — this matters on Windows where the setuptools .exe
     launcher (``hermes.exe``) is a separate process from the Python
     interpreter it loads (``python.exe``).
@@ -566,7 +566,7 @@ def _detect_concurrent_hermes_instances(
     # setuptools-generated hermes.exe launcher is a separate native process
     # that spawns python.exe (the interpreter that runs our code).
     # os.getpid() returns the Python PID, but the launcher (which holds the
-    # file lock) is the parent. Without excluding it, every ``hermes update``
+    # file lock) is the parent. Without excluding it, every ``fool update``
     # reports its own launcher as a concurrent instance — a false positive
     # (issues #29341, #34795).
     #
@@ -707,9 +707,9 @@ def _exclude_pids_from_env() -> set[int]:
 # --- SSH remote-backend lock ownership -------------------------------------
 #
 # ``backend.lock.json`` is the ownership record the Desktop SSH runtime writes
-# on the *remote* host for every ``hermes serve`` backend it spawns over SSH
+# on the *remote* host for every ``fool serve`` backend it spawns over SSH
 # (see apps/desktop/electron/remote-lifecycle.ts). A backend started from
-# another client/machine — e.g. a MacBook driving a ``hermes serve`` on a Mac
+# another client/machine — e.g. a MacBook driving a ``fool serve`` on a Mac
 # Mini over SSH — is a *legitimate, lock-owned* backend even though it has no
 # parent on this host (sshd has long since exited, reparenting it to pid 1).
 #
@@ -846,7 +846,7 @@ def _reap_orphaned_desktop_local_serves(
     sleep_fn=None,
     lock_owned_pids_fn=None,
 ) -> dict[str, list]:
-    """Kill leftover Desktop-local ``hermes serve`` backends with no parent.
+    """Kill leftover Desktop-local ``fool serve`` backends with no parent.
 
     When Electron dies uncleanly (crash / SIGKILL / update handoff), local
     ``serve --host 127.0.0.1 --port 0`` children can be reparented to pid 1 and

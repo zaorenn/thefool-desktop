@@ -1,4 +1,4 @@
-"""``hermes journey`` — what Hermes has learned, on a timeline.
+"""``fool journey`` — what Hermes has learned, on a timeline.
 
 A terminal-native rendition of the desktop Star Map / Memory Graph: a horizontal
 timeline bar chart of learned skills and memories over time (oldest at top,

@@ -198,7 +198,7 @@ class TestEnableToolOverrideConsent:
 
 
 class TestCompositeMenuWritesCanonicalKey:
-    """#40190 follow-up: the interactive `hermes plugins` menu must persist
+    """#40190 follow-up: the interactive `fool plugins` menu must persist
     the CANONICAL KEY (``web/firecrawl``), never the bare manifest name
     (``web-firecrawl``), so its disabled-list entries stay aligned with what
     ``cmd_enable`` clears and what PluginManager gates on. Writing the bare

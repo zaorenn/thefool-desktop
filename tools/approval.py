@@ -923,7 +923,7 @@ DANGEROUS_PATTERNS = [
     # Docker container lifecycle — any user with docker.sock mounted (a common
     # Docker Compose pattern) gives the agent the ability to restart/stop/kill
     # containers without approval.  These are agent-initiated lifecycle operations
-    # that should always require user consent, just like `hermes gateway restart`
+    # that should always require user consent, just like `fool gateway restart`
     # already does for the gateway process.
     # Docker/Podman daemon redirect — global flags or env prefixes that point
     # the CLI at a DIFFERENT daemon, often a remote host over ssh/tcp.  A
@@ -2137,7 +2137,7 @@ def _mask_quoted_newlines(command: str) -> str:
     Detection-only rewrite. A newline inside a quoted string is DATA to the
     shell — part of the argument, not a command separator — yet the flat
     ``_CMDPOS`` start-position class treats every raw ``\\n`` as a command
-    start. That made any multi-line quoted argument (``hermes send`` message
+    start. That made any multi-line quoted argument (``fool send`` message
     bodies, ``git commit -m`` messages, heredoc text) trip the hardline
     blocklist when a data line began with e.g. ``sudo reboot``.
 

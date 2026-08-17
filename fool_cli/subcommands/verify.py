@@ -1,4 +1,4 @@
-"""``hermes verify`` subcommand parser.
+"""``fool verify`` subcommand parser.
 
 Follows the pattern of ``fool_cli/subcommands/doctor.py``: parser built
 here, handler injected to avoid importing ``main``.

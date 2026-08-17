@@ -1,4 +1,4 @@
-"""``hermes login`` subcommand parser.
+"""``fool login`` subcommand parser.
 
 Extracted verbatim from ``fool_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -12,7 +12,7 @@ from typing import Callable
 def build_login_parser(subparsers, *, cmd_login: Callable) -> None:
     """Attach the deprecated ``login`` subcommand to ``subparsers``.
 
-    ``hermes login`` was removed in favor of ``hermes auth`` / ``hermes model``
+    ``fool login`` was removed in favor of ``fool auth`` / ``fool model``
     (the runtime handler in ``fool_cli/auth.py::login_command`` just prints a
     deprecation message and exits).  The subparser is kept registered so that
     old scripts/aliases invoking ``hermes login [--flags]`` still receive the
@@ -25,15 +25,15 @@ def build_login_parser(subparsers, *, cmd_login: Callable) -> None:
       without the ``help=argparse.SUPPRESS`` ``==SUPPRESS==`` leak that
       argparse emits for a top-level subparser on Python 3.12+.
     - ``--provider`` accepts ANY value (no ``choices=``) so that, e.g.,
-      ``hermes login --provider anthropic`` reaches the deprecation handler and
-      gets pointed at ``hermes model`` instead of crashing in argparse with
+      ``fool login --provider anthropic`` reaches the deprecation handler and
+      gets pointed at ``fool model`` instead of crashing in argparse with
       ``invalid choice: 'anthropic'`` before the handler can run.
     """
     login_parser = subparsers.add_parser(
         "login",
         description=(
-            "Deprecated. Use `hermes auth` to manage credentials, "
-            "`hermes model` to select a provider, or `hermes setup` for full setup."
+            "Deprecated. Use `fool auth` to manage credentials, "
+            "`fool model` to select a provider, or `fool setup` for full setup."
         ),
     )
     # No ``choices=`` on purpose — the handler is a deprecation notice that
@@ -43,7 +43,7 @@ def build_login_parser(subparsers, *, cmd_login: Callable) -> None:
     login_parser.add_argument(
         "--provider",
         default=None,
-        help="(deprecated) Provider name; ignored — see `hermes model`",
+        help="(deprecated) Provider name; ignored — see `fool model`",
     )
     login_parser.add_argument(
         "--portal-url", help="Portal base URL (default: production portal)"

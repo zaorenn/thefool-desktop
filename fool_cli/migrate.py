@@ -1,6 +1,6 @@
 """CLI handlers for ``hermes migrate ...``.
 
-Currently exposes only ``hermes migrate xai`` — diagnoses and (with --apply)
+Currently exposes only ``fool migrate xai`` — diagnoses and (with --apply)
 rewrites references to xAI models retired on May 15, 2026.
 """
 from __future__ import annotations
@@ -63,7 +63,7 @@ def cmd_migrate_xai(args: Any) -> int:
     if not apply:
         print(color("Dry-run mode — no changes written.", Colors.DIM))
         print(color(
-            "Re-run with `hermes migrate xai --apply` to rewrite "
+            "Re-run with `fool migrate xai --apply` to rewrite "
             f"{config_path} in-place (backup created automatically).",
             Colors.DIM,
         ))
@@ -102,7 +102,7 @@ def cmd_migrate_xai(args: Any) -> int:
     )
     print()
     print(color(
-        "Run `hermes doctor` to confirm no retired xAI models remain.",
+        "Run `fool doctor` to confirm no retired xAI models remain.",
         Colors.DIM,
     ))
     return 0

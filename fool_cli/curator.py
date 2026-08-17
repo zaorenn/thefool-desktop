@@ -258,17 +258,17 @@ def _cmd_run(args) -> int:
                 f"reactivated={auto.get('reactivated', 0)}"
             )
     if not synchronous:
-        print("llm pass running in background — check `hermes curator status` later")
+        print("llm pass running in background — check `fool curator status` later")
     if dry:
         if synchronous:
             print(
                 "dry-run: no changes applied. Read the report with "
-                "`hermes curator status` and run `hermes curator run` (no flag) to apply."
+                "`fool curator status` and run `fool curator run` (no flag) to apply."
             )
         else:
             print(
                 "dry-run: no changes applied. When the report lands, read it with "
-                "`hermes curator status` and run `hermes curator run` (no flag) to apply."
+                "`fool curator status` and run `fool curator run` (no flag) to apply."
             )
     return 0
 
@@ -337,7 +337,7 @@ def _cmd_list_unmanaged(args) -> int:
             f"({why})"
         )
     print("\nadopt one with `hermes curator adopt <name>`, "
-          "or all with `hermes curator adopt --all-unmanaged`")
+          "or all with `fool curator adopt --all-unmanaged`")
     return 0
 
 
@@ -562,7 +562,7 @@ def _cmd_ledger(args) -> int:
         )
     print(
         "\nRoll back a single mutation with `hermes curator rollback <id>`; "
-        "whole-tree snapshots remain available via `hermes curator rollback --list`."
+        "whole-tree snapshots remain available via `fool curator rollback --list`."
     )
     return 0
 
@@ -665,7 +665,7 @@ def _cmd_rollback(args) -> int:
         if entry is None:
             print(
                 f"curator: no ledger entry '{entry_id}'. "
-                "See `hermes curator ledger` for entry ids, or use "
+                "See `fool curator ledger` for entry ids, or use "
                 "`--id <snapshot>` for whole-tree snapshot rollback."
             )
             return 1
@@ -703,7 +703,7 @@ def _cmd_rollback(args) -> int:
         if not rows:
             print(
                 "curator: no snapshots exist yet. Take one with "
-                "`hermes curator backup` or wait for the next curator run."
+                "`fool curator backup` or wait for the next curator run."
             )
         else:
             print(
@@ -971,12 +971,12 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
     p_rollback = subs.add_parser(
         "rollback",
         help="Restore ~/.hermes/skills/ from a curator snapshot, or a single "
-             "mutation by ledger entry id (see `hermes curator ledger`)",
+             "mutation by ledger entry id (see `fool curator ledger`)",
     )
     p_rollback.add_argument(
         "entry_id", nargs="?", default=None,
         help="Ledger entry id for single-mutation rollback (from "
-             "`hermes curator ledger`). Omit for whole-tree snapshot rollback.",
+             "`fool curator ledger`). Omit for whole-tree snapshot rollback.",
     )
     p_rollback.add_argument(
         "--list", action="store_true",

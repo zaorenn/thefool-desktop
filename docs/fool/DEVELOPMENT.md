@@ -2,19 +2,29 @@
 
 Bu monorepo'da tökezlediğim ve tekrar tökezlenmesi muhtemel yerler.
 
-## `npm install` — workspace bayrağı KULLANMA
+## `npm install` çalıştırmadan ÖNCE uygulamayı kapat
+
+Bu, bu repoda kaybettiğim en çok zamandı ve üç kez tekrarladı.
 
 ```bash
-# DOĞRU
-npm install
-
-# YANLIŞ — ağacı buduyor
-npm install --workspace apps/desktop
+# Once calisan her seyi durdur
+#   Electron penceresi, `npm run dev`, `npx electron .`
+npm install        # workspace bayragi OLMADAN
 ```
 
-Workspace-kapsamlı kurulum, ağacı yalnızca o workspace'in ihtiyaçlarına göre
-yeniden uzlaştırıyor ve **başka workspace'lerin paketlerini siliyor.** Sonucu
-teşhisi zor iki belirti:
+**Kök sebep:** çalışan Electron `node_modules/electron/dist/` altındaki
+dosyaları kilitliyor. npm ağacı yeniden düzenlerken şuna çarpıyor:
+
+```
+npm error EBUSY: resource busy or locked, rename
+  node_modules\electron\dist\v8_context_snapshot.bin
+```
+
+npm bu noktada yarıda kalıyor ve ağacı **eksik** bırakıyor. En sinsi tarafı:
+npm sıfırdan farklı bir çıkış kodu vermeden "added N packages" yazabiliyor,
+yani başarılı görünüyor.
+
+Belirtiler — hiçbiri asıl sebebi göstermiyor:
 
 1. **Üretim derlemesi kırılır:**
    `Error: Can't resolve 'tw-shimmer' in apps/desktop/src`
@@ -22,10 +32,13 @@ teşhisi zor iki belirti:
    `tw-shimmer` bir shimmer/iskelet kütüphanesi; `@import 'tw-shimmer'`
    çözülemeyince kod-bölmeli ayar panelleri dinamik import'ta düşüyor.
    Arayüzde hata görünmüyor — sadece yüklenmiyor gibi duruyor.
-3. Yan etki: `tsc --noEmit` aniden `Cannot find module '@assistant-ui/core'`
-   demeye başlar.
+3. `tsc --noEmit` aniden `Cannot find module '@assistant-ui/core'` der.
 
-Kökten `npm install` her şeyi geri getiriyor (bende 504 paket geri geldi).
+Hiçbir şey çalışmıyorken kökten `npm install` her şeyi geri getiriyor.
+
+Ayrıca `--workspace apps/desktop` ile kurulum yapma: ağacı yalnızca o
+workspace'e göre yeniden uzlaştırıyor ve aynı belirtileri üretebiliyor.
+Kökten kurulum tüm workspace'leri birlikte çözüyor.
 
 ## Python ortamı
 

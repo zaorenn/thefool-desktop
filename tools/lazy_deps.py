@@ -141,6 +141,32 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     "tts.edge": ("edge-tts==7.2.7",),
     "tts.elevenlabs": ("elevenlabs==1.59.0",),
 
+    # ─── The Fool: yerel TTS motorları ─────────────────────────────────────
+    # FOOL-SEAM: local-tts-deps
+    #
+    # Piper YERLEŞİK bir sağlayıcı (BUILTIN_TTS_PROVIDERS) ama buraya hiç
+    # kaydedilmemişti — bu yüzden seçildiğinde "pip install piper-tts" diye
+    # elle kurulum isteyen bir hata veriyordu. Kayıt eklenince tembel kurulum
+    # yolu çalışıyor.
+    # Sürüm 1.6.0, 1.7.0 değil: repo `exclude-newer = "14 days"` uyguluyor
+    # (tedarik zinciri penceresi — bkz. pyproject'teki Shai-Hulud notu).
+    # 1.7.0 pencerenin dışında kaldığı için kurulum sessizce başarısız
+    # oluyordu. Politikayı delmek yerine ona uyan son sürüm seçildi.
+    "tts.piper": ("piper-tts==1.6.0",),
+
+    # Piper'ı CUDA'da çalıştırmak için: motor onnxruntime kullanıyor, GPU
+    # varyantı ayrı bir pakette. CPU kurulumunu bozmamak için ayrı anahtar.
+    "tts.piper_cuda": ("onnxruntime-gpu==1.28.0",),
+
+    # Chatterbox (Resemble AI, MIT) — gerçekçilik tarafındaki en iyi seçim.
+    # 0.5B; üreticinin kör testinde ElevenLabs'a %65.3/%24.5 tercih edilmiş.
+    # Sıfır-atış ses klonlama da yapıyor.
+    "tts.chatterbox": ("chatterbox-tts==0.1.7",),
+
+    # Kokoro (Apache-2.0) — 82M parametre, gerçek zamandan hızlı, CPU'da bile
+    # çalışır. Hız/kaynak kısıtı olan kurulumlar için hafif seçenek.
+    "tts.kokoro": ("kokoro==0.9.4",),
+
     # ─── Speech-to-text providers ──────────────────────────────────────────
     "stt.mistral": ("mistralai==2.4.8",),
     "stt.faster_whisper": (

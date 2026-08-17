@@ -25,7 +25,7 @@ def pairing_command(args):
         _cmd_clear_pending(store)
     else:
         print("Usage: hermes pairing {list|approve|revoke|clear-pending}")
-        print("Run 'hermes pairing --help' for details.")
+        print("Run 'fool pairing --help' for details.")
 
 
 def _cmd_list(store):
@@ -98,7 +98,7 @@ def _cmd_approve(store, platform: str, code: str):
         )
     else:
         print(f"\n  Pairing request or code '{code}' not found or expired for platform '{platform}'.")
-        print("  Run 'hermes pairing list' to see pending requests.\n")
+        print("  Run 'fool pairing list' to see pending requests.\n")
 
 
 def _cmd_revoke(store, platform: str, user_id: str):

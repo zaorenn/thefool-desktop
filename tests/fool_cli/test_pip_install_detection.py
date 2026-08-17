@@ -16,7 +16,7 @@ def test_code_scoped_stamp_wins_over_home_stamp(tmp_path):
 
     Models a host git install whose $FOOL_HOME is shared with (and stamped
     'docker' by) a co-located container. The code-scoped stamp must win so the
-    host install is correctly identified as 'git' and 'hermes update' works.
+    host install is correctly identified as 'git' and 'fool update' works.
     """
     code = tmp_path / "code"
     home = tmp_path / "home"

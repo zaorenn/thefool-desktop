@@ -984,7 +984,7 @@ def _credential_fingerprint(config: HonchoClientConfig | None) -> str:
     so the fingerprint must NOT change on rotation — it hashes the REFRESH
     token, which is stable across access-token rotation but changes on
     re-auth or account switch. Static keys hash the key itself. This is what
-    makes 'hermes honcho setup' account switches produce a NEW cache identity
+    makes 'fool honcho setup' account switches produce a NEW cache identity
     instead of silently reusing the old account's client (a first-config-wins
     hole that per-path keys alone cannot close).
     """
@@ -1247,7 +1247,7 @@ def get_honcho_client(config: HonchoClientConfig | None = None) -> Honcho:
         raise ValueError(
             "Honcho API key not found. "
             "Get your API key at https://app.honcho.dev, "
-            "then run 'hermes honcho setup' or set HONCHO_API_KEY. "
+            "then run 'fool honcho setup' or set HONCHO_API_KEY. "
             "For local instances, set HONCHO_BASE_URL instead."
         )
 

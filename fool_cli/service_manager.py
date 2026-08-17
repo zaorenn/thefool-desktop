@@ -12,7 +12,7 @@ the existing module-level functions in fool_cli.gateway and
 fool_cli.gateway_windows directly. This protocol is a thin facade
 used by new code that needs to be backend-agnostic — specifically the
 profile create/delete hooks (Phase 4) and the s6 dispatch path in
-``hermes gateway start/stop/restart`` when running inside a container.
+``fool gateway start/stop/restart`` when running inside a container.
 """
 from __future__ import annotations
 
@@ -97,7 +97,7 @@ def detect_service_manager() -> ServiceManagerKind:
     This function does NOT replace ``supports_systemd_services()`` —
     host call sites continue to use that. It exists for new backend-
     agnostic code (profile create/delete hooks, the s6 dispatch path
-    in ``hermes gateway start/stop/restart``).
+    in ``fool gateway start/stop/restart``).
     """
     # Imports deferred so importing this module doesn't drag in the
     # whole gateway dependency graph for callers that only need the
@@ -112,7 +112,7 @@ def detect_service_manager() -> ServiceManagerKind:
     # NOT is_container(): the latter only detects Docker/Podman/lxc, so it is
     # False on Fly's Firecracker microVMs even though s6-overlay is PID 1 there.
     # That false negative made the whole s6 dispatch path inert on Fly, so
-    # `hermes gateway start/stop/restart` fell through to host code that spawns
+    # `fool gateway start/stop/restart` fell through to host code that spawns
     # a foreground gateway competing with the supervised one. _s6_running() is
     # already an s6-overlay-specific signal, so the container gate was redundant.
     if _s6_running():
@@ -639,7 +639,7 @@ class S6ServiceManager:
              ``hermes -p <profile> gateway run`` (or just ``hermes
              gateway run`` for the default profile — see below).
 
-        Special case: ``profile == "default"`` emits ``hermes gateway
+        Special case: ``profile == "default"`` emits ``fool gateway
         run`` with **no** ``-p`` flag. This is the sentinel for "the
         root FOOL_HOME profile" (the implicit profile that exists at
         the top of $FOOL_HOME, not under profiles/). It must be
@@ -700,7 +700,7 @@ class S6ServiceManager:
         # single supervised instance per slot, so there is no legitimate
         # supervised sibling for ``--replace`` to clobber.
         if profile == "default":
-            gateway_cmd = "hermes gateway run --replace"
+            gateway_cmd = "fool gateway run --replace"
         else:
             gateway_cmd = f"hermes -p {shlex.quote(profile)} gateway run --replace"
         # Skip the drop when already non-root (setgroups() lacks CAP_SETGID →
@@ -899,7 +899,7 @@ class S6ServiceManager:
         BEFORE sending the down command, so the gateway's shutdown
         handler recognises this SIGTERM as an operator-initiated stop
         and persists ``gateway_state=stopped`` (respecting the explicit
-        intent). Without the marker, an intentional ``hermes gateway
+        intent). Without the marker, an intentional ``fool gateway
         stop`` is indistinguishable from the container/s6 SIGTERM sent on
         ``docker restart``; the latter must NOT persist ``stopped`` or
         container_boot refuses to auto-start on the next boot (#42675).

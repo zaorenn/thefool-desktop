@@ -125,7 +125,7 @@ def test_oauth_provider_status_uses_profile_query(tmp_path, monkeypatch):
         "id": "fake-oauth",
         "name": "Fake OAuth",
         "flow": "pkce",
-        "cli_command": "hermes auth add fake-oauth",
+        "cli_command": "fool auth add fake-oauth",
         "docs_url": "https://example.com",
         "status_fn": fake_status,
     },)
@@ -217,7 +217,7 @@ def test_codex_dashboard_start_rewords_device_authorization_error(monkeypatch):
         assert "OpenAI rejected the device-code login request" in detail
         assert "Enable device-code authorization in OpenAI" in detail
         assert "click Login again" in detail
-        assert "hermes auth" not in detail
+        assert "fool auth" not in detail
     finally:
         for sid in set(ws._oauth_sessions) - before_sessions:
             ws._oauth_sessions.pop(sid, None)
@@ -578,7 +578,7 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
     singleton only; the seed is the single source of truth.
 
     Suppression: an interactive dashboard login must also clear any
-    ``device_code`` suppression left by a prior ``hermes auth remove
+    ``device_code`` suppression left by a prior ``fool auth remove
     xai-oauth``.
     """
     from fool_cli import auth as auth_mod

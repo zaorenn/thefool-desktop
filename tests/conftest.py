@@ -892,7 +892,7 @@ def tmp_dir(tmp_path):
 
 @pytest.fixture()
 def mock_config():
-    """Return a minimal hermes config dict suitable for unit tests."""
+    """Return a minimal fool config dict suitable for unit tests."""
     return {
         "model": "test/mock-model",
         "toolsets": ["terminal", "file"],
@@ -1400,7 +1400,7 @@ def _live_system_guard(request, monkeypatch):
         "fool_cli.main gateway",
         "fool_cli/main.py gateway",
         "gateway/run.py",
-        "hermes gateway",
+        "fool gateway",
     )
     _MUTATING_VERBS = (
         "restart", "start", "stop", "kill", "reload",
@@ -1511,13 +1511,13 @@ def _live_system_guard(request, monkeypatch):
         cmd_str = _cmd_to_string(cmd)
         low = cmd_str.lower()
         if "update" in low and (
-            # hermes update / hermes update --gateway / setsid bash -c ... hermes update
+            # fool update / fool update --gateway / setsid bash -c ... fool update
             ("hermes" in low and "update" in low.split())
             or
             # python -m fool_cli.main update --gateway
             ("fool_cli" in low and "update" in low.split())
             or
-            # venv/bin/hermes update  (absolute path variant used in tests)
+            # venv/bin/fool update  (absolute path variant used in tests)
             (".venv/bin/hermes" in low and "update" in low)
         ):
             raise RuntimeError(

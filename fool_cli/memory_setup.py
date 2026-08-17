@@ -46,7 +46,7 @@ def _provider_pip_dependencies(provider_name: str, declared: list) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Curses-based interactive picker (same pattern as hermes tools)
+# Curses-based interactive picker (same pattern as fool tools)
 # ---------------------------------------------------------------------------
 
 def _curses_select(
@@ -255,7 +255,7 @@ def cmd_setup_provider(provider_name: str) -> None:
 
     if not match:
         print(f"\n  Memory provider '{provider_name}' not found.")
-        print("  Run 'hermes memory setup' to see available providers.\n")
+        print("  Run 'fool memory setup' to see available providers.\n")
         return
 
     name, _, provider = match

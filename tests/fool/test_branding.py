@@ -189,6 +189,7 @@ EXPECTED_SEAMS = {
     "ready-token",
     "cli-launchers",
     "session-header",
+    "browser-default",
 }
 
 
@@ -679,3 +680,26 @@ def test_session_header_matches_on_both_sides() -> None:
     for text, label in ((py, "python"), (ts, "electron")):
         assert "X-The Fool-" not in text, f"{label}: bosluklu baslik geri gelmis"
         assert "X-Hermes-" not in text, f"{label}: eski baslik geri gelmis"
+
+
+def test_browser_backend_defaults_to_builtin_stack() -> None:
+    """FOOL-SEAM: browser-default — yanlış varsayılan ajanı kör bırakıyordu.
+
+    Upstream'de ``browser.backend`` varsayılanı Browser Use (bulut, API
+    anahtarı ister). Anahtar yoksa çalışmaz VE bu mod açıkken yerleşik
+    ``browser_*`` araçları da devre dışı kalır. Ajanın elinde hiç tarayıcı
+    kalmaz; her şeyi computer use ile — ekran görüntüsü alıp piksel
+    koordinatına tıklayarak — yapmaya çalışır.
+    """
+    src = (REPO_ROOT / "fool_cli/config.py").read_text(encoding="utf-8")
+    assert 'patch.setdefault("browser", {})["backend"] = "off"' in src
+
+
+def test_browser_binary_detection_covers_common_installs() -> None:
+    """Chromium bulunmazsa ``backend: off`` tek başına yetmez."""
+    from fool import browser_detect
+
+    joined = " ".join(browser_detect._WINDOWS_CANDIDATES).lower()
+    assert "chrome.exe" in joined
+    assert "msedge.exe" in joined, "Edge cogu Windows makinesinde HAZIR kurulu"
+    assert browser_detect.ENV_VAR == "AGENT_BROWSER_EXECUTABLE_PATH"

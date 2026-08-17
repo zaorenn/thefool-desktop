@@ -124,7 +124,7 @@ class TestUpdateProbeScriptChecksBundle:
 
 
 # =========================================================================
-# 2. hermes doctor: detection and --fix repair
+# 2. fool doctor: detection and --fix repair
 # =========================================================================
 
 
@@ -208,5 +208,5 @@ class TestSslGuardRepairHint:
         with pytest.raises(SSLConfigurationError) as excinfo:
             verify_ca_bundle()
         message = str(excinfo.value)
-        assert "hermes doctor --fix" in message
+        assert "fool doctor --fix" in message
         assert "certifi" in message

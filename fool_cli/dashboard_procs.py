@@ -54,13 +54,13 @@ def _scan_dashboard_processes(
     Returns an empty list on any scan error (missing ps/wmic, timeout, etc.).
     """
     patterns = [
-        "hermes dashboard",
+        "fool dashboard",
         "fool_cli.main dashboard",
         "fool_cli/main.py dashboard",
         # The headless backend (`fool serve`) is the same long-lived server
         # under a different command name — the desktop app spawns it. Reap it
         # on update for the same frontend/backend-mismatch reason.
-        "hermes serve",
+        "fool serve",
         "fool_cli.main serve",
         "fool_cli/main.py serve",
     ]
@@ -381,7 +381,7 @@ def _kill_stale_dashboard_processes(
                     pid_home[pid] = _hermes_home_for_pid(pid)
 
         if already_restarted_units:
-            # Already handled directly by the caller (e.g. hermes update's
+            # Already handled directly by the caller (e.g. fool update's
             # systemd fleet-restart loop) — leave these alone instead of
             # killing and re-restarting a process that's already fresh.
             pids = [
@@ -464,7 +464,7 @@ def _kill_stale_dashboard_processes(
 
     # Restart what we just killed (update path only).  Two categories:
     #  - systemd-supervised PIDs: restart the owning unit.  Without this, a
-    #    remote backend (hermes serve) under Restart=on-failure never comes
+    #    remote backend (fool serve) under Restart=on-failure never comes
     #    back after our clean SIGTERM, and the Desktop can't reconnect (#68934).
     #  - manually-started PIDs: respawn the argv captured before the kill
     #    (#40449) — detached, headless, logged to logs/dashboard-restart.log.
@@ -507,11 +507,11 @@ def _kill_stale_dashboard_processes(
 
         if failed_restarts or unrecovered:
             print("  Restart anything not auto-restarted when you're ready:")
-            print("    hermes dashboard --port <port>")
+            print("    fool dashboard --port <port>")
     elif killed:
         unrecovered = list(killed)
         print("  Restart the dashboard when you're ready:")
-        print("    hermes dashboard --port <port>")
+        print("    fool dashboard --port <port>")
 
     return {
         "matched": list(pids),
@@ -642,8 +642,8 @@ def _is_desktop_local_serve_cmdline(command: str) -> bool:
 
     Desktop primary/pool backends launch as::
 
-        hermes serve --host 127.0.0.1 --port 0
-        hermes serve --isolated --host 127.0.0.1 --port 0 ...
+        fool serve --host 127.0.0.1 --port 0
+        fool serve --isolated --host 127.0.0.1 --port 0 ...
 
     Intentional long-lived headless serves (e.g. ``--host <tailscale-ip>
     --port 9119``) must never match — those are operator-managed remote
@@ -840,7 +840,7 @@ def _lock_owned_serve_pids(base_dir: Path | None = None) -> set[int]:
 
 def _reap_orphaned_desktop_local_serves(
     *,
-    reason: str = "orphaned desktop-local hermes serve",
+    reason: str = "orphaned desktop-local fool serve",
     signal_term=None,
     signal_kill=None,
     sleep_fn=None,

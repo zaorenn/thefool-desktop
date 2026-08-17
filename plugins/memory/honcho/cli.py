@@ -173,7 +173,7 @@ def cmd_sync(args) -> None:
 
     cfg = _read_config()
     if not cfg:
-        print("  No Honcho config found. Run 'hermes honcho setup' first.\n")
+        print("  No Honcho config found. Run 'fool honcho setup' first.\n")
         return
 
     hosts = cfg.get("hosts", {})
@@ -181,7 +181,7 @@ def cmd_sync(args) -> None:
     has_key = bool(cfg.get("apiKey") or os.environ.get("HONCHO_API_KEY"))
 
     if not default_block and not has_key:
-        print("  Honcho not configured on default profile. Run 'hermes honcho setup' first.\n")
+        print("  Honcho not configured on default profile. Run 'fool honcho setup' first.\n")
         return
 
     created = 0
@@ -690,26 +690,26 @@ def cmd_setup(args) -> None:
                     on_poll=lambda: print(".", end="", flush=True),
                 )
             except KeyboardInterrupt:
-                print("\n  Cancelled. Re-run 'hermes honcho setup' to try again.\n")
+                print("\n  Cancelled. Re-run 'fool honcho setup' to try again.\n")
                 return
             except (AuthorizationTimeout, DeviceCodeExpired):
                 print("\n  Device code expired before approval.")
-                print("  Re-run 'hermes honcho setup' to get a new code.\n")
+                print("  Re-run 'fool honcho setup' to get a new code.\n")
                 return
             except AccessDenied:
                 print("\n  Sign-in was denied on the approval page.")
-                print("  Re-run 'hermes honcho setup' to retry, or choose an API key instead.\n")
+                print("  Re-run 'fool honcho setup' to retry, or choose an API key instead.\n")
                 return
             except DeviceFlowError as e:
                 if e.error == "http_429":
                     print("\n  Too many device-code requests — wait a minute and re-run setup.\n")
                 else:
                     print(f"\n  Device sign-in failed: {e}")
-                    print("  Re-run 'hermes honcho setup' to retry, or choose an API key instead.\n")
+                    print("  Re-run 'fool honcho setup' to retry, or choose an API key instead.\n")
                 return
             except Exception as e:
                 print(f"\n  Device sign-in failed: {e}")
-                print("  Re-run 'hermes honcho setup' to retry, or choose an API key instead.\n")
+                print("  Re-run 'fool honcho setup' to retry, or choose an API key instead.\n")
                 return
             print(" approved")
             _apply_grant_to_host(hermes_host, cred)
@@ -737,7 +737,7 @@ def cmd_setup(args) -> None:
                 )
             except Exception as e:
                 print(f"  OAuth sign-in failed: {e}")
-                print("  Re-run 'hermes honcho setup' to retry, or choose an API key instead.\n")
+                print("  Re-run 'fool honcho setup' to retry, or choose an API key instead.\n")
                 return
             _apply_grant_to_host(hermes_host, cred)
             print("  Authorized — token saved. Let's finish configuring.\n")
@@ -751,7 +751,7 @@ def cmd_setup(args) -> None:
 
             if not cfg.get("apiKey"):
                 print("\n  No API key configured. Get yours at https://app.honcho.dev")
-                print("  Run 'hermes honcho setup' again once you have a key.\n")
+                print("  Run 'fool honcho setup' again once you have a key.\n")
                 return
 
     # --- 3. Identity ---
@@ -1148,11 +1148,11 @@ def cmd_status(args) -> None:
                 cfg = {"apiKey": _env_cfg.api_key, "enabled": _env_cfg.enabled}
             else:
                 print(f"  No Honcho config found at {active_path}")
-                print("  Run 'hermes honcho setup' to configure.\n")
+                print("  Run 'fool honcho setup' to configure.\n")
                 return
         except Exception:
             print(f"  No Honcho config found at {active_path}")
-            print("  Run 'hermes honcho setup' to configure.\n")
+            print("  Run 'fool honcho setup' to configure.\n")
             return
 
     try:
@@ -1525,7 +1525,7 @@ def cmd_identity(args) -> None:
     """Seed AI peer identity or show both peer representations."""
     cfg = _read_config()
     if not _resolve_api_key(cfg):
-        print("  No API key configured. Run 'hermes honcho setup' first.\n")
+        print("  No API key configured. Run 'fool honcho setup' first.\n")
         return
 
     file_path = getattr(args, "file", None)
@@ -1654,14 +1654,14 @@ def cmd_migrate(args) -> None:
         print("  2. Run:  hermes honcho setup")
         print("     Paste the key when prompted.")
         print()
-        answer = _prompt("  Run 'hermes honcho setup' now?", default="y")
+        answer = _prompt("  Run 'fool honcho setup' now?", default="y")
         if answer.lower() in {"y", "yes"}:
             cmd_setup(args)
             cfg = _read_config()
             has_key = bool(cfg.get("apiKey", ""))
         else:
             print()
-            print("  Run 'hermes honcho setup' when ready, then re-run this walkthrough.")
+            print("  Run 'fool honcho setup' when ready, then re-run this walkthrough.")
 
     # ── Step 2: Detected files ────────────────────────────────────────────────
     print()
@@ -1729,7 +1729,7 @@ def cmd_migrate(args) -> None:
                 except Exception as e:
                     print(f"  Failed: {e}")
         else:
-            print("  Run 'hermes honcho setup' first, then re-run this step.")
+            print("  Run 'fool honcho setup' first, then re-run this step.")
     else:
         print("  No user memory files detected. Nothing to migrate here.")
 
@@ -1775,7 +1775,7 @@ def cmd_migrate(args) -> None:
                 except Exception as e:
                     print(f"  Failed: {e}")
         else:
-            print("  Run 'hermes honcho setup' first, then seed manually:")
+            print("  Run 'fool honcho setup' first, then seed manually:")
             for f in agent_files:
                 print(f"    hermes honcho identity {f}")
     else:
@@ -1839,7 +1839,7 @@ def honcho_command(args) -> None:
     if sub == "setup":
         # Redirect to memory setup — honcho setup goes through the unified path
         print("\n  Honcho is configured via the memory provider system.")
-        print("  Running 'hermes memory setup'...\n")
+        print("  Running 'fool memory setup'...\n")
         from fool_cli.memory_setup import cmd_setup_provider
         cmd_setup_provider("honcho")
         return

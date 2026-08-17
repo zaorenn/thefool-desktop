@@ -35,11 +35,11 @@ class TestDashboardStatus:
             cmd_dashboard(_ns(status=True))
         assert exc.value.code == 0
         out = capsys.readouterr().out
-        assert "No hermes dashboard processes running" in out
+        assert "No fool dashboard processes running" in out
 
     def test_status_with_processes(self, capsys):
         processes = [
-            (12345, "hermes dashboard --port 9119"),
+            (12345, "fool dashboard --port 9119"),
             (12346, "python -m fool_cli.main dashboard --host 0.0.0.0 --port 9120"),
         ]
         with patch("fool_cli.main._scan_dashboard_processes", return_value=processes), \
@@ -50,7 +50,7 @@ class TestDashboardStatus:
         # Status is informational — always exits 0.
         assert exc.value.code == 0
         out = capsys.readouterr().out
-        assert "2 hermes dashboard process(es) running" in out
+        assert "2 fool dashboard process(es) running" in out
         assert "PID 12345" in out
         assert "PID 12346" in out
 

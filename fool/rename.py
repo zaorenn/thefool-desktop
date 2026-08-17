@@ -57,27 +57,56 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # geri kalanı bozar.
 
 #: Python modül / paket adları.
+#:
+#: İkinci geçişte ``thefool_*`` -> ``fool_*`` kısaltması eklendi: komut ``fool``
+#: olunca ``thefool_cli`` modülü, ``~/.fool`` dizini ve ``FOOL_HOME`` değişkeni
+#: yan yana tutarsız duruyordu. Kurallar hem ``hermes_*`` (upstream) hem
+#: ``thefool_*`` (ilk geçiş) girdilerini kabul eder, böylece dönüşüm hangi
+#: noktadan başlarsa başlasın aynı yere varır.
 MODULE_RENAMES: tuple[tuple[str, str], ...] = (
-    ("hermes_state_portability", "thefool_state_portability"),
-    ("hermes_state_common", "thefool_state_common"),
-    ("hermes_state_schema", "thefool_state_schema"),
-    ("hermes_state_search", "thefool_state_search"),
-    ("hermes_bootstrap", "thefool_bootstrap"),
-    ("hermes_constants", "thefool_constants"),
-    ("hermes_logging", "thefool_logging"),
-    ("hermes_state", "thefool_state"),
-    ("hermes_time", "thefool_time"),
-    ("hermes_cli", "thefool_cli"),
+    ("hermes_state_portability", "fool_state_portability"),
+    ("thefool_state_portability", "fool_state_portability"),
+    ("hermes_state_common", "fool_state_common"),
+    ("thefool_state_common", "fool_state_common"),
+    ("hermes_state_schema", "fool_state_schema"),
+    ("thefool_state_schema", "fool_state_schema"),
+    ("hermes_state_search", "fool_state_search"),
+    ("thefool_state_search", "fool_state_search"),
+    ("hermes_bootstrap", "fool_bootstrap"),
+    ("thefool_bootstrap", "fool_bootstrap"),
+    ("hermes_constants", "fool_constants"),
+    ("thefool_constants", "fool_constants"),
+    ("hermes_logging", "fool_logging"),
+    ("thefool_logging", "fool_logging"),
+    ("hermes_state", "fool_state"),
+    ("thefool_state", "fool_state"),
+    ("hermes_time", "fool_time"),
+    ("thefool_time", "fool_time"),
+    ("hermes_cli", "fool_cli"),
+    ("thefool_cli", "fool_cli"),
 )
 
 #: npm scope.
 NPM_RENAMES: tuple[tuple[str, str], ...] = (
-    ("@hermes/", "@thefool/"),
+    ("@hermes/", "@fool/"),
+    ("@thefool/", "@fool/"),
 )
 
-#: Ortam değişkeni öneki. Geriye dönük uyumluluk ``fool/compat.py``de —
-#: THEFOOL_* birincil, HERMES_* okunmaya devam eder.
-ENV_PREFIX: tuple[str, str] = ("HERMES_", "THEFOOL_")
+#: Komut adı ve veri dizini — kullanıcının gördüğü kısa biçim.
+#: ``thefool config set`` yerine ``fool config set``; ``~/.thefool`` yerine
+#: ``~/.fool``. ``\b`` sınırları sayesinde ``thefool_cli`` gibi tanımlayıcılar
+#: bu kuraldan etkilenmez (``_`` bir kelime karakteri).
+WORD_RENAMES: tuple[tuple[str, str], ...] = (
+    ("thefool", "fool"),
+)
+
+#: Ortam değişkeni öneki. ``THEFOOL_`` hiçbir zaman yayınlanmadı (aynı oturumda
+#: üretilip kısaltıldı), bu yüzden uyumluluk zinciri yalnızca gerçekten sahada
+#: olan ``HERMES_*`` için gerekiyor — bkz. ``fool/compat.py``.
+ENV_PREFIXES: tuple[tuple[str, str], ...] = (
+    ("HERMES_", "FOOL_"),
+    ("THEFOOL_", "FOOL_"),
+)
 
 #: DOKUNULMAYACAKLAR — bunlar dış dünyaya bağlı, değişirlerse bir şey kırılır.
 #:
@@ -118,6 +147,11 @@ SELF_EXCLUDE: frozenset[str] = frozenset({
     "fool/rename.py",
     "fool/audit.py",
     "fool/branding.py",
+    # compat.py ESKI -> YENI eslemesini TANIMLIYOR. Donusume girerse
+    # `_OLD = "HERMES_"` satiri `_OLD = "FOOL_"` olur ve uyumluluk katmani
+    # kendini yer: eski degiskenler artik taninmaz, kullanicinin ayari
+    # sessizce yok sayilir.
+    "fool/compat.py",
 })
 
 
@@ -165,8 +199,13 @@ def transform(text: str) -> str:
     for old, new in NPM_RENAMES:
         text = text.replace(old, new)
 
-    old_env, new_env = ENV_PREFIX
-    text = re.sub(rf"\b{re.escape(old_env)}([A-Z0-9_]+)", rf"{new_env}\1", text)
+    for old_env, new_env in ENV_PREFIXES:
+        text = re.sub(rf"\b{re.escape(old_env)}([A-Z0-9_]+)", rf"{new_env}\1", text)
+
+    # Komut adı / dizin adı — modül adları YUKARIDA çözüldüğü için burada
+    # `\bthefool\b` yalnızca serbest biçimde kalanları yakalar.
+    for old, new in WORD_RENAMES:
+        text = re.sub(rf"\b{re.escape(old)}\b", new, text)
 
     return _unprotect(text, stash)
 

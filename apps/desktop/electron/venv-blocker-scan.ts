@@ -46,7 +46,7 @@ export type ScanOutcome =
 // ---------------------------------------------------------------------------
 
 const SCAN_TIMEOUT_MS = 15000
-const SCAN_MODULE = 'hermes_cli._scan_venv_blockers'
+const SCAN_MODULE = 'thefool_cli._scan_venv_blockers'
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -127,7 +127,7 @@ export async function stopSafeVenvBlockers(
     try {
       await execFn(
         pythonPath,
-        ['-m', 'hermes_cli._scan_venv_blockers', '--terminate-safe', String(process.pid), String(process.createTime)],
+        ['-m', 'thefool_cli._scan_venv_blockers', '--terminate-safe', String(process.pid), String(process.createTime)],
         { cwd: updateRoot, windowsHide: true, timeout: 10_000, maxBuffer: 256 * 1024 }
       )
       stopped.push(process.pid)

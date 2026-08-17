@@ -1,4 +1,4 @@
-import { buildHermesWebSocketUrl } from "@hermes/shared";
+import { buildHermesWebSocketUrl } from "@thefool/shared";
 
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
@@ -16,8 +16,8 @@ function readBasePath(): string {
   return withLead.replace(/\/+$/, "");
 }
 
-export const HERMES_BASE_PATH = readBasePath();
-const BASE = HERMES_BASE_PATH;
+export const THEFOOL_BASE_PATH = readBasePath();
+const BASE = THEFOOL_BASE_PATH;
 
 import type { DashboardTheme } from "@/themes/types";
 import {
@@ -190,7 +190,7 @@ function pluginPath(name: string): string {
 /**
  * Fetch a single-use ticket for a WebSocket upgrade in gated mode.
  *
- * The dashboard's gated-mode WS auth (``hermes_cli.web_server._ws_auth_ok``)
+ * The dashboard's gated-mode WS auth (``thefool_cli.web_server._ws_auth_ok``)
  * rejects the legacy ``?token=<_SESSION_TOKEN>`` path and only accepts
  * ``?ticket=<minted>`` consumed against the in-memory ticket store. Browsers
  * can't set ``Authorization`` on a WS upgrade, so this round-trip via the
@@ -1894,7 +1894,7 @@ export interface StatusResponse {
   /** NS-656: memory-pressure rollup from the gateway heartbeat +
    * lifecycle ledger. Absent on older gateways. */
   memory?: MemoryPressureStatus;
-  /** NS-656: disk-usage rollup for the HERMES_HOME volume. Absent on
+  /** NS-656: disk-usage rollup for the THEFOOL_HOME volume. Absent on
    * older gateways. */
   disk?: DiskPressureStatus;
   release_date: string;
@@ -1920,7 +1920,7 @@ export interface MemoryPressureStatus {
 }
 
 /** NS-656: coarse disk telemetry served by /api/status. Live statvfs
- * sample of the HERMES_HOME volume — no staleness dimension, so no
+ * sample of the THEFOOL_HOME volume — no staleness dimension, so no
  * sampled_at. */
 export interface DiskPressureStatus {
   pressure: "ok" | "elevated" | "critical" | "unknown";

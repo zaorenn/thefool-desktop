@@ -35,7 +35,7 @@ def _python_project(root: Path) -> None:
 
 
 def test_lint_and_typecheck_are_not_reported_as_full_tests(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _node_project(tmp_path)
 
     lint = classify_verification_command(
@@ -62,7 +62,7 @@ def test_lint_and_typecheck_are_not_reported_as_full_tests(tmp_path, monkeypatch
 
 
 def test_shell_wrappers_match_but_echo_does_not(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _node_project(tmp_path)
 
     wrapped = classify_verification_command(
@@ -96,7 +96,7 @@ def test_shell_wrappers_match_but_echo_does_not(tmp_path, monkeypatch):
 def test_masking_shell_control_is_not_verification_evidence(
     tmp_path, monkeypatch, command
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -113,7 +113,7 @@ def test_masking_shell_control_is_not_verification_evidence(
 def test_successful_and_chain_preserves_passing_evidence(
     tmp_path, monkeypatch, command
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -131,7 +131,7 @@ def test_successful_and_chain_preserves_passing_evidence(
 def test_final_verifier_after_sequence_owns_shell_exit_status(
     tmp_path, monkeypatch, exit_code, expected
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -146,7 +146,7 @@ def test_final_verifier_after_sequence_owns_shell_exit_status(
 
 
 def test_quoted_shell_operator_remains_a_verifier_argument(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -162,7 +162,7 @@ def test_quoted_shell_operator_remains_a_verifier_argument(tmp_path, monkeypatch
 
 @pytest.mark.parametrize("redirect", ["2>&1", "&> test.log"])
 def test_shell_redirection_does_not_hide_simple_verifier(tmp_path, monkeypatch, redirect):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -177,7 +177,7 @@ def test_shell_redirection_does_not_hide_simple_verifier(tmp_path, monkeypatch, 
 
 
 def test_masked_ad_hoc_script_is_not_verification_evidence(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
     script = Path(tempfile.gettempdir()) / f"hermes-ad-hoc-{tmp_path.name}.py"
     script.write_text("raise SystemExit(1)\n", encoding="utf-8")
@@ -195,7 +195,7 @@ def test_masked_ad_hoc_script_is_not_verification_evidence(tmp_path, monkeypatch
 
 
 def test_masked_verifier_does_not_clear_edited_ledger_state(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _python_project(tmp_path)
     record_terminal_result(
         command="pytest",
@@ -225,7 +225,7 @@ def test_masked_verifier_does_not_clear_edited_ledger_state(tmp_path, monkeypatc
 
 
 def test_temp_script_records_ad_hoc_evidence_without_canonical_suite(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
     script = Path(tempfile.gettempdir()) / f"hermes-ad-hoc-{tmp_path.name}.py"
     script.write_text("print('ok')\n", encoding="utf-8")
@@ -258,7 +258,7 @@ def test_temp_script_records_ad_hoc_evidence_without_canonical_suite(tmp_path, m
 
 
 def test_file_tool_stales_evidence_by_session_id_for_absolute_edit(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     _node_project(tmp_path)
     target = tmp_path / "src" / "app.ts"
     target.parent.mkdir()
@@ -293,7 +293,7 @@ def test_file_tool_stales_evidence_by_session_id_for_absolute_edit(tmp_path, mon
 
 def test_recording_expires_old_edit_only_state(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("THEFOOL_HOME", str(home))
     _node_project(tmp_path)
 
     mark_workspace_edited(
@@ -331,7 +331,7 @@ def test_windows_backslash_ad_hoc_script_path_is_matched(tmp_path, monkeypatch):
     """
     from agent.verification_evidence import _find_ad_hoc_match
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / ".hermes"))
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
 
     # On Windows, shlex.split(posix=True) eats backslashes as escape chars;

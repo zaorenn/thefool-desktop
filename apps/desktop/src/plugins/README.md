@@ -12,5 +12,5 @@ in the companion
 repo instead.
 
 User- and agent-authored plugins load at runtime from
-`$HERMES_HOME/desktop-plugins/<name>/plugin.js` (the disk door) — see the
+`$THEFOOL_HOME/desktop-plugins/<name>/plugin.js` (the disk door) — see the
 `hermes-desktop-plugins` skill.

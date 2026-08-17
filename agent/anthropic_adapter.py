@@ -21,13 +21,13 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
 
-from hermes_constants import get_hermes_home
+from thefool_constants import get_hermes_home
 from typing import Any, Dict, List, Optional, Tuple
 from utils import base_url_host_matches, base_url_hostname, normalize_proxy_env_vars
 from agent.secret_scope import get_secret as _get_secret
 
 try:
-    import hermes_cli as _hermes_cli
+    import thefool_cli as _hermes_cli
 
     _HERMES_VERSION = str(_hermes_cli.__version__)
 except Exception:
@@ -39,7 +39,7 @@ def _getenv(name: str, default: str = "") -> str:
 
     Routes through the secret scope (Workstream A): identical to os.getenv
     when multiplexing is off, scope-aware (and fail-closed on an unscoped
-    read) when on. Mirrors the same wrapper in hermes_cli/runtime_provider.py.
+    read) when on. Mirrors the same wrapper in thefool_cli/runtime_provider.py.
     """
     val = _get_secret(name, default)
     return val if val is not None else default
@@ -589,7 +589,7 @@ def _is_nous_portal_endpoint(base_url: str | None) -> bool:
     if base_url_host_matches(base_url or "", "inference-api.nousresearch.com"):
         return True
     try:
-        from hermes_cli.auth import _nous_inference_env_override
+        from thefool_cli.auth import _nous_inference_env_override
 
         override = _nous_inference_env_override()
     except Exception:
@@ -1567,7 +1567,7 @@ def run_hermes_oauth_login_pure() -> Optional[Dict[str, Any]]:
     print()
 
     try:
-        from hermes_cli.auth import _can_open_graphical_browser as _can_open_gui
+        from thefool_cli.auth import _can_open_graphical_browser as _can_open_gui
     except Exception:
         _can_open_gui = lambda: True  # noqa: E731 — degrade to prior behavior
 

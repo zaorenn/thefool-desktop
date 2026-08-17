@@ -81,7 +81,7 @@ _SESSION_DRAIN_TIMEOUT = 10.0
 _DEFERRED_COMMIT_TIMEOUT = (_TIMEOUT * 2) + 5.0
 _SESSION_MESSAGE_BATCH_LIMIT = 100
 _REMOTE_RESOURCE_PREFIXES = ("http://", "https://", "git@", "ssh://", "git://")
-_SYNC_TRACE_ENV = "HERMES_OPENVIKING_SYNC_TRACE"
+_SYNC_TRACE_ENV = "THEFOOL_OPENVIKING_SYNC_TRACE"
 _DEFAULT_RECALL_LIMIT = 6
 _DEFAULT_RECALL_SCORE_THRESHOLD = 0.15
 _DEFAULT_RECALL_MAX_INJECTED_CHARS = 4000
@@ -1096,7 +1096,7 @@ def _is_local_openviking_url(value: str) -> bool:
 
 def _load_hermes_openviking_config() -> dict:
     try:
-        from hermes_cli.config import load_config_readonly
+        from thefool_cli.config import load_config_readonly
 
         config = load_config_readonly()
         memory_config = config.get("memory", {}) if isinstance(config, dict) else {}
@@ -1448,10 +1448,10 @@ def _local_openviking_bind(endpoint: str) -> tuple[str, int]:
 
 def _openviking_server_log_path() -> Path:
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
         home = get_hermes_home()
     except Exception:
-        home = Path(os.environ.get("HERMES_HOME", "")).expanduser() if os.environ.get("HERMES_HOME") else Path.home() / ".hermes"
+        home = Path(os.environ.get("THEFOOL_HOME", "")).expanduser() if os.environ.get("THEFOOL_HOME") else Path.home() / ".hermes"
     return home / _OPENVIKING_SERVER_LOG_RELATIVE_PATH
 
 
@@ -2436,7 +2436,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         if endpoint:
             normalized["endpoint"] = _normalize_openviking_url(endpoint)
 
-        from hermes_cli.config import load_config, save_config
+        from thefool_cli.config import load_config, save_config
 
         config = load_config()
         memory_config = config.get("memory")
@@ -2486,8 +2486,8 @@ class OpenVikingMemoryProvider(MemoryProvider):
 
     def post_setup(self, hermes_home: str, config: dict) -> None:
         """Custom setup that can reuse OpenViking's shared CLI config."""
-        from hermes_cli.config import save_config
-        from hermes_cli.memory_setup import _CANCELLED, _curses_select, _print_cancelled_setup, _prompt
+        from thefool_cli.config import save_config
+        from thefool_cli.memory_setup import _CANCELLED, _curses_select, _print_cancelled_setup, _prompt
 
         hermes_home_path = Path(hermes_home)
         env_path = hermes_home_path / ".env"
@@ -2750,7 +2750,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         hermes_home = str(kwargs.get("hermes_home") or "").strip()
         if not hermes_home:
             try:
-                from hermes_constants import get_hermes_home
+                from thefool_constants import get_hermes_home
                 hermes_home = str(get_hermes_home())
             except Exception:
                 hermes_home = str(Path.home() / ".hermes")

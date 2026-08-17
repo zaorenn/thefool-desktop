@@ -123,7 +123,7 @@ class TestStoreInit:
         fake_repo = base / "deadbeefcafebabe"
         fake_repo.mkdir()
         (fake_repo / "HEAD").write_text("ref: refs/heads/main\n")
-        (fake_repo / "HERMES_WORKDIR").write_text(str(work_dir) + "\n")
+        (fake_repo / "THEFOOL_WORKDIR").write_text(str(work_dir) + "\n")
         (fake_repo / "objects").mkdir()
 
         # Init store — should migrate the fake pre-v2 repo
@@ -669,7 +669,7 @@ def _seed_legacy_repo(base: Path, name: str, workdir: Path, mtime: float = None)
     shadow = base / name
     shadow.mkdir(parents=True)
     (shadow / "HEAD").write_text("ref: refs/heads/main\n")
-    (shadow / "HERMES_WORKDIR").write_text(str(workdir) + "\n")
+    (shadow / "THEFOOL_WORKDIR").write_text(str(workdir) + "\n")
     (shadow / "info").mkdir()
     (shadow / "info" / "exclude").write_text("node_modules/\n")
     if mtime is not None:
@@ -857,7 +857,7 @@ class TestPruneCheckpointsOrphanAllowlist:
         the human is "answering" the prompt. Only the previewed orphan may
         be deleted.
         """
-        import hermes_cli.checkpoints as checkpoints_cli
+        import thefool_cli.checkpoints as checkpoints_cli
 
         base = tmp_path / "checkpoints"
         monkeypatch.setattr("tools.checkpoint_manager.CHECKPOINT_BASE", base)

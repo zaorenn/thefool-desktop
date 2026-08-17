@@ -13,11 +13,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 try:
-    from hermes_constants import get_hermes_home
+    from thefool_constants import get_hermes_home
 except ImportError:
     import os as _os
     def get_hermes_home() -> Path:  # type: ignore[misc]
-        val = (_os.environ.get("HERMES_HOME") or "").strip()
+        val = (_os.environ.get("THEFOOL_HOME") or "").strip()
         return Path(val) if val else Path.home() / ".hermes"
 
 try:
@@ -585,7 +585,7 @@ def scan_sessions(
     at the end.
     """
     try:
-        from hermes_state import SessionDB
+        from thefool_state import SessionDB
     except Exception as exc:
         return {"sessions": [], "aggregate": {}, "error": f"Could not import SessionDB: {exc}", "scan_meta": {"mode": "failed", "sessions_total": 0, "sessions_rescanned": 0, "sessions_reused": 0}}
 

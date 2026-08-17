@@ -1,5 +1,5 @@
 import type { AppendMessage, ThreadMessage } from '@assistant-ui/react'
-import { JsonRpcGatewayError } from '@hermes/shared'
+import { JsonRpcGatewayError } from '@thefool/shared'
 import { useStore } from '@nanostores/react'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 

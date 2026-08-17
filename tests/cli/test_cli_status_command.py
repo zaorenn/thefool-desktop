@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from cli import HermesCLI
-from hermes_cli.commands import resolve_command
+from thefool_cli.commands import resolve_command
 
 
 def _make_cli():
@@ -44,7 +44,7 @@ def test_egress_command_is_available_in_cli_registry():
 def test_process_command_egress_prints_proxy_status(monkeypatch):
     cli_obj = _make_cli()
     monkeypatch.setattr(
-        "hermes_cli.proxy_cli.format_status_text",
+        "thefool_cli.proxy_cli.format_status_text",
         lambda: "Egress proxy status\nEnabled: no",
     )
 
@@ -99,7 +99,7 @@ def test_profile_command_reports_custom_root_profile(monkeypatch, tmp_path, caps
     cli_obj = _make_cli()
     profile_home = tmp_path / "profiles" / "coder"
 
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("THEFOOL_HOME", str(profile_home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "unrelated-home")
 
     cli_obj._handle_profile_command()

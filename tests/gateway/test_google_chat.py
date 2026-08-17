@@ -457,7 +457,7 @@ class TestOnPubsubMessage:
 
 
     def test_membership_created_caches_bot_user_id(self, adapter, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
         adapter._bot_user_id = None
         envelope = {
             "chat": {
@@ -1083,7 +1083,7 @@ class TestUserOAuthHelper:
     ):
         """A user who has not authorized has no token file; load returns
         ``None`` and never throws — same contract as the legacy path."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
         from plugins.platforms.google_chat.oauth import load_user_credentials
         assert load_user_credentials("nobody@example.com") is None
 
@@ -1092,7 +1092,7 @@ class TestUserOAuthHelper:
     ):
         """``list_authorized_emails`` enumerates the per-user dir; the
         legacy file is intentionally excluded (its owner is unknown)."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
         users_dir = tmp_path / "google_chat_user_tokens"
         users_dir.mkdir(parents=True)
         (users_dir / "alice@example.com.json").write_text("{}")
@@ -1107,7 +1107,7 @@ class TestUserOAuthHelper:
 
 
     def test_store_client_secret_writes_private_json(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
         src = tmp_path / "client_secret.json"
         payload = {"installed": {"client_id": "cid", "client_secret": "secret"}}
         src.write_text(json.dumps(payload), encoding="utf-8")
@@ -1136,7 +1136,7 @@ class TestPerUserAttachmentRouting:
     ):
         """sender_email maps to a per-user file → that user's API client
         is built and used for the upload, NOT the legacy fallback."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
         users_dir = tmp_path / "google_chat_user_tokens"
         users_dir.mkdir(parents=True)
         (users_dir / "alice@example.com.json").write_text(json.dumps({
@@ -1188,7 +1188,7 @@ class TestPerUserAttachmentRouting:
         """Per-user revoke clears alice's slot; bob and the legacy
         fallback both keep working. Alice's choice to revoke must not
         knock out unrelated users."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
         adapter._user_chat_api_by_email["alice@example.com"] = MagicMock()
         adapter._user_creds_by_email["alice@example.com"] = MagicMock()
         adapter._user_chat_api_by_email["bob@example.com"] = MagicMock()
@@ -1532,20 +1532,20 @@ class TestGoogleChatInteractiveSetup:
         def fake_prompt(question, default=None, password=False):
             return answers.get(question, default or "")
 
-        monkeypatch.setattr("hermes_cli.config.get_env_value", fake_get_env_value)
-        monkeypatch.setattr("hermes_cli.config.save_env_value", fake_save_env_value)
-        monkeypatch.setattr("hermes_cli.cli_output.prompt", fake_prompt)
+        monkeypatch.setattr("thefool_cli.config.get_env_value", fake_get_env_value)
+        monkeypatch.setattr("thefool_cli.config.save_env_value", fake_save_env_value)
+        monkeypatch.setattr("thefool_cli.cli_output.prompt", fake_prompt)
         monkeypatch.setattr(
-            "hermes_cli.cli_output.prompt_yes_no", lambda *_a, **_kw: True
+            "thefool_cli.cli_output.prompt_yes_no", lambda *_a, **_kw: True
         )
         monkeypatch.setattr(
-            "hermes_cli.cli_output.print_info", lambda *_a, **_kw: None
+            "thefool_cli.cli_output.print_info", lambda *_a, **_kw: None
         )
         monkeypatch.setattr(
-            "hermes_cli.cli_output.print_success", lambda *_a, **_kw: None
+            "thefool_cli.cli_output.print_success", lambda *_a, **_kw: None
         )
         monkeypatch.setattr(
-            "hermes_cli.cli_output.print_warning", lambda *_a, **_kw: None
+            "thefool_cli.cli_output.print_warning", lambda *_a, **_kw: None
         )
 
         gc_mod.interactive_setup()
@@ -1610,7 +1610,7 @@ class TestAuthorizationEmailMatch:
         from gateway.config import GatewayConfig
         from gateway.run import GatewayRunner
         from gateway.session import SessionSource
-        from hermes_cli.plugins import discover_plugins
+        from thefool_cli.plugins import discover_plugins
 
         monkeypatch.setenv("GOOGLE_CHAT_ALLOWED_USERS", "alice@example.com")
         # Plugin platforms become available during the normal gateway startup
@@ -1659,7 +1659,7 @@ class TestCronSchedulerRegistry:
             return
         # Discover first so the plugin is loaded at all.
         try:
-            from hermes_cli.plugins import discover_plugins
+            from thefool_cli.plugins import discover_plugins
             discover_plugins()
         except Exception:
             pass

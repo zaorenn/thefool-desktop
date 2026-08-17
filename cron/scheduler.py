@@ -41,20 +41,20 @@ from typing import Any, List, Optional, Protocol
 
 # Add parent directory to path for imports BEFORE repo-level imports.
 # Without this, standalone invocations (e.g. after `hermes update` reloads
-# the module) fail with ModuleNotFoundError for hermes_time et al.
+# the module) fail with ModuleNotFoundError for thefool_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from hermes_constants import get_hermes_home
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.config import (
+from thefool_constants import get_hermes_home
+from thefool_cli._subprocess_compat import windows_hide_flags
+from thefool_cli.config import (
     _expand_env_vars,
     cron_model_drift_axes,
     cron_model_drift_guard_enabled,
     load_config,
     resolve_cron_model_drift_defaults,
 )
-from hermes_cli.fallback_config import get_fallback_chain
-from hermes_time import now as _hermes_now
+from thefool_cli.fallback_config import get_fallback_chain
+from thefool_time import now as _hermes_now
 from agent.interrupt_compat import request_hard_interrupt
 from agent.delegation_context import (
     enter_non_dispatcher_owned_context,
@@ -409,10 +409,10 @@ def _merge_mcp_into_per_job_toolsets(per_job: list[str], cfg: dict) -> list[str]
     result = [t for t in per_job if t != "no_mcp"]
     if "no_mcp" in per_job:
         return result
-    # lazy import: avoid heavy hermes_cli import at cron module load (matches
+    # lazy import: avoid heavy thefool_cli import at cron module load (matches
     # _resolve_cron_enabled_toolsets' fallback) and share one MCP-membership
     # computation with the gateway/CLI platform resolver.
-    from hermes_cli.tools_config import enabled_mcp_server_names
+    from thefool_cli.tools_config import enabled_mcp_server_names
     enabled_mcp = enabled_mcp_server_names(cfg)
     if set(result) & enabled_mcp:
         return result
@@ -445,7 +445,7 @@ def _resolve_cron_enabled_toolsets(job: dict, cfg: dict) -> list[str] | None:
     if per_job:
         return _merge_mcp_into_per_job_toolsets(list(per_job), cfg or {})
     try:
-        from hermes_cli.tools_config import _get_platform_tools  # lazy: avoid heavy import at cron module load
+        from thefool_cli.tools_config import _get_platform_tools  # lazy: avoid heavy import at cron module load
         return sorted(_get_platform_tools(cfg or {}, "cron"))
     except Exception as exc:
         logger.warning(
@@ -690,7 +690,7 @@ def _inflight_min_allowance_minutes() -> float:
     Effective allowance per job is ``max(2 * interval, this)``, so a
     slow-but-healthy long-interval job is never clipped by the sweep.
     Reads ``cron.inflight_max_minutes`` from config.yaml; the
-    ``HERMES_CRON_INFLIGHT_MAX_MINUTES`` env var is kept as an internal
+    ``THEFOOL_CRON_INFLIGHT_MAX_MINUTES`` env var is kept as an internal
     escape hatch only.
     """
     try:
@@ -704,7 +704,7 @@ def _inflight_min_allowance_minutes() -> float:
                 return val
     except Exception:
         pass
-    raw = os.getenv("HERMES_CRON_INFLIGHT_MAX_MINUTES", "").strip()
+    raw = os.getenv("THEFOOL_CRON_INFLIGHT_MAX_MINUTES", "").strip()
     if raw:
         try:
             val = float(raw)
@@ -712,7 +712,7 @@ def _inflight_min_allowance_minutes() -> float:
                 return val
         except (ValueError, TypeError):
             logger.warning(
-                "Invalid HERMES_CRON_INFLIGHT_MAX_MINUTES=%r; using default %s",
+                "Invalid THEFOOL_CRON_INFLIGHT_MAX_MINUTES=%r; using default %s",
                 raw,
                 _INFLIGHT_MIN_ALLOWANCE_MINUTES,
             )
@@ -1254,7 +1254,7 @@ _terminal_cwd_lock = _ReadWriteLock()
 
 # Ceiling on how long a cron job waits for the TERMINAL_CWD lock before
 # FAILING (fail-closed, #79768). Derived from the cron inactivity limit
-# (HERMES_CRON_TIMEOUT, default 600s): a wedged lock holder stops touching
+# (THEFOOL_CRON_TIMEOUT, default 600s): a wedged lock holder stops touching
 # its activity clock, so the inactivity monitor usually reaps it and the
 # lock is released within roughly that limit. The bound is measured from
 # the WAITER's arrival, so a holder that wedges late (or hangs in pre-agent
@@ -1272,20 +1272,20 @@ _CWD_LOCK_TIMEOUT_MARGIN_SECONDS = 60.0
 
 
 def _cron_inactivity_seconds() -> float:
-    """Parse HERMES_CRON_TIMEOUT (seconds). 0 = unlimited; bad input = 600.
+    """Parse THEFOOL_CRON_TIMEOUT (seconds). 0 = unlimited; bad input = 600.
 
     Shared by run_job's inactivity monitor (which maps 0 to "no limit") and
     the cwd-lock bound below (which keeps the wait bounded regardless) so
     the two sites cannot drift apart — the lock bound must stay at or above
     the inactivity limit or waiters would fail while a healthy holder runs.
     """
-    raw = os.getenv("HERMES_CRON_TIMEOUT", "").strip()
+    raw = os.getenv("THEFOOL_CRON_TIMEOUT", "").strip()
     if not raw:
         return 600.0
     try:
         return float(raw)
     except (ValueError, TypeError):
-        logger.warning("Invalid HERMES_CRON_TIMEOUT=%r; using default 600s", raw)
+        logger.warning("Invalid THEFOOL_CRON_TIMEOUT=%r; using default 600s", raw)
         return 600.0
 
 
@@ -1413,7 +1413,7 @@ def _get_hermes_home() -> Path:
     """Resolve Hermes home dynamically while preserving test monkeypatch hooks.
 
     Cron is per-profile by design (#4707): the in-process ticker runs inside a
-    profile-scoped gateway, so resolving the active HERMES_HOME at call time
+    profile-scoped gateway, so resolving the active THEFOOL_HOME at call time
     means a profile's jobs are stored AND executed under that profile's home
     (its .env, config.yaml, scripts, skills). Do not freeze this at import or
     anchor it at the shared default root — either re-breaks profile isolation.
@@ -1488,7 +1488,7 @@ def _reclaim_fds_best_effort() -> None:
     except Exception:
         pass
     try:
-        from hermes_cli.resource_limits import apply_nofile_soft_limit
+        from thefool_cli.resource_limits import apply_nofile_soft_limit
 
         apply_nofile_soft_limit(None)
     except Exception:
@@ -1904,7 +1904,7 @@ def _plugin_cron_env_var(platform_name: str) -> str:
     support without editing this module.
     """
     try:
-        from hermes_cli.plugins import discover_plugins
+        from thefool_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         entry = platform_registry.get(platform_name.lower())
@@ -2039,7 +2039,7 @@ def _iter_home_target_platforms():
     for name in _HOME_TARGET_ENV_VARS:
         yield name
     try:
-        from hermes_cli.plugins import discover_plugins
+        from thefool_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         for entry in platform_registry.plugin_entries():
@@ -3149,14 +3149,14 @@ def _get_script_timeout() -> int:
         except Exception:
             logger.warning("Invalid patched _SCRIPT_TIMEOUT=%r; using env/config/default", _SCRIPT_TIMEOUT)
 
-    env_value = os.getenv("HERMES_CRON_SCRIPT_TIMEOUT", "").strip()
+    env_value = os.getenv("THEFOOL_CRON_SCRIPT_TIMEOUT", "").strip()
     if env_value:
         try:
             timeout = int(float(env_value))
             if timeout > 0:
                 return timeout
         except Exception:
-            logger.warning("Invalid HERMES_CRON_SCRIPT_TIMEOUT=%r; using config/default", env_value)
+            logger.warning("Invalid THEFOOL_CRON_SCRIPT_TIMEOUT=%r; using config/default", env_value)
 
     try:
         cfg = load_config() or {}
@@ -3364,7 +3364,7 @@ def _run_job_script(
 ) -> tuple[bool, str]:
     """Execute a cron job's data-collection script and capture its output.
 
-    Scripts must reside within HERMES_HOME/scripts/.  Both relative and
+    Scripts must reside within THEFOOL_HOME/scripts/.  Both relative and
     absolute paths are resolved and validated against this directory to
     prevent arbitrary script execution via path traversal or absolute
     path injection.
@@ -3385,7 +3385,7 @@ def _run_job_script(
 
     Args:
         script_path: Path to the script.  Relative paths are resolved
-            against HERMES_HOME/scripts/.  Absolute and ~-prefixed paths
+            against THEFOOL_HOME/scripts/.  Absolute and ~-prefixed paths
             are also validated to ensure they stay within the scripts dir.
         workdir: Optional absolute path to use as the script's cwd.
             When set, the subprocess runs in this directory instead of
@@ -3430,7 +3430,7 @@ def _run_job_script(
         path = (scripts_dir / raw).resolve()
 
     # Guard against path traversal, absolute path injection, and symlink
-    # escape — scripts MUST reside within HERMES_HOME/scripts/.
+    # escape — scripts MUST reside within THEFOOL_HOME/scripts/.
     try:
         path.relative_to(scripts_dir_resolved)
     except ValueError:
@@ -4167,12 +4167,12 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
         or str((_cron_cfg or {}).get("model_provider") or "").strip()
         or None
     )
-    model = job.get("model") or os.getenv("HERMES_MODEL") or ""
+    model = job.get("model") or os.getenv("THEFOOL_MODEL") or ""
 
-    from hermes_cli.auth import AuthError
+    from thefool_cli.auth import AuthError
 
     try:
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from thefool_cli.runtime_provider import resolve_runtime_provider
 
         kwargs = {"requested": requested, "target_model": model}
         if job.get("base_url"):
@@ -4340,7 +4340,7 @@ def _cron_cleanup_timeout_seconds() -> float:
     """Return the wall-clock bound for cron post-run cleanup."""
     default = 10.0
     try:
-        from hermes_cli.config import load_config
+        from thefool_cli.config import load_config
 
         cfg = load_config() or {}
         cron_cfg = cfg.get("cron", {}) if isinstance(cfg, dict) else {}
@@ -4517,7 +4517,7 @@ def run_job(
         # "no delivery target resolved". load_hermes_dotenv does not override
         # already-set vars, so the gateway's in-process tick is unaffected.
         try:
-            from hermes_cli.env_loader import load_hermes_dotenv
+            from thefool_cli.env_loader import load_hermes_dotenv
 
             load_hermes_dotenv(hermes_home=_get_hermes_home())
         except Exception:
@@ -4676,7 +4676,7 @@ def run_job(
     # Initialize SQLite session store so cron job messages are persisted
     # and discoverable via session_search (same pattern as gateway/run.py).
     #
-    # Bounded with its own timeout (separate from HERMES_CRON_TIMEOUT, which
+    # Bounded with its own timeout (separate from THEFOOL_CRON_TIMEOUT, which
     # only watches the agent's run_conversation below): SessionDB.__init__
     # opens/migrates state.db synchronously and has no timeout of its own
     # against a wedged sqlite3.connect (e.g. a stale flock left by a crashed
@@ -4688,23 +4688,23 @@ def run_job(
     # scheduled fire in between with "already running — skipping".
     _session_db = None
     try:
-        from hermes_state import SessionDB
+        from thefool_state import SessionDB
 
         # Resolve timeout: env override → config.yaml → default 10s.
         # Mirrors the script_timeout_seconds resolution pattern.
         _session_db_timeout: float | None = None
-        _raw_env_timeout = os.getenv("HERMES_CRON_SESSION_DB_TIMEOUT", "").strip()
+        _raw_env_timeout = os.getenv("THEFOOL_CRON_SESSION_DB_TIMEOUT", "").strip()
         if _raw_env_timeout:
             try:
                 _session_db_timeout = float(_raw_env_timeout)
             except (ValueError, TypeError):
                 logger.warning(
-                    "Invalid HERMES_CRON_SESSION_DB_TIMEOUT=%r; using config/default",
+                    "Invalid THEFOOL_CRON_SESSION_DB_TIMEOUT=%r; using config/default",
                     _raw_env_timeout,
                 )
         if _session_db_timeout is None:
             try:
-                from hermes_cli.config import load_config
+                from thefool_cli.config import load_config
                 _cfg = load_config() or {}
                 _cron_cfg = _cfg.get("cron", {}) if isinstance(_cfg, dict) else {}
                 _configured = _cron_cfg.get("session_db_timeout_seconds")
@@ -4815,26 +4815,26 @@ def run_job(
     from gateway.session_context import set_session_vars, clear_session_vars, _VAR_MAP
 
     # Cron execution is an internal scheduler context, not a live inbound
-    # gateway message. Do not seed HERMES_SESSION_* contextvars from the
+    # gateway message. Do not seed THEFOOL_SESSION_* contextvars from the
     # stored ``origin`` (which is delivery routing metadata, not a sender
     # identity). Several tool consumers branch on these vars during job
     # execution and would otherwise behave as if a real user from the
     # origin chat was driving the agent:
     #   - tools/terminal_tool.py: background-process notification routing
-    #     (notify_on_complete / watch_patterns) reads HERMES_SESSION_PLATFORM
-    #     and HERMES_SESSION_CHAT_ID to populate watcher_platform / chat_id,
+    #     (notify_on_complete / watch_patterns) reads THEFOOL_SESSION_PLATFORM
+    #     and THEFOOL_SESSION_CHAT_ID to populate watcher_platform / chat_id,
     #     which would route completion notifications to the origin chat
-    #     instead of via HERMES_CRON_AUTO_DELIVER_* below.
+    #     instead of via THEFOOL_CRON_AUTO_DELIVER_* below.
     #   - tools/tts_tool.py: picks Opus vs MP3 based on
-    #     HERMES_SESSION_PLATFORM == "telegram".
+    #     THEFOOL_SESSION_PLATFORM == "telegram".
     #   - tools/skills_tool.py + agent/prompt_builder.py: per-platform
     #     skill-disable lists and the system-prompt cache key both consume
-    #     HERMES_SESSION_PLATFORM.
+    #     THEFOOL_SESSION_PLATFORM.
     #   - tools/send_message_tool.py: mirror source labelling and the
-    #     send_message gate read HERMES_SESSION_PLATFORM.
+    #     send_message gate read THEFOOL_SESSION_PLATFORM.
     # Cron output delivery itself reads job["origin"] directly via
-    # _resolve_origin(job) and the HERMES_CRON_AUTO_DELIVER_* vars set
-    # below, so clearing HERMES_SESSION_* here does not affect delivery.
+    # _resolve_origin(job) and the THEFOOL_CRON_AUTO_DELIVER_* vars set
+    # below, so clearing THEFOOL_SESSION_* here does not affect delivery.
     # Resolve workdir BEFORE set_session_vars so we can pass it as cwd=,
     # letting set_session_vars handle the _SESSION_CWD ContextVar set/clear
     # via its existing machinery (clear_session_vars calls clear_session_cwd
@@ -4852,13 +4852,13 @@ def run_job(
         chat_id="",
         chat_name="",
         # A cron job cannot receive a completion after its turn ends. We clear the
-        # HERMES_SESSION_* routing keys just below, so an async delegation's
+        # THEFOOL_SESSION_* routing keys just below, so an async delegation's
         # completion event carries session_key="" — _enrich_async_delegation_routing
         # cannot resolve it and _inject_watch_notification drops it ("no routing
         # metadata"). And by the time a child finishes, run_job has already shipped
         # the job's final response via _deliver_result; there is no turn left to
         # re-enter. (Worse, get_current_session_key() can fall back to the ambient
-        # os.environ HERMES_SESSION_KEY, which risks routing a cron subagent's output
+        # os.environ THEFOOL_SESSION_KEY, which risks routing a cron subagent's output
         # into an unrelated user chat.)
         #
         # Declaring the channel stateless routes delegate_task to its existing
@@ -4868,9 +4868,9 @@ def run_job(
         cwd=_job_workdir or "",
     )
     _cron_delivery_vars = (
-        "HERMES_CRON_AUTO_DELIVER_PLATFORM",
-        "HERMES_CRON_AUTO_DELIVER_CHAT_ID",
-        "HERMES_CRON_AUTO_DELIVER_THREAD_ID",
+        "THEFOOL_CRON_AUTO_DELIVER_PLATFORM",
+        "THEFOOL_CRON_AUTO_DELIVER_CHAT_ID",
+        "THEFOOL_CRON_AUTO_DELIVER_THREAD_ID",
     )
     for _var_name in _cron_delivery_vars:
         _VAR_MAP[_var_name].set("")
@@ -4916,7 +4916,7 @@ def run_job(
     # statement raises.  A leaked writer would deadlock the whole scheduler
     # (every future job blocks on acquire_*); a leaked reader blocks all
     # future writers.  Acquire itself can't leak (it either blocks or returns).
-    _cron_session_var = _VAR_MAP["HERMES_CRON_SESSION"]
+    _cron_session_var = _VAR_MAP["THEFOOL_CRON_SESSION"]
     _cron_session_token = None
     _non_dispatcher_token = None
     try:
@@ -4945,12 +4945,12 @@ def run_job(
         # Mark this job as NOT the dispatcher-owned kanban worker.
         #
         # A kanban worker is a normal `hermes chat -q` CLI agent whose default
-        # toolset includes `cronjob`, running with HERMES_KANBAN_TASK
+        # toolset includes `cronjob`, running with THEFOOL_KANBAN_TASK
         # legitimately in its own env; `cronjob(action="run")` calls
         # run_one_job() -> run_job() right here in that process.  Without this
         # marker the cron agent is misread as that worker: the kanban toolset is
         # force-added, the worker protocol is injected into its system prompt,
-        # and kanban_complete defaults task_id to $HERMES_KANBAN_TASK -- letting
+        # and kanban_complete defaults task_id to $THEFOOL_KANBAN_TASK -- letting
         # an unrelated cron job close the worker's task and overwrite real
         # results.
         #
@@ -4969,7 +4969,7 @@ def run_job(
         # changes take effect without a gateway restart. Route through
         # load_hermes_dotenv (not a bare load_dotenv) and reset the secret-
         # source cache first: startup already applied external secrets and
-        # recorded this HERMES_HOME in _APPLIED_HOMES, so a naive reload would
+        # recorded this THEFOOL_HOME in _APPLIED_HOMES, so a naive reload would
         # re-apply only the .env placeholder and never re-resolve a Bitwarden/
         # BSM-backed secret — leaving cron jobs 401'ing on the placeholder
         # (#33465). Clearing the cache forces the re-pull; the resolved secret
@@ -4977,7 +4977,7 @@ def run_job(
         # is set (mirrors startup), and the Bitwarden value-cache keeps the
         # forced re-pull off the network. load_hermes_dotenv also handles the
         # utf-8/latin-1 encoding fallback internally.
-        from hermes_cli.env_loader import (
+        from thefool_cli.env_loader import (
             load_hermes_dotenv,
             reset_secret_source_cache,
         )
@@ -4986,21 +4986,21 @@ def run_job(
 
         delivery_target = _resolve_delivery_target(job)
         if delivery_target:
-            _VAR_MAP["HERMES_CRON_AUTO_DELIVER_PLATFORM"].set(delivery_target["platform"])
-            _VAR_MAP["HERMES_CRON_AUTO_DELIVER_CHAT_ID"].set(str(delivery_target["chat_id"]))
-            _VAR_MAP["HERMES_CRON_AUTO_DELIVER_THREAD_ID"].set(
+            _VAR_MAP["THEFOOL_CRON_AUTO_DELIVER_PLATFORM"].set(delivery_target["platform"])
+            _VAR_MAP["THEFOOL_CRON_AUTO_DELIVER_CHAT_ID"].set(str(delivery_target["chat_id"]))
+            _VAR_MAP["THEFOOL_CRON_AUTO_DELIVER_THREAD_ID"].set(
                 ""
                 if delivery_target.get("thread_id") is None
                 else str(delivery_target["thread_id"])
             )
 
         # Model resolution precedence: per-job override > cron.model (the
-        # cron-fleet default) > HERMES_MODEL env > config.yaml ``model:``
+        # cron-fleet default) > THEFOOL_MODEL env > config.yaml ``model:``
         # (string or ``{default: ...}``). The per-job value is intentionally
         # re-read from storage every tick so a ``hermes cron edit --model``
         # after a failed run takes effect on the next tick — there is no
         # in-memory cache.
-        model = job.get("model") or os.getenv("HERMES_MODEL") or ""
+        model = job.get("model") or os.getenv("THEFOOL_MODEL") or ""
 
         # cron.model / cron.model_provider: a deliberate cron-fleet default
         # so unattended jobs stop shadowing chat `/model` switches. When an
@@ -5013,7 +5013,7 @@ def run_job(
         _cfg = {}
         _model_cfg = {}
         try:
-            from hermes_cli.config import read_user_config_raw
+            from thefool_cli.config import read_user_config_raw
             _cfg_path = str(_get_hermes_home() / "config.yaml")
             if os.path.exists(_cfg_path):
                 _cfg = read_user_config_raw(Path(_cfg_path))
@@ -5022,7 +5022,7 @@ def run_job(
                 # builds its own dict, so overlay managed values via the shared
                 # helper (fail-open, no-op when no managed scope).
                 try:
-                    from hermes_cli import managed_scope
+                    from thefool_cli import managed_scope
                     _cfg = managed_scope.apply_managed_overlay(_cfg)
                 except Exception:
                     pass
@@ -5058,7 +5058,7 @@ def run_job(
             raise RuntimeError(
                 f"Cron job '{job_name}' has no model configured "
                 f"(job.model={job.get('model')!r}, "
-                f"HERMES_MODEL={os.getenv('HERMES_MODEL', '')!r}, "
+                f"THEFOOL_MODEL={os.getenv('THEFOOL_MODEL', '')!r}, "
                 "config.yaml model.default missing or empty). "
                 f"Set a per-job model via "
                 f"`hermes cron edit {job_id} --model <name>` or set a "
@@ -5067,7 +5067,7 @@ def run_job(
 
         # Apply IPv4 preference if configured.
         try:
-            from hermes_constants import apply_ipv4_preference
+            from thefool_constants import apply_ipv4_preference
             _net_cfg = _cfg.get("network", {})
             if isinstance(_net_cfg, dict) and _net_cfg.get("force_ipv4"):
                 apply_ipv4_preference(force=True)
@@ -5076,7 +5076,7 @@ def run_job(
 
         # Reasoning config is resolved after provider authentication so an auth
         # fallback can first replace the primary model with its configured model.
-        from hermes_constants import resolve_reasoning_config
+        from thefool_constants import resolve_reasoning_config
 
         # Prefill messages from env or config.yaml. The top-level
         # prefill_messages_file key is canonical; agent.prefill_messages_file is
@@ -5084,7 +5084,7 @@ def run_job(
         prefill_messages = None
         agent_cfg = _cfg.get("agent", {}) if isinstance(_cfg.get("agent", {}), dict) else {}
         prefill_file = (
-            os.getenv("HERMES_PREFILL_MESSAGES_FILE", "")
+            os.getenv("THEFOOL_PREFILL_MESSAGES_FILE", "")
             or _cfg.get("prefill_messages_file", "")
             or agent_cfg.get("prefill_messages_file", "")
         )
@@ -5108,11 +5108,11 @@ def run_job(
         # Provider routing
         pr = _cfg.get("provider_routing") or {}
 
-        from hermes_cli.runtime_provider import (
+        from thefool_cli.runtime_provider import (
             resolve_runtime_provider,
             format_runtime_provider_error,
         )
-        from hermes_cli.auth import AuthError
+        from thefool_cli.auth import AuthError
 
         # F8 runtime backstop: never resolve a stored provider/base_url pair that
         # would ship a named provider's stored credential to an off-host endpoint
@@ -5203,7 +5203,7 @@ def run_job(
             or None
         )
         try:
-            # Do not inject HERMES_INFERENCE_PROVIDER here. resolve_runtime_provider()
+            # Do not inject THEFOOL_INFERENCE_PROVIDER here. resolve_runtime_provider()
             # already prefers persisted config over stale shell/env overrides when
             # no explicit provider is requested. Passing the env var here short-
             # circuits that precedence and can resurrect old providers (for
@@ -5263,7 +5263,7 @@ def run_job(
                 if not fb_provider or not fb_model:
                     continue
                 try:
-                    from hermes_cli.fallback_config import resolve_entry_api_key
+                    from thefool_cli.fallback_config import resolve_entry_api_key
 
                     fb_kwargs = {
                         "requested": fb_provider,
@@ -5450,7 +5450,7 @@ def run_job(
             disabled_toolsets=_resolve_cron_disabled_toolsets(_cfg),
             quiet_mode=True,
             # Cron jobs should always inherit the user's SOUL.md identity from
-            # HERMES_HOME. When a workdir is configured, also inject project
+            # THEFOOL_HOME. When a workdir is configured, also inject project
             # context files (AGENTS.md / CLAUDE.md / .cursorrules) from there.
             # Without a workdir, keep cwd context discovery disabled.
             skip_context_files=not bool(_job_workdir),
@@ -5466,7 +5466,7 @@ def run_job(
         # for hours if it's actively calling tools / receiving stream tokens,
         # but a hung API call or stuck tool with no activity for the configured
         # duration is caught and killed.  Default 600s (10 min inactivity);
-        # override via HERMES_CRON_TIMEOUT env var.  0 = unlimited.
+        # override via THEFOOL_CRON_TIMEOUT env var.  0 = unlimited.
         #
         # Uses the agent's built-in activity tracker (updated by
         # _touch_activity() on every tool call, API call, and stream delta).
@@ -5654,7 +5654,7 @@ def run_job(
             # through and be delivered as a cron warning.
             _explainer_variants = []
             try:
-                from hermes_state import PERSISTENCE_ERROR_CAUSES as _causes
+                from thefool_state import PERSISTENCE_ERROR_CAUSES as _causes
             except Exception:
                 _causes = ("locked", "disk", "unknown")
             for _cause in (None, *_causes):
@@ -6779,14 +6779,14 @@ def tick(
         advance_next_runs([job["id"] for job in due_jobs])
 
         # Resolve max parallel workers: env var > config.yaml > unbounded.
-        # Set HERMES_CRON_MAX_PARALLEL=1 to restore old serial behaviour.
+        # Set THEFOOL_CRON_MAX_PARALLEL=1 to restore old serial behaviour.
         _max_workers: Optional[int] = None
         try:
-            _env_par = os.getenv("HERMES_CRON_MAX_PARALLEL", "").strip()
+            _env_par = os.getenv("THEFOOL_CRON_MAX_PARALLEL", "").strip()
             if _env_par:
                 _max_workers = int(_env_par) or None
         except (ValueError, TypeError):
-            logger.warning("Invalid HERMES_CRON_MAX_PARALLEL value; defaulting to unbounded")
+            logger.warning("Invalid THEFOOL_CRON_MAX_PARALLEL value; defaulting to unbounded")
         if _max_workers is None:
             try:
                 _ucfg = load_config() or {}

@@ -1,6 +1,6 @@
 """Local JSON registry of approved remote meet nodes.
 
-Lives at ``$HERMES_HOME/workspace/meetings/nodes.json``. The gateway
+Lives at ``$THEFOOL_HOME/workspace/meetings/nodes.json``. The gateway
 consults it to resolve a ``chrome_node`` name to a ``(url, token)`` pair
 before opening a WebSocket to the remote bot host.
 
@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_constants import get_hermes_home
+from thefool_constants import get_hermes_home
 
 
 def _default_path() -> Path:

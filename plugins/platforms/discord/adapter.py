@@ -336,7 +336,7 @@ class _DiscordNonConversationalMessageTracker:
         self._ids: dict[str, None] = dict.fromkeys(self._load())
 
     def _state_path(self) -> _Path:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         return (
             get_hermes_home()
@@ -550,13 +550,13 @@ def _build_allowed_mentions():
 
 def _discord_ready_timeout_seconds() -> float:
     """Return the Discord ready wait timeout during gateway startup."""
-    raw = os.getenv("HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
+    raw = os.getenv("THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
     if raw:
         try:
             return max(0.0, float(raw))
         except ValueError:
             logger.warning(
-                "Ignoring invalid HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT=%r",
+                "Ignoring invalid THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT=%r",
                 raw,
             )
     return 30.0
@@ -922,7 +922,7 @@ class VoiceReceiver:
         piped WAV carries placeholder (0xFFFFFFFF) RIFF/data sizes that make
         strict readers misreport the length.
         """
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from thefool_cli._subprocess_compat import windows_hide_flags
 
         subprocess.run(
             [
@@ -960,7 +960,7 @@ def _read_dm_role_auth_guild() -> Optional[int]:
     default (DM role-auth disabled).
     """
     try:
-        from hermes_cli.config import read_raw_config
+        from thefool_cli.config import read_raw_config
         cfg = read_raw_config() or {}
         discord_cfg = cfg.get("discord", {}) or {}
         raw = discord_cfg.get("dm_role_auth_guild")
@@ -1005,7 +1005,7 @@ def _read_discord_prompt_timeout() -> int:
     """
     raw: Any = None
     try:
-        from hermes_cli.config import read_raw_config
+        from thefool_cli.config import read_raw_config
         cfg = read_raw_config() or {}
         approvals_cfg = cfg.get("approvals", {}) or {}
         raw = approvals_cfg.get("discord_prompt_timeout")
@@ -1081,8 +1081,8 @@ class DiscordAdapter(BasePlatformAdapter):
         self._voice_clients: Dict[int, Any] = {}  # guild_id -> VoiceClient
         self._voice_locks: Dict[int, asyncio.Lock] = {}  # guild_id -> serialize join/leave
         # Text batching: merge rapid successive messages (Telegram-style)
-        self._text_batch_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
-        self._text_batch_split_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
+        self._text_batch_delay_seconds = env_float("THEFOOL_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
+        self._text_batch_split_delay_seconds = env_float("THEFOOL_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
         self._pending_text_batches: Dict[str, MessageEvent] = {}
         self._pending_text_batch_tasks: Dict[str, asyncio.Task] = {}
         self._voice_text_channels: Dict[int, int] = {}  # guild_id -> text_channel_id
@@ -1125,12 +1125,12 @@ class DiscordAdapter(BasePlatformAdapter):
         self._liveness_interval_seconds = self._finite_positive_config_float(
             "websocket_liveness_interval_seconds",
             15.0,
-            env_key="HERMES_DISCORD_LIVENESS_INTERVAL_SECONDS",
+            env_key="THEFOOL_DISCORD_LIVENESS_INTERVAL_SECONDS",
         )
         self._liveness_failure_threshold = self._config_int(
             "websocket_liveness_failure_threshold",
             2,
-            env_key="HERMES_DISCORD_LIVENESS_FAILURE_THRESHOLD",
+            env_key="THEFOOL_DISCORD_LIVENESS_FAILURE_THRESHOLD",
         )
         self._heartbeat_ack_max_age_seconds = self._finite_positive_config_float(
             "websocket_heartbeat_ack_max_age_seconds",
@@ -1147,7 +1147,7 @@ class DiscordAdapter(BasePlatformAdapter):
         # shutdown from a runtime websocket crash.
         self._disconnecting = False
         self._missed_message_backfill_task: Optional[asyncio.Task] = None
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
         from plugins.platforms.discord.recovery import DiscordRecoveryStore
         self._discord_recovery_store = DiscordRecoveryStore(get_hermes_home())
         # Dedup cache: prevents duplicate bot responses when Discord
@@ -1706,7 +1706,7 @@ class DiscordAdapter(BasePlatformAdapter):
     def _platform_events_subscribed() -> bool:
         """has_hook fast-path shared by every Discord fire-site."""
         try:
-            from hermes_cli.lifecycle import has_hook
+            from thefool_cli.lifecycle import has_hook
 
             return has_hook("gateway_platform_event")
         except Exception:
@@ -2094,7 +2094,7 @@ class DiscordAdapter(BasePlatformAdapter):
 
         Fix: await all pending text-batch tasks before delegating to the base
         cancel. The flush deadline is clamped below the gateway's per-adapter
-        disconnect budget (``HERMES_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT``, default
+        disconnect budget (``THEFOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT``, default
         5s) so the gateway's outer ``wait_for`` can't hard-cancel us mid-flush —
         we cancel our own stragglers cleanly inside the budget instead.
         """
@@ -2131,7 +2131,7 @@ class DiscordAdapter(BasePlatformAdapter):
         ``GatewayRunner._adapter_disconnect_timeout_secs``.
         """
         budget = 5.0  # mirrors gateway _ADAPTER_DISCONNECT_TIMEOUT_SECS_DEFAULT
-        raw = os.getenv("HERMES_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
+        raw = os.getenv("THEFOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
         if raw:
             try:
                 parsed = float(raw)
@@ -2205,7 +2205,7 @@ class DiscordAdapter(BasePlatformAdapter):
         logger.info("[%s] Disconnected", self.name)
 
     def _command_sync_state_path(self) -> _Path:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         directory = get_hermes_home() / _DISCORD_COMMAND_SYNC_STATE_SUBDIR
         try:
@@ -4317,7 +4317,7 @@ class DiscordAdapter(BasePlatformAdapter):
             ],
         }
         try:
-            from hermes_cli.config import read_raw_config
+            from thefool_cli.config import read_raw_config
             cfg = read_raw_config() or {}
             fx = ((cfg.get("discord") or {}).get("voice_fx") or {})
             if isinstance(fx, dict):
@@ -4331,7 +4331,7 @@ class DiscordAdapter(BasePlatformAdapter):
     def _load_discord_int_config(self, key: str, default: int, *, minimum: int = 0) -> int:
         """Read a non-secret integer from the top-level ``discord`` config."""
         try:
-            from hermes_cli.config import read_raw_config
+            from thefool_cli.config import read_raw_config
             cfg = read_raw_config() or {}
             raw = (cfg.get("discord") or {}).get(key, default)
             value = int(raw)
@@ -6005,7 +6005,7 @@ class DiscordAdapter(BasePlatformAdapter):
 
         # ── Auto-register any gateway-available commands not yet on the tree ──
         # This ensures new commands added to COMMAND_REGISTRY in
-        # hermes_cli/commands.py automatically appear as Discord slash
+        # thefool_cli/commands.py automatically appear as Discord slash
         # commands without needing a manual entry here.
         def _build_auto_slash_command(_name: str, _description: str, _args_hint: str = ""):
             """Build a discord.app_commands.Command that proxies to _run_simple_slash."""
@@ -6046,7 +6046,7 @@ class DiscordAdapter(BasePlatformAdapter):
         slot_cap = _DISCORD_MAX_APP_COMMANDS - 1
         dropped_over_cap = 0
         try:
-            from hermes_cli.commands import COMMAND_REGISTRY, _is_gateway_available, _resolve_config_gates
+            from thefool_cli.commands import COMMAND_REGISTRY, _is_gateway_available, _resolve_config_gates
 
             try:
                 already_registered = {cmd.name for cmd in tree.get_commands()}
@@ -6091,7 +6091,7 @@ class DiscordAdapter(BasePlatformAdapter):
         # autocomplete UX as for built-in commands. No per-platform plugin
         # API needed — plugin commands are platform-agnostic.
         try:
-            from hermes_cli.commands import _iter_plugin_command_entries
+            from thefool_cli.commands import _iter_plugin_command_entries
 
             for plugin_name, plugin_desc, plugin_args_hint in _iter_plugin_command_entries():
                 discord_name = plugin_name.lower()[:32]
@@ -6330,7 +6330,7 @@ class DiscordAdapter(BasePlatformAdapter):
         and the handler both read from these instance attributes
         directly, so an in-place mutation is sufficient.
         """
-        from hermes_cli.commands import discord_skill_commands_by_category
+        from thefool_cli.commands import discord_skill_commands_by_category
 
         reserved = getattr(self, "_skill_group_reserved_names", set())
         categories, uncategorized, hidden = discord_skill_commands_by_category(
@@ -7791,7 +7791,7 @@ class DiscordAdapter(BasePlatformAdapter):
                 channel = await self._client.fetch_channel(int(target_id))
 
             try:
-                from hermes_cli.providers import get_label
+                from thefool_cli.providers import get_label
                 provider_label = get_label(current_provider)
             except Exception:
                 provider_label = current_provider
@@ -9110,7 +9110,7 @@ def _define_discord_view_classes() -> None:
 
             # Write response file
             try:
-                from hermes_constants import get_hermes_home
+                from thefool_constants import get_hermes_home
                 home = get_hermes_home()
                 response_path = home / ".update_response"
                 tmp = response_path.with_suffix(".tmp")
@@ -9294,7 +9294,7 @@ def _define_discord_view_classes() -> None:
 
         async def _expensive_warning_for(self, model_id: str):
             try:
-                from hermes_cli.model_selection_guards import combined_selection_warning
+                from thefool_cli.model_selection_guards import combined_selection_warning
 
                 # Pricing lookup can hit models.dev / a /models endpoint on a
                 # cache miss — keep it off the event loop.
@@ -9434,7 +9434,7 @@ def _define_discord_view_classes() -> None:
             self._build_provider_select()
 
             try:
-                from hermes_cli.providers import get_label
+                from thefool_cli.providers import get_label
                 provider_label = get_label(self.current_provider)
             except Exception:
                 provider_label = self.current_provider
@@ -10232,8 +10232,8 @@ def interactive_setup() -> None:
     the plugin's import surface stays small, prompts for the bot token,
     captures an allowlist, and offers to set a home channel.
     """
-    from hermes_cli.config import get_env_value, remove_env_value, save_env_value
-    from hermes_cli.cli_output import (
+    from thefool_cli.config import get_env_value, remove_env_value, save_env_value
+    from thefool_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,
@@ -10479,12 +10479,12 @@ def _apply_yaml_config(yaml_cfg: dict, discord_cfg: dict) -> dict | None:
         (
             "websocket_liveness_interval_seconds",
             "liveness_interval_seconds",
-            "HERMES_DISCORD_LIVENESS_INTERVAL_SECONDS",
+            "THEFOOL_DISCORD_LIVENESS_INTERVAL_SECONDS",
         ),
         (
             "websocket_liveness_failure_threshold",
             "liveness_failure_threshold",
-            "HERMES_DISCORD_LIVENESS_FAILURE_THRESHOLD",
+            "THEFOOL_DISCORD_LIVENESS_FAILURE_THRESHOLD",
         ),
         ("websocket_heartbeat_ack_max_age_seconds", None, None),
         ("websocket_max_latency_seconds", None, None),
@@ -10503,13 +10503,13 @@ def _apply_yaml_config(yaml_cfg: dict, discord_cfg: dict) -> dict | None:
 def _is_connected(config) -> bool:
     """Discord is considered connected when DISCORD_BOT_TOKEN is set.
 
-    Looks up via ``hermes_cli.gateway.get_env_value`` at call time (not via
+    Looks up via ``thefool_cli.gateway.get_env_value`` at call time (not via
     the plugin's own bound import) so tests that patch ``gateway_mod.get_env_value``
     — including ``test_setup_openclaw_migration`` — can suppress ambient
     ``DISCORD_BOT_TOKEN`` env vars. Matches what the legacy
     ``_PLATFORMS["discord"]`` dispatch did before this migration.
     """
-    import hermes_cli.gateway as gateway_mod
+    import thefool_cli.gateway as gateway_mod
     return bool((gateway_mod.get_env_value("DISCORD_BOT_TOKEN") or "").strip())
 
 
@@ -10530,7 +10530,7 @@ def register(ctx) -> None:
         required_env=["DISCORD_BOT_TOKEN"],
         install_hint="Run `hermes setup` to install Discord support.",
         # Interactive setup wizard — replaces the central
-        # hermes_cli/setup.py::_setup_discord function.  Same shape as Teams.
+        # thefool_cli/setup.py::_setup_discord function.  Same shape as Teams.
         setup_fn=interactive_setup,
         # YAML→env config bridge — owns the translation of ``config.yaml``
         # ``discord:`` keys (require_mention, free_response_channels,

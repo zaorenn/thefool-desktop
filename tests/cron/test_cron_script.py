@@ -4,7 +4,7 @@ Tests cover:
 - Script field in job creation / storage / update
 - Script execution and output injection into prompts
 - Error handling (missing script, timeout, non-zero exit)
-- Path resolution (absolute, relative to HERMES_HOME/scripts/)
+- Path resolution (absolute, relative to THEFOOL_HOME/scripts/)
 """
 
 import json
@@ -24,17 +24,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
-    """Isolated cron environment with temp HERMES_HOME."""
+    """Isolated cron environment with temp THEFOOL_HOME."""
     hermes_home = tmp_path / ".hermes"
     hermes_home.mkdir()
     (hermes_home / "cron").mkdir()
     (hermes_home / "cron" / "output").mkdir()
     (hermes_home / "scripts").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
 
     # Clear cached module-level paths
     import cron.jobs as jobs_mod
-    monkeypatch.setattr(jobs_mod, "HERMES_DIR", hermes_home)
+    monkeypatch.setattr(jobs_mod, "THEFOOL_DIR", hermes_home)
     monkeypatch.setattr(jobs_mod, "CRON_DIR", hermes_home / "cron")
     monkeypatch.setattr(jobs_mod, "JOBS_FILE", hermes_home / "cron" / "jobs.json")
     monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", hermes_home / "cron" / "output")
@@ -445,7 +445,7 @@ class TestCronjobToolScript:
 
 
     def test_clear_script(self, cron_env, monkeypatch):
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+        monkeypatch.setenv("THEFOOL_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         create_result = json.loads(cronjob(
@@ -465,7 +465,7 @@ class TestCronjobToolScript:
         assert "script" not in update_result["job"]
 
     def test_list_shows_script(self, cron_env, monkeypatch):
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+        monkeypatch.setenv("THEFOOL_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         cronjob(
@@ -577,7 +577,7 @@ class TestCronjobToolScriptValidation:
 
 
     def test_create_with_traversal_script_rejected(self, cron_env, monkeypatch):
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
+        monkeypatch.setenv("THEFOOL_INTERACTIVE", "1")
         from tools.cronjob_tools import cronjob
 
         result = json.loads(cronjob(
@@ -597,9 +597,9 @@ class TestRunJobEnvVarCleanup:
         """Origin env vars must be cleaned up even if run_job fails early."""
         # Ensure env vars are clean before test
         for key in (
-            "HERMES_SESSION_PLATFORM",
-            "HERMES_SESSION_CHAT_ID",
-            "HERMES_SESSION_CHAT_NAME",
+            "THEFOOL_SESSION_PLATFORM",
+            "THEFOOL_SESSION_CHAT_ID",
+            "THEFOOL_SESSION_CHAT_NAME",
         ):
             monkeypatch.delenv(key, raising=False)
 
@@ -626,6 +626,6 @@ class TestRunJobEnvVarCleanup:
             pass
 
         # Verify env vars were cleaned up by the finally block
-        assert os.environ.get("HERMES_SESSION_PLATFORM") is None
-        assert os.environ.get("HERMES_SESSION_CHAT_ID") is None
-        assert os.environ.get("HERMES_SESSION_CHAT_NAME") is None
+        assert os.environ.get("THEFOOL_SESSION_PLATFORM") is None
+        assert os.environ.get("THEFOOL_SESSION_CHAT_ID") is None
+        assert os.environ.get("THEFOOL_SESSION_CHAT_NAME") is None

@@ -3,7 +3,7 @@
 Provider profiles can live in three places:
 
 1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with hermes-agent)
-2. User plugins: ``$HERMES_HOME/plugins/model-providers/<name>/``
+2. User plugins: ``$THEFOOL_HOME/plugins/model-providers/<name>/``
 3. Pip-installed plugins: distributions exposing a ``hermes_agent.plugins``
    entry point (``module:func`` callable or a self-registering ``module``)
 
@@ -57,7 +57,7 @@ def register_provider(profile: ProviderProfile) -> None:
     """Register a provider profile by name and aliases.
 
     Later registrations with the same name replace earlier ones — so user
-    plugins under ``$HERMES_HOME/plugins/model-providers/`` can override
+    plugins under ``$THEFOOL_HOME/plugins/model-providers/`` can override
     bundled profiles without editing repo code.
     """
     global _PROVIDER_LIST_CACHE
@@ -98,9 +98,9 @@ def list_providers() -> list[ProviderProfile]:
 
 
 def _user_plugins_dir() -> Path | None:
-    """Return ``$HERMES_HOME/plugins/model-providers/`` if it exists."""
+    """Return ``$THEFOOL_HOME/plugins/model-providers/`` if it exists."""
     try:
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         d = get_hermes_home() / "plugins" / "model-providers"
         return d if d.is_dir() else None
@@ -120,7 +120,7 @@ def _import_plugin_dir(plugin_dir: Path, source: str) -> None:
     # Give bundled plugins a stable import path (``plugins.model_providers.<name>``)
     # so relative imports within the plugin work. User plugins load via
     # ``importlib.util.spec_from_file_location`` with a unique module name so
-    # multiple HERMES_HOME profiles don't alias each other.
+    # multiple THEFOOL_HOME profiles don't alias each other.
     safe_name = plugin_dir.name.replace("-", "_")
     if source == "bundled":
         module_name = f"plugins.model_providers.{safe_name}"
@@ -174,7 +174,7 @@ def _discover_entry_point_providers() -> None:
 
     Failures are swallowed per-entry (a broken third-party package must not
     break provider discovery) and logged at warning level. This scan runs
-    first, so filesystem plugins (bundled + ``$HERMES_HOME``) keep their
+    first, so filesystem plugins (bundled + ``$THEFOOL_HOME``) keep their
     documented override precedence via last-writer-wins in
     ``register_provider()`` — a pip package cannot hijack a first-party
     provider name.
@@ -187,7 +187,7 @@ def _discover_entry_point_providers() -> None:
     # Same opt-in gate as the general PluginManager: only entry points named
     # in ``plugins.enabled`` load, and ``plugins.disabled`` always wins.
     try:
-        from hermes_cli.plugins import _get_disabled_plugins, _get_enabled_plugins
+        from thefool_cli.plugins import _get_disabled_plugins, _get_enabled_plugins
 
         enabled = _get_enabled_plugins()  # None = nothing enabled yet (opt-in default)
         disabled = _get_disabled_plugins()
@@ -273,7 +273,7 @@ def _discover_providers() -> None:
 
     Order:
       1. Bundled plugins at ``<repo>/plugins/model-providers/<name>/``
-      2. User plugins at ``$HERMES_HOME/plugins/model-providers/<name>/``
+      2. User plugins at ``$THEFOOL_HOME/plugins/model-providers/<name>/``
       3. Legacy per-file modules at ``providers/<name>.py`` (back-compat)
 
     Each step imports its plugins, which call ``register_provider()`` at
@@ -293,7 +293,7 @@ def _discover_providers() -> None:
     #
     #    Discovered FIRST, i.e. lowest precedence: because
     #    ``register_provider()`` is last-writer-wins, running this before the
-    #    filesystem steps means a bundled or ``$HERMES_HOME`` profile of the
+    #    filesystem steps means a bundled or ``$THEFOOL_HOME`` profile of the
     #    same name always overrides a pip-installed one. That prevents a
     #    third-party package from silently hijacking a first-party provider
     #    name (e.g. ``openrouter``) while still letting pip packages add
@@ -307,7 +307,7 @@ def _discover_providers() -> None:
                 continue
             _import_plugin_dir(child, "bundled")
 
-    # 2. User plugins — under $HERMES_HOME/plugins/model-providers/<name>/.
+    # 2. User plugins — under $THEFOOL_HOME/plugins/model-providers/<name>/.
     #    These can override any bundled profile of the same name (last-writer-wins
     #    in register_provider()).
     user_dir = _user_plugins_dir()

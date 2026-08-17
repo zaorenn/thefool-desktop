@@ -21,13 +21,13 @@ def hermes_env(tmp_path, monkeypatch):
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
     (home / "scripts" / "watch.sh").write_text("#!/bin/bash\necho alert\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("THEFOOL_HOME", str(home))
 
     import importlib
-    import hermes_constants
+    import thefool_constants
     import cron.jobs
 
-    importlib.reload(hermes_constants)
+    importlib.reload(thefool_constants)
     importlib.reload(cron.jobs)
     return home
 

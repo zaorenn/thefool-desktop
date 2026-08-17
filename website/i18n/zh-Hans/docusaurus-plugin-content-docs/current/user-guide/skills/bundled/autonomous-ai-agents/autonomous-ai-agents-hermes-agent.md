@@ -247,7 +247,7 @@ hermes uninstall            Uninstall Hermes
 
 ## 斜杠命令（会话内）
 
-在交互式聊天会话中输入这些命令。新命令会不定期上线；如果以下内容看起来过时，请在会话内运行 `/help` 获取权威列表，或查看[实时斜杠命令参考](https://hermes-agent.nousresearch.com/docs/reference/slash-commands)。命令注册表的权威来源是 `hermes_cli/commands.py` — 每个消费方（自动补全、Telegram 菜单、Slack 映射、`/help`）均从中派生。
+在交互式聊天会话中输入这些命令。新命令会不定期上线；如果以下内容看起来过时，请在会话内运行 `/help` 获取权威列表，或查看[实时斜杠命令参考](https://hermes-agent.nousresearch.com/docs/reference/slash-commands)。命令注册表的权威来源是 `thefool_cli/commands.py` — 每个消费方（自动补全、Telegram 菜单、Slack 映射、`/help`）均从中派生。
 
 ### 会话控制
 ```
@@ -349,7 +349,7 @@ hermes uninstall            Uninstall Hermes
 ```
 ~/.hermes/config.yaml       Main configuration
 ~/.hermes/.env              API keys and secrets
-$HERMES_HOME/skills/        Installed skills
+$THEFOOL_HOME/skills/        Installed skills
 ~/.hermes/sessions/         Session transcripts
 ~/.hermes/logs/             Gateway and error logs
 ~/.hermes/auth.json         OAuth tokens and credential pools
@@ -464,7 +464,7 @@ Profiles 使用 `~/.hermes/profiles/<name>/`，布局相同。
 hermes config set security.redact_secrets true       # 全局启用
 ```
 
-**需要重启。** `security.redact_secrets` 在导入时快照 — 在会话中途切换（例如通过工具调用执行 `export HERMES_REDACT_SECRETS=true`）对正在运行的进程**不会**生效。告知用户在终端运行 `hermes config set security.redact_secrets true`，然后启动新会话。这是有意为之——防止 LLM 在任务中途自行切换该开关。
+**需要重启。** `security.redact_secrets` 在导入时快照 — 在会话中途切换（例如通过工具调用执行 `export THEFOOL_REDACT_SECRETS=true`）对正在运行的进程**不会**生效。告知用户在终端运行 `hermes config set security.redact_secrets true`，然后启动新会话。这是有意为之——防止 LLM 在任务中途自行切换该开关。
 
 再次禁用：
 ```bash
@@ -495,7 +495,7 @@ hermes config set approvals.mode off         # 绕过一切（不推荐）
 
 单次调用绕过（不更改配置）：
 - `hermes --yolo …`
-- `export HERMES_YOLO_MODE=1`
+- `export THEFOOL_YOLO_MODE=1`
 
 注意：YOLO / `approvals.mode: off` **不会**关闭密钥脱敏。两者相互独立。
 
@@ -665,12 +665,12 @@ agent 创建的 skill 的后台维护。跟踪使用情况，将闲置 skill 标
 
 ### Kanban（多 agent 工作队列）
 
-用于多 profile/多 worker 协作的持久化 SQLite 看板（kanban）。用户通过 `hermes kanban <verb>` 驱动；调度器生成的 worker 看到由 `HERMES_KANBAN_TASK` 控制的专注 `kanban_*` toolset，orchestrator profile 可以选择加入更广泛的 `kanban` toolset。普通会话除非配置，否则没有任何 `kanban_*` schema 占用。
+用于多 profile/多 worker 协作的持久化 SQLite 看板（kanban）。用户通过 `hermes kanban <verb>` 驱动；调度器生成的 worker 看到由 `THEFOOL_KANBAN_TASK` 控制的专注 `kanban_*` toolset，orchestrator profile 可以选择加入更广泛的 `kanban` toolset。普通会话除非配置，否则没有任何 `kanban_*` schema 占用。
 
 - **CLI 动词（常用）：** `init`、`create`、`list`（别名 `ls`）、`show`、`assign`、`link`、`unlink`、`comment`、`complete`、`block`、`unblock`、`archive`、`tail`。不常用：`watch`、`stats`、`runs`、`log`、`dispatch`、`daemon`、`gc`。
 - **Worker/orchestrator toolset：** `kanban_show`、`kanban_complete`、`kanban_block`、`kanban_heartbeat`、`kanban_comment`、`kanban_create`、`kanban_link`；在调度器生成的任务之外显式启用 `kanban` toolset 的 profile 还可获得 `kanban_list` 和 `kanban_unblock` 用于看板路由。
 - **调度器** 默认在 gateway 内运行（`kanban.dispatch_in_gateway: true`）——回收过期认领、推进就绪任务、原子认领、生成已分配的 profile。在配置的 `kanban.failure_limit` 次连续非成功尝试后自动阻塞任务（默认：2）。
-- **隔离：** 看板是硬边界（worker 在环境中固定 `HERMES_KANBAN_BOARD`）；租户是看板内用于工作区路径和记忆键隔离的软命名空间。
+- **隔离：** 看板是硬边界（worker 在环境中固定 `THEFOOL_KANBAN_BOARD`）；租户是看板内用于工作区路径和记忆键隔离的软命名空间。
 
 用户文档：https://hermes-agent.nousresearch.com/docs/user-guide/features/kanban
 
@@ -812,9 +812,9 @@ hermes-agent/
 ├── model_tools.py        # Tool discovery and dispatch
 ├── toolsets.py           # Toolset definitions
 ├── cli.py                # Interactive CLI (HermesCLI)
-├── hermes_state.py       # SQLite session store
+├── thefool_state.py       # SQLite session store
 ├── agent/                # Prompt builder, context compression, memory, model routing, credential pooling, skill dispatch
-├── hermes_cli/           # CLI subcommands, config, setup, commands
+├── thefool_cli/           # CLI subcommands, config, setup, commands
 │   ├── commands.py       # Slash command registry (CommandDef)
 │   ├── config.py         # DEFAULT_CONFIG, env var definitions
 │   └── main.py           # CLI entry point and argparse
@@ -862,7 +862,7 @@ registry.register(
 
 ### 添加斜杠命令
 
-1. 在 `hermes_cli/commands.py` 的 `COMMAND_REGISTRY` 中添加 `CommandDef`
+1. 在 `thefool_cli/commands.py` 的 `COMMAND_REGISTRY` 中添加 `CommandDef`
 2. 在 `cli.py` → `process_command()` 中添加处理器
 3. （可选）在 `gateway/run.py` 中添加 gateway 处理器
 
@@ -887,7 +887,7 @@ python -m pytest tests/ -o 'addopts=' -q   # 完整套件
 python -m pytest tests/tools/ -q            # 特定区域
 ```
 
-- 测试自动将 `HERMES_HOME` 重定向到临时目录——永远不会触及真实的 `~/.hermes/`
+- 测试自动将 `THEFOOL_HOME` 重定向到临时目录——永远不会触及真实的 `~/.hermes/`
 - 推送任何变更前运行完整套件
 - 使用 `-o 'addopts='` 清除任何内置的 pytest 标志
 
@@ -902,7 +902,7 @@ export PYTHONPATH="$(pwd)"
 
 **跨平台测试守卫：** 使用仅 POSIX 系统调用的测试需要跳过标记。代码库中已有的常见标记：
 - 符号链接创建 → `@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks require elevated privileges on Windows")`（参见 `tests/cron/test_cron_script.py`）
-- POSIX 文件模式（0o600 等）→ `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")`（参见 `tests/hermes_cli/test_auth_toctou_file_modes.py`）
+- POSIX 文件模式（0o600 等）→ `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")`（参见 `tests/thefool_cli/test_auth_toctou_file_modes.py`）
 - `signal.SIGALRM` → 仅 Unix（每测试超时不再直接使用它；参见 `tests/conftest.py::pytest_configure` 中的 win32 timeout-method shim）
 - 实时 Winsock / Windows 特有回归测试 → `@pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific regression")`
 
@@ -942,6 +942,6 @@ Optional body.
 
 - **永远不要破坏 prompt 缓存** — 不要在对话中途更改上下文、工具或系统 prompt
 - **消息角色交替** — 永远不要连续出现两条 assistant 或两条 user 消息
-- 所有路径使用 `hermes_constants` 中的 `get_hermes_home()`（profile 安全）
+- 所有路径使用 `thefool_constants` 中的 `get_hermes_home()`（profile 安全）
 - 配置值放入 `config.yaml`，密钥放入 `.env`
 - 新工具需要 `check_fn`，以便仅在满足要求时才显示

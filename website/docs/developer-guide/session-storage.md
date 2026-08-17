@@ -4,7 +4,7 @@ Hermes Agent uses a SQLite database (`~/.hermes/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
-Source file: `hermes_state.py`
+Source file: `thefool_state.py`
 
 
 ## Architecture Overview
@@ -36,7 +36,7 @@ Key design decisions:
 
 ### Sessions Table
 
-Abridged — see `SCHEMA_SQL` in `hermes_state.py` for the full current column list
+Abridged — see `SCHEMA_SQL` in `thefool_state.py` for the full current column list
 (which also includes gateway routing metadata such as `session_key`, `chat_id`,
 `chat_type`, `thread_id`, `display_name`, `origin_json`, `expiry_finalized`,
 workspace fields `cwd` / `git_branch` / `git_repo_root`, handoff and
@@ -136,7 +136,7 @@ The FTS5 table is kept in sync via three triggers that fire on INSERT, UPDATE,
 and DELETE of the `messages` table. The current triggers are gated on the
 `fts_rebuild_high_water` / `fts_rebuild_progress` markers in `state_meta` (so a
 background FTS rebuild can proceed without double-indexing) and cover all three
-indexed columns — see `SCHEMA_SQL` in `hermes_state.py` for the exact SQL.
+indexed columns — see `SCHEMA_SQL` in `thefool_state.py` for the exact SQL.
 
 
 ## Schema Version and Migrations
@@ -195,7 +195,7 @@ _CHECKPOINT_EVERY_N_WRITES = 50
 ### Initialize
 
 ```python
-from hermes_state import SessionDB
+from thefool_state import SessionDB
 
 db = SessionDB()                           # Default: ~/.hermes/state.db
 db = SessionDB(db_path=Path("/tmp/test.db"))  # Custom path
@@ -403,8 +403,8 @@ db.delete_session("sess_abc123")
 
 Default path: `~/.hermes/state.db`
 
-This is derived from `hermes_constants.get_hermes_home()` which resolves to
-`~/.hermes/` by default, or the value of `HERMES_HOME` environment variable.
+This is derived from `thefool_constants.get_hermes_home()` which resolves to
+`~/.hermes/` by default, or the value of `THEFOOL_HOME` environment variable.
 
 The database file, WAL file (`state.db-wal`), and shared-memory file
 (`state.db-shm`) are all created in the same directory.

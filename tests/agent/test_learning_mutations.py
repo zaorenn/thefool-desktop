@@ -1,7 +1,7 @@
 """Behavior contracts for journey node edit/delete (agent.learning_mutations).
 
 Exercises the real on-disk resolution (skills dir + MEMORY.md/USER.md chunking)
-against a temp HERMES_HOME, never mocks — the id→file mapping is the whole point.
+against a temp THEFOOL_HOME, never mocks — the id→file mapping is the whole point.
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 from agent import learning_mutations as lm
-from hermes_constants import get_hermes_home
+from thefool_constants import get_hermes_home
 
 _SKILL = """---
 name: my-skill

@@ -10,9 +10,9 @@ hermes-agent/
 ├── model_tools.py        # Tool discovery and dispatch
 ├── toolsets.py           # Toolset definitions
 ├── cli.py                # Interactive CLI (HermesCLI)
-├── hermes_state.py       # SQLite session store
+├── thefool_state.py       # SQLite session store
 ├── agent/                # Prompt builder, context compression, memory, model routing, credential pooling, skill dispatch
-├── hermes_cli/           # CLI subcommands, config, setup, commands
+├── thefool_cli/           # CLI subcommands, config, setup, commands
 │   ├── commands.py       # Slash command registry (CommandDef)
 │   ├── config.py         # DEFAULT_CONFIG, env var definitions
 │   └── main.py           # CLI entry point and argparse
@@ -25,7 +25,7 @@ hermes-agent/
 └── website/              # Docusaurus docs site
 ```
 
-Config: `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys) — both under `$HERMES_HOME` when it is set.
+Config: `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys) — both under `$THEFOOL_HOME` when it is set.
 
 ### Adding a Tool
 
@@ -64,7 +64,7 @@ never hardcode `~/.hermes`. For custom/local-only tools, write a plugin in
 
 ### Adding a Slash Command
 
-1. Add `CommandDef` to `COMMAND_REGISTRY` in `hermes_cli/commands.py`
+1. Add `CommandDef` to `COMMAND_REGISTRY` in `thefool_cli/commands.py`
 2. Add handler in `cli.py` → `process_command()`
 3. (Optional) Add gateway handler in `gateway/run.py`
 
@@ -95,14 +95,14 @@ scripts/run_tests.sh tests/tools/test_x.py    # one file
 scripts/run_tests.sh -v --tb=long             # pass-through pytest flags
 ```
 
-- Tests auto-redirect `HERMES_HOME` to temp dirs — never touch real `~/.hermes/`.
+- Tests auto-redirect `THEFOOL_HOME` to temp dirs — never touch real `~/.hermes/`.
 - The script probes `.venv`, then `venv`, then the shared worktree venv.
 - **Windows:** the wrapper is POSIX-only; see `references/windows-quirks.md`
   for the direct-pytest workaround.
 
 **Cross-platform test guards:** tests using POSIX-only syscalls need a skip marker. Common ones already in the codebase:
 - Symlink creation → `@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks require elevated privileges on Windows")` (see `tests/cron/test_cron_script.py`)
-- POSIX file modes (0o600, etc.) → `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")` (see `tests/hermes_cli/test_auth_toctou_file_modes.py`)
+- POSIX file modes (0o600, etc.) → `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")` (see `tests/thefool_cli/test_auth_toctou_file_modes.py`)
 - `signal.SIGALRM` → Unix-only (per-test timeouts no longer use it directly; see the win32 timeout-method shim in `tests/conftest.py::pytest_configure`)
 - Live Winsock / Windows-specific regression tests → `@pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific regression")`
 
@@ -139,6 +139,6 @@ Types: `fix:`, `feat:`, `refactor:`, `docs:`, `chore:`
 
 - **Never break prompt caching** — don't change context, tools, or system prompt mid-conversation
 - **Message role alternation** — never two assistant or two user messages in a row
-- Use `get_hermes_home()` from `hermes_constants` for all paths (profile-safe)
+- Use `get_hermes_home()` from `thefool_constants` for all paths (profile-safe)
 - Config values go in `config.yaml`, secrets go in `.env`
 - New tools need a `check_fn` so they only appear when requirements are met

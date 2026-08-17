@@ -61,14 +61,14 @@ def _is_gh_copilot_deprecation_message(stderr_text: str) -> bool:
 
 def _resolve_command() -> str:
     return (
-        os.getenv("HERMES_COPILOT_ACP_COMMAND", "").strip()
+        os.getenv("THEFOOL_COPILOT_ACP_COMMAND", "").strip()
         or os.getenv("COPILOT_CLI_PATH", "").strip()
         or "copilot"
     )
 
 
 def _resolve_args() -> list[str]:
-    raw = os.getenv("HERMES_COPILOT_ACP_ARGS", "").strip()
+    raw = os.getenv("THEFOOL_COPILOT_ACP_ARGS", "").strip()
     if not raw:
         return ["--acp", "--stdio"]
     return shlex.split(raw)
@@ -104,7 +104,7 @@ def _acp_supported(command: str, args: list[str]) -> bool | None:
         command" error with full context.
 
     Only probes when ``--acp`` is actually among ``args``: a custom
-    HERMES_COPILOT_ACP_ARGS transport is the operator's business.
+    THEFOOL_COPILOT_ACP_ARGS transport is the operator's business.
     """
     if "--acp" not in args:
         return True
@@ -148,7 +148,7 @@ def _resolve_home_dir() -> str:
         pass
 
     # Last resort: /tmp (writable on any POSIX system). Avoids crashing the
-    # subprocess with no HOME; callers can set HERMES_HOME explicitly if they
+    # subprocess with no HOME; callers can set THEFOOL_HOME explicitly if they
     # need a different writable dir.
     return "/tmp"
 
@@ -160,7 +160,7 @@ def _build_subprocess_env() -> dict[str, str]:
     env = hermes_subprocess_env(inherit_credentials=True)
     home = _resolve_home_dir()
     env["HOME"] = home
-    from hermes_constants import apply_subprocess_home_env
+    from thefool_constants import apply_subprocess_home_env
     apply_subprocess_home_env(env)
     return env
 
@@ -574,14 +574,14 @@ class CopilotACPClient:
                 f"Claude Code v2.x) or a different tool than expected. "
                 f"Either install a CLI that ships with --acp support "
                 f"(e.g. `@github/copilot` late 2025+), or set "
-                f"HERMES_COPILOT_ACP_COMMAND / HERMES_COPILOT_ACP_ARGS "
+                f"THEFOOL_COPILOT_ACP_COMMAND / THEFOOL_COPILOT_ACP_ARGS "
                 f"to a working pair."
             )
 
         try:
             # Hide the console the CLI child would otherwise flash on Windows
             # (#56747). Hide-only — stdio pipes stay intact for the ACP wire.
-            from hermes_cli._subprocess_compat import windows_hide_flags
+            from thefool_cli._subprocess_compat import windows_hide_flags
 
             proc = subprocess.Popen(
                 [self._acp_command] + self._acp_args,
@@ -597,7 +597,7 @@ class CopilotACPClient:
         except FileNotFoundError as exc:
             raise RuntimeError(
                 f"Could not start Copilot ACP command '{self._acp_command}'. "
-                "Install GitHub Copilot CLI or set HERMES_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
+                "Install GitHub Copilot CLI or set THEFOOL_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
             ) from exc
 
         if proc.stdin is None or proc.stdout is None:
@@ -685,7 +685,7 @@ class CopilotACPClient:
                         "  # then verify with: copilot --help\n\n"
                         "If `copilot` already resolves to the new CLI but you still see this,\n"
                         "point Hermes at it explicitly:\n"
-                        "  export HERMES_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
+                        "  export THEFOOL_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
                         "Alternative: use the `copilot` provider (no ACP, hits the Copilot API\n"
                         "directly with a Copilot subscription token) via `hermes setup`.\n\n"
                         f"Original error:\n{stderr_text}"

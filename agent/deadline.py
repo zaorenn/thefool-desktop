@@ -57,7 +57,7 @@ Design invariants:
   (the #59549 / #80323 misattribution class).
 * ``None`` timeout means unbounded, and non-positive resolved values are
   normalized to ``None`` (matching the existing
-  ``HERMES_CONCURRENT_TOOL_TIMEOUT_S`` convention).
+  ``THEFOOL_CONCURRENT_TOOL_TIMEOUT_S`` convention).
 """
 
 from __future__ import annotations
@@ -143,7 +143,7 @@ def clamp_timeout(timeout: Optional[float]) -> Optional[float]:
 
     * ``None`` stays ``None`` (unbounded).
     * Non-positive values become ``None`` (unbounded) — matching the existing
-      ``HERMES_CONCURRENT_TOOL_TIMEOUT_S`` "0 disables the bound" convention.
+      ``THEFOOL_CONCURRENT_TOOL_TIMEOUT_S`` "0 disables the bound" convention.
     * Values above :data:`MAX_SAFE_TIMEOUT_S` are capped so they can never
       overflow ``time_t`` inside ``Lock.acquire`` / ``Thread.join`` on macOS
       (#83220).
@@ -177,7 +177,7 @@ def _timeouts_section() -> dict:
     the call path the timeout was protecting.
     """
     try:
-        from hermes_cli.config import load_config_readonly
+        from thefool_cli.config import load_config_readonly
 
         section = load_config_readonly().get("timeouts")
         return section if isinstance(section, dict) else {}
@@ -473,7 +473,7 @@ def kill_process_tree(pid: int, *, sig: Optional[int] = None) -> bool:
     """
     if sys.platform == "win32":
         try:
-            from hermes_cli._subprocess_compat import windows_hide_flags
+            from thefool_cli._subprocess_compat import windows_hide_flags
 
             creationflags = windows_hide_flags()
         except Exception:

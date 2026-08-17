@@ -20,9 +20,9 @@ JPEG = b"\xff\xd8\xff" + b"\x00" * 64
 
 
 def _reload(monkeypatch, hermes_home: Path):
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+    import thefool_constants
+    importlib.reload(thefool_constants)
     import tools.image_source as isrc
     importlib.reload(isrc)
     return isrc
@@ -118,7 +118,7 @@ class TestNonLocalBackendConfinement:
 
     @pytest.mark.asyncio
     async def test_desktop_upload_images_dir_host_read(self, tmp_path, monkeypatch):
-        """Desktop/clipboard uploads under ``HERMES_HOME/images`` are host-read.
+        """Desktop/clipboard uploads under ``THEFOOL_HOME/images`` are host-read.
 
         Regression for #69575: uploads land in the flat top-level ``images/``
         dir (not ``cache/images``). Under a sandbox backend the vision resolver

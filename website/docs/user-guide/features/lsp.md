@@ -91,7 +91,7 @@ agent sees a syntax-clean file with semantic problems as
 For "manual" entries, install the server through whatever toolchain
 manager makes sense for that language (rustup, ghcup, opam, brew,
 …). Hermes auto-detects the binary on PATH or in
-`<HERMES_HOME>/lsp/bin/`.
+`<THEFOOL_HOME>/lsp/bin/`.
 
 ### PowerShell
 
@@ -108,7 +108,7 @@ host. Setup:
    `PowerShellEditorServices/Start-EditorServices.ps1`. Either:
    - set `lsp.servers.powershell.command: ["/path/to/bundle"]` in
      `config.yaml`, or
-   - extract it to `<HERMES_HOME>/lsp/PowerShellEditorServices`, or
+   - extract it to `<THEFOOL_HOME>/lsp/PowerShellEditorServices`, or
    - export `PSES_BUNDLE_PATH=/path/to/bundle`.
 
 `hermes lsp status` reports `installed` once `pwsh` is found; if the
@@ -160,7 +160,7 @@ lsp:
   wait_timeout: 5.0
 
   # How to handle missing server binaries.
-  #   auto    — install via npm/pip/go install into <HERMES_HOME>/lsp/bin
+  #   auto    — install via npm/pip/go install into <THEFOOL_HOME>/lsp/bin
   #   manual  — only use binaries already on PATH
   install_strategy: auto
 
@@ -199,8 +199,8 @@ lsp:
 ## Installation locations
 
 When `install_strategy: auto`, Hermes installs binaries into
-`<HERMES_HOME>/lsp/bin/`. NPM packages land in
-`<HERMES_HOME>/lsp/node_modules/` with bin symlinks one level up.
+`<THEFOOL_HOME>/lsp/bin/`. NPM packages land in
+`<THEFOOL_HOME>/lsp/node_modules/` with bin symlinks one level up.
 Go binaries come from `go install` with `GOBIN` pointed at the
 staging dir.
 
@@ -257,7 +257,7 @@ lsp:
 
 **`hermes lsp status` shows a server as "missing"**
 
-The binary isn't on PATH and isn't in `<HERMES_HOME>/lsp/bin/`. Run
+The binary isn't on PATH and isn't in `<THEFOOL_HOME>/lsp/bin/`. Run
 `hermes lsp install <server_id>` to attempt an auto-install, or
 install the binary manually through the language's normal toolchain.
 

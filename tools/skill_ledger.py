@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_constants import get_hermes_home
+from thefool_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ def ledger_enabled() -> bool:
     """Config gate ``skills.ledger`` (default True). Lazy import so this
     module stays importable without the CLI config layer."""
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from thefool_cli.config import cfg_get, load_config
 
         return bool(cfg_get(load_config(), "skills", "ledger", default=True))
     except Exception as e:  # pragma: no cover — best-effort config read
@@ -286,7 +286,7 @@ def _is_within(root: Path, path: Path) -> bool:
 
 
 def _validate_entry_paths(entry: Dict[str, Any]) -> Optional[str]:
-    """All paths in an entry must live under HERMES_HOME. Defense in depth —
+    """All paths in an entry must live under THEFOOL_HOME. Defense in depth —
     a hand-edited ledger must not become a write-anywhere primitive."""
     home = get_hermes_home()
     for section in ("before", "after"):

@@ -32,11 +32,11 @@ from agent.proxy_sources import iron_proxy as ip
 
 @pytest.fixture
 def hermes_home(tmp_path, monkeypatch):
-    """Point HERMES_HOME at a temp dir so install paths don't touch the real $HOME."""
+    """Point THEFOOL_HOME at a temp dir so install paths don't touch the real $HOME."""
 
     home = tmp_path / "hermes"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("THEFOOL_HOME", str(home))
     # Make sure no stale provider keys influence discovery.
     for key in list(os.environ):
         if key.endswith("_API_KEY"):
@@ -629,7 +629,7 @@ def test_docker_egress_node_options_uses_sentinel(hermes_home, monkeypatch):
     append-merge with the operator's existing NODE_OPTIONS."""
 
     from tools.environments.docker import _egress_proxy_args_for_docker
-    from hermes_cli.config import load_config, save_config
+    from thefool_cli.config import load_config, save_config
 
     state = ip._proxy_state_dir()
     ca = state / "ca.crt"

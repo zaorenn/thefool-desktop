@@ -46,8 +46,8 @@ export const BRAND = {
  *
  * `\b` sınırları sayesinde iç sözleşmeye DOKUNULMAZ — regex'te `_` bir kelime
  * karakteri olduğu için:
- *   HERMES_HOME  → eşleşmez (HERMES'ten sonra `_` var, `\b` yok)
- *   hermes_cli   → eşleşmez (aynı sebep)
+ *   THEFOOL_HOME  → eşleşmez (HERMES'ten sonra `_` var, `\b` yok)
+ *   thefool_cli   → eşleşmez (aynı sebep)
  *   ~/.hermes    → eşleşir  (`.` kelime karakteri değil) — ve zaten değişmesini
  *                  istediğimiz yer burası
  */

@@ -66,15 +66,15 @@ _SENSITIVE_BODY_KEYS = frozenset({
 })
 
 # Snapshot at import time so runtime env mutations (e.g. LLM-generated
-# `export HERMES_REDACT_SECRETS=false`) cannot disable redaction
+# `export THEFOOL_REDACT_SECRETS=false`) cannot disable redaction
 # mid-session.  ON by default — secure default per issue #17691. Users who
 # need raw credential values in tool output (e.g. working on the redactor
 # itself) can opt out via `security.redact_secrets: false` in config.yaml
-# (bridged to this env var in hermes_cli/main.py, gateway/run.py, and
-# cli.py) or `HERMES_REDACT_SECRETS=false` in ~/.hermes/.env. An opt-out
+# (bridged to this env var in thefool_cli/main.py, gateway/run.py, and
+# cli.py) or `THEFOOL_REDACT_SECRETS=false` in ~/.hermes/.env. An opt-out
 # warning is logged at gateway and CLI startup so operators see the
 # downgrade — see `_log_redaction_status()` in gateway/run.py and cli.py.
-_REDACT_ENABLED = os.getenv("HERMES_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
+_REDACT_ENABLED = os.getenv("THEFOOL_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
 
 # Known API key prefixes -- match the prefix + contiguous token chars
 _PREFIX_PATTERNS = [
@@ -1272,7 +1272,7 @@ def _has_known_prefix_substring(text: str) -> bool:
 # ADDITIVE-ONLY by design: a plugin can extend what gets masked but has no
 # API to remove or weaken a built-in pattern, so a plugin can only ever
 # over-redact, never expose. The operator's global opt-out
-# (``security.redact_secrets: false`` / HERMES_REDACT_SECRETS) applies to
+# (``security.redact_secrets: false`` / THEFOOL_REDACT_SECRETS) applies to
 # plugin patterns exactly as it does to built-ins.
 
 # Keyed by registration source (e.g. "plugin:my-plugin") so the plugin

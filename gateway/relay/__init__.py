@@ -181,7 +181,7 @@ def relay_endpoint() -> Optional[str]:
     verified tenant, so a dishonest gateway can only misdirect its OWN inbound).
     The *source* of the value differs by deployment but the code path is uniform:
     a self-hosted operator sets ``GATEWAY_RELAY_ENDPOINT`` (mirrors how they set
-    ``HERMES_DASHBOARD_PUBLIC_URL``); a hosted/NAS container has the same var
+    ``THEFOOL_DASHBOARD_PUBLIC_URL``); a hosted/NAS container has the same var
     stamped in (NAS knows the public URL only in that case). Absent -> the
     gateway provisions outbound-only (no inbound routes written).
 
@@ -303,7 +303,7 @@ def relay_display_name() -> Optional[str]:
     value = os.environ.get("GATEWAY_RELAY_DISPLAY_NAME", "").strip()
     if not value:
         try:
-            from hermes_cli.skin_engine import get_active_skin  # late import: boot-safe
+            from thefool_cli.skin_engine import get_active_skin  # late import: boot-safe
 
             value = str(
                 get_active_skin().get_branding("agent_name", "") or ""
@@ -562,7 +562,7 @@ def _resolve_relay_identity_token() -> str:
 
     if not token_url:
         # Mode 2 — Nous Portal (default, unchanged behaviour).
-        from hermes_cli.auth import resolve_nous_access_token
+        from thefool_cli.auth import resolve_nous_access_token
 
         return resolve_nous_access_token()
 
@@ -654,7 +654,7 @@ def self_provision_relay() -> bool:
 
     The trigger is deliberately NOT ``is_managed()``: that means
     "package-manager/NixOS-managed" and is False on a NAS-hosted Fly agent (which
-    sets neither ``HERMES_MANAGED`` nor a ``.managed`` marker), so gating on it
+    sets neither ``THEFOOL_MANAGED`` nor a ``.managed`` marker), so gating on it
     blocked the exact hosted case this is for. The real signal is "you pointed me
     at a connector and didn't pin a secret" — which is both NAS-independent and
     self-guarding:

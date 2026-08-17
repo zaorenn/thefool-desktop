@@ -10,7 +10,7 @@
 | Kanal | Nasıl çalışır | Nerede ayarlı |
 |---|---|---|
 | **Masaüstü uygulaması** | electron-builder `publish` → GitHub Releases. Uygulama yeni sürümü oradan görür. | `apps/desktop/package.json` → `build.publish` |
-| **CLI / backend** | `thefool update` git remote'undan çeker | `hermes_cli/update_cmd.py` → `OFFICIAL_REPO_URL` (FOOL-SEAM: update-origin) |
+| **CLI / backend** | `thefool update` git remote'undan çeker | `thefool_cli/update_cmd.py` → `OFFICIAL_REPO_URL` (FOOL-SEAM: update-origin) |
 
 Upstream'in kendi `publish` bloğu **yoktu** — Nous sürümlerini repo dışından
 üretiyor. Yani bu blok tamamen bizim eklediğimiz bir şey ve upstream merge'lerinde
@@ -21,8 +21,8 @@ Upstream'in kendi `publish` bloğu **yoktu** — Nous sürümlerini repo dışı
 1. **GitHub'da depoyu aç** (`zaorenn/thefool-desktop`).
    İsim değişirse şu üç yeri birlikte güncelle, yoksa güncellemeler kopar:
    - `apps/desktop/package.json` → `build.publish.owner` / `.repo`
-   - `hermes_cli/update_cmd.py` → `OFFICIAL_REPO_URL(S)`
-   - `hermes_cli/banner.py` → `_UPSTREAM_REPO_URL`, `_OFFICIAL_REPO_CANONICAL`,
+   - `thefool_cli/update_cmd.py` → `OFFICIAL_REPO_URL(S)`
+   - `thefool_cli/banner.py` → `_UPSTREAM_REPO_URL`, `_OFFICIAL_REPO_CANONICAL`,
      `_RELEASE_URL_BASE`
 
 2. **`origin` ekle ve ilk push:**
@@ -77,7 +77,7 @@ grep -rn "FOOL-SEAM" --exclude-dir=.git --exclude-dir=node_modules .
 İki ayrı numara var, bilinçli olarak ayrı:
 
 - `apps/desktop/package.json` → `version` (masaüstü kabuğu, şu an `0.17.0`)
-- `hermes_cli/__init__.py` → `__version__` (ajan çekirdeği, şu an `0.20.2`)
+- `thefool_cli/__init__.py` → `__version__` (ajan çekirdeği, şu an `0.20.2`)
 
 Upstream ikisini de kendi ritminde ilerletiyor. Kendi sürüm şemana geçmek
 istersen bunları ayır ve `docs/fool/SEAMS.md`'ye birer satır ekle — aksi halde

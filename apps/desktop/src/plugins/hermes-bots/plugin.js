@@ -15,7 +15,7 @@
  * bot-initiated sends use `hermes -p <bot> chat --in ~ -c "Bot Chat"`.
  */
 
-import * as sdk from '@hermes/plugin-sdk'
+import * as sdk from '@thefool/plugin-sdk'
 import {
   atom,
   Button,
@@ -60,7 +60,7 @@ import {
   Tip,
   useQuery,
   useValue
-} from '@hermes/plugin-sdk'
+} from '@thefool/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
@@ -2273,7 +2273,7 @@ function displayName(bot, meta) {
   // unless the user gives it a real title.
   //
   // FOOL-SEAM: bot-display-name
-  // Sabit dize: bu bir eklenti dosyasi, yalnizca @hermes/plugin-sdk'ye
+  // Sabit dize: bu bir eklenti dosyasi, yalnizca @thefool/plugin-sdk'ye
   // baglanmasi gerekiyor; uygulama ici modul importu eklemek eklenti
   // sozlesmesini bozar. Test esligi dogruluyor.
   if ((bot.name || '').trim().toLowerCase() === 'default' && !bot.title) {

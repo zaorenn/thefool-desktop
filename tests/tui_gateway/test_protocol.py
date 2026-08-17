@@ -25,14 +25,14 @@ def server():
     # The sys.modules mocks only need to cover the *initial* import — once
     # tui_gateway.server is cached, they are inert. Keeping them active for
     # the whole test poisons any module first imported inside a test body:
-    # e.g. hermes_cli.active_sessions would bind the mocked get_hermes_home
+    # e.g. thefool_cli.active_sessions would bind the mocked get_hermes_home
     # (a fixed shared path) forever, leaking active-session registry entries
     # across every later test in the process. Scope the patch to the import.
     with patch.dict("sys.modules", {
-        "hermes_constants": MagicMock(get_hermes_home=MagicMock(return_value="/tmp/hermes_test")),
-        "hermes_cli.env_loader": MagicMock(),
-        "hermes_cli.banner": MagicMock(),
-        "hermes_state": MagicMock(),
+        "thefool_constants": MagicMock(get_hermes_home=MagicMock(return_value="/tmp/hermes_test")),
+        "thefool_cli.env_loader": MagicMock(),
+        "thefool_cli.banner": MagicMock(),
+        "thefool_state": MagicMock(),
     }):
         import importlib
         mod = importlib.import_module("tui_gateway.server")
@@ -255,21 +255,21 @@ def test_live_session_payload_replays_pending_clarify(server):
 
 
 def test_disable_flush_env_var_actually_wires_to_module_constant(monkeypatch):
-    """End-to-end: setting `HERMES_TUI_GATEWAY_NO_FLUSH=1` and importing
+    """End-to-end: setting `THEFOOL_TUI_GATEWAY_NO_FLUSH=1` and importing
     `tui_gateway.transport` fresh actually flips `_DISABLE_FLUSH` true.
 
     Reloads only the transport module — server.py is untouched so its
     atexit hooks/worker pool stay intact."""
     import importlib
 
-    monkeypatch.setenv("HERMES_TUI_GATEWAY_NO_FLUSH", "1")
+    monkeypatch.setenv("THEFOOL_TUI_GATEWAY_NO_FLUSH", "1")
     transport_mod = importlib.reload(importlib.import_module("tui_gateway.transport"))
 
     try:
         assert transport_mod._DISABLE_FLUSH is True
     finally:
         # Restore the env-disabled state so other tests see the default.
-        monkeypatch.delenv("HERMES_TUI_GATEWAY_NO_FLUSH", raising=False)
+        monkeypatch.delenv("THEFOOL_TUI_GATEWAY_NO_FLUSH", raising=False)
         importlib.reload(transport_mod)
 
 
@@ -667,9 +667,9 @@ def test_sync_session_key_after_compress_reanchors_active_session_lease(
     server, monkeypatch, tmp_path
 ):
     home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("THEFOOL_HOME", str(home))
 
-    from hermes_cli.active_sessions import (
+    from thefool_cli.active_sessions import (
         active_session_registry_snapshot,
         try_acquire_active_session,
     )
@@ -718,7 +718,7 @@ def test_make_agent_accepts_list_system_prompt(server, monkeypatch):
     monkeypatch.setitem(sys.modules, "run_agent", types.SimpleNamespace(AIAgent=_Agent))
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.runtime_provider",
+        "thefool_cli.runtime_provider",
         types.SimpleNamespace(
             resolve_runtime_provider=lambda **_kwargs: {
                 "provider": "test",
@@ -787,7 +787,7 @@ def test_slash_exec_rejects_skill_commands(server):
 
 def test_slash_exec_scopes_skill_lookup_to_session_profile(server, tmp_path):
     """slash.exec must resolve get_skill_commands() against the session's own
-    profile_home rather than the gateway process's ambient HERMES_HOME
+    profile_home rather than the gateway process's ambient THEFOOL_HOME
     (#88023). A Desktop session that switches profiles mid-session shares
     the same gateway process, so a skill declared only under the new
     profile's skills.external_dirs must still be recognized here — else the
@@ -830,7 +830,7 @@ def test_slash_exec_scopes_skill_lookup_to_session_profile(server, tmp_path):
             "params": {"command": "b-only", "session_id": sid},
         })
 
-    # The gateway's own HERMES_HOME (the test-isolation tempdir, no
+    # The gateway's own THEFOOL_HOME (the test-isolation tempdir, no
     # skills.external_dirs) has no "b-only" skill — the only way this
     # resolves is by scoping the lookup to the session's profile_home.
     assert "error" in resp
@@ -933,7 +933,7 @@ def test_skin_live_switch_end_to_end(server, tmp_path, monkeypatch):
     """Real config + skin files: activating a skin (as `hermes config set` does)
     makes the per-tool reconcile broadcast skin.changed with the resolved palette.
     Exercises _load_cfg → _skin_sig → resolve_skin → _emit with no mocks in between."""
-    import hermes_cli.skin_engine as skin_engine
+    import thefool_cli.skin_engine as skin_engine
 
     (tmp_path / "skins").mkdir()
     (tmp_path / "skins" / "midnight.yaml").write_text(

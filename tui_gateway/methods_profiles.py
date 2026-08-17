@@ -5,7 +5,7 @@ generic ws JSON-RPC door (`host.request`).  Profile enumeration/creation
 previously lived only on the dashboard REST router, which plugins cannot
 reach, so anything "one chat per agent profile"-shaped (bot rosters,
 profile pickers, team panes) was impossible to build as a plugin.  These
-handlers delegate to the same `hermes_cli.profiles` primitives the REST
+handlers delegate to the same `thefool_cli.profiles` primitives the REST
 endpoints use.
 
 Handlers are rebound onto server.py's globals at install time — see
@@ -74,7 +74,7 @@ def _(rid, params: dict) -> dict:
             db_path = Path(profile_path) / "state.db"
             if not db_path.exists():
                 return None
-            from hermes_state import SessionDB
+            from thefool_state import SessionDB
 
             deny = frozenset({"kanban", "tool"})
             db = SessionDB(db_path=db_path)
@@ -113,7 +113,7 @@ def _(rid, params: dict) -> dict:
         return None
 
     try:
-        from hermes_cli.profiles import list_profiles
+        from thefool_cli.profiles import list_profiles
 
         include_sessions = is_truthy_value(params.get("include_sessions", True))
         out = []
@@ -207,7 +207,7 @@ def _(rid, params: dict) -> dict:
     if not name:
         return _err(rid, 4061, "name required")
     try:
-        from hermes_cli import profiles as profiles_mod
+        from thefool_cli import profiles as profiles_mod
 
         clone_from = str(params.get("clone_from") or "").strip() or None
         clone_all = is_truthy_value(params.get("clone_all", False))
@@ -254,7 +254,7 @@ def _(rid, params: dict) -> dict:
     #
     # ``share_auth`` (default false): SKIP the auth.json copy so the new
     # profile reads OAuth/token state through the global-root fallback
-    # instead (hermes_cli.auth: profile reads fall back to the global
+    # instead (thefool_cli.auth: profile reads fall back to the global
     # store, and token refreshes write THROUGH to it). A copy forks token
     # state — the first refresh in either store invalidates the other
     # for single-use refresh tokens. Sharing keeps one live token pool
@@ -267,7 +267,7 @@ def _(rid, params: dict) -> dict:
     if is_truthy_value(params.get("mirror_credentials", True)):
         import shutil
 
-        from hermes_constants import get_hermes_home
+        from thefool_constants import get_hermes_home
 
         launch_home = get_hermes_home()
         try:
@@ -309,17 +309,17 @@ def _(rid, params: dict) -> dict:
         "didn't work in bot mode" while working on the primary profile.
 
         Reads/writes go through the canonical loaders scoped to the target
-        profile via the context-local HERMES_HOME override — the same
+        profile via the context-local THEFOOL_HOME override — the same
         mechanism as ``_write_profile_model`` (config-read-guard: no raw
         yaml on config.yaml).
         """
         try:
-            from hermes_cli.config import (
+            from thefool_cli.config import (
                 load_config_readonly,
                 read_user_config_raw,
                 save_config,
             )
-            from hermes_constants import (
+            from thefool_constants import (
                 reset_hermes_home_override,
                 set_hermes_home_override,
             )
@@ -356,7 +356,7 @@ def _(rid, params: dict) -> dict:
 
     if model and provider:
         try:
-            from hermes_cli.web_routers.profiles import _write_profile_model
+            from thefool_cli.web_routers.profiles import _write_profile_model
 
             _write_profile_model(path, provider, model)
             model_set = True
@@ -371,9 +371,9 @@ def _(rid, params: dict) -> dict:
         # ("No inference provider configured" on first message, tester
         # report). Clones bring their own model section and stay untouched.
         try:
-            from hermes_cli.config import load_config_readonly, read_user_config_raw
-            from hermes_cli.web_routers.profiles import _write_profile_model
-            from hermes_constants import (
+            from thefool_cli.config import load_config_readonly, read_user_config_raw
+            from thefool_cli.web_routers.profiles import _write_profile_model
+            from thefool_constants import (
                 reset_hermes_home_override,
                 set_hermes_home_override,
             )
@@ -419,7 +419,7 @@ def _(rid, params: dict) -> dict:
     Skill enablement mirrors the disabled-list model (installed = enabled
     unless in ``skills.disabled``). Toolset enablement reports the profile's
     ``tools.enabled_toolsets`` pin, or every toolset enabled when unpinned.
-    All reads are scoped to the profile via the HERMES_HOME override.
+    All reads are scoped to the profile via the THEFOOL_HOME override.
     """
     name = str(params.get("name") or "").strip()
     if not name:
@@ -427,8 +427,8 @@ def _(rid, params: dict) -> dict:
     try:
         from pathlib import Path
 
-        from hermes_cli.profiles import get_profile_dir
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from thefool_cli.profiles import get_profile_dir
+        from thefool_constants import reset_hermes_home_override, set_hermes_home_override
 
         profile_dir = Path(get_profile_dir(name))
         if not profile_dir.is_dir():
@@ -436,8 +436,8 @@ def _(rid, params: dict) -> dict:
 
         token = set_hermes_home_override(str(profile_dir))
         try:
-            from hermes_cli.config import load_config
-            from hermes_cli.skills_config import get_disabled_skills
+            from thefool_cli.config import load_config
+            from thefool_cli.skills_config import get_disabled_skills
 
             cfg = load_config() or {}
             disabled = {s.lower() for s in get_disabled_skills(cfg)}
@@ -459,7 +459,7 @@ def _(rid, params: dict) -> dict:
             # composites (hermes-discord, feishu_drive, ...) and reports
             # everything "enabled" whenever the profile has no pin, which a
             # capabilities UI then faithfully mis-renders (tester report).
-            from hermes_cli.tools_config import (
+            from thefool_cli.tools_config import (
                 _get_effective_configurable_toolsets,
                 _get_platform_tools,
                 _toolset_allowed_for_platform,
@@ -480,7 +480,7 @@ def _(rid, params: dict) -> dict:
             except Exception:
                 platform_enabled = set()
             try:
-                from hermes_cli.tools_config import _DEFAULT_OFF_TOOLSETS
+                from thefool_cli.tools_config import _DEFAULT_OFF_TOOLSETS
             except Exception:
                 _DEFAULT_OFF_TOOLSETS = set()
             toolsets_out = []
@@ -551,7 +551,7 @@ def _(rid, params: dict) -> dict:
 
             description = ""
             try:
-                from hermes_cli.profiles import read_profile_meta
+                from thefool_cli.profiles import read_profile_meta
 
                 description = str(read_profile_meta(profile_dir).get("description") or "")
             except Exception:
@@ -599,8 +599,8 @@ def _(rid, params: dict) -> dict:
     try:
         from pathlib import Path
 
-        from hermes_cli.profiles import get_profile_dir
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from thefool_cli.profiles import get_profile_dir
+        from thefool_constants import reset_hermes_home_override, set_hermes_home_override
 
         profile_dir = Path(get_profile_dir(name))
         if not profile_dir.is_dir():
@@ -661,7 +661,7 @@ def _(rid, params: dict) -> dict:
 
         if isinstance(params.get("description"), str):
             try:
-                from hermes_cli.profiles import write_profile_meta
+                from thefool_cli.profiles import write_profile_meta
 
                 write_profile_meta(
                     profile_dir,
@@ -676,7 +676,7 @@ def _(rid, params: dict) -> dict:
         provider = str(params.get("provider") or "").strip()
         if model and provider:
             try:
-                from hermes_cli.web_routers.profiles import _write_profile_model
+                from thefool_cli.web_routers.profiles import _write_profile_model
 
                 _write_profile_model(profile_dir, provider, model)
                 applied["model"] = True
@@ -694,7 +694,7 @@ def _(rid, params: dict) -> dict:
             launch_mcp = {}
             if isinstance(params.get("enabled_mcp_servers"), list):
                 try:
-                    from hermes_cli.config import load_config_readonly
+                    from thefool_cli.config import load_config_readonly
 
                     launch_cfg = load_config_readonly() or {}
                     if isinstance(launch_cfg.get("mcp_servers"), dict):
@@ -704,13 +704,13 @@ def _(rid, params: dict) -> dict:
 
             token = set_hermes_home_override(str(profile_dir))
             try:
-                from hermes_cli.config import load_config, save_config
+                from thefool_cli.config import load_config, save_config
 
                 cfg = load_config() or {}
 
                 if isinstance(params.get("disabled_skills"), list):
                     try:
-                        from hermes_cli.skills_config import save_disabled_skills
+                        from thefool_cli.skills_config import save_disabled_skills
 
                         wanted = {
                             str(s).strip()
@@ -805,7 +805,7 @@ def _(rid, params: dict) -> dict:
         import re as _re
         from pathlib import Path as _Path
 
-        from hermes_cli.profiles import get_profile_dir
+        from thefool_cli.profiles import get_profile_dir
 
         profile_dir = _Path(get_profile_dir(name))
         if not profile_dir.is_dir():
@@ -884,7 +884,7 @@ def _(rid, params: dict) -> dict:
         import base64
         from pathlib import Path as _Path
 
-        from hermes_cli.profiles import get_profile_dir
+        from thefool_cli.profiles import get_profile_dir
 
         profile_dir = _Path(get_profile_dir(name))
         if not profile_dir.is_dir():

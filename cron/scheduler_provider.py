@@ -313,7 +313,7 @@ def resolve_cron_scheduler() -> "CronScheduler":
 
     name = ""
     try:
-        from hermes_cli.config import cfg_get, load_config
+        from thefool_cli.config import cfg_get, load_config
         name = (cfg_get(load_config(), "cron", "provider", default="") or "").strip()
     except Exception:
         pass
@@ -400,7 +400,7 @@ class InProcessCronScheduler(CronScheduler):
         # When profile_homes is set (multiplex_profiles on), tick EACH profile's
         # cron store on every tick cycle so secondary-profile jobs actually fire
         # instead of languishing in a store no ticker owns (#69377). Without this,
-        # only the process-global HERMES_HOME (the default profile) is ticked.
+        # only the process-global THEFOOL_HOME (the default profile) is ticked.
         # Heartbeats and recovery are also scoped per profile so `hermes cron
         # status` reflects liveness for every profile independently.
         if profile_homes:
@@ -499,7 +499,7 @@ class InProcessCronScheduler(CronScheduler):
             record_ticker_heartbeat,
             use_cron_store,
         )
-        from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+        from thefool_constants import set_hermes_home_override, reset_hermes_home_override
 
         logger = logging.getLogger("cron.scheduler_provider")
         logger.info(

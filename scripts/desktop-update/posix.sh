@@ -6,11 +6,11 @@
 # quits; because it lives in the checkout, every update refreshes the code
 # that drives the next one. Replaces the in-app updater
 # (applyUpdatesPosixInApp) -- with the app gone before the update starts,
-# the HERMES_DESKTOP_CHILD_PID reaper-exclusion dance dies with it.
+# the THEFOOL_DESKTOP_CHILD_PID reaper-exclusion dance dies with it.
 #
 # CONTRACT (keep in sync with apps/desktop/electron/main.ts):
 #   bash scripts/desktop-update/posix.sh
-#     --install-root <path>    repo checkout (HERMES_HOME/hermes-agent)
+#     --install-root <path>    repo checkout (THEFOOL_HOME/hermes-agent)
 #     --branch <ref>           branch to update against
 #     --desktop-pid <pid>      the Electron main process to wait out
 #     [--relaunch-target <p>]  mac: running .app to swap+reopen;
@@ -57,12 +57,12 @@ done
 [ "$SELF_TEST_UI" -eq 1 ] || [ -n "$INSTALL_ROOT" ] || { echo "--install-root is required" >&2; exit 64; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HERMES_HOME="${INSTALL_ROOT:+$(dirname "$INSTALL_ROOT")}"
-HERMES_HOME="${HERMES_HOME:-${TMPDIR:-/tmp}}"
-MARKER="$HERMES_HOME/.hermes-update-in-progress"
-LOG_DIR="$HERMES_HOME/logs"; mkdir -p "$LOG_DIR" 2>/dev/null || true
+THEFOOL_HOME="${INSTALL_ROOT:+$(dirname "$INSTALL_ROOT")}"
+THEFOOL_HOME="${THEFOOL_HOME:-${TMPDIR:-/tmp}}"
+MARKER="$THEFOOL_HOME/.hermes-update-in-progress"
+LOG_DIR="$THEFOOL_HOME/logs"; mkdir -p "$LOG_DIR" 2>/dev/null || true
 LOG="$LOG_DIR/desktop-update-handoff.log"
-RESULT="$HERMES_HOME/.hermes-update-result.json"
+RESULT="$THEFOOL_HOME/.hermes-update-result.json"
 STATUS="${TMPDIR:-/tmp}/hermes-update-status.$$"
 
 UI_SERVER_PID="" UI_BROWSER_PID="" FINAL_CODE=1
@@ -406,9 +406,9 @@ fi
 if [ "$SELF_TEST_UI" -eq 1 ]; then
   start_ui
   log "SELF-TEST: shim simulation (no update will run)"
-  sleep "${HERMES_SELFTEST_HOLD_SECONDS:-6}"
+  sleep "${THEFOOL_SELFTEST_HOLD_SECONDS:-6}"
   RELAUNCH_TARGET=""
-  if [ -n "${HERMES_SELFTEST_FAIL:-}" ]; then FINAL_MSG="self-test error state"
+  if [ -n "${THEFOOL_SELFTEST_FAIL:-}" ]; then FINAL_MSG="self-test error state"
   else FINAL_CODE=0 FINAL_MSG="self-test complete"; fi
   exit "$FINAL_CODE"
 fi
@@ -471,8 +471,8 @@ fi
 sleep 1
 start_ui
 
-HERMES_BIN="$INSTALL_ROOT/venv/bin/hermes"
-[ -x "$HERMES_BIN" ] || { FINAL_CODE=3 FINAL_MSG="Update aborted: $HERMES_BIN is missing. The install needs repair (run the Hermes installer or hermes doctor)."; log "$FINAL_MSG"; exit 3; }
+THEFOOL_BIN="$INSTALL_ROOT/venv/bin/hermes"
+[ -x "$THEFOOL_BIN" ] || { FINAL_CODE=3 FINAL_MSG="Update aborted: $THEFOOL_BIN is missing. The install needs repair (run the Hermes installer or hermes doctor)."; log "$FINAL_MSG"; exit 3; }
 
 # Run FROM the install root: `hermes update` resolves the tree it mutates
 # from the working directory, and we inherit the Desktop's cwd (which can be
@@ -486,7 +486,7 @@ cd "$INSTALL_ROOT" || {
 }
 export PYTHONUNBUFFERED=1
 log "running: hermes update --yes --gateway --branch $BRANCH"
-OUT="$("$HERMES_BIN" update --yes --gateway --branch "$BRANCH" 2>&1)"; CODE=$?
+OUT="$("$THEFOOL_BIN" update --yes --gateway --branch "$BRANCH" 2>&1)"; CODE=$?
 printf '%s\n' "$OUT" >> "$LOG" 2>/dev/null
 log "hermes update exit code: $CODE"
 
@@ -494,7 +494,7 @@ if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then
   # Retry once: update-boundary class (fresh code on disk, stale in memory).
   # Exit 2 ("close all Hermes windows") is not retryable.
   log "retrying once (freshly pulled fix loads on the second run)"
-  OUT="$("$HERMES_BIN" update --yes --gateway --branch "$BRANCH" 2>&1)"; CODE=$?
+  OUT="$("$THEFOOL_BIN" update --yes --gateway --branch "$BRANCH" 2>&1)"; CODE=$?
   printf '%s\n' "$OUT" >> "$LOG" 2>/dev/null
   log "retry exit code: $CODE"
 fi
@@ -505,7 +505,7 @@ trap 'on_signal TERM' TERM
 # and call it success -- retry the build once, propagate honestly.
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "Desktop build failed"; then
   log "desktop build failed inside hermes update; retrying build"
-  "$HERMES_BIN" desktop --force-build --build-only >> "$LOG" 2>&1 || {
+  "$THEFOOL_BIN" desktop --force-build --build-only >> "$LOG" 2>&1 || {
     FINAL_CODE=6 FINAL_MSG="Code and dependencies updated, but the Desktop app rebuild failed - you are running the previous build. Run hermes desktop --force-build from a terminal to retry."
     exit 6
   }

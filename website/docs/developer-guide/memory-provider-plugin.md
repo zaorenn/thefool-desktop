@@ -19,8 +19,8 @@ Hermes discovers memory providers from four sources, in this precedence order:
 | Source | Location | Notes |
 |---|---|---|
 | Bundled | `plugins/memory/<name>/` | Ships with Hermes. Closed to new providers — see [CONTRIBUTING](https://github.com/NousResearch/hermes-agent/blob/main/CONTRIBUTING.md). |
-| User | `$HERMES_HOME/plugins/<name>/` | Dropped in by the user, per profile. |
-| Project | `./.hermes/plugins/<name>/` | Opt-in via `HERMES_ENABLE_PROJECT_PLUGINS=1`. |
+| User | `$THEFOOL_HOME/plugins/<name>/` | Dropped in by the user, per profile. |
+| Project | `./.hermes/plugins/<name>/` | Opt-in via `THEFOOL_ENABLE_PROJECT_PLUGINS=1`. |
 | Package | `hermes_agent.memory_providers` entry point | `pip install`, nothing to copy. |
 
 Earlier sources win on a name collision, so a directory dropped into a working
@@ -38,7 +38,7 @@ Discovery only *enumerates* — it never imports a provider. Nothing runs until
 ### Directory Provider
 
 A directory provider lives in `plugins/memory/<name>/` when bundled with
-Hermes, in `$HERMES_HOME/plugins/<name>/` when installed by a user, or in
+Hermes, in `$THEFOOL_HOME/plugins/<name>/` when installed by a user, or in
 `./.hermes/plugins/<name>/` for a project-local one:
 
 ```
@@ -62,7 +62,7 @@ my-provider = "my_provider:register"
 
 Point the entry point at the **package**, or at a `register(ctx)` inside it, and
 keep your implementation, skills, and other resources in the normal Python
-package layout. No copy under `$HERMES_HOME/plugins/` is required.
+package layout. No copy under `$THEFOOL_HOME/plugins/` is required.
 
 A package entry point gets everything a directory install does, including the
 two files Hermes reads from disk rather than importing — `config_schema.py`
@@ -90,7 +90,7 @@ class MyMemoryProvider(MemoryProvider):
         """Called once at agent startup.
 
         kwargs always includes:
-          hermes_home (str): Active HERMES_HOME path. Use for storage.
+          hermes_home (str): Active THEFOOL_HOME path. Use for storage.
         """
         self._api_key = os.environ.get("MY_API_KEY", "")
         self._session_id = session_id
@@ -162,7 +162,7 @@ def get_config_schema(self):
 Fields with `secret: True` and `env_var` go to `.env`. Non-secret fields are passed to `save_config()`.
 
 :::tip Minimal vs Full Schema
-Every field in `get_config_schema()` is prompted during `hermes memory setup`. Providers with many options should keep the schema minimal — only include fields the user **must** configure (API key, required credentials). Document optional settings in a config file reference (e.g. `$HERMES_HOME/myprovider.json`) rather than prompting for them all during setup. This keeps the setup wizard fast while still supporting advanced configuration. See the Supermemory provider for an example — it only prompts for the API key; all other options live in `supermemory.json`.
+Every field in `get_config_schema()` is prompted during `hermes memory setup`. Providers with many options should keep the schema minimal — only include fields the user **must** configure (API key, required credentials). Document optional settings in a config file reference (e.g. `$THEFOOL_HOME/myprovider.json`) rather than prompting for them all during setup. This keeps the setup wizard fast while still supporting advanced configuration. See the Supermemory provider for an example — it only prompts for the API key; all other options live in `supermemory.json`.
 :::
 
 ## Save Config
@@ -251,7 +251,7 @@ All storage paths **must** use the `hermes_home` kwarg from `initialize()`, not 
 
 ```python
 # CORRECT — profile-scoped
-from hermes_constants import get_hermes_home
+from thefool_constants import get_hermes_home
 data_dir = get_hermes_home() / "my-provider"
 
 # WRONG — shared across all profiles

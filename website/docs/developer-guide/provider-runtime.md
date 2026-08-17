@@ -16,14 +16,14 @@ Hermes has a shared provider runtime resolver used across:
 
 Primary implementation:
 
-- `hermes_cli/runtime_provider.py` — credential resolution, custom-endpoint runtime resolution
-- `hermes_cli/auth.py` — provider registry, `resolve_provider()`
-- `hermes_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
+- `thefool_cli/runtime_provider.py` — credential resolution, custom-endpoint runtime resolution
+- `thefool_cli/auth.py` — provider registry, `resolve_provider()`
+- `thefool_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
 - `agent/auxiliary_client.py` — auxiliary model routing
 - `providers/` — ABC + registry entry points (`ProviderProfile`, `register_provider`, `get_provider_profile`, `list_providers`)
-- `plugins/model-providers/<name>/` — per-provider plugins (bundled) that declare `api_mode`, `base_url`, `env_vars`, `fallback_models` and register themselves into the registry on first access. User plugins at `$HERMES_HOME/plugins/model-providers/<name>/` override bundled ones of the same name.
+- `plugins/model-providers/<name>/` — per-provider plugins (bundled) that declare `api_mode`, `base_url`, `env_vars`, `fallback_models` and register themselves into the registry on first access. User plugins at `$THEFOOL_HOME/plugins/model-providers/<name>/` override bundled ones of the same name.
 
-`get_provider_profile()` in `providers/` returns a `ProviderProfile` for a given provider id. `runtime_provider.py` calls this at resolution time to get the canonical `base_url`, `env_vars` priority list, `api_mode`, and `fallback_models` without needing to duplicate that data in multiple files. Adding a new plugin under `plugins/model-providers/<your-provider>/` (or `$HERMES_HOME/plugins/model-providers/<your-provider>/`) that calls `register_provider()` is enough for `runtime_provider.py` to pick it up — no branch needed in the resolver itself.
+`get_provider_profile()` in `providers/` returns a `ProviderProfile` for a given provider id. `runtime_provider.py` calls this at resolution time to get the canonical `base_url`, `env_vars` priority list, `api_mode`, and `fallback_models` without needing to duplicate that data in multiple files. Adding a new plugin under `plugins/model-providers/<your-provider>/` (or `$THEFOOL_HOME/plugins/model-providers/<your-provider>/`) that calls `register_provider()` is enough for `runtime_provider.py` to pick it up — no branch needed in the resolver itself.
 
 If you are trying to add a new first-class inference provider, read [Adding Providers](./adding-providers.md) and the [Model Provider Plugin guide](./model-provider-plugin.md) alongside this page.
 
@@ -186,7 +186,7 @@ Hermes supports a configured fallback provider chain — a list of `(provider, m
    - Resets retry count to 0 and continues the loop
 
 4. **Config flow**:
-   - CLI: reads the fallback chain via `hermes_cli/fallback_config.get_fallback_chain()` → passes to `AIAgent(fallback_model=...)`
+   - CLI: reads the fallback chain via `thefool_cli/fallback_config.get_fallback_chain()` → passes to `AIAgent(fallback_model=...)`
    - Gateway: `gateway/run.py._load_fallback_model()` reads `config.yaml` → passes to `AIAgent`
    - Validation: both `provider` and `model` keys must be non-empty, or fallback is disabled
 
@@ -202,7 +202,7 @@ Cron jobs **do** support fallback: `run_job()` reads `fallback_providers` (or le
 Fallback behavior is exercised across several suites:
 
 - `tests/run_agent/test_fallback_credential_isolation.py` — credential isolation between primary and fallback
-- `tests/hermes_cli/test_fallback_cmd.py` — the `/fallback` CLI command
+- `tests/thefool_cli/test_fallback_cmd.py` — the `/fallback` CLI command
 - `tests/gateway/test_fallback_eviction.py` — gateway eviction of failed providers
 
 ## Related docs

@@ -1410,10 +1410,10 @@ async def _standalone_send(
 def interactive_setup() -> None:
     """Interactive ``hermes gateway setup`` flow for the Buzz platform.
 
-    Lazy-imports ``hermes_cli.setup`` helpers so the plugin stays importable
+    Lazy-imports ``thefool_cli.setup`` helpers so the plugin stays importable
     in non-CLI contexts (gateway runtime, tests).
     """
-    from hermes_cli.setup import (
+    from thefool_cli.setup import (
         prompt,
         prompt_yes_no,
         save_env_value,

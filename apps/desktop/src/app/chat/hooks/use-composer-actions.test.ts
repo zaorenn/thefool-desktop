@@ -8,7 +8,7 @@ import {
   attachmentPreviewDataUrl,
   type DroppedFile,
   extractDroppedFiles,
-  HERMES_PATHS_MIME,
+  THEFOOL_PATHS_MIME,
   partitionDroppedFiles,
   useComposerActions
 } from './use-composer-actions'
@@ -101,7 +101,7 @@ function stubTransfer(entries: StubEntry[], internalRaw = ''): DataTransfer & { 
   })
 
   return {
-    getData: (mime: string) => (mime === HERMES_PATHS_MIME ? internalRaw : ''),
+    getData: (mime: string) => (mime === THEFOOL_PATHS_MIME ? internalRaw : ''),
     files: {
       length: files.length,
       item: (i: number) => files[i] ?? null

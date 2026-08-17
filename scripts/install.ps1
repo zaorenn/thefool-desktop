@@ -30,8 +30,8 @@ param(
     # existing tree pass -ForceCommit.
     [switch]$ForceCommit,
     [string]$Tag = "",
-    [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }),
-    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }),
+    [string]$HermesHome = $(if ($env:THEFOOL_HOME) { $env:THEFOOL_HOME } else { "$env:LOCALAPPDATA\hermes" }),
+    [string]$InstallDir = $(if ($env:THEFOOL_HOME) { "$env:THEFOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -112,7 +112,7 @@ try {
 # STONE~1.ZEN), or an accented character ("Ruben" spelled with an acute e ->
 # RUBN~1). It can then expose %TEMP%, %TMP%, %LOCALAPPDATA%, %APPDATA% and
 # %USERPROFILE% -- plus everything derived from them, including the default
-# HERMES_HOME and InstallDir -- in that short form:
+# THEFOOL_HOME and InstallDir -- in that short form:
 #   C:\Users\FIRST~1.LAS\AppData\Local\Temp
 #
 # PowerShell's FileSystem provider mishandles the aliased component when such a
@@ -336,14 +336,14 @@ if ($PSBoundParameters.ContainsKey('HermesHome')) {
     $HermesHome = ConvertTo-LongPath $HermesHome
 } else {
     $HermesHome = ConvertTo-LongPath $(
-        if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }
+        if ($env:THEFOOL_HOME) { $env:THEFOOL_HOME } else { "$env:LOCALAPPDATA\hermes" }
     )
 }
 if ($PSBoundParameters.ContainsKey('InstallDir')) {
     $InstallDir = ConvertTo-LongPath $InstallDir
 } else {
     $InstallDir = ConvertTo-LongPath $(
-        if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }
+        if ($env:THEFOOL_HOME) { "$env:THEFOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }
     )
 }
 if ($script:NormalizedProfilePaths) {
@@ -737,7 +737,7 @@ function Get-PowerShellHostExe {
 function Install-Uv {
     # Hermes owns its own uv at $HermesHome\bin\uv.exe.  Always install there --
     # no PATH probing, no conda guards, no multi-location resolution chains.
-    # The runtime update path (hermes_cli/managed_uv.py) looks in the same
+    # The runtime update path (thefool_cli/managed_uv.py) looks in the same
     # place, so install.ps1 and `hermes update` stay in sync.
     $managedUv = Join-Path $HermesHome "bin\uv.exe"
 
@@ -794,7 +794,7 @@ function Install-Uv {
         # on PATH, or at ~/.local/bin (the astral default location when
         # UV_INSTALL_DIR was ignored by an older installer) -- copy it into
         # the managed location so the managed-first invariant holds
-        # (hermes_cli/managed_uv.py looks only at $HermesHome\bin\uv.exe).
+        # (thefool_cli/managed_uv.py looks only at $HermesHome\bin\uv.exe).
         if (-not (Test-Path $managedUv)) {
             $existingUv = $null
             $uvOnPath = Get-Command uv -CommandType Application -ErrorAction SilentlyContinue |
@@ -937,7 +937,7 @@ function Get-NpmRange {
 #
 # Three details are load-bearing, mirroring _nb_ensure_bundled_npm_range in
 # scripts/lib/node-bootstrap.sh and upgrade_managed_npm in
-# hermes_cli/npm_engine.py:
+# thefool_cli/npm_engine.py:
 #   - a temp cwd, so the checkout's own .npmrc (engine-strict,
 #     min-release-age) does not gate the very upgrade meant to satisfy it;
 #   - npm_config_min_release_age=0, which also neutralises a user ~/.npmrc;
@@ -1067,7 +1067,7 @@ function Resolve-UvCmd {
     }
 
     # Fall back to PATH (covers edge cases where the installer ran in a
-    # sibling process and HERMES_HOME wasn't propagated).
+    # sibling process and THEFOOL_HOME wasn't propagated).
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         $script:UvCmd = "uv"
         return
@@ -1343,7 +1343,7 @@ function Install-Git {
     and re-running this installer fully recovers.
 
     After install we locate ``bash.exe`` and persist the path in
-    ``HERMES_GIT_BASH_PATH`` (User scope) so Hermes can find it in a fresh
+    ``THEFOOL_GIT_BASH_PATH`` (User scope) so Hermes can find it in a fresh
     shell without a second PATH refresh.
     #>
     $script:GitInstallFailureReason = $null
@@ -1513,7 +1513,7 @@ function Set-GitBashEnvVar {
     <#
     .SYNOPSIS
     Locate ``bash.exe`` from an already-installed Git and persist the path in
-    ``HERMES_GIT_BASH_PATH`` (User env scope) so Hermes can find it even before
+    ``THEFOOL_GIT_BASH_PATH`` (User env scope) so Hermes can find it even before
     PATH propagation completes in a newly-spawned shell.
     #>
     $script:GitBashPath = $null
@@ -1551,16 +1551,16 @@ function Set-GitBashEnvVar {
 
     foreach ($candidate in $candidates) {
         if ($candidate -and (Test-Path $candidate)) {
-            [Environment]::SetEnvironmentVariable("HERMES_GIT_BASH_PATH", $candidate, "User")
-            $env:HERMES_GIT_BASH_PATH = $candidate
+            [Environment]::SetEnvironmentVariable("THEFOOL_GIT_BASH_PATH", $candidate, "User")
+            $env:THEFOOL_GIT_BASH_PATH = $candidate
             $script:GitBashPath = $candidate
-            Write-Info "Set HERMES_GIT_BASH_PATH=$candidate"
+            Write-Info "Set THEFOOL_GIT_BASH_PATH=$candidate"
             return
         }
     }
 
     Write-Warn "Could not locate bash.exe -- Hermes may not find Git Bash."
-    Write-Info "If needed, set HERMES_GIT_BASH_PATH manually to your bash.exe path."
+    Write-Info "If needed, set THEFOOL_GIT_BASH_PATH manually to your bash.exe path."
 }
 
 # The dependency tree's real Node floor is >=22.22.0, set by react-router 8.3.0
@@ -2477,7 +2477,7 @@ function Install-Venv {
             & taskkill /F /T /IM hermes.exe /FI "PID ne $myPid" 2>$null | Out-Null
             # taskkill /IM hermes.exe is NOT enough: the gateway/agent that a
             # scheduled task or watchdog autostarts runs as
-            # `pythonw.exe -m hermes_cli.main gateway run` straight out of
+            # `pythonw.exe -m thefool_cli.main gateway run` straight out of
             # venv\Scripts\, so its image name is python/pythonw, not hermes.exe.
             # That process holds the venv's .pyd files open and re-triggers the
             # access-denied failure. Select only roots whose executable lives
@@ -2488,7 +2488,7 @@ function Install-Venv {
             # outside this venv untouched.
             #
             # The gateway autostart task registers with /RL LIMITED as the current
-            # user (see hermes_cli/gateway_windows.py), so the installer always
+            # user (see thefool_cli/gateway_windows.py), so the installer always
             # runs at equal-or-higher integrity and can read its executable path.
             # Get-CimInstance is used over Get-Process because it returns a null
             # ExecutablePath for a process it cannot inspect (a different session)
@@ -2925,7 +2925,7 @@ print(','.join(scripts))
                     }
                     if ($stillMissing.Count -gt 0) {
                         Write-Warn "Entry points still missing after repair: $($stillMissing -join ', ')"
-                        Write-Info "Workaround: `"$pythonExe`" -m hermes_cli.main <command>"
+                        Write-Info "Workaround: `"$pythonExe`" -m thefool_cli.main <command>"
                     } else {
                         Write-Success "Console entry points restored"
                     }
@@ -2954,7 +2954,7 @@ print(','.join(scripts))
             if ($LASTEXITCODE -eq 0) { $webOk = $true }
         } catch { }
         try {
-            & $pythonExe -m py_compile "$InstallDir\hermes_cli\web_server.py" 2>&1 | Out-Null
+            & $pythonExe -m py_compile "$InstallDir\thefool_cli\web_server.py" 2>&1 | Out-Null
             if ($LASTEXITCODE -eq 0) { $webServerSyntaxOk = $true }
         } catch { }
         $ErrorActionPreference = $prevEAP
@@ -2969,7 +2969,7 @@ print(','.join(scripts))
             }
         }
         if (-not $webServerSyntaxOk) {
-            throw "dashboard backend source failed syntax check: hermes_cli/web_server.py"
+            throw "dashboard backend source failed syntax check: thefool_cli/web_server.py"
         }
     }
     
@@ -3026,15 +3026,15 @@ function Set-PathVariable {
         Write-Info "PATH already configured"
     }
     
-    # Set HERMES_HOME so the Python code finds config/data in the right place.
+    # Set THEFOOL_HOME so the Python code finds config/data in the right place.
     # Only needed on Windows where we install to %LOCALAPPDATA%\hermes instead
     # of the Unix default ~/.hermes
-    $currentHermesHome = [Environment]::GetEnvironmentVariable("HERMES_HOME", "User")
+    $currentHermesHome = [Environment]::GetEnvironmentVariable("THEFOOL_HOME", "User")
     if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
-        [Environment]::SetEnvironmentVariable("HERMES_HOME", $HermesHome, "User")
-        Write-Success "Set HERMES_HOME=$HermesHome"
+        [Environment]::SetEnvironmentVariable("THEFOOL_HOME", $HermesHome, "User")
+        Write-Success "Set THEFOOL_HOME=$HermesHome"
     }
-    $env:HERMES_HOME = $HermesHome
+    $env:THEFOOL_HOME = $HermesHome
     
     # Update current session
     $env:Path = "$hermesBin;$env:Path"
@@ -3122,7 +3122,7 @@ function Write-BootstrapMarker {
 function Copy-ConfigTemplates {
     Write-Info "Setting up configuration files..."
     
-    # Create the HERMES_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\hermes)
+    # Create the THEFOOL_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\hermes)
     New-Item -ItemType Directory -Force -Path "$HermesHome\cron" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\sessions" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\logs" | Out-Null
@@ -3172,7 +3172,7 @@ function Copy-ConfigTemplates {
     # PowerShell version.
     $soulPath = "$HermesHome\SOUL.md"
     if (-not (Test-Path $soulPath)) {
-        # MUST match DEFAULT_SOUL_MD in hermes_cli/default_soul.py. The runtime
+        # MUST match DEFAULT_SOUL_MD in thefool_cli/default_soul.py. The runtime
         # upgrades the old comment-only scaffold to this text on next run, so
         # drift is self-healing, but keep them in sync to avoid first-run churn.
         $soulContent = @"
@@ -3608,7 +3608,7 @@ function Test-CuaDriverRuntimeContract {
 # Provision it at install time so enabling the tool later -- via `hermes
 # tools`, the dashboard, or the desktop app -- is a config flip, not a
 # surprise multi-minute binary fetch. Best-effort and non-fatal: the enable
-# paths still lazy-install via install_cua_driver() (hermes_cli/tools_config)
+# paths still lazy-install via install_cua_driver() (thefool_cli/tools_config)
 # when this step was skipped or failed.
 function Install-CuaDriver {
     if ($SkipComputerUse) {
@@ -4298,9 +4298,9 @@ function Invoke-SetupWizard {
 
     # Run hermes setup using the venv Python directly (no activation needed)
     if (-not $NoVenv) {
-        & ".\venv\Scripts\python.exe" -m hermes_cli.main setup
+        & ".\venv\Scripts\python.exe" -m thefool_cli.main setup
     } else {
-        python -m hermes_cli.main setup
+        python -m thefool_cli.main setup
     }
 
     Pop-Location

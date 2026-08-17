@@ -95,7 +95,7 @@ def _session_is_messaging_surface() -> bool:
 def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     """Return whether edit -> verify-before-finish behavior is enabled.
 
-    Precedence: an explicit ``HERMES_VERIFY_ON_STOP`` env var wins, then an
+    Precedence: an explicit ``THEFOOL_VERIFY_ON_STOP`` env var wins, then an
     explicit ``agent.verify_on_stop`` config value. The default is ``False``
     (opt-in — see ``DEFAULT_CONFIG``): the v31/v32 migrations already turn
     the behavior off for existing installs, so fresh installs match. An
@@ -106,12 +106,12 @@ def verify_on_stop_enabled(config: dict[str, Any] | None = None) -> bool:
     verification narrative would reach a human as chat noise. A missing or
     unrecognized value falls back to OFF.
     """
-    env = os.environ.get("HERMES_VERIFY_ON_STOP")
+    env = os.environ.get("THEFOOL_VERIFY_ON_STOP")
     if env is not None:
         return env.strip().lower() not in {"0", "false", "no", "off"}
     if config is None:
         try:
-            from hermes_cli.config import load_config_readonly
+            from thefool_cli.config import load_config_readonly
 
             config = load_config_readonly()
         except Exception:

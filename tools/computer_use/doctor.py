@@ -29,7 +29,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from hermes_cli._subprocess_compat import windows_hide_flags
+from thefool_cli._subprocess_compat import windows_hide_flags
 
 
 # Match the ALLOWED_STATUS_VALUES + ALLOWED_OVERALL_VALUES the cua-driver
@@ -844,7 +844,7 @@ def run_doctor(
 ) -> int:
     """Resolve the cua-driver binary, call `health_report`, render the result.
 
-    Honors `HERMES_CUA_DRIVER_CMD` via the shared runtime resolver, so the
+    Honors `THEFOOL_CUA_DRIVER_CMD` via the shared runtime resolver, so the
     doctor diagnoses what your `computer_use` toolset will actually invoke.
 
     On cua-driver 0.10.x, ``health_report`` may be risk-unclassified and

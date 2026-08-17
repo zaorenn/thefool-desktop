@@ -90,7 +90,7 @@ Drop both files into `~/.hermes/plugins/hello-world/`, restart Hermes, and the m
 
 The model-facing tool description belongs in `schema["description"]`. The optional `ctx.register_tool(description=...)` value is separate `ToolEntry` registry metadata: when omitted, it defaults to the schema description, but Hermes does not copy it back into a schema that lacks `description`. Prefer defining the text once in the schema. If you provide both values, keep them synchronized; the model sees the schema value.
 
-Project-local plugins under `./.hermes/plugins/` are disabled by default. Enable them only for trusted repositories by setting `HERMES_ENABLE_PROJECT_PLUGINS=true` before starting Hermes.
+Project-local plugins under `./.hermes/plugins/` are disabled by default. Enable them only for trusted repositories by setting `THEFOOL_ENABLE_PROJECT_PLUGINS=true` before starting Hermes.
 
 ## What plugins can do
 
@@ -124,7 +124,7 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 |--------|------|----------|
 | Bundled | `<repo>/plugins/` | Ships with Hermes — see [Built-in Plugins](/user-guide/features/built-in-plugins) |
 | User | `~/.hermes/plugins/` | Personal plugins |
-| Project | `.hermes/plugins/` | Project-specific plugins (requires `HERMES_ENABLE_PROJECT_PLUGINS=true`) |
+| Project | `.hermes/plugins/` | Project-specific plugins (requires `THEFOOL_ENABLE_PROJECT_PLUGINS=true`) |
 | pip | `hermes_agent.plugins` entry_points | Distributed packages |
 | Nix | `services.hermes-agent.extraPlugins` / `extraPythonPackages` | NixOS declarative installs — see [Nix Setup](/getting-started/nix-setup#plugins) |
 
@@ -260,7 +260,7 @@ When you upgrade to a version of Hermes that has opt-in plugins (config schema v
 
 ## Available hooks
 
-Plugins can register the 26 lifecycle events currently accepted by `hermes_cli.plugins.VALID_HOOKS`. The **[Event Hooks catalog](/user-guide/features/hooks#shipped-plugin-hook-catalog)** is canonical for exact timing, return handling, payload fields, and privacy notes.
+Plugins can register the 26 lifecycle events currently accepted by `thefool_cli.plugins.VALID_HOOKS`. The **[Event Hooks catalog](/user-guide/features/hooks#shipped-plugin-hook-catalog)** is canonical for exact timing, return handling, payload fields, and privacy notes.
 
 | Descriptive category | Shipped hooks |
 |---|---|
@@ -300,7 +300,7 @@ The table above shows the four plugin categories, but within "General plugins" t
 | An **image-generation backend** (DALL·E, SDXL, …) | Backend plugin — `ctx.register_image_gen_provider()` | [Image Generation Provider Plugins](/developer-guide/image-gen-provider-plugin) |
 | A **video-generation backend** (Veo, Kling, Pixverse, Grok-Imagine, Runway, …) | Backend plugin — `ctx.register_video_gen_provider()` | [Video Generation Provider Plugins](/developer-guide/video-gen-provider-plugin) |
 | A **TTS backend** (any CLI — Piper, VoxCPM, Kokoro, xtts, voice-cloning scripts, …) | Config-driven (recommended) — declare under `tts.providers.<name>` with `type: command` in `config.yaml`. OR Python backend plugin — `ctx.register_tts_provider()` for Python-SDK / streaming engines that need more than a shell template. | [TTS Setup](/user-guide/features/tts#custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers) |
-| An **STT backend** (any CLI — whisper.cpp, custom whisper binary, local ASR CLI) | Config-driven (recommended) — declare under `stt.providers.<name>` with `type: command` in `config.yaml`, or set `HERMES_LOCAL_STT_COMMAND` for the legacy single-command escape hatch. OR Python backend plugin — `ctx.register_transcription_provider()` for Python-SDK engines (OpenRouter, SenseAudio, Gemini-STT, etc.). | [STT Setup](/user-guide/features/tts#stt-custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers-stt) |
+| An **STT backend** (any CLI — whisper.cpp, custom whisper binary, local ASR CLI) | Config-driven (recommended) — declare under `stt.providers.<name>` with `type: command` in `config.yaml`, or set `THEFOOL_LOCAL_STT_COMMAND` for the legacy single-command escape hatch. OR Python backend plugin — `ctx.register_transcription_provider()` for Python-SDK engines (OpenRouter, SenseAudio, Gemini-STT, etc.). | [STT Setup](/user-guide/features/tts#stt-custom-command-providers) · [Python plugin guide](/user-guide/features/tts#python-plugin-providers-stt) |
 | **External tools via MCP** (filesystem, GitHub, Linear, Notion, any MCP server) | Config-driven — declare `mcp_servers.<name>` with `command:` / `url:` in `config.yaml`. Hermes auto-discovers the server's tools and registers them alongside built-ins. | [MCP](/user-guide/features/mcp) |
 | **Additional skill sources** (custom GitHub repos, private skill indexes) | CLI — `hermes skills tap add <repo>` | [Skills Hub](/user-guide/features/skills#skills-hub) · [Publishing a custom tap](/user-guide/features/skills#publishing-a-custom-skill-tap) |
 | **Gateway event hooks** (fire on `gateway:startup`, `session:start`, `agent:end`, `command:*`) | Drop `HOOK.yaml` + `handler.py` into `~/.hermes/hooks/<name>/` | [Event Hooks](/user-guide/features/hooks#gateway-event-hooks) |
@@ -504,7 +504,7 @@ all a bundled seed copy ships with Hermes — so search works fully offline.
 
 `repo` is the `owner/name` GitHub identifier, `ref` pins an immutable commit
 SHA, and optional `subdir` supports monorepos. The bundled seed file
-(`hermes_cli/data/plugin_index.json` in the repo) is the format reference.
+(`thefool_cli/data/plugin_index.json` in the repo) is the format reference.
 
 **Submitting a plugin.** The index is maintained as a plain JSON file —
 submit a pull request to the

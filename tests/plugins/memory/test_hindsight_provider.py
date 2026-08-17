@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from hermes_cli.memory_setup import _CANCELLED
+from thefool_cli.memory_setup import _CANCELLED
 from plugins.memory.hindsight import (
     HindsightMemoryProvider,
     RECALL_SCHEMA,
@@ -381,12 +381,12 @@ class TestPostSetup:
         save_config = MagicMock()
         which = MagicMock(return_value="/usr/bin/uv")
         run = MagicMock()
-        monkeypatch.setattr("hermes_cli.memory_setup._curses_select", lambda *args, **kwargs: _CANCELLED)
+        monkeypatch.setattr("thefool_cli.memory_setup._curses_select", lambda *args, **kwargs: _CANCELLED)
         monkeypatch.setattr("shutil.which", which)
         monkeypatch.setattr("subprocess.run", run)
         monkeypatch.setattr("builtins.input", MagicMock(side_effect=AssertionError("prompt should not run")))
         monkeypatch.setattr("getpass.getpass", MagicMock(side_effect=AssertionError("prompt should not run")))
-        monkeypatch.setattr("hermes_cli.config.save_config", save_config)
+        monkeypatch.setattr("thefool_cli.config.save_config", save_config)
 
         provider = HindsightMemoryProvider()
         provider.post_setup(str(hermes_home), {"memory": {"provider": "builtin"}})
@@ -406,13 +406,13 @@ class TestPostSetup:
         monkeypatch.setenv("HOME", str(user_home))
 
         selections = iter([1, 0])  # local_embedded, openai
-        monkeypatch.setattr("hermes_cli.memory_setup._curses_select", lambda *args, **kwargs: next(selections))
+        monkeypatch.setattr("thefool_cli.memory_setup._curses_select", lambda *args, **kwargs: next(selections))
         monkeypatch.setattr("shutil.which", lambda name: None)
         monkeypatch.setattr("builtins.input", lambda prompt="": "")
         monkeypatch.setattr("sys.stdin.isatty", lambda: True)
         monkeypatch.setattr("getpass.getpass", lambda prompt="": "sk-local-test")
         saved_configs = []
-        monkeypatch.setattr("hermes_cli.config.save_config", lambda cfg: saved_configs.append(cfg.copy()))
+        monkeypatch.setattr("thefool_cli.config.save_config", lambda cfg: saved_configs.append(cfg.copy()))
 
         provider = HindsightMemoryProvider()
         provider.post_setup(str(hermes_home), {"memory": {}})
@@ -1471,9 +1471,9 @@ class TestPostSetupEnvEncoding:
         """Drive post_setup through the cloud path with piped stdin."""
         import io
 
-        monkeypatch.setattr("hermes_cli.memory_setup._curses_select",
+        monkeypatch.setattr("thefool_cli.memory_setup._curses_select",
                             lambda *a, **kw: 0)  # cloud mode
-        monkeypatch.setattr("hermes_cli.config.save_config", lambda c: None)
+        monkeypatch.setattr("thefool_cli.config.save_config", lambda c: None)
         # Skip the dependency install (now routed through lazy_deps, NS-605).
         import tools.lazy_deps as lazy_deps_mod
         monkeypatch.setattr(

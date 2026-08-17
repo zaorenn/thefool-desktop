@@ -323,7 +323,7 @@ Supported schemes: `http://`, `https://`, `socks5://`.
 
 The proxy applies to both the main Telegram connection and the fallback IP transport. If no Telegram-specific proxy is set, the gateway falls back to `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` (or macOS system proxy auto-detection).
 
-If the fallback IP discovery path is unhealthy on your host, set `HERMES_TELEGRAM_DISABLE_FALLBACK_IPS=true` to keep cold connect on the plain `api.telegram.org` path. You can also bound DNS-over-HTTPS fallback discovery with `HERMES_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT` in seconds; the default is `5`.
+If the fallback IP discovery path is unhealthy on your host, set `THEFOOL_TELEGRAM_DISABLE_FALLBACK_IPS=true` to keep cold connect on the plain `api.telegram.org` path. You can also bound DNS-over-HTTPS fallback discovery with `THEFOOL_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT` in seconds; the default is `5`.
 
 ## Home Channel
 
@@ -1302,7 +1302,7 @@ display:
 Env override (handy for quick A/B testing):
 
 ```bash
-HERMES_TELEGRAM_NOTIFICATIONS=all
+THEFOOL_TELEGRAM_NOTIFICATIONS=all
 ```
 
 Unknown values log a warning and fall back to `important`.

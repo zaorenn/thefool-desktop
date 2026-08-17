@@ -30,7 +30,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import plugins.dashboard_auth.self_hosted as oidc_plugin
-from hermes_cli.dashboard_auth import (
+from thefool_cli.dashboard_auth import (
     InvalidCodeError,
     LoginStart,
     ProviderError,
@@ -612,10 +612,10 @@ class TestPluginRegister:
     @pytest.fixture(autouse=True)
     def clear_env(self, monkeypatch):
         for var in (
-            "HERMES_DASHBOARD_OIDC_ISSUER",
-            "HERMES_DASHBOARD_OIDC_CLIENT_ID",
-            "HERMES_DASHBOARD_OIDC_SCOPES",
-            "HERMES_DASHBOARD_OIDC_CLIENT_SECRET",
+            "THEFOOL_DASHBOARD_OIDC_ISSUER",
+            "THEFOOL_DASHBOARD_OIDC_CLIENT_ID",
+            "THEFOOL_DASHBOARD_OIDC_SCOPES",
+            "THEFOOL_DASHBOARD_OIDC_CLIENT_SECRET",
         ):
             monkeypatch.delenv(var, raising=False)
 
@@ -625,7 +625,7 @@ class TestPluginRegister:
             cfg = {}
             if oauth_block is not None:
                 cfg = {"dashboard": {"oauth": oauth_block}}
-            monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
+            monkeypatch.setattr("thefool_cli.config.load_config", lambda: cfg)
 
         return _set
 
@@ -634,14 +634,14 @@ class TestPluginRegister:
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
-        assert "HERMES_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
+        assert "THEFOOL_DASHBOARD_OIDC_ISSUER" in oidc_plugin.LAST_SKIP_REASON
         assert "self_hosted" in oidc_plugin.LAST_SKIP_REASON
 
 
     def test_registers_from_env(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_called_once()
@@ -662,8 +662,8 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -675,7 +675,7 @@ class TestPluginRegister:
         def _broken():
             raise OSError("unreadable")
 
-        monkeypatch.setattr("hermes_cli.config.load_config", _broken)
+        monkeypatch.setattr("thefool_cli.config.load_config", _broken)
         ctx = MagicMock()
         oidc_plugin.register(ctx)  # must not raise
         ctx.register_dashboard_auth_provider.assert_not_called()
@@ -686,9 +686,9 @@ class TestPluginRegister:
 
     def test_secret_from_env(self, patch_config, monkeypatch):
         patch_config(None)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_ISSUER", _ISSUER)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_ISSUER", _ISSUER)
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_CLIENT_ID", _CLIENT_ID)
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -705,7 +705,7 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_CLIENT_SECRET", "env-secret")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -721,7 +721,7 @@ class TestPluginRegister:
                 }
             }
         )
-        monkeypatch.setenv("HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "")
+        monkeypatch.setenv("THEFOOL_DASHBOARD_OIDC_CLIENT_SECRET", "")
         ctx = MagicMock()
         oidc_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]

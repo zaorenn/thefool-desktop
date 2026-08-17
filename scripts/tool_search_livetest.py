@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 # Force-isolate the test environment BEFORE any hermes imports.
-ORIGINAL_HOME = os.environ.get("HERMES_HOME")
+ORIGINAL_HOME = os.environ.get("THEFOOL_HOME")
 ORIGINAL_AUTH = Path.home() / ".hermes" / "auth.json"
 
 _THIS_DIR = Path(__file__).resolve().parent
@@ -274,7 +274,7 @@ def setup_isolated_home(enabled: bool, listing: str = "off",
         # hand — it never materializes the secret in a local variable in
         # this module, which both avoids a hand-rolled parser bug and keeps
         # static analysis from tainting the transcript records with the key.
-        from hermes_cli.env_loader import load_hermes_dotenv
+        from thefool_cli.env_loader import load_hermes_dotenv
         load_hermes_dotenv(hermes_home=str(Path.home() / ".hermes"))
 
     cfg = {
@@ -345,10 +345,10 @@ def register_fake_tools() -> int:
 
 
 def reset_module_state():
-    """Drop cached modules so the new HERMES_HOME takes effect."""
+    """Drop cached modules so the new THEFOOL_HOME takes effect."""
     keys = [k for k in sys.modules.keys()
             if k.startswith(("tools.", "model_tools", "toolsets",
-                             "hermes_cli", "agent.", "run_agent"))]
+                             "thefool_cli", "agent.", "run_agent"))]
     for k in keys:
         del sys.modules[k]
 
@@ -357,7 +357,7 @@ def run_one_scenario(scenario: Dict[str, Any], enabled: bool, out_dir: Path) -> 
     """Run one (scenario, enabled) combination. Returns the recorded transcript."""
     reset_module_state()
     home = setup_isolated_home(enabled=enabled)
-    os.environ["HERMES_HOME"] = str(home)
+    os.environ["THEFOOL_HOME"] = str(home)
 
     # Pre-create the test file used by scenario D.
     Path("/tmp/livetest").mkdir(exist_ok=True)
@@ -542,11 +542,11 @@ def main():
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"\nSummary saved to: {summary_path}")
 
-    # Restore original HERMES_HOME
+    # Restore original THEFOOL_HOME
     if ORIGINAL_HOME is not None:
-        os.environ["HERMES_HOME"] = ORIGINAL_HOME
+        os.environ["THEFOOL_HOME"] = ORIGINAL_HOME
     else:
-        os.environ.pop("HERMES_HOME", None)
+        os.environ.pop("THEFOOL_HOME", None)
 
 
 if __name__ == "__main__":

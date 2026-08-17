@@ -17,18 +17,18 @@ agent/proxy_sources/iron_proxy.py     Core: binary install, CA gen, config build
                                        subprocess lifecycle, mappings I/O, PID/nonce
                                        defense.  Pure-function surface where possible.
 
-hermes_cli/proxy_cli.py               Wizard + slash command handlers.
+thefool_cli/proxy_cli.py               Wizard + slash command handlers.
                                        `hermes egress {install,setup,start,stop,
                                        status,disable,config}`.  Wires the
                                        core module into argparse.
 
-hermes_cli/main.py:_dispatch_egress   Top-level subparser dispatcher.
+thefool_cli/main.py:_dispatch_egress   Top-level subparser dispatcher.
                                        dest='egress_command' (intentionally
                                        disjoint from the inbound OAuth
                                        `hermes proxy` subparser, which uses
                                        dest='proxy_command').
 
-hermes_cli/config.py: proxy schema    The `proxy:` block in DEFAULT_CONFIG.
+thefool_cli/config.py: proxy schema    The `proxy:` block in DEFAULT_CONFIG.
                                        Adding a knob means: add it here, add a
                                        wizard prompt or `setdefault` in
                                        proxy_cli.cmd_setup, and document it
@@ -56,7 +56,7 @@ tests/test_iron_proxy_cli.py          CLI handler unit tests (~20).  Argparse
                                        wire-up, dest='egress_command'
                                        regression guard.
 
-tests/test_iron_proxy_e2e.py          Live E2E (gated on HERMES_RUN_E2E=1).
+tests/test_iron_proxy_e2e.py          Live E2E (gated on THEFOOL_RUN_E2E=1).
                                        Real iron-proxy binary, real curl,
                                        end-to-end token swap verified.
 ```
@@ -283,7 +283,7 @@ _NON_BEARER_PROVIDERS: Tuple[str, ...] = (
 1. Reads `load_config().get("proxy", {})`; returns empty args if `enabled` is false.
 2. Calls `iron_proxy.get_status()`; surfaces `enforce` semantics on `configured` / `pid` / `listening` / `ca_cert_path` failure paths.
 3. Calls `iron_proxy.load_mappings()`; refuses to mount if empty AND `enforce_on_docker: true`.
-4. Sets the seven env vars (HTTPS_PROXY, NO_PROXY, REQUESTS_CA_BUNDLE, SSL_CERT_FILE, CURL_CA_BUNDLE, NODE_EXTRA_CA_CERTS, HERMES_EGRESS_PROXY) and the per-mapping `HERMES_PROXY_TOKEN_<NAME>` vars.
+4. Sets the seven env vars (HTTPS_PROXY, NO_PROXY, REQUESTS_CA_BUNDLE, SSL_CERT_FILE, CURL_CA_BUNDLE, NODE_EXTRA_CA_CERTS, THEFOOL_EGRESS_PROXY) and the per-mapping `THEFOOL_PROXY_TOKEN_<NAME>` vars.
 5. Distributes the CA cert into the sandbox at a path the runtime will trust (typically `/etc/ssl/certs/hermes-egress-ca.crt`).
 6. Implements collision detection against the user's backend-specific env config.
 
@@ -300,11 +300,11 @@ iron-proxy writes line-delimited JSON to `~/.hermes/proxy/iron-proxy.log` on the
 scripts/run_tests.sh tests/test_iron_proxy.py tests/test_iron_proxy_cli.py
 
 # Live E2E (real binary, real curl, real CONNECT tunnel)
-HERMES_RUN_E2E=1 scripts/run_tests.sh tests/test_iron_proxy_e2e.py
+THEFOOL_RUN_E2E=1 scripts/run_tests.sh tests/test_iron_proxy_e2e.py
 
 # Live PTY smoke against `hermes egress`
-HERMES_HOME=/tmp/hermes-egress-test python3 -m hermes_cli.main egress --help
-HERMES_HOME=/tmp/hermes-egress-test python3 -m hermes_cli.main egress setup --help
+THEFOOL_HOME=/tmp/hermes-egress-test python3 -m thefool_cli.main egress --help
+THEFOOL_HOME=/tmp/hermes-egress-test python3 -m thefool_cli.main egress setup --help
 ```
 
 The CLI uses argparse, so `--help` is a good first probe for "did my new flag register correctly".

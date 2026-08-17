@@ -21,18 +21,18 @@ import pytest
 
 @pytest.fixture
 def hermes_env(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME for each test so jobs/scripts don't leak."""
+    """Isolate THEFOOL_HOME for each test so jobs/scripts don't leak."""
     home = tmp_path / ".hermes"
     home.mkdir()
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
 
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("THEFOOL_HOME", str(home))
 
     # Reload modules that cache get_hermes_home() at import time.
     import importlib
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import thefool_constants
+    importlib.reload(thefool_constants)
     import cron.jobs
     importlib.reload(cron.jobs)
     import cron.scheduler
@@ -112,7 +112,7 @@ def test_run_job_no_agent_reloads_dotenv_before_script(hermes_env, monkeypatch):
     vars in its environment, and the agent path's per-run dotenv reload never
     executes for no_agent jobs — delivery home channels stayed unresolved.
     run_job must load .env at the top of the no_agent branch."""
-    import hermes_cli.env_loader as env_loader
+    import thefool_cli.env_loader as env_loader
     from cron.jobs import create_job
     from cron.scheduler import run_job
 

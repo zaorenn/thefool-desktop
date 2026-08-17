@@ -88,7 +88,7 @@ class TestLoadBackgroundNotificationsMode:
     def test_defaults_to_concise(self, monkeypatch, tmp_path):
         import gateway.run as gw
         monkeypatch.setattr(gw, "_hermes_home", tmp_path)
-        monkeypatch.delenv("HERMES_BACKGROUND_NOTIFICATIONS", raising=False)
+        monkeypatch.delenv("THEFOOL_BACKGROUND_NOTIFICATIONS", raising=False)
         assert GatewayRunner._load_background_notifications_mode() == "concise"
 
     def test_unknown_mode_falls_back_to_concise(self, monkeypatch, tmp_path):
@@ -97,7 +97,7 @@ class TestLoadBackgroundNotificationsMode:
         )
         import gateway.run as gw
         monkeypatch.setattr(gw, "_hermes_home", tmp_path)
-        monkeypatch.delenv("HERMES_BACKGROUND_NOTIFICATIONS", raising=False)
+        monkeypatch.delenv("THEFOOL_BACKGROUND_NOTIFICATIONS", raising=False)
         assert GatewayRunner._load_background_notifications_mode() == "concise"
 
     def test_reads_config_yaml(self, monkeypatch, tmp_path):
@@ -106,7 +106,7 @@ class TestLoadBackgroundNotificationsMode:
         )
         import gateway.run as gw
         monkeypatch.setattr(gw, "_hermes_home", tmp_path)
-        monkeypatch.delenv("HERMES_BACKGROUND_NOTIFICATIONS", raising=False)
+        monkeypatch.delenv("THEFOOL_BACKGROUND_NOTIFICATIONS", raising=False)
         assert GatewayRunner._load_background_notifications_mode() == "error"
 
 

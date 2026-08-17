@@ -646,18 +646,18 @@ def atomic_roundtrip_yaml_save(
     callers that mutate a deep-loaded config dict and want to persist the
     whole thing.
 
-    Shares the fail-closed contract ``hermes_cli.config.atomic_config_write``
+    Shares the fail-closed contract ``thefool_cli.config.atomic_config_write``
     enforces for plain (non-comment-preserving) full-document writes: an
     existing-but-unreadable ``config.yaml`` (permission error, broken mount,
     transient I/O) raises rather than being silently replaced with only
     ``new_state``. Imported lazily to avoid a module-level circular import —
-    ``hermes_cli.config`` itself imports from this module.
+    ``thefool_cli.config`` itself imports from this module.
     """
     from ruamel.yaml import YAML
     from ruamel.yaml.comments import CommentedMap
     from ruamel.yaml.scalarstring import DoubleQuotedScalarString
 
-    from hermes_cli.config import require_readable_config_before_write
+    from thefool_cli.config import require_readable_config_before_write
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

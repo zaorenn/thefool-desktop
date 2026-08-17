@@ -33,8 +33,8 @@ eklediğinde onlar da otomatik markalanır; bakım maliyeti sıfır.
 | id | Dosya | Ne yapar |
 |----|-------|----------|
 | `i18n-brand` | `apps/desktop/src/i18n/catalog.ts` | Masaüstü çeviri kataloğunun tamamı `applyFoolBrand()`'den geçer. Tek satır, 141+ metin, tüm diller. |
-| `argparse-brand` | `hermes_cli/__init__.py` | argparse'ın metin kabul ettiği 4 nokta sarmalanır → tüm `--help` çıktısı. Yalnızca yardım metnine dokunur; argüman adları/`dest`/`choices` ellenmez. |
-| `command-descriptions` | `hermes_cli/commands.py` | `CommandDef.__post_init__` tüm `/help` açıklamalarını markalar. |
+| `argparse-brand` | `thefool_cli/__init__.py` | argparse'ın metin kabul ettiği 4 nokta sarmalanır → tüm `--help` çıktısı. Yalnızca yardım metnine dokunur; argüman adları/`dest`/`choices` ellenmez. |
+| `command-descriptions` | `thefool_cli/commands.py` | `CommandDef.__post_init__` tüm `/help` açıklamalarını markalar. |
 
 ### Markalaşma — noktasal
 
@@ -42,8 +42,8 @@ eklediğinde onlar da otomatik markalanır; bakım maliyeti sıfır.
 |----|-------|------------|
 | `wordmark` | `apps/desktop/src/components/chat/intro.tsx` | Açılış ekranında "HERMES AGENT" yazar |
 | `html-title` | `apps/desktop/index.html` | Sekme/pencere başlığı "Hermes" olur |
-| `version-banner` | `hermes_cli/_startup_fast.py`, `banner.py`, `cli.py` | Sürüm satırı "Hermes Agent v…" olur |
-| `prog-name` | `hermes_cli/_parser.py`, `console_engine.py` | `usage: hermes` yazar |
+| `version-banner` | `thefool_cli/_startup_fast.py`, `banner.py`, `cli.py` | Sürüm satırı "Hermes Agent v…" olur |
+| `prog-name` | `thefool_cli/_parser.py`, `console_engine.py` | `usage: hermes` yazar |
 | `bot-display-name` | `apps/desktop/src/plugins/hermes-bots/plugin.js` | Varsayılan profil "Hermes" görünür |
 | `theme-preset` | `apps/desktop/src/themes/presets.ts` | Crimson tema kaybolur, varsayılan `nous`a döner |
 | `default-mode` | `apps/desktop/src/themes/context.tsx` | Uygulama açık modda açılır, crimson kimlik zayıflar |
@@ -57,7 +57,7 @@ sanar — markalaşmanın en derin katmanı.
 
 | id | Dosya | Ne yapar |
 |----|-------|----------|
-| `agent-identity` | `hermes_cli/default_soul.py` | **En kritiği.** `SOUL.md`, `DEFAULT_AGENT_IDENTITY`'yi gölgeler — dosya varsa sabit hiç okunmaz. Eski Hermes metni `_LEGACY_TEMPLATE_SOULS`'a eklendi, böylece makine-serili dosya yerinde tazeleniyor. Kullanıcının elle yazdığı persona asla ellenmez. |
+| `agent-identity` | `thefool_cli/default_soul.py` | **En kritiği.** `SOUL.md`, `DEFAULT_AGENT_IDENTITY`'yi gölgeler — dosya varsa sabit hiç okunmaz. Eski Hermes metni `_LEGACY_TEMPLATE_SOULS`'a eklendi, böylece makine-serili dosya yerinde tazeleniyor. Kullanıcının elle yazdığı persona asla ellenmez. |
 | `agent-identity` | `agent/prompt_builder.py`, `agent/system_prompt.py`, `agent/agent_init.py` | Kimlik metni, yardım rehberi, profil satırları, steer açıklaması |
 | `agent-identity` | `agent/prompt_builder.py` → `brand_skill_index()` | Beceri dizini açıklamaları. **Beceri ADLARI dokunulmaz** — `skill_view(name='…')` ile çağrılıyorlar. |
 | `agent-identity` | `model_tools.py` → `brand_tool_schemas()` | Araç şeması açıklamaları. Şemalar sistem promptundan **ayrı** gönderiliyor. **Araç adları, parametre anahtarları, enum, required dokunulmaz** — aksi halde model var olmayan aracı çağırır. |
@@ -70,18 +70,18 @@ sanar — markalaşmanın en derin katmanı.
 |----|-------|------------|
 | `cli-scripts` | `pyproject.toml` | Komut adı `hermes`e döner |
 | `fool-packaging` | `pyproject.toml` | **`import fool` patlar — markalaşmanın TAMAMI çöker** |
-| `home-dir` | `hermes_constants.py` **ve** `apps/desktop/electron/main.ts` | Veri dizini `hermes`e döner ve kullanıcının kurulu Hermes'iyle çakışır |
+| `home-dir` | `thefool_constants.py` **ve** `apps/desktop/electron/main.ts` | Veri dizini `hermes`e döner ve kullanıcının kurulu Hermes'iyle çakışır |
 | `bot-handle` | `apps/desktop/src/plugins/hermes-bots/plugin.js` (2 yer) | `@thefool` hiçbir bota çözülmez |
 
 ### Nous bağlarının kesilmesi
 
 | id | Dosya | Ne yapar |
 |----|-------|----------|
-| `update-origin` | `hermes_cli/update_cmd.py` | Güncellemeler The Fool deposundan gelir. Kaybolursa kullanıcılar **sessizce upstream Hermes'e güncellenir** ve markalaşma silinir. |
-| `banner-repo` | `hermes_cli/banner.py` | Sürüm bağlantıları The Fool deposunu gösterir |
-| `model-catalog` | `hermes_cli/model_catalog.py` | Katalog sürümle gelir; her açılışta Nous'a istek gitmez |
-| `diagnostics-endpoint` | `hermes_cli/diagnostics_upload.py` | Loglar/sistem bilgisi hiçbir yere yüklenmez |
-| `nous-account-commands` | `hermes_cli/commands.py` | `/subscription`, `/topup` kaldırıldı (Nous hesabına özel faturalama) |
+| `update-origin` | `thefool_cli/update_cmd.py` | Güncellemeler The Fool deposundan gelir. Kaybolursa kullanıcılar **sessizce upstream Hermes'e güncellenir** ve markalaşma silinir. |
+| `banner-repo` | `thefool_cli/banner.py` | Sürüm bağlantıları The Fool deposunu gösterir |
+| `model-catalog` | `thefool_cli/model_catalog.py` | Katalog sürümle gelir; her açılışta Nous'a istek gitmez |
+| `diagnostics-endpoint` | `thefool_cli/diagnostics_upload.py` | Loglar/sistem bilgisi hiçbir yere yüklenmez |
+| `nous-account-commands` | `thefool_cli/commands.py` | `/subscription`, `/topup` kaldırıldı (Nous hesabına özel faturalama) |
 
 ### İşaretsiz dikiş
 

@@ -48,7 +48,7 @@ test('ensureMessagingProtocol appends once and does not duplicate', () => {
   assert.equal(hasMessagingProtocol(once), true)
   assert.match(once, /I am the default profile on this machine/)
   assert.match(once, /`researcher` — research specialist/)
-  assert.match(once, /@hermes/)
+  assert.match(once, /@thefool/)
   assert.doesNotMatch(once, /@default/)
 
   const twice = ensureMessagingProtocol(once, 'default', roster)

@@ -114,8 +114,8 @@ düzenleme yapılmaz. Bunun yerine:
 
 **4. `update-origin` — güncelleme adresi**
 
-`hermes_cli/update_cmd.py:1600` (`OFFICIAL_REPO_URL`) ve
-`hermes_cli/banner.py:141` (`_UPSTREAM_REPO_URL`) → senin repona çevrilir.
+`thefool_cli/update_cmd.py:1600` (`OFFICIAL_REPO_URL`) ve
+`thefool_cli/banner.py:141` (`_UPSTREAM_REPO_URL`) → senin repona çevrilir.
 Kullanıcıların güncellemeyi senden alması bu.
 
 ---
@@ -158,12 +158,12 @@ geçmeyen, ne olduğunu bildiğin satırlarda.
 
 ## Neden derin yeniden adlandırma yapmıyoruz
 
-`hermes_cli` → `thefool_cli`, `HERMES_*` → `THEFOOL_*` cazip görünür ama sonucu
+`thefool_cli` → `thefool_cli`, `HERMES_*` → `THEFOOL_*` cazip görünür ama sonucu
 şudur: neredeyse her dosya değişir → **her merge her yerde çakışır** → bir süre
 sonra merge etmeyi bırakırsın → korumak istediğin zekâyı tam da bu yüzden
 kaybedersin.
 
-Kullanıcı `hermes_cli` yazısını hiçbir yerde görmez. Gördüğü her şey — uygulama
+Kullanıcı `thefool_cli` yazısını hiçbir yerde görmez. Gördüğü her şey — uygulama
 adı, ikon, tema, metinler, komut adı, kurulum sihirbazı, güncelleme kaynağı —
 The Fool'dur. Görünmeyen iç isimler, upstream'e açık kalan kapıdır.
 

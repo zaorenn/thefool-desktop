@@ -2,7 +2,7 @@
 
 The desktop app is a client. It can drive a backend that Electron spawned
 locally, one reached over SSH, one behind a plain URL+token, or Hermes Cloud —
-and only the first two run with ``HERMES_DESKTOP=1`` in their environment.
+and only the first two run with ``THEFOOL_DESKTOP=1`` in their environment.
 Gating the pane/browser/reaction tools on that env var therefore stripped every
 one of them from URL and cloud gateways, while the same backend still told the
 model "You are chatting inside the Hermes desktop app".
@@ -32,9 +32,9 @@ GUI_TOOLS = {
 @pytest.fixture
 def no_desktop_env(monkeypatch):
     """A backend nobody told about the desktop — i.e. every remote gateway."""
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("THEFOOL_DESKTOP", raising=False)
+    monkeypatch.delenv("THEFOOL_DESKTOP_TERMINAL", raising=False)
+    monkeypatch.delenv("THEFOOL_TUI_TOOLSETS", raising=False)
     return monkeypatch
 
 
@@ -70,7 +70,7 @@ class TestSurfaceResolution:
         The embedded terminal pane runs `hermes --tui` against this same
         backend; env-keyed gating handed it GUI tools it cannot answer.
         """
-        no_desktop_env.setenv("HERMES_DESKTOP", "1")
+        no_desktop_env.setenv("THEFOOL_DESKTOP", "1")
         assert "desktop_ui" not in server._gui_surface_toolsets("tui")
 
     def test_project_tools_ride_on_every_gui_surface(self, no_desktop_env):
@@ -94,7 +94,7 @@ class TestResolverPlumbing:
 
     def test_config_path_folds_in_the_session_surface(self, no_desktop_env):
         import agent.coding_context as cc
-        import hermes_cli.config as config_mod
+        import thefool_cli.config as config_mod
 
         no_desktop_env.setattr(cc, "coding_selection", lambda **_: None)
         no_desktop_env.setattr(
@@ -109,7 +109,7 @@ class TestResolverPlumbing:
         assert "desktop_ui" not in tui
 
     def test_explicit_env_pin_still_wins(self, no_desktop_env):
-        """HERMES_TUI_TOOLSETS is an operator override; surface can't re-add."""
-        no_desktop_env.setenv("HERMES_TUI_TOOLSETS", "web,memory")
+        """THEFOOL_TUI_TOOLSETS is an operator override; surface can't re-add."""
+        no_desktop_env.setenv("THEFOOL_TUI_TOOLSETS", "web,memory")
 
         assert server._load_enabled_toolsets("desktop") == ["web", "memory"]

@@ -267,7 +267,7 @@ def _pending_reaction_notes(session: dict) -> str:
 
 @method("prompt.submit")
 def _(rid, params: dict) -> dict:
-    from hermes_cli.input_sanitize import sanitize_user_prompt_text
+    from thefool_cli.input_sanitize import sanitize_user_prompt_text
 
     sid = params.get("session_id", "")
     raw_text = params.get("text", "")
@@ -287,10 +287,10 @@ def _(rid, params: dict) -> dict:
         except Exception:
             typed_stop = False
         if typed_stop:
-            os.environ["HERMES_VOICE"] = "0"
-            os.environ["HERMES_VOICE_TTS"] = "0"
+            os.environ["THEFOOL_VOICE"] = "0"
+            os.environ["THEFOOL_VOICE_TTS"] = "0"
             try:
-                from hermes_cli.voice import stop_continuous
+                from thefool_cli.voice import stop_continuous
 
                 stop_continuous()
             except Exception:
@@ -732,7 +732,7 @@ def _(rid, params: dict) -> dict:
         # resumes with full context (the agent won't persist the seed itself).
         _persist_branch_seed(session)
     except Exception as exc:
-        from hermes_state import is_disk_full_error
+        from thefool_state import is_disk_full_error
 
         with session["history_lock"]:
             session["running"] = False
@@ -819,7 +819,7 @@ def _(rid, params: dict) -> dict:
     if err:
         return err
     try:
-        from hermes_cli.clipboard import has_clipboard_image, save_clipboard_image
+        from thefool_cli.clipboard import has_clipboard_image, save_clipboard_image
     except Exception as e:
         return _err(rid, 5027, f"clipboard unavailable: {e}")
 
@@ -1040,7 +1040,7 @@ def _(rid, params: dict) -> dict:
             "-f", str(first_page), "-l", str(last_page),
             str(pdf_path), str(out_prefix),
         ]
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from thefool_cli._subprocess_compat import windows_hide_flags
 
         try:
             res = subprocess.run(
@@ -1213,7 +1213,7 @@ def _(rid, params: dict) -> dict:
             from run_agent import AIAgent
 
             # Bug #50233: ephemeral agent threads don't inherit the session's
-            # HERMES_HOME override (the ContextVar set on the session-create
+            # THEFOOL_HOME override (the ContextVar set on the session-create
             # thread doesn't propagate here), so a background turn under a
             # non-default profile would run against the wrong home. Re-bind the
             # override for the duration of this turn, exactly as the normal
@@ -1340,7 +1340,7 @@ def _(rid, params: dict) -> dict:
                 {"task_id": task_id, "text": f"Starting hidden restart agent{history_note}"},
             )
             # Bug #50233: ephemeral preview-restart agent threads don't inherit
-            # the session's HERMES_HOME override (the ContextVar set on the
+            # the session's THEFOOL_HOME override (the ContextVar set on the
             # session-create thread doesn't propagate here). Re-bind it for the
             # duration of the turn, mirroring the normal prompt turn, then
             # restore it. NOTE: we deliberately do NOT close this agent through

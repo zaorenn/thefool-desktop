@@ -83,7 +83,16 @@ def _hermes_home_from_env() -> Path:
     scope rather than a per-task profile.  Shared by :func:`get_hermes_home`
     and :func:`get_process_hermes_home` so the two never drift.
     """
-    val = os.environ.get("THEFOOL_HOME", "").strip()
+    # FOOL-SEAM: env-compat
+    # Tam yeniden adlandırma HERMES_* -> THEFOOL_* yaptı, ama kullanıcının
+    # makinesindeki ayarlar öyle değil: `setx HERMES_HOME`, systemd unit'leri,
+    # docker-compose dosyaları, upstream dokümanını takip eden herkes.
+    # Sessizce yok saymanın belirtisi çok kötü olurdu -- uygulama hatasız açılır
+    # ama YANLIŞ veri dizinini kullanır, yani kullanıcının oturumları ve
+    # hafızası kaybolmuş görünür. Yeni ad her zaman kazanır.
+    from fool.compat import getenv as _fool_getenv
+
+    val = _fool_getenv("THEFOOL_HOME").strip()
     if val:
         return Path(val)
     return _get_platform_default_hermes_home()

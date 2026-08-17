@@ -47,6 +47,22 @@ eklediğinde onlar da otomatik markalanır; bakım maliyeti sıfır.
 | `bot-display-name` | `apps/desktop/src/plugins/hermes-bots/plugin.js` | Varsayılan profil "Hermes" görünür |
 | `theme-preset` | `apps/desktop/src/themes/presets.ts` | Crimson tema kaybolur, varsayılan `nous`a döner |
 | `default-mode` | `apps/desktop/src/themes/context.tsx` | Uygulama açık modda açılır, crimson kimlik zayıflar |
+| `brand-mark` | `apps/desktop/src/components/brand-mark.tsx` | Hakkında/güncelleme rozeti `nous-girl.jpg`'e döner (işaret: `public/fool-mark.svg`) |
+
+### Ajanın kendini tanıması
+
+Kullanıcı "hangi uygulamayı kullanıyorum?" diye sorduğunda verilen cevap.
+Arayüzdeki her yazı değişse bile bunlar değişmezse ajan kendini Hermes Agent
+sanar — markalaşmanın en derin katmanı.
+
+| id | Dosya | Ne yapar |
+|----|-------|----------|
+| `agent-identity` | `hermes_cli/default_soul.py` | **En kritiği.** `SOUL.md`, `DEFAULT_AGENT_IDENTITY`'yi gölgeler — dosya varsa sabit hiç okunmaz. Eski Hermes metni `_LEGACY_TEMPLATE_SOULS`'a eklendi, böylece makine-serili dosya yerinde tazeleniyor. Kullanıcının elle yazdığı persona asla ellenmez. |
+| `agent-identity` | `agent/prompt_builder.py`, `agent/system_prompt.py`, `agent/agent_init.py` | Kimlik metni, yardım rehberi, profil satırları, steer açıklaması |
+| `agent-identity` | `agent/prompt_builder.py` → `brand_skill_index()` | Beceri dizini açıklamaları. **Beceri ADLARI dokunulmaz** — `skill_view(name='…')` ile çağrılıyorlar. |
+| `agent-identity` | `model_tools.py` → `brand_tool_schemas()` | Araç şeması açıklamaları. Şemalar sistem promptundan **ayrı** gönderiliyor. **Araç adları, parametre anahtarları, enum, required dokunulmaz** — aksi halde model var olmayan aracı çağırır. |
+| `anthropic-sanitize` | `agent/anthropic_adapter.py` | Anthropic OAuth ucuna giderken ürün adı "Claude Code" ile değiştirilir. Kimlik "Fool Agent" olunca eski replace listesi eşleşmiyordu; yeni adlar eklendi, yoksa upstream'in filtre-kaçınma koruması sessizce delinir. |
+| `client-attribution` | `agent/anthropic_adapter.py`, `agent/auxiliary_client.py` | `X-Title` başlığı — sağlayıcılara giden istemci kimliği |
 
 ### Kimlik ve dağıtım
 

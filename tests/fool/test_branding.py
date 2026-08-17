@@ -171,6 +171,7 @@ EXPECTED_SEAMS = {
     "agent-identity",
     "anthropic-sanitize",
     "client-attribution",
+    "brand-mark",
 }
 
 

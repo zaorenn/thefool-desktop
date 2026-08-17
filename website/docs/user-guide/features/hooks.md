@@ -1893,9 +1893,9 @@ Headers:
 | Header | Value |
 |--------|-------|
 | `Content-Type` | `application/json` |
-| `X-Hermes-Event` | The hook event name |
-| `X-Hermes-Delivery` | Unique id per delivery — same value as `delivery_id` in the body |
-| `X-Hermes-Signature-256` | `sha256=<hex>` — HMAC-SHA256 of the raw body, GitHub-style; only present when a secret is configured |
+| `X-Fool-Event` | The hook event name |
+| `X-Fool-Delivery` | Unique id per delivery — same value as `delivery_id` in the body |
+| `X-Fool-Signature-256` | `sha256=<hex>` — HMAC-SHA256 of the raw body, GitHub-style; only present when a secret is configured |
 
 Verify the signature exactly as you would a GitHub webhook:
 
@@ -1909,7 +1909,7 @@ def verify(body: bytes, header: str, secret: str) -> bool:
 
 Because `delivery_id` and `timestamp` live **inside the signed body**, a verified receiver also gets replay protection for free:
 
-- **Dedupe** on `delivery_id` (or the matching `X-Hermes-Delivery` header) — remember recently seen ids and skip duplicates. Hermes retries failed deliveries once, so the same id can legitimately arrive twice.
+- **Dedupe** on `delivery_id` (or the matching `X-Fool-Delivery` header) — remember recently seen ids and skip duplicates. Hermes retries failed deliveries once, so the same id can legitimately arrive twice.
 - **Reject stale events** by checking `timestamp` against your clock with a tolerance window (5 minutes is the common default). An attacker replaying a captured request can't forge a fresh timestamp without the secret.
 
 ### Delivery semantics

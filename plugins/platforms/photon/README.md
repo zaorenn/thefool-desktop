@@ -39,7 +39,7 @@ talks to it over loopback.
 - **Outbound**: `send` / `send_typing` / reaction tapbacks are loopback POSTs
   to the sidecar (`/send`, `/send-richlink`, `/send-attachment`, `/typing`,
   `/react`, `/unreact`), authenticated with a shared
-  `X-Hermes-Sidecar-Token`.
+  `X-Fool-Sidecar-Token`.
 
 ## First-time setup
 

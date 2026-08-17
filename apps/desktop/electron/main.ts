@@ -4707,7 +4707,7 @@ function fetchJson(url, token, options: any = {}) {
           ...headersForRemoteRequest(url),
           ...(options.headers || {}),
           'Content-Type': contentType,
-          'X-The Fool-Session-Token': token,
+          'X-Fool-Session-Token': token,
           // RFC 8252 native flow authenticates the gated gateway with a bearer
           // token instead of the loopback session-token header. When
           // ``options.bearer`` is set we send Authorization: Bearer <token>;
@@ -4806,7 +4806,7 @@ function downloadViaTokenToFile(url, token, ctx, options: any = {}) {
       {
         method: 'GET',
         headers: {
-          'X-The Fool-Session-Token': token
+          'X-Fool-Session-Token': token
         }
       },
       res => {
@@ -4837,7 +4837,7 @@ function downloadViaTokenToFile(url, token, ctx, options: any = {}) {
 function fetchPublicJson(url, options: any = {}) {
   // Credential-free JSON GET/POST for public gateway endpoints
   // (``/api/status``, ``/api/auth/providers``). Unlike ``fetchJson`` it sends
-  // NO ``X-The Fool-Session-Token`` header — used by the auth-mode probe before
+  // NO ``X-Fool-Session-Token`` header — used by the auth-mode probe before
   // any credentials exist, and any time we must not leak a token to an
   // endpoint that doesn't need one.
   return new Promise((resolve, reject) => {

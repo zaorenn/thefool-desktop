@@ -1471,7 +1471,7 @@ export default function SessionsPage() {
         const res = await fetch(api.exportSessionUrl(id), {
           credentials: "include",
           headers: {
-            "X-The Fool-Session-Token":
+            "X-Fool-Session-Token":
               (window as unknown as { __HERMES_SESSION_TOKEN__?: string })
                 .__HERMES_SESSION_TOKEN__ ?? "",
           },

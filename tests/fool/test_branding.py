@@ -188,6 +188,7 @@ EXPECTED_SEAMS = {
     "first-run-autodetect",
     "ready-token",
     "cli-launchers",
+    "session-header",
 }
 
 
@@ -654,3 +655,27 @@ def test_installer_publishes_the_fool_cli_launchers() -> None:
     sh = (REPO_ROOT / "scripts/install.sh").read_text(encoding="utf-8", errors="replace")
     assert '"$command_link_dir/fool"' in sh
     assert '"$command_link_dir/hermes"' not in sh
+
+
+def test_session_header_matches_on_both_sides() -> None:
+    """FOOL-SEAM: session-header — üç ayrı şekilde kırılabilir.
+
+    1. Boşluk içeremez. Dönüşüm ``X-Hermes-Session-Token``ı
+       ``X-The Fool-Session-Token`` yaptı ve Node ERR_INVALID_HTTP_TOKEN
+       fırlattı: her API çağrısı patladı.
+    2. İki taraf ayrışabilir. TS düzeltilip Python eski adda kalırsa
+       başlık geçerli olur ama kimlik doğrulama SESSİZCE reddedilir.
+    3. Eski ad geri gelebilir (upstream merge).
+    """
+    py = (REPO_ROOT / "fool_cli/web_server.py").read_text(encoding="utf-8")
+    ts = (REPO_ROOT / "apps/desktop/electron/main.ts").read_text(encoding="utf-8")
+
+    header = "X-Fool-Session-Token"
+    assert f'_SESSION_HEADER_NAME = "{header}"' in py
+    assert f"'{header}'" in ts
+
+    # HTTP başlık adı: boşluk YASAK.
+    assert " " not in header
+    for text, label in ((py, "python"), (ts, "electron")):
+        assert "X-The Fool-" not in text, f"{label}: bosluklu baslik geri gelmis"
+        assert "X-Hermes-" not in text, f"{label}: eski baslik geri gelmis"

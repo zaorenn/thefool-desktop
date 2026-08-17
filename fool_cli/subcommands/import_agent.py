@@ -1,6 +1,6 @@
-"""``hermes import-agent`` subcommand parser.
+"""``fool import-agent`` subcommand parser.
 
-Follows the ``hermes claw`` pattern (see ``fool_cli/subcommands/claw.py``):
+Follows the ``fool claw`` pattern (see ``fool_cli/subcommands/claw.py``):
 parser building lives here, the handler is injected to avoid importing
 ``main``, and the import logic itself lives in ``fool_cli/agent_import.py``.
 """

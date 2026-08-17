@@ -162,7 +162,7 @@ def _check_local_runtime() -> tuple[bool, str | None]:
     (transformers + huggingface-hub). Importing ``hindsight`` /
     ``hindsight_embed`` alone succeeds even when that stack is broken, so
     without importing it here the probe would falsely report the backend
-    healthy and ``hermes memory status`` would stay green while the daemon
+    healthy and ``fool memory status`` would stay green while the daemon
     aborts at startup on every retain/recall. Import it too so the probe (and
     status) reports the real ImportError.
     """
@@ -182,7 +182,7 @@ def _local_runtime_hint(reason: str | None) -> str:
     is provided only by the ``hindsight-all`` package (its wheel ships the
     top-level ``hindsight`` module). ``plugin.yaml`` declares only
     ``hindsight-client`` (enough for cloud / local_external), so a user who
-    selected local_embedded without going through ``hermes memory setup`` — a
+    selected local_embedded without going through ``fool memory setup`` — a
     hand-written config, the legacy ``"mode": "local"`` alias, or a restored
     backup — hits ``ModuleNotFoundError: No module named 'hindsight'``.
     NousResearch/hermes-agent#7718.

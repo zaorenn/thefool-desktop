@@ -107,7 +107,7 @@ _MAX_MESSAGE_LENGTH = 8000
 # ---------------------------------------------------------------------------
 # Sidecar runtime record
 #
-# Out-of-process senders (cron subprocesses, `hermes send`, the dashboard)
+# Out-of-process senders (cron subprocesses, `fool send`, the dashboard)
 # go through ``_standalone_send`` and need the live sidecar's port + token —
 # but the token is generated at spawn time and otherwise exists only in the
 # gateway process memory and the sidecar child env (issue #69960). The
@@ -374,7 +374,7 @@ def sidecar_deps_installed() -> bool:
     existence: npm creates node_modules/ before aborting on ENOSPC, a
     network timeout, or EACCES, so an empty/partial node_modules/ would
     otherwise read as "installed". Shared by check_requirements(),
-    _start_sidecar(), and `hermes photon status` so all three agree on
+    _start_sidecar(), and `fool photon status` so all three agree on
     what "installed" means.
     """
     return (_sidecar_dir() / "node_modules" / "spectrum-ts").exists()
@@ -441,9 +441,9 @@ def check_requirements() -> bool:
         # the (resolved, possibly mirrored) sidecar dir is writable — report
         # available so the gateway creates the adapter and ``_start_sidecar``
         # cold-installs from the committed lockfile (on hosted images the
-        # user has no CLI to run `hermes photon setup`, so the connect path
+        # user has no CLI to run `fool photon setup`, so the connect path
         # must self-heal). Otherwise keep returning False so
-        # `hermes setup` / status surface the missing-deps state.
+        # `fool setup` / status surface the missing-deps state.
         if bool(shutil.which("npm")) and _dir_writable(_sidecar_dir()):
             return True
         # DEBUG (not WARNING): this is the normal pre-setup state.
@@ -475,7 +475,7 @@ def check_requirements() -> bool:
 def _sidecar_deps_stale() -> bool:
     """True when node_modules exists but is older than the committed lockfile.
 
-    `hermes update` rewrites ``package-lock.json`` when the spectrum-ts pin is
+    `fool update` rewrites ``package-lock.json`` when the spectrum-ts pin is
     bumped, but does not reinstall ``node_modules``. npm records the state of
     the last install in ``node_modules/.package-lock.json``; when the top-level
     lockfile is newer than that marker, the install is out of date. This is the
@@ -493,7 +493,7 @@ def _sidecar_deps_stale() -> bool:
 def _reinstall_sidecar_deps() -> None:
     """Reinstall the sidecar's node_modules from the lockfile (blocking).
 
-    Mirrors ``hermes photon install-sidecar``: ``npm ci`` for an exact,
+    Mirrors ``fool photon install-sidecar``: ``npm ci`` for an exact,
     reproducible install, falling back to ``npm install`` if the lockfile is
     missing or drifted. Runs the postinstall patch as part of the install.
     Best-effort — a failure here just leaves the (stale) deps in place and the
@@ -1589,7 +1589,7 @@ class PhotonAdapter(BasePlatformAdapter):
         if not sidecar_deps_installed():
             # Cold install (NS-606): on hosted/managed images the install
             # tree is immutable and the user has no CLI to run
-            # `hermes photon setup`, so the connect path must be able to
+            # `fool photon setup`, so the connect path must be able to
             # bootstrap the deps itself. _sidecar_dir() has already been
             # resolved to a writable location (or mirrored to the data
             # volume) by sidecar_paths.resolve_sidecar_dir; `npm ci` off
@@ -1610,11 +1610,11 @@ class PhotonAdapter(BasePlatformAdapter):
                 raise PhotonSidecarStartupError(
                     f"Photon sidecar deps could not be installed into "
                     f"{_sidecar_dir()} (see log for the npm error). "
-                    f"Run: cd {_sidecar_dir()} && npm ci   (or `hermes photon setup`)",
+                    f"Run: cd {_sidecar_dir()} && npm ci   (or `fool photon setup`)",
                     code="SIDECAR_DEPS_MISSING",
                     retryable=False,
                 )
-        # A `hermes update` that bumps the spectrum-ts pin rewrites
+        # A `fool update` that bumps the spectrum-ts pin rewrites
         # package-lock.json but never reinstalls node_modules, so the sidecar
         # spawns against stale deps and dies on every reconnect (the v8 patch
         # script can't find @spectrum-ts/imessage/dist that only v8 ships).
@@ -1722,7 +1722,7 @@ class PhotonAdapter(BasePlatformAdapter):
                     )
                     if resp.status_code == 200:
                         # Persist port/token/pid so out-of-process senders
-                        # (cron, `hermes send`) can reach this sidecar
+                        # (cron, `fool send`) can reach this sidecar
                         # (see _standalone_send / issue #69960).
                         _write_runtime_record(
                             self._sidecar_port,
@@ -2801,7 +2801,7 @@ async def _standalone_send(
     if not token:
         # Fall back to the runtime record the gateway persists once its
         # sidecar passes /healthz (issue #69960) — the token only exists in
-        # the gateway process env otherwise, so cron/`hermes send` would be
+        # the gateway process env otherwise, so cron/`fool send` would be
         # structurally unable to authenticate.
         record = _read_runtime_record()
         stale_hint = ""
@@ -2903,7 +2903,7 @@ async def _standalone_send(
 def register(ctx) -> None:
     """Called by the Hermes plugin loader at startup."""
     # Local import to avoid argparse work at module load; reused for both the
-    # gateway-setup hook and the `hermes photon` CLI command below.
+    # gateway-setup hook and the `fool photon` CLI command below.
     from . import cli as _cli
 
     ctx.register_platform(
@@ -2919,7 +2919,7 @@ def register(ctx) -> None:
             "Spectrum project, links your phone number, installs the "
             "spectrum-ts sidecar)."
         ),
-        # Surfaces Photon in `hermes gateway setup` alongside every other
+        # Surfaces Photon in `fool gateway setup` alongside every other
         # channel — same unified onboarding wizard, no Photon-only detour.
         setup_fn=_cli.gateway_setup,
         env_enablement_fn=_env_enablement,

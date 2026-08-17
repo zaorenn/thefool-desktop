@@ -7,7 +7,7 @@ Inspired by Claude Cowork's skill & plugin security scanning (announced
 malicious content when someone uploads or edits them, returning pass /
 warn / fail). Hermes already scans hub-installed *skills* via
 ``tools/skills_guard.py``; this module extends the same static-analysis
-engine to ``hermes plugins install`` and ``hermes plugins update``, which
+engine to ``fool plugins install`` and ``fool plugins update``, which
 previously cloned and executed arbitrary Git repositories unscanned.
 
 Plugins are strictly more dangerous than skills — they run Python

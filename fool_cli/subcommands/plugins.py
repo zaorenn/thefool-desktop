@@ -1,4 +1,4 @@
-"""``hermes plugins`` subcommand parser.
+"""``fool plugins`` subcommand parser.
 
 Extracted from ``fool_cli/main.py:main()`` (god-file Phase 2 follow-up).
 Handler injected to avoid importing ``main``.
@@ -29,7 +29,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
         help=(
             "Git URL, owner/repo shorthand (e.g. anpicasso/hermes-plugin-chrome-profiles), "
             "or a bare plugin name resolved through the community index "
-            "(see `hermes plugins search`)"
+            "(see `fool plugins search`)"
         ),
     )
     plugins_install.add_argument(

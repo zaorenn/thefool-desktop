@@ -323,7 +323,7 @@ def mcp_discovery_in_flight() -> bool:
     There are two independent discovery-thread owners by surface: the stdio
     ``hermes --tui`` path spawns ITS thread here (``_mcp_discovery_thread``),
     while the desktop app + dashboard WebSocket sidecar (``tui_gateway/ws.py``)
-    and ``hermes dashboard`` spawn theirs via
+    and ``fool dashboard`` spawn theirs via
     ``fool_cli.mcp_startup.start_background_mcp_discovery``. The late-refresh
     scheduler imports this function regardless of surface, so it MUST consult
     both — checking only the entry thread left the desktop/dashboard surfaces

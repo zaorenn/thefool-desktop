@@ -576,7 +576,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
         return bool(get_secret("SUPERMEMORY_API_KEY", ""))
 
     def get_config_schema(self):
-        # Only prompt for the API key during `hermes memory setup`.
+        # Only prompt for the API key during `fool memory setup`.
         # All other options are documented for $FOOL_HOME/supermemory.json
         # or the SUPERMEMORY_CONTAINER_TAG env var.
         return [

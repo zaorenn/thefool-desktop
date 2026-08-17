@@ -133,7 +133,7 @@ MEET_JOIN_SCHEMA: Dict[str, Any] = {
                     "but the user's Chrome with a signed-in Google profile "
                     "lives on their Mac). Pass 'auto' to use the single "
                     "registered node. Default: run locally. Nodes are "
-                    "approved via `hermes meet node approve`."
+                    "approved via `fool meet node approve`."
                 ),
             },
         },

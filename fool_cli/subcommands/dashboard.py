@@ -1,4 +1,4 @@
-"""``hermes dashboard`` / ``hermes serve`` subcommand parsers.
+"""``fool dashboard`` / ``fool serve`` subcommand parsers.
 
 ``dashboard`` is the browser web UI; ``serve`` is the same gateway, headless —
 what the desktop app and remote backends run. ``serve`` also skips the web UI
@@ -70,8 +70,8 @@ def _add_server_runtime_args(parser) -> None:
     # start-a-server flags above (if both are passed, --stop / --status win
     # because they exit before the server is started).  The server has no
     # service manager and no PID file, so these scan the process table for
-    # `hermes dashboard` / `hermes serve` cmdlines and SIGTERM them directly —
-    # the same path `hermes update` uses to clean up stale servers.
+    # `fool dashboard` / `fool serve` cmdlines and SIGTERM them directly —
+    # the same path `fool update` uses to clean up stale servers.
     parser.add_argument(
         "--stop",
         action="store_true",
@@ -169,9 +169,9 @@ def build_dashboard_parser(
     # unset and serves the browser UI as before.
     serve_parser.set_defaults(func=cmd_dashboard, no_open=True, headless_backend=True)
 
-    # `hermes dashboard register` — register a self-hosted dashboard OAuth
+    # `fool dashboard register` — register a self-hosted dashboard OAuth
     # client with Nous Portal and write the client_id into ~/.hermes/.env.
-    # Nested subparser so bare `hermes dashboard` keeps launching the server
+    # Nested subparser so bare `fool dashboard` keeps launching the server
     # (set_defaults(func=cmd_dashboard) above remains the default).
     dashboard_subparsers = dashboard_parser.add_subparsers(
         dest="dashboard_subcommand"

@@ -229,7 +229,7 @@ class TestIsSatisfiedVersionAware:
         huggingface-hub arrives in the venv via the core lock (transformers /
         sentence-transformers for local Hindsight, faster-whisper, tokenizers).
         With the LAZY_DEPS pin held in lockstep with uv.lock, the version the
-        core installs satisfies the trace-upload spec, so the `hermes update`
+        core installs satisfies the trace-upload spec, so the `fool update`
         lazy-refresh pass reports "current" instead of reinstalling — the
         downgrade that used to break the Hindsight daemon can't happen.
         """
@@ -322,7 +322,7 @@ class TestRefreshActiveFeatures:
 
     def test_windows_matrix_refresh_is_skipped_before_pip(self, monkeypatch):
         # Matrix E2EE pulls python-olm, which has no native Windows wheel/build
-        # path. `hermes update` must not retry that doomed install every run.
+        # path. `fool update` must not retry that doomed install every run.
         #
         # The subject here is the *consumer* — refresh_active_features honouring
         # the gate before pip — so we monkeypatch lazy_deps' own platform probe

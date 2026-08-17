@@ -559,7 +559,7 @@ class CLICommandsMixin:
         _cprint(f"  Agent: {'running' if agent_running else 'idle'}")
 
     def _handle_journey_command(self, cmd_original: str) -> None:
-        """Handle /journey — the learning timeline (see `hermes journey`).
+        """Handle /journey — the learning timeline (see `fool journey`).
 
         The read-only views (default + ``list``) render Rich color, which
         patch_stdout would swallow as raw escapes; capture with forced ANSI and
@@ -973,7 +973,7 @@ class CLICommandsMixin:
             self._session_db.fail_handoff(self.session_id, "timed out waiting for gateway")
         except Exception:
             pass
-        _cprint("  Timed out waiting for the gateway. Is `hermes gateway` running?")
+        _cprint("  Timed out waiting for the gateway. Is `fool gateway` running?")
         _cprint("  Your CLI session is intact.")
         return True
 
@@ -1007,7 +1007,7 @@ class CLICommandsMixin:
                 # #34584.
                 self._pending_resume_sessions = self._list_recent_sessions(limit=10)
                 return
-            _cprint("  Tip:   Use /history or `hermes sessions list` to find sessions.")
+            _cprint("  Tip:   Use /history or `fool sessions list` to find sessions.")
             return
 
         # Any explicit /resume <target> supersedes a previously-armed bare
@@ -1037,7 +1037,7 @@ class CLICommandsMixin:
         session_meta = self._session_db.get_session(target_id)
         if not session_meta:
             _cprint(f"  Session not found: {target}")
-            _cprint("  Use /history or `hermes sessions list` to see available sessions.")
+            _cprint("  Use /history or `fool sessions list` to see available sessions.")
             return
 
         # If the target is the empty head of a compression chain, redirect to
@@ -1963,7 +1963,7 @@ class CLICommandsMixin:
     def _handle_curator_command(self, cmd: str):
         """Handle /curator slash command.
 
-        Delegates to fool_cli.curator so the CLI and the `hermes curator`
+        Delegates to fool_cli.curator so the CLI and the `fool curator`
         subcommand share the same handler set.
         """
         import shlex
@@ -2267,7 +2267,7 @@ class CLICommandsMixin:
     def _handle_bundles_command(self, cmd: str) -> None:
         """In-session ``/bundles`` — show installed skill bundles.
 
-        Mirrors ``hermes bundles list`` but renders inside the running
+        Mirrors ``fool bundles list`` but renders inside the running
         CLI so users can discover what's available without dropping out
         of their session. Bundles are loaded via ``/<bundle-name>``.
         """
@@ -2301,7 +2301,7 @@ class CLICommandsMixin:
                 ChatConsole().print(f"        [dim]· {_escape(s)}[/]")
         _cprint(
             f"\n  {_DIM}Invoke a bundle with /<slug>. "
-            f"Manage with `hermes bundles`.{_RST}"
+            f"Manage with `fool bundles`.{_RST}"
         )
 
     def _handle_browser_command(self, cmd: str):
@@ -2590,7 +2590,7 @@ class CLICommandsMixin:
         ``/heartbeat every 10m Check the deployment`` sets the session's one
         recurring instruction; the idle watchdog injects it as a normal user
         turn whenever due. Session-scoped and in-process — for durable
-        cross-process schedules use `hermes cron`.
+        cross-process schedules use `fool cron`.
         """
         from cli import _DIM, _RST, _cprint
         from fool_cli.heartbeat import parse_interval, format_interval
@@ -2665,7 +2665,7 @@ class CLICommandsMixin:
         _cprint(
             f"  {_DIM}Fires as a normal turn whenever the session is idle and the "
             f"interval has elapsed. /heartbeat pause | resume | clear to manage; "
-            f"lives only while this Hermes process runs — use `hermes cron` for "
+            f"lives only while this Hermes process runs — use `fool cron` for "
             f"durable schedules.{_RST}"
         )
 
@@ -3686,7 +3686,7 @@ class CLICommandsMixin:
         """Handle /update — update Hermes Agent to the latest version.
 
         In the classic CLI this exits the session and relaunches as
-        ``hermes update`` so the user sees update output directly and gets
+        ``fool update`` so the user sees update output directly and gets
         the new version on next launch.
 
         Returns ``True`` when the update was confirmed (caller should trigger
@@ -3710,7 +3710,7 @@ class CLICommandsMixin:
         ]
         raw = self._prompt_text_input_modal(
             title="⚕  Update Hermes Agent",
-            detail="This will exit the current session and run `hermes update`.",
+            detail="This will exit the current session and run `fool update`.",
             choices=choices,
         )
         if raw is None:

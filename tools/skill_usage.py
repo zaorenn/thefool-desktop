@@ -276,7 +276,7 @@ def read_suppressed_names() -> Set[str]:
     """Built-in skills the curator pruned — the re-seeder must leave archived.
 
     One skill name per line in ``~/.hermes/skills/.curator_suppressed``. This is
-    what makes pruning a built-in durable: without it, ``hermes update`` would
+    what makes pruning a built-in durable: without it, ``fool update`` would
     re-copy the bundled skill on the next sync.
     """
     path = _suppressed_file()
@@ -395,7 +395,7 @@ def list_archived_skill_names() -> List[str]:
 
     Archive layout is flat (``.archive/<skill>/``) as set by ``archive_skill``,
     so the directory name is the skill name. Used by ``hermes curator
-    list-archived`` to help users pass a name to ``hermes curator restore``.
+    list-archived`` to help users pass a name to ``fool curator restore``.
     """
     archive_root = _archive_dir()
     if not archive_root.exists():
@@ -492,7 +492,7 @@ def _is_curator_managed_record(record: Any) -> bool:
     * provenance = "who authored this file" — historical fact, and for records
       written before the marker existed it is simply unrecoverable.
     * management = "may autonomous curation mutate/archive this" — a policy
-      decision the user can change at any time via ``hermes curator adopt``.
+      decision the user can change at any time via ``fool curator adopt``.
 
     ``created_by: "agent"`` therefore means "curator-managed", NOT "proof the
     agent wrote it". The field name is retained because it is already on disk
@@ -531,7 +531,7 @@ def list_unmanaged_skill_names() -> List[str]:
       belong to the user).
 
     Either way the skill is invisible to ``curated_report()`` and therefore to
-    every automatic transition. ``hermes curator status`` surfaces this count
+    every automatic transition. ``fool curator status`` surfaces this count
     so the blind spot is legible instead of silent, and ``hermes curator
     adopt`` lets the user hand specific skills over explicitly.
 

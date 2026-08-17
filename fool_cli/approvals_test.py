@@ -1,4 +1,4 @@
-"""``hermes approvals test`` — dry-run approval verdict for a command.
+"""``fool approvals test`` — dry-run approval verdict for a command.
 
 Answers "what would the approval system do with this command?" WITHOUT
 running it, prompting anyone, or persisting anything. It composes the REAL

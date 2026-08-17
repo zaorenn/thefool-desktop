@@ -1,4 +1,4 @@
-"""``hermes skin`` — list, switch, and tweak skins from the CLI.
+"""``fool skin`` — list, switch, and tweak skins from the CLI.
 
 ``set`` is the load-bearing verb: it changes ONE color of the ACTIVE skin **in
 place**, so tweaking (say) the tool marker never disturbs the rest of the look —

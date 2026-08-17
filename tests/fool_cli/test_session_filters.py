@@ -1,5 +1,5 @@
 """Tests for fool_cli.session_filters — CLI time/filter parsing for
-`hermes sessions prune` / `hermes sessions archive`."""
+`fool sessions prune` / `fool sessions archive`."""
 
 import time
 from argparse import Namespace

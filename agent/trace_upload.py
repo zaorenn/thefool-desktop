@@ -11,7 +11,7 @@ Docs: https://huggingface.co/docs/hub/agent-traces
 Design notes
 ------------
 * **Zero LLM turn.** This is a deterministic export — it never spends a
-  model call. The ``hermes trace upload`` subcommand calls
+  model call. The ``fool trace upload`` subcommand calls
   :func:`upload_session_trace` directly.
 * **Private by default.** Traces can contain prompts, tool output, local
   paths, and secrets. The dataset is created private and every text body
@@ -260,7 +260,7 @@ _NO_TOKEN_MESSAGE = (
     "   (New token -> type \"Write\" -> copy it).\n"
     "2. Add it to your environment as HF_TOKEN (e.g. in ~/.hermes/.env):\n"
     "     HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx\n"
-    "3. Run /upload-trace again (or `hermes trace upload`)."
+    "3. Run /upload-trace again (or `fool trace upload`)."
 )
 
 

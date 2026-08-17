@@ -7727,7 +7727,7 @@ class DiscordAdapter(BasePlatformAdapter):
     ) -> SendResult:
         """Send an interactive button-based update prompt (Yes / No).
 
-        Used by the gateway ``/update`` watcher when ``hermes update --gateway``
+        Used by the gateway ``/update`` watcher when ``fool update --gateway``
         needs user input (stash restore, config migration).
         """
         if not self._client or not DISCORD_AVAILABLE:
@@ -8651,7 +8651,7 @@ def _component_check_auth(
     Mirrors the gateway's external-surface authorization model: component
     button clicks must be explicitly authorized by a Discord user/role
     allowlist, a global user allowlist, an explicit allow-all flag, or
-    the pairing store (``hermes pairing approve``).
+    the pairing store (``fool pairing approve``).
 
     Behavior:
 
@@ -8715,7 +8715,7 @@ def _component_check_auth(
             return True
 
     # Check pairing store — mirrors ``authz_mixin._check_authorization``
-    # so users approved via ``hermes pairing approve`` can interact with
+    # so users approved via ``fool pairing approve`` can interact with
     # component buttons even without DISCORD_ALLOWED_USERS set.
     if uid:
         try:
@@ -9056,7 +9056,7 @@ def _define_discord_view_classes() -> None:
                     pass
 
     class UpdatePromptView(discord.ui.View):
-        """Interactive Yes/No buttons for ``hermes update`` prompts.
+        """Interactive Yes/No buttons for ``fool update`` prompts.
 
         Clicking a button writes the answer to ``.update_response`` so the
         detached update process can pick it up.  Only authorized users can
@@ -9812,7 +9812,7 @@ if DISCORD_AVAILABLE:
 
 # ── Standalone (out-of-process) sender ────────────────────────────────────────
 # Used by ``tools/send_message_tool._send_via_adapter`` when the gateway runner
-# is not in this process (e.g. ``hermes cron`` running standalone) and no live
+# is not in this process (e.g. ``fool cron`` running standalone) and no live
 # DiscordAdapter instance is available.  Implements the same forum/thread/
 # multipart logic the live adapter would use, via Discord's REST API directly.
 #
@@ -10528,7 +10528,7 @@ def register(ctx) -> None:
         ensure_deps_fn=check_discord_requirements,
         is_connected=_is_connected,
         required_env=["DISCORD_BOT_TOKEN"],
-        install_hint="Run `hermes setup` to install Discord support.",
+        install_hint="Run `fool setup` to install Discord support.",
         # Interactive setup wizard — replaces the central
         # fool_cli/setup.py::_setup_discord function.  Same shape as Teams.
         setup_fn=interactive_setup,

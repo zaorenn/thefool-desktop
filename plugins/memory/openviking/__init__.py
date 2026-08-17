@@ -1555,7 +1555,7 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
         # (its venv's site-packages are shadowed because PYTHONPATH precedes
         # them) —
         # and on Windows the loaded DLLs then lock the Hermes venv,
-        # aborting `hermes update` with access-denied on .pyd files.
+        # aborting `fool update` with access-denied on .pyd files.
         # Strip PYTHONPATH so the server resolves packages from its own
         # venv. (#78153)
         child_env = os.environ.copy()

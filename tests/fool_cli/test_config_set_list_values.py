@@ -1,4 +1,4 @@
-"""``hermes config set`` must parse list/mapping literals, not store them as strings.
+"""``fool config set`` must parse list/mapping literals, not store them as strings.
 
 Before this fix, ``hermes config set platform_toolsets.discord '["file","web"]'``
 stored the value as a raw STRING. Every reader that gates on

@@ -7,7 +7,7 @@ canonical implementation.
 
 The ``ddgs`` package is an optional dependency. ``is_available()`` reflects
 whether the package is importable; the plugin still registers either way so
-``hermes tools`` can prompt the user to install it.
+``fool tools`` can prompt the user to install it.
 
 Isolation note (#68096): ``ddgs``/``primp`` can block inside native code while
 holding the Python GIL. A ``ThreadPoolExecutor`` + ``future.result(timeout=…)``
@@ -147,7 +147,7 @@ def _run_ddgs_search_bounded(query: str, safe_limit: int) -> list[dict[str, Any]
     terminates the child OS process. Raises ``TimeoutError``,
     ``_SearchInterrupted``, or ``RuntimeError``.
     """
-    # Imported lazily so plugin import stays light for ``hermes tools`` probes.
+    # Imported lazily so plugin import stays light for ``fool tools`` probes.
     from tools.interrupt import is_interrupted
 
     global _last_worker_proc
@@ -285,7 +285,7 @@ class DDGSWebSearchProvider(WebSearchProvider):
 
         Probes the import once; cheap because Python caches the import. Must
         NOT perform network I/O — runs at tool-registration time and on every
-        ``hermes tools`` paint.
+        ``fool tools`` paint.
         """
         try:
             import ddgs  # noqa: F401

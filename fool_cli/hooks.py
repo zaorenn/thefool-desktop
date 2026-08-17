@@ -24,7 +24,7 @@ from typing import Any, Dict, List
 
 
 def hooks_command(args) -> None:
-    """Entry point for ``hermes hooks`` — dispatches to the requested action."""
+    """Entry point for ``fool hooks`` — dispatches to the requested action."""
     sub = getattr(args, "hooks_action", None)
 
     if not sub:
@@ -58,7 +58,7 @@ def _cmd_list(_args) -> None:
 
     if not specs and not outbound:
         print("No shell hooks or outbound webhooks configured in ~/.hermes/config.yaml.")
-        print("See `hermes hooks --help` or")
+        print("See `fool hooks --help` or")
         print("    website/docs/user-guide/features/hooks.md")
         print("for the config schema and worked examples.")
         return
@@ -100,7 +100,7 @@ def _cmd_list(_args) -> None:
                             print(
                                 f"      ⚠ script modified since approval "
                                 f"(was {mtime_at}, now {mtime_now}) — "
-                                f"run `hermes hooks doctor` to re-validate"
+                                f"run `fool hooks doctor` to re-validate"
                             )
             print()
 
@@ -125,7 +125,7 @@ def _cmd_list(_args) -> None:
 # Synthetic kwargs matching the real invoke_hook() call sites — these are
 # passed verbatim to agent.shell_hooks.run_once(), which routes them through
 # the same _serialize_payload() that production firings use.  That way the
-# stdin a script sees under `hermes hooks test` and `hermes hooks doctor`
+# stdin a script sees under `fool hooks test` and `fool hooks doctor`
 # is identical in shape to what it will see at runtime.
 _DEFAULT_PAYLOADS = {
     "pre_tool_call": {
@@ -395,19 +395,19 @@ def _doctor_one(spec, shell_hooks) -> int:
             problems += 1
             print(f"      ⚠ script modified since approval "
                   f"(was {mtime_at}, now {mtime_now}) — review changes, "
-                  f"then `hermes hooks revoke` + re-approve to refresh")
+                  f"then `fool hooks revoke` + re-approve to refresh")
         elif mtime_now and mtime_at and mtime_now == mtime_at:
             print("      ✓ script unchanged since approval")
 
     # 4. Produces valid JSON for a synthetic payload — only when the entry
-    # is already allowlisted.  Otherwise `hermes hooks doctor` would execute
+    # is already allowlisted.  Otherwise `fool hooks doctor` would execute
     # every script listed in a freshly-pulled config before the user has
     # reviewed them, which directly contradicts the documented workflow
     # ("spot newly-added hooks *before they register*").
     if not entry:
         print("      ℹ skipped JSON smoke test — not allowlisted yet. "
               "Approve the hook first (via TTY prompt or --accept-hooks), "
-              "then re-run `hermes hooks doctor`.")
+              "then re-run `fool hooks doctor`.")
     elif shell_hooks.script_is_executable(spec.command):
         payload = _DEFAULT_PAYLOADS.get(spec.event, {"extra": {}})
         result = shell_hooks.run_once(spec, payload)

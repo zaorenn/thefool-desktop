@@ -239,7 +239,7 @@ class TestOrgPullIsWiredIn:
             / "main.py"
         ).read_text(encoding="utf-8")
         assert "maybe_pull_org_skills" in main_src, (
-            "`hermes sync pull` must also refresh the org mirror."
+            "`fool sync pull` must also refresh the org mirror."
         )
 
     def test_sync_status_exposes_org_state(self):
@@ -273,7 +273,7 @@ class TestOrgPullIsWiredIn:
 
 
 class TestSkillSyncIsOneCommand:
-    """Every Skill Sync verb lives under `hermes sync` for launch.
+    """Every Skill Sync verb lives under `fool sync` for launch.
 
     The surface is deliberately encapsulated: one command to learn, one to
     document, and top-level `sync` stays free of skill-management verbs that
@@ -291,13 +291,13 @@ class TestSkillSyncIsOneCommand:
     def test_propose_is_a_sync_subcommand(self):
         sync_src = self._src("fool_cli", "subcommands", "sync.py")
         assert '"propose"' in sync_src, (
-            "`propose` must be a `hermes sync` subcommand."
+            "`propose` must be a `fool sync` subcommand."
         )
 
     def test_propose_is_not_under_skills(self):
         skills_src = self._src("fool_cli", "subcommands", "skills.py")
         assert '"propose"' not in skills_src, (
-            "`propose` must NOT remain under `hermes skills` — Skill Sync is "
+            "`propose` must NOT remain under `fool skills` — Skill Sync is "
             "one command for launch."
         )
 
@@ -306,7 +306,7 @@ class TestSkillSyncIsOneCommand:
         usage_start = main_src.index("usage: hermes sync ")
         usage_block = main_src[usage_start : usage_start + 1400]
         assert "propose" in usage_block, (
-            "`hermes sync` usage must list the propose verb."
+            "`fool sync` usage must list the propose verb."
         )
 
 

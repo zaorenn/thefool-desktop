@@ -83,7 +83,7 @@ SETUP_MCP_SCHEMA = {
         "unauthorized. Never call it twice for the same server after a "
         "decline. Returns JSON {status: installed|enabled|authorized|declined|"
         "unanswered|error, server, detail?, tools?}. On declined/unanswered, "
-        "continue without the server. Catalog names: run `hermes mcp catalog` "
+        "continue without the server. Catalog names: run `fool mcp catalog` "
         "in the terminal to list them."
     ),
     "parameters": {

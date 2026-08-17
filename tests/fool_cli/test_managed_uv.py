@@ -165,7 +165,7 @@ class TestEnsureUvUpdateBoundary:
     """``ensure_uv()`` must answer to both the single-value and the legacy
     ``(path, fresh_bootstrap)`` call conventions — **on POSIX**.
 
-    ``hermes update`` runs the call site from the old, already-imported
+    ``fool update`` runs the call site from the old, already-imported
     ``fool_cli.main`` against the freshly pulled ``managed_uv``. A release
     parked on a ``(path, fresh)`` tuple runs ``uv_bin, fresh = ensure_uv()``
     against the single-value module; the path is an iterable ``str`` so the
@@ -838,7 +838,7 @@ class TestMinorLineFallForward:
     the provisioner must fall forward to the next supported minor line
     (3.12, then 3.13) -- first via a bare minor request, then via explicit
     patches on that line -- instead of leaving the user stuck on every
-    `hermes update` with no path to a fixed runtime.
+    `fool update` with no path to a fixed runtime.
     """
 
     @staticmethod
@@ -1218,7 +1218,7 @@ class TestDefaultLiveVenv:
 class TestVenvPythonUpdateBoundary:
     """``_venv_python`` must survive a fool_constants predating its symbol.
 
-    ``hermes update`` imports fool_constants from the OLD checkout, ``git
+    ``fool update`` imports fool_constants from the OLD checkout, ``git
     pull`` replaces that file, and the freshly-pulled managed_uv then runs its
     lazy ``from fool_constants import venv_python_path`` against the module
     object already cached in ``sys.modules``. That cached module has no such

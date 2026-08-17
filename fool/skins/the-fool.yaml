@@ -120,4 +120,26 @@ branding:
   prompt_symbol: "❯"
   help_header: "(✦)? Commands"
 
+# Banner sanati -- skin uzerinden override ediliyor (banner_logo /
+# banner_hero). Upstream'in kaduseus asasi ve HERMES blok harfleri metin
+# donusumune YAKALANMIYOR: braille/blok karakter cizimi, harf degil.
+# skin_engine bu iki alani destekledigi icin upstream'e hic dokunulmadi.
+banner_logo: |
+  [bold #E8365A]████████╗██╗  ██╗███████╗    ███████╗ ██████╗  ██████╗ ██╗     [/]
+  [bold #E8365A]╚══██╔══╝██║  ██║██╔════╝    ██╔════╝██╔═══██╗██╔═══██╗██║     [/]
+  [#D01A3F]   ██║   ███████║█████╗      █████╗  ██║   ██║██║   ██║██║     [/]
+  [#D01A3F]   ██║   ██╔══██║██╔══╝      ██╔══╝  ██║   ██║██║   ██║██║     [/]
+  [#A8122F]   ██║   ██║  ██║███████╗    ██║     ╚██████╔╝╚██████╔╝███████╗[/]
+  [#A8122F]   ╚═╝   ╚═╝  ╚═╝╚══════╝    ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝[/]
+
+banner_hero: |
+  [#E8365A]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣶⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#E8365A]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#D01A3F]⠀⠀⠀⠀⠀⠀⠀⢀⣤⣾⣿⣿⣿⣿⣿⣷⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#D01A3F]⠀⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀⠀⠀⠀⠀[/]
+  [#D01A3F]⠈⠻⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠁⠀⠀⠀⠀⠀[/]
+  [#A8122F]⠀⠀⠀⠈⠛⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#A8122F]⠀⠀⠀⠀⠀⠀⠀⠈⠛⠿⣿⣿⣿⠿⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#8A6068]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+
 tool_prefix: "┊"

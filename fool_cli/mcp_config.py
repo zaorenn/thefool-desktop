@@ -1,5 +1,5 @@
 """
-MCP Server Management CLI — ``hermes mcp`` subcommand.
+MCP Server Management CLI — ``fool mcp`` subcommand.
 
 Implements ``hermes mcp add/remove/list/test/configure`` for interactive
 MCP server lifecycle management (issue #690 Phase 2).
@@ -404,7 +404,7 @@ def _probe_single_server(
 def _oauth_tokens_present(name: str) -> bool:
     """Return True if an OAuth token file exists on disk for ``name``.
 
-    Used after ``hermes mcp login`` to distinguish a genuine authentication
+    Used after ``fool mcp login`` to distinguish a genuine authentication
     from a probe that succeeded only because the server allowed
     initialize/tools-list without auth (so no token was ever acquired).
     """
@@ -663,7 +663,7 @@ def cmd_mcp_remove(args):
 
     # Clean up OAuth tokens if they exist — route through MCPOAuthManager so
     # any provider instance cached in the current process (e.g. from an
-    # earlier `hermes mcp test` in the same session) is evicted too.
+    # earlier `fool mcp test` in the same session) is evicted too.
     try:
         from tools.mcp_oauth_manager import get_manager
         get_manager().remove(name)
@@ -812,8 +812,8 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
 
     Wipes cached OAuth state (disk + in-process MCPOAuthManager cache),
     re-probes to trigger the browser flow, and verifies a token actually
-    landed before reporting success. Shared by ``hermes mcp login`` and
-    ``hermes mcp reauth`` so both behave identically for a single server.
+    landed before reporting success. Shared by ``fool mcp login`` and
+    ``fool mcp reauth`` so both behave identically for a single server.
     """
     url = server_config.get("url")
     if not url:
@@ -821,7 +821,7 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
         return False
     if server_config.get("auth") != "oauth":
         _error(f"Server '{name}' is not configured for OAuth (auth={server_config.get('auth')})")
-        _info("Use `hermes mcp remove` + `hermes mcp add` to reconfigure auth.")
+        _info("Use `fool mcp remove` + `fool mcp add` to reconfigure auth.")
         return False
 
     # Wipe both disk and in-memory cache so the next probe forces a fresh
@@ -842,7 +842,7 @@ def _reauth_oauth_server(name: str, server_config: dict) -> bool:
     # window (300s in mcp_oauth) plus headroom — matching the GUI re-auth
     # path in web_server.py so CLI and dashboard behave identically.
     #
-    # force_interactive_oauth: `hermes mcp login` is *explicitly* user-
+    # force_interactive_oauth: `fool mcp login` is *explicitly* user-
     # initiated even when stdin isn't a TTY (Hermes desktop / agent-
     # spawned terminals). Without this, OAuth refuses before opening a
     # browser because _is_interactive() only checks sys.stdin.isatty().
@@ -936,7 +936,7 @@ def cmd_mcp_reauth(args):
     """Re-authenticate one OAuth MCP server, or all of them sequentially.
 
     ``hermes mcp reauth <name>`` re-auths a single server (same as ``login``).
-    ``hermes mcp reauth --all`` discovers every ``auth: oauth`` server in
+    ``fool mcp reauth --all`` discovers every ``auth: oauth`` server in
     config and re-auths them ONE AT A TIME.
 
     Serial-by-design: a human can only complete one browser OAuth flow at a
@@ -1094,7 +1094,7 @@ def cmd_mcp_configure(args):
 # ─── Dispatcher ───────────────────────────────────────────────────────────────
 
 def mcp_command(args):
-    """Main dispatcher for ``hermes mcp`` subcommands."""
+    """Main dispatcher for ``fool mcp`` subcommands."""
     action = getattr(args, "mcp_action", None)
 
     if action == "serve":
@@ -1138,7 +1138,7 @@ def mcp_command(args):
         handler(args)
     else:
         # No subcommand — drop the user into the catalog picker. This is the
-        # "try enabling and it flows you into setup" UX matching `hermes plugin`.
+        # "try enabling and it flows you into setup" UX matching `fool plugin`.
         from fool_cli.mcp_picker import run_picker
         run_picker()
         print(color("  Commands:", Colors.CYAN))

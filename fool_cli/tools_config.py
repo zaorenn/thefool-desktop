@@ -1,7 +1,7 @@
 """
 Unified tool configuration for Hermes Agent.
 
-`hermes tools` and `hermes setup tools` both enter this module.
+`fool tools` and `fool setup tools` both enter this module.
 Select a platform → toggle toolsets on/off → for newly enabled tools
 that need API keys, run through provider-aware configuration.
 
@@ -144,19 +144,19 @@ def gui_toolset_label(label: str) -> str:
 # but the setup checklist won't pre-select them for first-time users.
 #
 # Video gen is off by default — it's a niche, paid, slow feature. Users
-# who want it opt in via `hermes tools` → Video Generation, which walks
+# who want it opt in via `fool tools` → Video Generation, which walks
 # them through provider + model selection.
 #
 # X search is off by default for users without xAI credentials, but
 # auto-enables when SuperGrok OAuth tokens are stored OR XAI_API_KEY is
 # set — mirroring the HASS_TOKEN → homeassistant auto-enable below. The
-# `hermes tools` → X (Twitter) Search setup walks users through credential
+# `fool tools` → X (Twitter) Search setup walks users through credential
 # setup. The tool's check_fn means the schema still won't appear to the
 # model if the credential later goes missing or expires.
 _DEFAULT_OFF_TOOLSETS = {"homeassistant", "spotify", "discord", "discord_admin", "video", "video_gen", "x_search", "a2a"}
 
 
-# Config-only capabilities: they appear in `hermes tools` for provider/API-key
+# Config-only capabilities: they appear in `fool tools` for provider/API-key
 # configuration (TOOL_CATEGORIES) but are NOT model toolsets — they ship zero
 # tool schemas and their on/off switch lives in their own config section
 # (e.g. ``stt.enabled``), not ``platform_toolsets``. Excluded from the
@@ -206,7 +206,7 @@ def _homeassistant_credentials_present() -> bool:
     except Exception:
         return False
 
-# Platform-scoped toolsets: only appear in the `hermes tools` checklist for
+# Platform-scoped toolsets: only appear in the `fool tools` checklist for
 # these platforms, and only resolve/save for these platforms.  A toolset
 # absent from this map is available on every platform (current behaviour).
 #
@@ -250,7 +250,7 @@ def _get_effective_configurable_toolsets():
     already appears in ``CONFIGURABLE_TOOLSETS`` is skipped — bundled
     plugins (e.g. ``plugins/spotify``) share their toolset key with the
     built-in entry, and we want the built-in label/description to win.
-    Without the dedupe, ``hermes tools`` → "reconfigure existing" would
+    Without the dedupe, ``fool tools`` → "reconfigure existing" would
     list the same toolset twice.
     """
     result = list(CONFIGURABLE_TOOLSETS)
@@ -282,7 +282,7 @@ def _get_plugin_toolset_keys() -> set:
 
 
 def _checklist_toolset_keys(platform: str) -> Set[str]:
-    """Return the toolset keys the ``hermes tools`` checklist actually offers
+    """Return the toolset keys the ``fool tools`` checklist actually offers
     for ``platform``.
 
     This mirrors exactly what ``_prompt_toolset_checklist`` renders:
@@ -294,7 +294,7 @@ def _checklist_toolset_keys(platform: str) -> Set[str]:
     time — ``kanban`` and other check_fn-gated toolsets, recovered platform
     composites, MCP server names — are NOT in this set because the checklist
     never shows them. Use this to scope the added/removed diff the UI prints,
-    so ``hermes tools`` never claims to add or remove a toolset the user was
+    so ``fool tools`` never claims to add or remove a toolset the user was
     never given a checkbox for. The underlying config is unaffected — those
     entries are preserved by ``_save_platform_tools`` regardless.
     """
@@ -753,7 +753,7 @@ TOOL_CATEGORIES = {
 # `vision` is listed here only so it registers as a *configurable* toolset
 # (the value gates the reconfigure menu + the "[no API key]" suffix). Its
 # actual setup runs through `_configure_vision_backend()` — a full
-# provider+model picker like `hermes model` — NOT this single-key prompt, so
+# provider+model picker like `fool model` — NOT this single-key prompt, so
 # users are never forced onto OpenRouter. `_toolset_has_keys("vision")`
 # resolves via `resolve_vision_provider_client()`, so the tuple below is never
 # prompted or read for vision; it's purely a presence marker.
@@ -992,15 +992,15 @@ def install_cua_driver(
       repair an old or incomplete installation, and install when missing.
       Used by the toolset enable flow.
     * ``upgrade=True`` — always re-run the installer (or call ``cua-driver
-      update`` if the binary supports it). Used by ``hermes update`` and
-      by ``hermes computer-use install --upgrade``.
+      update`` if the binary supports it). Used by ``fool update`` and
+      by ``fool computer-use install --upgrade``.
 
     ``require_confirmed_update`` (only meaningful with ``upgrade=True`` and
     an installed binary): when the driver's native ``check-update`` verb
     can't positively confirm that a newer release exists — the driver is
     too old for the verb, the GitHub check failed, we're offline, or the
     probe timed out — keep the installed version and return instead of
-    falling through to the full upstream installer. ``hermes update`` sets
+    falling through to the full upstream installer. ``fool update`` sets
     this so a broken update check costs seconds, not a multi-minute silent
     reinstall on every update (the upstream installer runs up to
     ``_CUA_INSTALLER_TIMEOUT`` and install.ps1's concurrency lock can add
@@ -1009,7 +1009,7 @@ def install_cua_driver(
     reinstall when the check is indeterminate.
 
     ``show_installer_progress`` controls the installer's own progress line.
-    ``hermes update`` already prints a contextual line before its update
+    ``fool update`` already prints a contextual line before its update
     check, so it disables this to avoid printing the refresh twice.
 
     Returns True iff cua-driver is installed (or successfully refreshed)
@@ -1023,7 +1023,7 @@ def install_cua_driver(
     system = _plat.system()
     if system not in ("Darwin", "Windows", "Linux"):
         if upgrade:
-            # Silent on unsupported platforms — `hermes update` calls this
+            # Silent on unsupported platforms — `fool update` calls this
             # for every user; only macOS/Windows/Linux users care.
             return False
         _print_warning("    Computer Use (cua-driver) is unsupported on this platform; skipping.")
@@ -1079,7 +1079,7 @@ def install_cua_driver(
     # ``check-update`` verb here — a cached/indeterminate "no update" answer
     # would otherwise pin users on an unusable driver forever (observed:
     # 0.19.3 installs hard-failing every computer_use call after the 0.20
-    # contract landed, with `hermes update` declining to refresh).
+    # contract landed, with `fool update` declining to refresh).
     contract = _cua_driver_contract_status(binary) if binary else None
     repair_existing = bool(binary and contract and not contract.get("ready"))
 
@@ -1132,7 +1132,7 @@ def install_cua_driver(
             "    /Applications is not writable; skipping cua-driver refresh."
         )
         _print_info(
-            "    Run `hermes computer-use install --upgrade` from an admin account to update it."
+            "    Run `fool computer-use install --upgrade` from an admin account to update it."
         )
         return bool(binary)
 
@@ -1148,10 +1148,10 @@ def install_cua_driver(
     # Skip the (network) re-install when the driver itself reports it's already
     # on the latest release. Best-effort: an older driver (no check-update
     # verb) or an offline check returns None. What happens then depends on the
-    # caller: `hermes update` (require_confirmed_update=True) keeps the
+    # caller: `fool update` (require_confirmed_update=True) keeps the
     # installed version — an indeterminate check must never cost the user a
     # multi-minute silent reinstall on every update. An explicit
-    # `hermes computer-use install --upgrade` falls through and re-runs the
+    # `fool computer-use install --upgrade` falls through and re-runs the
     # installer as before.
     confirmed_version = None
     if binary and not repair_existing:
@@ -1656,7 +1656,7 @@ def _run_cua_driver_installer(
             proc.kill()
 
     try:
-        # When not verbose (e.g. `hermes update`'s refresh), capture the
+        # When not verbose (e.g. `fool update`'s refresh), capture the
         # installer's chatty "Next steps" wall instead of dumping it to the
         # terminal. The combined output is logged so a failure stays
         # debuggable. Verbose installs (interactive `computer-use install`)
@@ -1693,7 +1693,7 @@ def _run_cua_driver_installer(
             result = subprocess.CompletedProcess(
                 install_cmd, proc.returncode, stdout=out, stderr=None
             )
-            # Preserve the full installer output. During `hermes update`,
+            # Preserve the full installer output. During `fool update`,
             # sys.stdout is the mirroring _UpdateOutputStream whose `_log`
             # handle is ~/.hermes/logs/update.log — write straight to it so
             # the captured "Next steps" wall is kept in full (success AND
@@ -2042,7 +2042,7 @@ def _run_post_setup(post_setup_key: str):
         _print_info("    Pair with an extract provider if you also need web_extract.")
 
     elif post_setup_key == "spotify":
-        # Run the full `hermes auth spotify` flow — if the user has no
+        # Run the full `fool auth spotify` flow — if the user has no
         # client_id yet, this drops them into the interactive wizard
         # (opens the Spotify dashboard, prompts for client_id, persists
         # to ~/.hermes/.env), then continues straight into PKCE. If they
@@ -2063,7 +2063,7 @@ def _run_post_setup(post_setup_key: str):
             _print_success("    Spotify authenticated")
         except SystemExit as exc:
             # User aborted the wizard, or OAuth failed — don't fail the
-            # toolset enable; they can retry with `hermes auth spotify`.
+            # toolset enable; they can retry with `fool auth spotify`.
             _print_warning(f"    Spotify login did not complete: {exc}")
             _print_info("    Run later: hermes auth spotify")
         except Exception as exc:
@@ -2141,7 +2141,7 @@ def _run_post_setup(post_setup_key: str):
             choices=[
                 "Sign in with xAI Grok OAuth (SuperGrok / Premium+) — browser login",
                 "Paste an xAI API key (console.x.ai)",
-                "Skip — configure later via `hermes auth add xai-oauth`",
+                "Skip — configure later via `fool auth add xai-oauth`",
             ],
             default=0,
         )
@@ -2173,7 +2173,7 @@ def valid_post_setup_keys() -> Set[str]:
 
     Collected from ``TOOL_CATEGORIES`` plus the plugin-registered web /
     image-gen / video-gen / browser providers (which can also carry a
-    ``post_setup``). This is the allowlist the ``hermes tools post-setup``
+    ``post_setup``). This is the allowlist the ``fool tools post-setup``
     command and the dashboard post-setup endpoint validate against, so a
     caller can't drive ``_run_post_setup`` with an arbitrary key.
     """
@@ -2343,7 +2343,7 @@ def _exempt_explicit_platform_native(
 #: Toolsets young enough that absence from a saved ``platform_toolsets`` list
 #: means "never offered" rather than "declined".
 #:
-#: Saving ``hermes tools`` (or one toggle in the desktop Toolsets UI) replaces
+#: Saving ``fool tools`` (or one toggle in the desktop Toolsets UI) replaces
 #: a platform's composite with a frozen explicit list, and nothing ever adds to
 #: that list — so a toolset shipped afterwards stays off forever for anyone who
 #: has touched the picker, while everyone still on ``[hermes-cli]`` inherits it
@@ -2370,7 +2370,7 @@ def _enable_recently_shipped_toolsets(
 ) -> None:
     """Turn on toolsets that shipped after this platform's saved list.
 
-    Either way of saying no outlives this: unchecking in ``hermes tools``
+    Either way of saying no outlives this: unchecking in ``fool tools``
     records the toolset in ``known_builtin_toolsets`` so it reads as declined
     from then on, and ``agent.disabled_toolsets`` is subtracted after every
     rule in :func:`_get_platform_tools`. Mutates ``enabled_toolsets`` in place.
@@ -2518,7 +2518,7 @@ def _get_platform_tools(
         # NOT include, so the subset loop never picks it up. Inject it
         # directly here, mirroring the HASS_TOKEN → ``homeassistant`` rule
         # below: once you have working creds, you don't have to also click
-        # through ``hermes tools`` to flip the toolset on. Only fires when
+        # through ``fool tools`` to flip the toolset on. Only fires when
         # the user has not yet saved an explicit toolset list — once they
         # do, the saved list is authoritative.
         x_search_auto_enabled = (
@@ -2559,7 +2559,7 @@ def _get_platform_tools(
     # feishu_drive).  These are part of the platform's default composite but
     # absent from CONFIGURABLE_TOOLSETS, so they can't appear in the TUI
     # checklist or in a user-saved config.  Must run in BOTH branches —
-    # otherwise saving via `hermes tools` (which flips has_explicit_config
+    # otherwise saving via `fool tools` (which flips has_explicit_config
     # to True) silently drops them.
     _plat_info = PLATFORMS.get(platform)
     _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"
@@ -2596,9 +2596,9 @@ def _get_platform_tools(
 
     # Plugin toolsets: enabled by default unless explicitly disabled, or
     # unless the toolset is in _DEFAULT_OFF_TOOLSETS (e.g. spotify —
-    # shipped as a bundled plugin but user must opt in via `hermes tools`
+    # shipped as a bundled plugin but user must opt in via `fool tools`
     # so we don't ship 7 Spotify tool schemas to users who don't use it).
-    # A plugin toolset is "known" for a platform once `hermes tools`
+    # A plugin toolset is "known" for a platform once `fool tools`
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
     if plugin_ts_keys:
@@ -2668,7 +2668,7 @@ def _get_platform_tools(
     # globally suppress specific toolsets (e.g. "memory") across all
     # platforms without per-platform toolset configuration.  This runs
     # last so it overrides everything above.  The value may arrive as a
-    # JSON-array string (e.g. "['memory']") from `hermes config set` or a
+    # JSON-array string (e.g. "['memory']") from `fool config set` or a
     # JSON-mode editor save; parse it so the list is not silently dead (#86661).
     agent_cfg = config.get("agent") or {}
     disabled_toolsets = agent_cfg.get("disabled_toolsets") or []
@@ -2685,7 +2685,7 @@ def _get_platform_tools(
     # `hermes-cli`), resolve_toolset() returns [] for each and the platform ends
     # up with no native tools — silently, with no error. Surface it at the point
     # tools are resolved for a session so an already-corrupted config is caught
-    # at runtime, not only during the next `hermes update`/`hermes doctor`.
+    # at runtime, not only during the next `fool update`/`fool doctor`.
     _explicit = platform_toolsets.get(platform)
     if isinstance(_explicit, list) and _explicit:
         from toolsets import validate_toolset
@@ -2699,7 +2699,7 @@ def _get_platform_tools(
             _warned_invalid_platform_toolsets.add(platform)
             logger.warning(
                 "platform '%s' has no valid toolsets configured (unknown "
-                "name(s): %s) - tools will be unavailable. Run `hermes tools` "
+                "name(s): %s) - tools will be unavailable. Run `fool tools` "
                 "to reconfigure. See issue #38798.",
                 platform,
                 ", ".join(_named),
@@ -2746,7 +2746,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
         entry for entry in existing_toolsets
         if entry not in configurable_keys and entry not in platform_default_keys
     }
-    # Opening `hermes tools` is the user's opt-in to reconfigure tools, so treat
+    # Opening `fool tools` is the user's opt-in to reconfigure tools, so treat
     # saving from the picker as consent to clear the "no_mcp" sentinel. The
     # picker has no checkbox for no_mcp, so without this users who once set it
     # by hand could never re-enable MCP servers through the UI.
@@ -3392,7 +3392,7 @@ _POST_SETUP_INSTALLED: dict = {
     # is already satisfied. Used by `_toolset_needs_configuration_prompt`
     # to force the provider-setup flow when a no-key provider still needs
     # a binary/dependency install (otherwise an already-configured user
-    # who toggles the toolset on via `hermes tools` gets a silent no-op
+    # who toggles the toolset on via `fool tools` gets a silent no-op
     # because the gate sees "no env vars to ask about" and skips the
     # provider-setup flow that would have run the post_setup hook).
     #
@@ -3428,7 +3428,7 @@ def _module_installed(module_name: str) -> bool:
         return False
 
 
-# Python dependencies installed explicitly through ``hermes tools`` are not
+# Python dependencies installed explicitly through ``fool tools`` are not
 # part of the managed runtime's locked ``all`` sync. A runtime replacement
 # therefore needs a small, static allowlist that can be snapshotted before the
 # old site-packages disappears and restored afterward. Keep these install
@@ -3451,7 +3451,7 @@ _RESTORABLE_PYTHON_TOOL_DEPENDENCIES: dict[str, tuple[str, tuple[str, ...]]] = {
 
 
 def active_restorable_python_tool_dependencies() -> list[str]:
-    """Return ``hermes tools`` Python dependencies present in this runtime."""
+    """Return ``fool tools`` Python dependencies present in this runtime."""
     return [
         name
         for name, (module_name, _install_args) in (
@@ -3478,7 +3478,7 @@ def _agent_browser_installed() -> bool:
 
     from fool_cli.nous_subscription import _local_browser_runnable
 
-    # The install hook runs in a spawned ``hermes tools post-setup`` process,
+    # The install hook runs in a spawned ``fool tools post-setup`` process,
     # but this probe runs in the long-lived web-server/CLI process, whose
     # browser_tool module may have cached a stale "Chromium missing" result
     # from before the install. Drop the cache (when the module is loaded) so
@@ -4461,7 +4461,7 @@ def _configure_provider(
     # _visible_providers), but only *activate* once the user has paid Nous
     # Portal access. Selecting one runs an inline Portal login when needed —
     # auth + entitlement only, no inference-provider switch and no bulk
-    # "enable all tools" prompt (that lives in `hermes model`).
+    # "enable all tools" prompt (that lives in `fool model`).
     if managed_feature:
         from fool_cli.nous_subscription import (
             MANAGED_FEATURE_COVERAGE_CATEGORY,
@@ -4645,7 +4645,7 @@ def _configure_vision_backend() -> None:
     ``auxiliary.vision.{provider,model,base_url}`` in config.yaml (see
     ``agent/auxiliary_client.resolve_vision_provider_client``). Rather than
     forcing the user onto OpenRouter, let them pick any authenticated
-    provider + model — the same surface as ``hermes model`` — or point at a
+    provider + model — the same surface as ``fool model`` — or point at a
     custom OpenAI-compatible endpoint. "Auto" leaves the config keys empty so
     the resolver uses the main model / aggregator fallback chain.
     """
@@ -4722,7 +4722,7 @@ def _configure_vision_provider_model(config: dict, vision_cfg: dict) -> None:
     """Provider + model picker for vision, mirroring the ``/model`` surface.
 
     Provider rows come from ``build_aux_picker_rows()`` — the shared aux-picker
-    substrate — so this picker lists exactly what the ``hermes model`` aux-task
+    substrate — so this picker lists exactly what the ``fool model`` aux-task
     picker lists, including the user's own ``providers:`` / ``custom_providers:``
     endpoints. Lets the user pick a provider and then a model from its curated
     list (or type a custom id), and persists ``auxiliary.vision.provider`` +
@@ -4755,7 +4755,7 @@ def _configure_vision_provider_model(config: dict, vision_cfg: dict) -> None:
     if not providers:
         _print_warning(
             "  No authenticated providers found. Configure a provider first "
-            "with `hermes model`, then re-run this."
+            "with `fool model`, then re-run this."
         )
         return
 
@@ -5149,7 +5149,7 @@ def _reconfigure_simple_requirements(ts_key: str):
     """Reconfigure simple env var requirements."""
     if ts_key == "vision":
         # Vision has its own provider/model picker (any provider, like
-        # `hermes model`). Run it directly so reconfigure doesn't fall back to
+        # `fool model`). Run it directly so reconfigure doesn't fall back to
         # the generic single-key prompt (which would re-ask for OPENROUTER_API_KEY).
         _configure_vision_backend()
         return
@@ -5179,7 +5179,7 @@ def _reconfigure_simple_requirements(ts_key: str):
 # ─── Main Entry Point ─────────────────────────────────────────────────────────
 
 def tools_command(args=None, first_install: bool = False, config: dict = None):
-    """Entry point for `hermes tools` and `hermes setup tools`.
+    """Entry point for `fool tools` and `fool setup tools`.
 
     Args:
         first_install: When True (set by the setup wizard on fresh installs),

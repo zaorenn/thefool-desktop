@@ -26,7 +26,7 @@ try:
     import fool_bootstrap  # noqa: F401
 except ModuleNotFoundError:
     # Graceful fallback when fool_bootstrap isn't registered in the venv
-    # yet — happens during partial ``hermes update`` where git-reset landed
+    # yet — happens during partial ``fool update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
@@ -916,7 +916,7 @@ class AIAgent:
         all non-forced output is suppressed.
 
         ``suppress_status_output`` is a stricter CLI automation mode used by
-        parseable single-query flows such as ``hermes chat -q``. In that mode,
+        parseable single-query flows such as ``fool chat -q``. In that mode,
         all status/diagnostic prints routed through ``_vprint`` are suppressed
         so stdout stays machine-readable.
         """
@@ -3882,7 +3882,7 @@ class AIAgent:
                     "reported structural corruption (the transcript would "
                     "have been lost on restart). Freeing disk space will "
                     "not help. Recovery options:\n"
-                    "1. Run `hermes doctor --fix`\n"
+                    "1. Run `fool doctor --fix`\n"
                     "2. Salvage with: sqlite3 ~/.hermes/state.db \".recover\" "
                     "(then replace state.db)\n"
                     "3. Restore from a backup in ~/.hermes/backups/\n"
@@ -3901,7 +3901,7 @@ class AIAgent:
                 prefix
                 + "the turn was stopped because session storage could not be "
                 "written (the transcript would have been lost on restart). "
-                "Check the state database health (`hermes doctor`), then "
+                "Check the state database health (`fool doctor`), then "
                 "send your message again."
             )
         # Unknown/diagnostic-only reasons (e.g. "unknown", guardrail_halt
@@ -4137,7 +4137,7 @@ class AIAgent:
             self._credits_session_start_micros = state.remaining_micros
         if _dev:
             # FOOL_DEV_CREDITS: stream each capture to agent.log — watch live with
-            # `hermes logs -f` (grep 'credits ▸'). Dev-only; silent for normal users.
+            # `fool logs -f` (grep 'credits ▸'). Dev-only; silent for normal users.
             spent = self.get_credits_spent_micros()
             used = state.used_fraction
             logger.info(
@@ -5709,7 +5709,7 @@ class AIAgent:
         # Guard against silent account swap.
         #
         # When an agent is using a non-singleton credential — e.g. a manual
-        # pool entry (``hermes auth add xai-oauth``) whose tokens belong to
+        # pool entry (``fool auth add xai-oauth``) whose tokens belong to
         # a different account than the device_code singleton, or an agent
         # constructed with an explicit ``api_key=`` arg — force-refreshing
         # the singleton here and adopting its tokens silently re-routes the
@@ -5844,7 +5844,7 @@ class AIAgent:
     def _try_refresh_env_client_credentials(self) -> bool:
         """Adopt ~/.hermes/.env credential/base-url edits at the turn boundary.
 
-        A Settings save (desktop ``PUT /api/env``, ``hermes setup``) updates
+        A Settings save (desktop ``PUT /api/env``, ``fool setup``) updates
         ``.env`` and the *saving* process's os.environ, but a live session
         worker keeps the base_url/api_key captured at agent init until it
         restarts — so an open chat silently keeps calling the old endpoint

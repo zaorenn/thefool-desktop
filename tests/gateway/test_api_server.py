@@ -2804,7 +2804,7 @@ class TestCreateAgentModelRecovery:
     def test_create_agent_defaults_to_provider_catalog_model_when_empty(self, monkeypatch):
         """api_server.py had no equivalent of run.py's provider-catalog
         default when model resolves empty but a provider did resolve (e.g.
-        `hermes auth add openai-codex` without `hermes model`) —
+        `fool auth add openai-codex` without `fool model`) —
         AIAgent(model="") 400s every call."""
         captured = {}
 

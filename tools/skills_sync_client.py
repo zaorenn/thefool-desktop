@@ -101,7 +101,7 @@ ARTIFACT_TYPE_SKILL = "skill"
 # This makes opt-in durable and CROSS-DEVICE: device B learns which skills the
 # user opted in on device A by reading the manifest on pull, rather than each
 # device keeping its own local flag. The ``.usage.json`` ``sync`` flag is kept
-# only as the local *intent* the user toggles via ``hermes sync enable`` — it is
+# only as the local *intent* the user toggles via ``fool sync enable`` — it is
 # reconciled TO the manifest on pull and FROM it on push; the manifest in the
 # plane is authoritative.
 #
@@ -425,7 +425,7 @@ def sync_default_opt_in() -> bool:
     ``FOOL_SYNC_DEFAULT_OPT_IN`` -> ``sync.default_opt_in`` -> False.
 
     False (default): opt-IN — a skill syncs only after an explicit
-    ``hermes sync enable`` (or a plane manifest that opted it in). True: opt-OUT
+    ``fool sync enable`` (or a plane manifest that opted it in). True: opt-OUT
     — every sync-eligible skill is treated as opted in unless explicitly
     disabled, which is the "your skills follow you with no setup" default a
     Hermes Cloud deployment wants. Per the design notes, this default is
@@ -681,7 +681,7 @@ def stable_device_id() -> str:
     short random suffix, e.g. ``bens-macbook-a1b2c3``) so the sync console shows
     something recognizable instead of an opaque hash. Existing ``.sync_device_id``
     files are honored verbatim (backward-compatible — a machine keeps its id).
-    Use ``set_device_name()`` / ``hermes sync device --name`` to set an explicit
+    Use ``set_device_name()`` / ``fool sync device --name`` to set an explicit
     label."""
     path = _skills_dir() / ".sync_device_id"
     try:
@@ -695,7 +695,7 @@ def stable_device_id() -> str:
     # Hermes Cloud (and any templated deployment) can seed the label
     # declaratively via FOOL_SYNC_DEVICE_NAME, so a hosted instance shows a
     # recognizable name with no CLI call. Env seeds the FIRST-USE value only; it
-    # is then persisted, so a later `hermes sync device --name` (or editing the
+    # is then persisted, so a later `fool sync device --name` (or editing the
     # file) still wins on that device. An explicit file (above) always wins over
     # the env.
     import os
@@ -1648,7 +1648,7 @@ def maybe_pull_skills() -> Optional[Dict[str, Any]]:
 
 
 def sync_status() -> Dict[str, Any]:
-    """Return a status snapshot for ``hermes sync status``. Never raises."""
+    """Return a status snapshot for ``fool sync status``. Never raises."""
     status: Dict[str, Any] = {
         "nous_admin": False,
         "logged_in": False,
@@ -1733,7 +1733,7 @@ def list_org_skill_names() -> List[str]:
 # here is inert (org_sync_available() False; pull/propose raise SyncInertError)
 # and the personal personal sync experience is untouched.
 #
-# `hermes sync propose` is the org sharing surface; proposal is
+# `fool sync propose` is the org sharing surface; proposal is
 # intended to become largely automated later (curator/background hooks driving
 # the same propose_skill() path). Keep this callable non-interactive.
 # ---------------------------------------------------------------------------

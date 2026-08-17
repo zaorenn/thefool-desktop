@@ -162,8 +162,8 @@ class CLIAgentSetupMixin:
             if should_use_runtime_model:
                 self.model = runtime_model
 
-        # If model is still empty (e.g. user ran `hermes auth add openai-codex`
-        # without `hermes model`), fall back to the provider's first catalog
+        # If model is still empty (e.g. user ran `fool auth add openai-codex`
+        # without `fool model`), fall back to the provider's first catalog
         # model so the API call doesn't fail with "model must be non-empty".
         if not self.model and resolved_provider:
             try:
@@ -229,7 +229,7 @@ class CLIAgentSetupMixin:
 
         Called from the interactive startup path when
         ``_runtime_credentials_ready()`` is False and stdin is a TTY. Runs the
-        exact same flow as ``hermes model`` (which fronts Quick Setup / Nous
+        exact same flow as ``fool model`` (which fronts Quick Setup / Nous
         Portal OAuth as the first, recommended option) so there is a single
         source of truth for provider onboarding. Returns True when a provider
         was configured.

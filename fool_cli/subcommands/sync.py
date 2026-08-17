@@ -1,4 +1,4 @@
-"""``hermes sync`` subcommand parser — Skill Sync.
+"""``fool sync`` subcommand parser — Skill Sync.
 
 Cloned from ``fool_cli/subcommands/cron.py`` — same injected-handler shape
 (``func=cmd_sync``) so this module does not import ``main`` (cycle avoidance).

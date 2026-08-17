@@ -524,7 +524,7 @@ async def _standalone_send(
 
     Used by ``tools/send_message_tool._send_via_adapter`` and the cron
     scheduler when the gateway runner is not in this process (e.g.
-    ``hermes cron`` running standalone). Without this hook,
+    ``fool cron`` running standalone). Without this hook,
     ``deliver=ntfy`` cron jobs fail with ``No live adapter for platform``.
 
     ``thread_id`` and ``media_files`` are accepted for signature parity
@@ -588,7 +588,7 @@ def register(ctx) -> None:
         required_env=["NTFY_TOPIC"],
         install_hint="pip install httpx   # already a Hermes dependency",
         # Env-driven auto-configuration: seeds PlatformConfig.extra so
-        # env-only setups show up in `hermes gateway status` without
+        # env-only setups show up in `fool gateway status` without
         # instantiating the HTTP client.
         env_enablement_fn=_env_enablement,
         # Cron home-channel delivery support — `deliver=ntfy` cron jobs

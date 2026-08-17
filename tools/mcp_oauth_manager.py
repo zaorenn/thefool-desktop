@@ -411,7 +411,7 @@ def _make_hermes_provider_class() -> Optional[type]:
             registration. This addresses the recurring manual-reset ritual in
             GH#36767 for the auto-detectable subset (token-endpoint rejection);
             the browser-side "Redirect URI Mismatch" case has no HTTP signal
-            and is handled by ``hermes mcp reauth``.
+            and is handled by ``fool mcp reauth``.
 
             Conservative by construction — acts ONLY when all hold:
               * status is 400/401,
@@ -428,7 +428,7 @@ def _make_hermes_provider_class() -> Optional[type]:
             preemptive refresh — but only when ``token_endpoint`` was
             discovered (``_initialize`` prefetches it on cold-load). If that
             discovery was skipped, the guard returns early and the user falls
-            back to ``hermes mcp reauth``.
+            back to ``fool mcp reauth``.
             """
             try:
                 if self._hermes_preregistered:

@@ -782,7 +782,7 @@ def _env_enablement() -> Optional[dict]:
 
 
 def interactive_setup() -> None:
-    """Interactive ``hermes gateway setup`` flow for the Raft platform.
+    """Interactive ``fool gateway setup`` flow for the Raft platform.
 
     Lazy-imports CLI helpers so the plugin stays importable in gateway runtime
     and test contexts. The flow persists ``RAFT_PROFILE`` to the Hermes env

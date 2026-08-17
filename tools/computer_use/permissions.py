@@ -18,7 +18,7 @@ something different on each:
 The universal signal on every platform is ``cua-driver doctor --json`` (binary
 integrity + platform support). ``computer_use_status`` folds that together with
 the macOS permission detail into one payload for the desktop card, the
-``hermes computer-use permissions`` CLI, and ``/api/tools/computer-use/status``.
+``fool computer-use permissions`` CLI, and ``/api/tools/computer-use/status``.
 """
 
 from __future__ import annotations

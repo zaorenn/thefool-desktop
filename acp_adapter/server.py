@@ -699,7 +699,7 @@ class HermesACPAgent(acp.Agent):
     def _build_model_state(self, state: SessionState) -> SessionModelState | None:
         """Return authenticated providers and their models for ACP clients.
 
-        The shared Hermes inventory is also used by ``hermes model``, the TUI,
+        The shared Hermes inventory is also used by ``fool model``, the TUI,
         and the dashboard. Keeping ACP on that substrate prevents its selector
         from silently collapsing to the current provider's curated list.
         """

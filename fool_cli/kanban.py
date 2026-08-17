@@ -145,7 +145,7 @@ def _check_dispatcher_presence(
       is running but the config flag is off. Message is human guidance
       explaining the next step.
 
-    Used by ``hermes kanban create`` (and callers) to warn when a task
+    Used by ``fool kanban create`` (and callers) to warn when a task
     will sit in ``ready`` because nothing is there to pick it up.
     Defensive against import failures and config-read errors — if the
     probe itself errors, we return ``(True, "")`` so we don't spam
@@ -196,7 +196,7 @@ def _check_dispatcher_presence(
             "Gateway is running but kanban.dispatch_in_gateway=false in "
             "config.yaml — the task will sit in 'ready' until you flip it "
             "back on and restart the gateway, OR run the legacy "
-            "standalone daemon (`hermes kanban daemon --force`)."
+            "standalone daemon (`fool kanban daemon --force`)."
         )
     return (
         False,
@@ -241,7 +241,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         help=(
             "Board slug to operate on. Defaults to the current board "
             "(set via `hermes kanban boards switch <slug>` or the "
-            "FOOL_KANBAN_BOARD env var). Use `hermes kanban boards list` "
+            "FOOL_KANBAN_BOARD env var). Use `fool kanban boards list` "
             "to see all boards."
         ),
     )
@@ -341,7 +341,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_create.add_argument("--project", default=None,
                           help="Link to a project (id or slug). Anchors the task's "
                                "worktree under the project's primary repo with a "
-                               "deterministic branch. See `hermes project list`.")
+                               "deterministic branch. See `fool project list`.")
     p_create.add_argument("--tenant", default=None, help="Tenant namespace")
     p_create.add_argument("--priority", type=int, default=0, help="Priority tiebreaker")
     p_create.add_argument("--triage", action="store_true",
@@ -766,7 +766,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     # --- daemon (deprecated) ---
     p_daemon = sub.add_parser(
         "daemon",
-        help="DEPRECATED — dispatcher now runs in the gateway. Use `hermes gateway start`.",
+        help="DEPRECATED — dispatcher now runs in the gateway. Use `fool gateway start`.",
     )
     p_daemon.add_argument("--interval", type=float, default=60.0,
                           help="Seconds between dispatch ticks (default: 60)")
@@ -1095,7 +1095,7 @@ def kanban_command(args: argparse.Namespace) -> int:
     with board_scope:
         # `repair` must dispatch BEFORE the auto-init below: on a corrupt DB
         # init_db() itself raises KanbanDbCorruptError, which would turn
-        # every `hermes kanban repair` into "could not initialize database"
+        # every `fool kanban repair` into "could not initialize database"
         # without ever reaching the repair path.
         if action == "repair":
             return _cmd_repair(args)
@@ -1673,7 +1673,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
         print(
             f"Board: {current} "
             f"({other_count} other board{'s' if other_count != 1 else ''} — "
-            f"`hermes kanban boards list`)\n"
+            f"`fool kanban boards list`)\n"
         )
     if not tasks:
         print("(no matching tasks)")
@@ -2813,8 +2813,8 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
                     f"ready queue non-empty for {health_state['bad_ticks']} "
                     f"consecutive ticks but 0 workers spawned successfully. "
                     f"Check profile health (venv, PATH, credentials) and "
-                    f"`hermes kanban list --status ready` / "
-                    f"`hermes kanban list --status blocked` for recent "
+                    f"`fool kanban list --status ready` / "
+                    f"`fool kanban list --status blocked` for recent "
                     f"spawn_failed tasks.",
                     file=sys.stderr, flush=True,
                 )

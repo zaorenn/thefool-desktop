@@ -13,7 +13,7 @@ stuck blocked for too long, etc. Each one carries:
 Rules run over (task, recent events, recent runs, optional graph context) and
 emit diagnostics. They are stateless and read-only — no DB writes. Callers compute
 diagnostics on demand (on ``/board`` load, ``/tasks/:id`` fetch, or
-``hermes kanban diagnostics``).
+``fool kanban diagnostics``).
 
 Design goals:
 
@@ -375,7 +375,7 @@ def _rule_triage_aux_unavailable(task, events, runs, now, cfg) -> list[Diagnosti
     With the auto-decompose dispatcher (kanban.auto_decompose, default True),
     triage tasks fan out via ``auxiliary.kanban_decomposer`` and fall back to
     ``auxiliary.triage_specifier`` when the decomposer returns ``fanout=false``.
-    With auto-decompose off, the user must run ``hermes kanban specify``,
+    With auto-decompose off, the user must run ``fool kanban specify``,
     which only needs ``auxiliary.triage_specifier``.
 
     The default slot is ``provider: auto`` → auto-falls back to the main model,
@@ -418,7 +418,7 @@ def _rule_triage_aux_unavailable(task, events, runs, now, cfg) -> list[Diagnosti
         primary_desc = "specifier"
         detail_path = (
             "Auto-decompose is off, so triage tasks need "
-            "`hermes kanban specify`, which uses auxiliary.triage_specifier."
+            "`fool kanban specify`, which uses auxiliary.triage_specifier."
         )
 
     # The primary slot is usable when either: it was explicitly configured by

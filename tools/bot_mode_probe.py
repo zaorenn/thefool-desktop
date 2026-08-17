@@ -136,7 +136,7 @@ def _build_section(home: Path) -> str:
         "being messaged by a teammate agent — address them (not the user) and reply "
         "concisely. When the user says \"ask <name>\" or \"tell <name> ...\", that is a "
         "handoff: message that agent, wait for the reply, and report back, saying "
-        "which agent it came from. Run `hermes profile list` for the LIVE teammate "
+        "which agent it came from. Run `fool profile list` for the LIVE teammate "
         f"list before a handoff. Teammates at session start: {teammates}."
     )
 

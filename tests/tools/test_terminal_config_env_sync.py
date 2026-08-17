@@ -87,7 +87,7 @@ def _gateway_env_map_keys() -> set[str]:
 
 
 def _save_config_env_sync_keys() -> set[str]:
-    """terminal config keys bridged by ``hermes config set foo bar``.
+    """terminal config keys bridged by ``fool config set foo bar``.
 
     ``set_config_value`` no longer carries its own ``_config_to_env_sync``
     dict — it bridges through the canonical ``TERMINAL_CONFIG_ENV_MAP`` via
@@ -292,7 +292,7 @@ def test_docker_orphan_reaper_is_bridged_everywhere():
 
 def test_docker_volumes_is_bridged_everywhere():
     """Regression pin for ``terminal.docker_volumes`` being silently dropped by
-    ``hermes config set``.
+    ``fool config set``.
 
     The JSON list of ``host:container`` bind mounts was bridged by cli.py and
     gateway/run.py and consumed by terminal_tool (via json.loads), but was

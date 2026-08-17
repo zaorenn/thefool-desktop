@@ -98,7 +98,7 @@ def _read_user_token_override() -> Optional[str]:
 def peek_nous_access_token() -> Optional[str]:
     """Cheap probe for a Nous gateway token without triggering refresh.
 
-    Availability scans (`hermes tools`, banner/status paint, provider
+    Availability scans (`fool tools`, banner/status paint, provider
     `is_available()` checks) must stay off the synchronous OAuth refresh path.
     This helper therefore only inspects the explicit env override and the
     cached auth-store token, without checking expiry and without making any

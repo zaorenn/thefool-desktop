@@ -438,7 +438,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
     if not status.configured:
         msg = (
             "proxy.enabled is true but iron-proxy is not configured. "
-            "Run `hermes egress setup` to mint tokens and write proxy.yaml."
+            "Run `fool egress setup` to mint tokens and write proxy.yaml."
         )
         if enforce:
             raise RuntimeError(msg)
@@ -448,7 +448,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
     if not (status.pid and status.listening):
         msg = (
             f"iron-proxy is enabled but not running on port {status.tunnel_port}. "
-            "Start it with `hermes egress start`."
+            "Start it with `fool egress start`."
         )
         if enforce:
             raise RuntimeError(msg)
@@ -465,7 +465,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
         # vars AND any other isolation, opening the sandbox.
         msg = (
             f"iron-proxy CA cert vanished from {status.ca_cert_path}. "
-            "Re-run `hermes egress setup` to regenerate it."
+            "Re-run `fool egress setup` to regenerate it."
         )
         if enforce:
             raise RuntimeError(msg)
@@ -480,7 +480,7 @@ def _egress_proxy_args_for_docker() -> tuple[list[str], dict[str, str], list[str
     if not mappings:
         msg = (
             "iron-proxy is configured but mappings.json is empty or "
-            "corrupt.  Re-run `hermes egress setup` to mint provider "
+            "corrupt.  Re-run `fool egress setup` to mint provider "
             "tokens before starting a sandbox."
         )
         if enforce:

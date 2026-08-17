@@ -14,7 +14,7 @@ Linux is the most recent runtime (X11 today, Wayland via XWayland; pure-
 Wayland progress tracked upstream). It is enabled in
 `check_computer_use_requirements` alongside macOS and Windows. The plumbing
 in this file is OS-agnostic; per-host gaps (no DISPLAY, missing AT-SPI,
-etc.) surface as specific blocked checks via `hermes computer-use doctor`
+etc.) surface as specific blocked checks via `fool computer-use doctor`
 rather than failing silently.
 
 Install:
@@ -451,7 +451,7 @@ def _empty_discovery_reason() -> str:
             "window discovery returned no windows; on macOS this usually "
             "means no shareable display (headless Mac or panel asleep) — "
             "wake the display or attach a monitor/HDMI dummy, then run "
-            "`hermes computer-use doctor`"
+            "`fool computer-use doctor`"
         )
     return (
         "window discovery returned no windows; run `hermes computer-use "
@@ -957,7 +957,7 @@ def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
     omits user-local install directories. The upstream cua-driver installer
     commonly places the binary under ``~/.local/bin`` on POSIX systems, so a
     Hermes Desktop/TUI session can otherwise filter out the `computer_use`
-    tool even though `hermes computer-use doctor` succeeds from a login shell.
+    tool even though `fool computer-use doctor` succeeds from a login shell.
     """
     configured = (override if override is not None else os.environ.get(_CUA_DRIVER_CMD_ENV, "")).strip()
     if configured:
@@ -1208,7 +1208,7 @@ def cua_driver_update_nudge() -> Optional[str]:
     current = state.get("current_version") or "?"
     return (
         f"cua-driver {latest} is available (you have {current}); "
-        f"update with `hermes computer-use install --upgrade`."
+        f"update with `fool computer-use install --upgrade`."
     )
 
 
@@ -1299,7 +1299,7 @@ def cua_driver_install_hint() -> str:
         "  hermes computer-use install\n"
         "Or run the upstream installer directly:\n"
         f"{installer}\n"
-        "Or run `hermes tools` and enable the Computer Use toolset to install it automatically."
+        "Or run `fool tools` and enable the Computer Use toolset to install it automatically."
     )
 
 
@@ -1760,7 +1760,7 @@ class _CuaDriverSession:
             raise RuntimeError(
                 "cua-driver session never reached ready (timeout 30s; "
                 f"stuck in phase: {phase}). "
-                "Run `hermes computer-use doctor` and check "
+                "Run `fool computer-use doctor` and check "
                 f"{display_hermes_home()}/logs/agent.log for the phase timings."
             )
         # If setup failed, the lifecycle coroutine set _setup_error
@@ -2610,7 +2610,7 @@ class CuaDriverBackend(ComputerUseBackend):
                     "remove that override."
                 )
             else:
-                repair = "Run `hermes computer-use install` to repair it."
+                repair = "Run `fool computer-use install` to repair it."
             raise RuntimeError(f"cua-driver is not ready: {reason}. {repair}")
         _maybe_nudge_update()
         # The MCP client SDK (`mcp`) is an optional dependency (the

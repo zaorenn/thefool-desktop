@@ -1,6 +1,6 @@
 """Regression tests for issue #42130.
 
-A credential added via `hermes auth add openrouter` lives in the credential
+A credential added via `fool auth add openrouter` lives in the credential
 pool, NOT as an OPENROUTER_API_KEY env var. Before the fix, resolve_provider()
 auto-detection only checked env vars, so such a credential was invisible:
 the provider failed to resolve (AuthError) or resolved without a key, and

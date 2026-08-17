@@ -1,7 +1,7 @@
-"""Regression test: ``hermes dump`` reports a real git SHA inside the container.
+"""Regression test: ``fool dump`` reports a real git SHA inside the container.
 
 Background: ``.dockerignore`` excludes ``.git``, so ``git rev-parse HEAD``
-fails inside the published image and ``hermes dump`` used to report
+fails inside the published image and ``fool dump`` used to report
 ``version: ... [(unknown)]``.  The Dockerfile now writes the build-time
 ``$FOOL_GIT_SHA`` build-arg to ``/opt/hermes/.hermes_build_sha`` and
 ``fool_cli/build_info.py`` reads it as a fallback.
@@ -9,12 +9,12 @@ fails inside the published image and ``hermes dump`` used to report
 CI (``.github/workflows/docker.yml``) always sets the build-arg
 to ``${{ github.sha }}``.  Local ``docker build`` (the ``built_image``
 fixture in ``tests/docker/conftest.py``) does NOT — so locally the file
-is absent and ``hermes dump`` correctly falls back to ``(unknown)``.
+is absent and ``fool dump`` correctly falls back to ``(unknown)``.
 
 This test handles both cases:
 
 * If ``/opt/hermes/.hermes_build_sha`` exists in the image, assert that
-  ``hermes dump`` surfaces its content as the version SHA (not
+  ``fool dump`` surfaces its content as the version SHA (not
   ``(unknown)``).
 * If the file is absent, assert the legacy behaviour (``(unknown)``)
   still holds — defensive guard against the helper accidentally
@@ -91,7 +91,7 @@ def test_dump_reports_baked_sha_when_present(built_image: str) -> None:
         )
         return
 
-    # CI path: build-arg was set, baked file exists.  ``hermes dump``
+    # CI path: build-arg was set, baked file exists.  ``fool dump``
     # truncates to 8 chars via ``git rev-parse --short=8`` semantics.
     assert reported != "(unknown)", (
         "baked SHA file present in image but dump still reported "

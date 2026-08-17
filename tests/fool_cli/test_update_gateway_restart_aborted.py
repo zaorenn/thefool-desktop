@@ -1,6 +1,6 @@
 """Regression for #78574 — a crashed gateway-restart phase must not stay silent.
 
-``hermes update`` wrapped its entire gateway auto-restart phase in a blanket
+``fool update`` wrapped its entire gateway auto-restart phase in a blanket
 ``except Exception`` that only logged at debug level. When the phase raised
 early (e.g. importing ``fool_cli.gateway`` from the freshly pulled checkout
 inside a process that already loaded the pre-update modules), every drain and

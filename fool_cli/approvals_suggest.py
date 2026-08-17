@@ -1,4 +1,4 @@
-"""``hermes approvals suggest`` — mine approval history into allowlist proposals.
+"""``fool approvals suggest`` — mine approval history into allowlist proposals.
 
 Hermes has no dedicated approval-decision ledger: ``always`` answers land in
 ``command_allowlist`` (config.yaml) via :func:`tools.approval.save_permanent_allowlist`,
@@ -405,7 +405,7 @@ def _render_text(proposals: list[Proposal], days: int) -> None:
 
 
 def suggest_command(args) -> int:
-    """Entry point for ``hermes approvals suggest``."""
+    """Entry point for ``fool approvals suggest``."""
     db_path = Path(args.db) if getattr(args, "db", None) else default_db_path()
     days = getattr(args, "days", 90)
     if not db_path.exists():

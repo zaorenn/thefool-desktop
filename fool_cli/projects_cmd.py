@@ -1,4 +1,4 @@
-"""``hermes project`` CLI — manage first-class, multi-folder Projects.
+"""``fool project`` CLI — manage first-class, multi-folder Projects.
 
 A Project is a human-named workspace spanning one or more folders, with one
 designated primary repo. Projects anchor desktop session grouping and (when
@@ -267,7 +267,7 @@ def _cmd_set_primary(args, conn, proj) -> int:
     if not pdb.set_primary(conn, proj.id, args.path):
         print(
             f"project: '{args.path}' is not a folder of {proj.slug}; "
-            f"add it first with `hermes project add-folder`.",
+            f"add it first with `fool project add-folder`.",
             file=sys.stderr,
         )
         return 1

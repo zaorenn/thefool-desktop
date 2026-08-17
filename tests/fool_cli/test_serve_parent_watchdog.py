@@ -1,4 +1,4 @@
-"""Regression tests for Desktop-owned ``hermes serve`` lifecycle tracking."""
+"""Regression tests for Desktop-owned ``fool serve`` lifecycle tracking."""
 
 from fool_cli.web_server import _is_serve_orphaned, _valid_parent_start_marker
 

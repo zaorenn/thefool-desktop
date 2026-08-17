@@ -161,6 +161,7 @@ EXPECTED_SEAMS = {
     "html-title",
     "bot-display-name",
     "bot-handle",
+    "default-mode",
 }
 
 

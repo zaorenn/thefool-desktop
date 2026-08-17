@@ -47,8 +47,12 @@ const resolveMode = (mode: ThemeMode, systemDark = matchesQuery('(prefers-color-
 const normalizeSkin = (name: string | null): string =>
   name && resolveTheme(name) && !RETIRED_SKINS.has(name) ? name : DEFAULT_SKIN_NAME
 
+// FOOL-SEAM: default-mode
+// The Fool kimligi koyu-oncelikli tasarlandi: crimson vurgular koyu notr
+// zeminde dogru okunuyor, acik zeminde kimlik zayifliyor. Kullanici istedigi
+// an degistirebilir; bu yalnizca ilk acilistaki varsayilan.
 const normalizeMode = (value: string | null): ThemeMode =>
-  value === 'light' || value === 'dark' || value === 'system' ? value : 'light'
+  value === 'light' || value === 'dark' || value === 'system' ? value : 'dark'
 
 // ─── Per-profile appearance persistence ─────────────────────────────────────
 // Skin and mode are each stored per profile. "default" isn't a real profile —

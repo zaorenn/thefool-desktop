@@ -274,7 +274,7 @@ class TestYamlConfigLoading:
         hermes_home = self._write_config(
             tmp_path, "discord:\n  extra:\n    reply_to_mode: \"off\"\n"
         )
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
         monkeypatch.delenv("DISCORD_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()
@@ -288,7 +288,7 @@ class TestYamlConfigLoading:
             tmp_path,
             "discord:\n  reply_to_mode: all\n  extra:\n    reply_to_mode: \"off\"\n",
         )
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
         monkeypatch.delenv("DISCORD_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()

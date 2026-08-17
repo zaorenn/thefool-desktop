@@ -75,7 +75,7 @@ export class RealSessionBuilder {
       cwd: REPO_ROOT,
       env: {
         ...process.env,
-        THEFOOL_HOME: hermesHome,
+        FOOL_HOME: hermesHome,
         PYTHONPATH: REPO_ROOT,
       },
       stdio: 'pipe',

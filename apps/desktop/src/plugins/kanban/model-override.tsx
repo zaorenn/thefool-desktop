@@ -22,7 +22,7 @@ import {
   ModelMenuCloseContext,
   type ModelMenuController,
   reasoningEffortLabel
-} from '@thefool/plugin-sdk'
+} from '@fool/plugin-sdk'
 import { useState } from 'react'
 
 import { useKanban } from './ui'

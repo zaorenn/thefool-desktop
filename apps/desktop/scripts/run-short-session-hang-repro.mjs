@@ -1269,11 +1269,11 @@ async function executeRunInSandboxAttempt(target, index, warmup, mock, output, s
     {
       cwd: target.targetDesktop,
       env: sanitizedEnv({
-        THEFOOL_DESKTOP_APP_NAME: `HermesShortSession-${target.label}-${process.pid}-${index}-${warmup ? 'w' : 'm'}-${attempt}`,
-        THEFOOL_DESKTOP_HERMES_ROOT: target.targetRoot,
-        THEFOOL_DESKTOP_IGNORE_EXISTING: '1',
-        THEFOOL_DESKTOP_USER_DATA_DIR: userData,
-        THEFOOL_HOME: hermesHome,
+        FOOL_DESKTOP_APP_NAME: `HermesShortSession-${target.label}-${process.pid}-${index}-${warmup ? 'w' : 'm'}-${attempt}`,
+        FOOL_DESKTOP_HERMES_ROOT: target.targetRoot,
+        FOOL_DESKTOP_IGNORE_EXISTING: '1',
+        FOOL_DESKTOP_USER_DATA_DIR: userData,
+        FOOL_HOME: hermesHome,
         SHORT_SESSION_API_KEY: 'local-diagnostic-only'
       }),
       stdio: ['ignore', 'pipe', 'pipe']

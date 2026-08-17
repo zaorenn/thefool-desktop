@@ -5,14 +5,14 @@ import pytest
 pytest.importorskip("nemo_relay")
 
 from agent import auxiliary_client, relay_llm, relay_runtime
-from thefool_cli.observability.shared_metrics import SharedMetricsStore
-from thefool_cli.observability.shared_metrics_contract import MODEL_ROUTE_METRIC
-from thefool_cli.observability.shared_metrics_subscriber import SharedMetricsSubscriber
+from fool_cli.observability.shared_metrics import SharedMetricsStore
+from fool_cli.observability.shared_metrics_contract import MODEL_ROUTE_METRIC
+from fool_cli.observability.shared_metrics_subscriber import SharedMetricsSubscriber
 
 
 @pytest.fixture()
 def relay_turn(tmp_path, monkeypatch):
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / "profile"))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path / "profile"))
     relay_runtime._reset_for_tests()
     lease = relay_runtime.SESSION_COORDINATOR.acquire_conversation(
         profile_key=relay_runtime.current_profile_key(),

@@ -19,9 +19,9 @@ import pytest
 def _fake_api_key(monkeypatch, tmp_path):
     """Ensure XAI_API_KEY is set for all tests."""
     monkeypatch.setenv("XAI_API_KEY", "test-key-12345")
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     try:
-        import thefool_cli.config as cfg_mod
+        import fool_cli.config as cfg_mod
 
         if hasattr(cfg_mod, "_invalidate_load_config_cache"):
             cfg_mod._invalidate_load_config_cache()
@@ -398,7 +398,7 @@ class TestXAIImageFieldReadGuard:
         hermes_home.mkdir()
         auth_json = hermes_home / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
 
         with pytest.raises(ValueError, match="credential store"):
             _xai_image_field(str(auth_json))

@@ -102,9 +102,9 @@ class TestGatewayRunnerRegistration:
         # Stub out heavy dependencies if not already present
         stubs = [
             "dotenv",
-            "thefool_cli.env_loader",
-            "thefool_cli.config",
-            "thefool_constants",
+            "fool_cli.env_loader",
+            "fool_cli.config",
+            "fool_constants",
         ]
         _orig = {}
         for mod in stubs:

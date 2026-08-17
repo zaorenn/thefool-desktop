@@ -90,7 +90,7 @@ def _env_disconnect_budget_s() -> float:
     variable, same default). Callers above the transport use this to
     apportion the budget across go_idle / monitor teardown / drain."""
     budget = 5.0  # _ADAPTER_DISCONNECT_TIMEOUT_SECS_DEFAULT in gateway/run.py
-    raw = os.getenv("THEFOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
+    raw = os.getenv("FOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
     if raw:
         try:
             budget = max(0.0, float(raw))
@@ -183,7 +183,7 @@ def _normalize_slack_parent_command(
     if not parent_parts or parent_parts[0] != "/hermes":
         return text, message_type
 
-    from thefool_cli.commands import slack_subcommand_map
+    from fool_cli.commands import slack_subcommand_map
 
     payload = parent_parts[1].strip() if len(parent_parts) > 1 else ""
     subcommand_map = slack_subcommand_map()

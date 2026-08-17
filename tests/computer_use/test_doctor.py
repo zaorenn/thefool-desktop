@@ -268,7 +268,7 @@ class TestJsonOutput:
         assert parsed["hermes_identity"]["resolved_binary"]
 
 
-# ── THEFOOL_CUA_DRIVER_CMD resolution ───────────────────────────────────────
+# ── FOOL_CUA_DRIVER_CMD resolution ───────────────────────────────────────
 
 
 class TestDriverCmdResolution:
@@ -290,7 +290,7 @@ class TestDriverCmdResolution:
     def test_env_var_used_when_no_arg_given(self, monkeypatch):
         from tools.computer_use import doctor
 
-        monkeypatch.setenv("THEFOOL_CUA_DRIVER_CMD", "/env/path/cua-driver")
+        monkeypatch.setenv("FOOL_CUA_DRIVER_CMD", "/env/path/cua-driver")
         proc = _fake_proc_with_responses(
             {"jsonrpc": "2.0", "id": 1, "result": {}},
             {"jsonrpc": "2.0", "id": 2, "result": {"structuredContent": _ok_report()}},
@@ -298,7 +298,7 @@ class TestDriverCmdResolution:
         with patch("shutil.which", return_value="/env/path/cua-driver") as which_mock, \
              patch("subprocess.Popen", return_value=proc), \
              patch("sys.stdout", new_callable=StringIO), \
-             patch("thefool_cli.tools_config._cua_driver_cmd", side_effect=Exception("force env")):
+             patch("fool_cli.tools_config._cua_driver_cmd", side_effect=Exception("force env")):
             # Force env-var resolution path inside run_doctor.
             doctor.run_doctor()
         which_mock.assert_called_with("/env/path/cua-driver")
@@ -313,7 +313,7 @@ class TestDriverCmdResolution:
         driver.write_text("#!/bin/sh\nexit 0\n")
         driver.chmod(0o755)
 
-        monkeypatch.delenv("THEFOOL_CUA_DRIVER_CMD", raising=False)
+        monkeypatch.delenv("FOOL_CUA_DRIVER_CMD", raising=False)
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
 

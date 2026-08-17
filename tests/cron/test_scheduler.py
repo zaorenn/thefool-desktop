@@ -110,7 +110,7 @@ class TestPerJobToolsetMcpMerge:
         # it is the path taken and its result is returned.
         job = {"enabled_toolsets": None}
         sentinel = ["web", "finnhub"]
-        with patch("thefool_cli.tools_config._get_platform_tools",
+        with patch("fool_cli.tools_config._get_platform_tools",
                    return_value=set(sentinel)) as m_platform:
             result = _resolve_cron_enabled_toolsets(job, self.CFG)
         m_platform.assert_called_once()
@@ -527,11 +527,11 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "test-key",
                      "base_url": "https://example.invalid/v1",
@@ -585,11 +585,11 @@ class TestRunJobSessionPersistence:
         base = [
             patch("cron.scheduler._hermes_home", tmp_path),
             patch("cron.scheduler._resolve_origin", return_value=None),
-            patch("thefool_cli.env_loader.load_hermes_dotenv"),
-            patch("thefool_cli.env_loader.reset_secret_source_cache"),
-            patch("thefool_state.SessionDB", return_value=fake_db),
+            patch("fool_cli.env_loader.load_hermes_dotenv"),
+            patch("fool_cli.env_loader.reset_secret_source_cache"),
+            patch("fool_state.SessionDB", return_value=fake_db),
             patch(
-                "thefool_cli.runtime_provider.resolve_runtime_provider",
+                "fool_cli.runtime_provider.resolve_runtime_provider",
                 return_value={
                     "api_key": "test-key",
                     "base_url": "https://example.invalid/v1",
@@ -717,9 +717,9 @@ class TestRunJobSessionPersistence:
 
         (tmp_path / ".env").write_text("TELEGRAM_HOME_CHANNEL=-2002\n")
         monkeypatch.delenv("TELEGRAM_HOME_CHANNEL", raising=False)
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_PLATFORM", raising=False)
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_PLATFORM", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
 
         class FakeAgent:
             def __init__(self, *args, **kwargs):
@@ -727,16 +727,16 @@ class TestRunJobSessionPersistence:
 
             def run_conversation(self, *args, **kwargs):
                 from gateway.session_context import get_session_env
-                seen["platform"] = get_session_env("THEFOOL_CRON_AUTO_DELIVER_PLATFORM") or None
-                seen["chat_id"] = get_session_env("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID") or None
-                seen["thread_id"] = get_session_env("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID") or None
+                seen["platform"] = get_session_env("FOOL_CRON_AUTO_DELIVER_PLATFORM") or None
+                seen["chat_id"] = get_session_env("FOOL_CRON_AUTO_DELIVER_CHAT_ID") or None
+                seen["thread_id"] = get_session_env("FOOL_CRON_AUTO_DELIVER_THREAD_ID") or None
                 return {"final_response": "ok"}
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._preflight_job_config", return_value=None), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -756,9 +756,9 @@ class TestRunJobSessionPersistence:
             "chat_id": "-2002",
             "thread_id": None,
         }
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_PLATFORM") is None
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID") is None
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_PLATFORM") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_CHAT_ID") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_THREAD_ID") is None
         fake_db.close.assert_called_once()
 
     def test_run_job_preserves_slack_origin_thread_for_same_explicit_channel(self, tmp_path, monkeypatch):
@@ -776,9 +776,9 @@ class TestRunJobSessionPersistence:
         fake_db = MagicMock()
         seen = {}
 
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_PLATFORM", raising=False)
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_PLATFORM", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
 
         class FakeAgent:
             def __init__(self, *args, **kwargs):
@@ -787,16 +787,16 @@ class TestRunJobSessionPersistence:
             def run_conversation(self, *args, **kwargs):
                 from gateway.session_context import get_session_env
 
-                seen["platform"] = get_session_env("THEFOOL_CRON_AUTO_DELIVER_PLATFORM") or None
-                seen["chat_id"] = get_session_env("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID") or None
-                seen["thread_id"] = get_session_env("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID") or None
+                seen["platform"] = get_session_env("FOOL_CRON_AUTO_DELIVER_PLATFORM") or None
+                seen["chat_id"] = get_session_env("FOOL_CRON_AUTO_DELIVER_CHAT_ID") or None
+                seen["thread_id"] = get_session_env("FOOL_CRON_AUTO_DELIVER_THREAD_ID") or None
                 return {"final_response": "ok"}
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._preflight_job_config", return_value=None), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -816,9 +816,9 @@ class TestRunJobSessionPersistence:
             "chat_id": "C0B3KEP3SD6",
             "thread_id": "1778485067.844139",
         }
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_PLATFORM") is None
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID") is None
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_PLATFORM") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_CHAT_ID") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_THREAD_ID") is None
         fake_db.close.assert_called_once()
 
     @pytest.mark.parametrize("timeout_value", ["600", "0"])
@@ -851,13 +851,13 @@ class TestRunJobSessionPersistence:
         fake_pool.submit.return_value = fake_future
         wait_results = [(set(), set()), ({fake_future}, set())]
         monotonic_ticks = itertools.count(step=61.0)
-        monkeypatch.setenv("THEFOOL_CRON_TIMEOUT", timeout_value)
+        monkeypatch.setenv("FOOL_CRON_TIMEOUT", timeout_value)
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._preflight_job_config", return_value=None), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -885,7 +885,7 @@ class TestRunJobSessionPersistence:
         instead of leaving the startup .env placeholder in place (#33465).
 
         A bare ``load_dotenv`` re-load can't do this: startup already recorded
-        this THEFOOL_HOME in ``_APPLIED_HOMES``, so the external-secret pull
+        this FOOL_HOME in ``_APPLIED_HOMES``, so the external-secret pull
         no-ops and only the placeholder is re-applied. The scheduler must call
         ``reset_secret_source_cache()`` (forcing the re-pull) and route through
         ``load_hermes_dotenv`` (which then re-applies external secret sources).
@@ -903,11 +903,11 @@ class TestRunJobSessionPersistence:
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache", _record_reset), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv", _record_load), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.env_loader.reset_secret_source_cache", _record_reset), \
+             patch("fool_cli.env_loader.load_hermes_dotenv", _record_load), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -944,9 +944,9 @@ class TestRunJobSessionPersistence:
         fake_db = MagicMock()
         seen = []
 
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_PLATFORM", raising=False)
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
-        monkeypatch.delenv("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_PLATFORM", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_CHAT_ID", raising=False)
+        monkeypatch.delenv("FOOL_CRON_AUTO_DELIVER_THREAD_ID", raising=False)
 
         class FakeAgent:
             def __init__(self, *args, **kwargs):
@@ -957,18 +957,18 @@ class TestRunJobSessionPersistence:
 
                 seen.append(
                     {
-                        "platform": get_session_env("THEFOOL_CRON_AUTO_DELIVER_PLATFORM") or None,
-                        "chat_id": get_session_env("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID") or None,
-                        "thread_id": get_session_env("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID") or None,
+                        "platform": get_session_env("FOOL_CRON_AUTO_DELIVER_PLATFORM") or None,
+                        "chat_id": get_session_env("FOOL_CRON_AUTO_DELIVER_CHAT_ID") or None,
+                        "thread_id": get_session_env("FOOL_CRON_AUTO_DELIVER_THREAD_ID") or None,
                     }
                 )
                 return {"final_response": "ok"}
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._preflight_job_config", return_value=None), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -996,9 +996,9 @@ class TestRunJobSessionPersistence:
                 "thread_id": None,
             },
         ]
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_PLATFORM") is None
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_CHAT_ID") is None
-        assert os.getenv("THEFOOL_CRON_AUTO_DELIVER_THREAD_ID") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_PLATFORM") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_CHAT_ID") is None
+        assert os.getenv("FOOL_CRON_AUTO_DELIVER_THREAD_ID") is None
         assert fake_db.close.call_count == 2
 
 
@@ -1023,9 +1023,9 @@ class TestRunJobConfigLogging:
         # (>30s wall clock) under load. See PR #33661 follow-up.
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    return_value={"provider": "openrouter", "api_key": "x",
                                  "base_url": "https://example.invalid",
                                  "api_mode": "chat_completions"}), \
@@ -1062,10 +1062,10 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1126,10 +1126,10 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    side_effect=resolve_runtime), \
              patch("tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("run_agent.AIAgent") as mock_agent_cls:
@@ -1148,7 +1148,7 @@ class TestRunJobConfigEnvVarExpansion:
 
     def test_auth_fallback_switches_provider_and_model_together(self, tmp_path):
         """Codex auth failure must produce OpenRouter+GLM, never OpenRouter+GPT."""
-        from thefool_cli.auth import AuthError
+        from fool_cli.auth import AuthError
 
         (tmp_path / "config.yaml").write_text(
             "model:\n"
@@ -1182,10 +1182,10 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    side_effect=resolve_runtime), \
              patch("tools.mcp_tool.discover_mcp_tools", return_value=[]), \
              patch("run_agent.AIAgent") as mock_agent_cls:
@@ -1212,10 +1212,10 @@ class TestRunJobConfigEnvVarExpansion:
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1234,7 +1234,7 @@ class TestRunJobModelResolution:
 
     Issue #23979: a cron job created without an explicit model is stored as
     ``model: null``. At fire time the scheduler must:
-      1. fall back to ``THEFOOL_MODEL`` env if set,
+      1. fall back to ``FOOL_MODEL`` env if set,
       2. else fall back to config.yaml ``model.default`` if set,
       3. else fail fast with an actionable error — never let an empty string
          reach the provider where it surfaces as an opaque 400.
@@ -1248,19 +1248,19 @@ class TestRunJobModelResolution:
     }
 
     def test_null_job_model_falls_back_to_env(self, tmp_path, monkeypatch):
-        """``model: null`` on the job uses THEFOOL_MODEL when set."""
+        """``model: null`` on the job uses FOOL_MODEL when set."""
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.setenv("THEFOOL_MODEL", "env-model")
+        monkeypatch.setenv("FOOL_MODEL", "env-model")
 
         job = {"id": "null-model-job", "name": "null model", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1276,17 +1276,17 @@ class TestRunJobModelResolution:
     def test_no_model_anywhere_fails_with_actionable_error(self, tmp_path, monkeypatch):
         """All three sources empty → fail fast with a clear message, not an opaque 400."""
         (tmp_path / "config.yaml").write_text("")
-        monkeypatch.delenv("THEFOOL_MODEL", raising=False)
+        monkeypatch.delenv("FOOL_MODEL", raising=False)
 
         job = {"id": "no-model-job", "name": "no model anywhere", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             success, _, _, error = run_job(job)
@@ -1302,23 +1302,23 @@ class TestRunJobModelResolution:
     def test_config_model_alias_key_resolves(self, tmp_path, monkeypatch):
         """A ``model: {model: ...}`` alias key resolves like the CLI sibling.
 
-        ``thefool_cli/oneshot.py``, ``fallback_cmd.py`` and ``prompt_size.py``
+        ``fool_cli/oneshot.py``, ``fallback_cmd.py`` and ``prompt_size.py``
         all accept ``model.model`` as an alias for ``model.default``. The cron
         resolver mirrors that so a config that works in the CLI also works in
         cron.
         """
         (tmp_path / "config.yaml").write_text("model:\n  model: alias-key-model\n")
-        monkeypatch.delenv("THEFOOL_MODEL", raising=False)
+        monkeypatch.delenv("FOOL_MODEL", raising=False)
 
         job = {"id": "alias-job", "name": "alias", "prompt": "hi", "model": None}
         fake_db = MagicMock()
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1333,17 +1333,17 @@ class TestRunJobModelResolution:
     def test_corrupt_config_yaml_does_not_crash_with_job_model(self, tmp_path, monkeypatch):
         """A malformed config.yaml degrades gracefully when the job has a model."""
         (tmp_path / "config.yaml").write_text("{{{invalid yaml!!!")
-        monkeypatch.delenv("THEFOOL_MODEL", raising=False)
+        monkeypatch.delenv("FOOL_MODEL", raising=False)
 
         job = {"id": "corrupt-job", "name": "corrupt", "prompt": "hi", "model": "explicit-model"}
         fake_db = MagicMock()
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
-             patch("thefool_cli.runtime_provider.resolve_runtime_provider",
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.runtime_provider.resolve_runtime_provider",
                    return_value=self._RUNTIME), \
              patch("run_agent.AIAgent") as mock_agent_cls:
             mock_agent = MagicMock()
@@ -1383,11 +1383,11 @@ class TestRunJobSkillBacked:
 
         with patch("cron.scheduler._hermes_home", tmp_path), \
              patch("cron.scheduler._resolve_origin", return_value=None), \
-             patch("thefool_cli.env_loader.load_hermes_dotenv"), \
-             patch("thefool_cli.env_loader.reset_secret_source_cache"), \
-             patch("thefool_state.SessionDB", return_value=fake_db), \
+             patch("fool_cli.env_loader.load_hermes_dotenv"), \
+             patch("fool_cli.env_loader.reset_secret_source_cache"), \
+             patch("fool_state.SessionDB", return_value=fake_db), \
              patch(
-                 "thefool_cli.runtime_provider.resolve_runtime_provider",
+                 "fool_cli.runtime_provider.resolve_runtime_provider",
                  return_value={
                      "api_key": "***",
                      "base_url": "https://example.invalid/v1",
@@ -1632,7 +1632,7 @@ class TestRunJobWakeGate:
             "requested_provider": None,
         }
         with patch(
-            "thefool_cli.runtime_provider.resolve_runtime_provider",
+            "fool_cli.runtime_provider.resolve_runtime_provider",
             return_value=fake_runtime,
         ):
             yield
@@ -1861,8 +1861,8 @@ class TestParallelTick:
             )
             import time
             time.sleep(0.05)  # give other thread time to set its vars
-            platform = get_session_env("THEFOOL_SESSION_PLATFORM")
-            chat_id = get_session_env("THEFOOL_SESSION_CHAT_ID")
+            platform = get_session_env("FOOL_SESSION_PLATFORM")
+            chat_id = get_session_env("FOOL_SESSION_CHAT_ID")
             seen[job["id"]] = {"platform": platform, "chat_id": chat_id}
             clear_session_vars(tokens)
             return (True, "output", "response", None)
@@ -1887,8 +1887,8 @@ class TestParallelTick:
         assert seen["dc-job"] == {"platform": "discord", "chat_id": "222"}
 
     def test_max_parallel_env_var(self, monkeypatch):
-        """THEFOOL_CRON_MAX_PARALLEL=1 should restore serial behaviour."""
-        monkeypatch.setenv("THEFOOL_CRON_MAX_PARALLEL", "1")
+        """FOOL_CRON_MAX_PARALLEL=1 should restore serial behaviour."""
+        monkeypatch.setenv("FOOL_CRON_MAX_PARALLEL", "1")
         call_times = []
 
         def mock_run_job(job, *, defer_agent_teardown=None, **_kw):

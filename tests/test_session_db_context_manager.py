@@ -24,12 +24,12 @@ real connection count and make such assertions flaky.
 
 import pytest
 
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 def _live_count(path) -> int:
     """Live-connection count the tracking registry holds for *path*."""
-    import thefool_cli.sqlite_safe_read as mod
+    import fool_cli.sqlite_safe_read as mod
 
     with mod._live_lock:
         return mod._live_connections.get(mod._key(path), 0)

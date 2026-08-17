@@ -1,6 +1,6 @@
 """Global emergency stop (ESTOP) — a resumable pause for NEW work only.
 
-``hermes pause`` writes a sentinel file at ``$THEFOOL_HOME/ESTOP``;
+``hermes pause`` writes a sentinel file at ``$FOOL_HOME/ESTOP``;
 ``hermes resume`` removes it. While the sentinel exists:
 
 * the cron scheduler skips dispatching due jobs (``cron/scheduler.py:tick``),
@@ -43,16 +43,16 @@ _logged_components: set[str] = set()
 
 
 def _hermes_home() -> Path:
-    """Resolve the active THEFOOL_HOME (profile-aware) at call time."""
+    """Resolve the active FOOL_HOME (profile-aware) at call time."""
     try:
-        from thefool_constants import get_hermes_home
+        from fool_constants import get_hermes_home
         return get_hermes_home()
     except Exception:
         return Path(os.path.expanduser("~/.hermes"))
 
 
 def sentinel_path() -> Path:
-    """Path of the ESTOP sentinel under the active THEFOOL_HOME."""
+    """Path of the ESTOP sentinel under the active FOOL_HOME."""
     return _hermes_home() / SENTINEL_NAME
 
 
@@ -60,7 +60,7 @@ def is_engaged() -> bool:
     """Cheap check (one stat): is the global emergency stop engaged?
 
     Fail SAFE on stat errors: if we cannot determine whether the sentinel
-    exists (permission error, transient I/O failure on THEFOOL_HOME), report
+    exists (permission error, transient I/O failure on FOOL_HOME), report
     engaged. The module contract is that the pause must hold even when the
     sentinel is unreadable — a fail-open here would silently lift an
     operator's emergency stop exactly when the filesystem is misbehaving.

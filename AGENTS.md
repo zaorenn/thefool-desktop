@@ -84,7 +84,7 @@ conservative at the waist.
 - **E2E validation, not just green unit mocks.** For anything touching
   resolution chains, config propagation, security boundaries, remote
   backends, or file/network I/O, exercise the real path with real imports
-  against a temp `THEFOOL_HOME`. Mocks hide integration bugs.
+  against a temp `FOOL_HOME`. Mocks hide integration bugs.
 - **Cache-, alternation-, and invariant-safe.** Preserve prompt caching, strict
   message role alternation (never two same-role messages in a row; never a
   synthetic user message injected mid-loop), and a system prompt that is
@@ -220,7 +220,7 @@ on the backend process.
 The client and the backend are separate machines on separate clocks. The
 desktop app can be driving a backend Electron spawned locally, one over SSH,
 one behind a plain URL + token, or Hermes Cloud. Only the first two are spawned
-by us and carry `THEFOOL_DESKTOP=1`. Every env-keyed GUI gate is therefore a
+by us and carry `FOOL_DESKTOP=1`. Every env-keyed GUI gate is therefore a
 silent no-op on the other half of the topologies, and the failure is invisible:
 the tool is stripped from the schema before the model ever sees it, on the same
 backend whose platform hint is telling the model it's *"chatting inside the
@@ -238,7 +238,7 @@ The pattern that works:
   spawned by Electron?" — not fine. `check_fn` results are also TTL-cached
   process-wide (`tools/registry.py`), so a per-session answer does not belong
   there at all: one process serves many sessions.
-- **Ask which identity you actually mean.** `THEFOOL_DESKTOP=1` legitimately
+- **Ask which identity you actually mean.** `FOOL_DESKTOP=1` legitimately
   marks *"this backend process was spawned by the app"* — it gates the cron
   ticker and web-dist handling correctly. It does NOT mean "a GUI is watching",
   and the embedded terminal pane (`hermes --tui` against that same backend) is
@@ -272,12 +272,12 @@ hermes-agent/
 ├── model_tools.py        # Tool orchestration, discover_builtin_tools(), handle_function_call()
 ├── toolsets.py           # Toolset definitions, _HERMES_CORE_TOOLS list
 ├── cli.py                # HermesCLI class — interactive CLI orchestrator (~11k LOC)
-├── thefool_state.py       # SessionDB — SQLite session store (FTS5 search)
-├── thefool_constants.py   # get_hermes_home(), display_hermes_home() — profile-aware paths
-├── thefool_logging.py     # setup_logging() — agent.log / errors.log / gateway.log (profile-aware)
+├── fool_state.py       # SessionDB — SQLite session store (FTS5 search)
+├── fool_constants.py   # get_hermes_home(), display_hermes_home() — profile-aware paths
+├── fool_logging.py     # setup_logging() — agent.log / errors.log / gateway.log (profile-aware)
 ├── batch_runner.py       # Parallel batch processing
 ├── agent/                # Agent internals (provider adapters, memory, caching, compression, etc.)
-├── thefool_cli/           # CLI subcommands, setup wizard, plugins loader, skin engine
+├── fool_cli/           # CLI subcommands, setup wizard, plugins loader, skin engine
 ├── tools/                # Tool implementations — auto-discovered via tools/registry.py
 │   └── environments/     # Terminal backends (local, docker, ssh, modal, daytona, singularity)
 ├── gateway/              # Messaging gateway — run.py + session.py + platforms/
@@ -415,11 +415,11 @@ Reasoning content is stored in `assistant_msg["reasoning"]`.
 - **Rich** for banner/panels, **prompt_toolkit** for input with autocomplete
 - **KawaiiSpinner** (`agent/display.py`) — animated faces during API calls, `┊` activity feed for tool results
 - `load_cli_config()` in cli.py merges hardcoded defaults + user config YAML
-- **Skin engine** (`thefool_cli/skin_engine.py`) — data-driven CLI theming; initialized from `display.skin` config key at startup; skins customize banner colors, spinner faces/verbs/wings, tool prefix, response box, branding text
+- **Skin engine** (`fool_cli/skin_engine.py`) — data-driven CLI theming; initialized from `display.skin` config key at startup; skins customize banner colors, spinner faces/verbs/wings, tool prefix, response box, branding text
 - `process_command()` is a method on `HermesCLI` — dispatches on canonical command name resolved via `resolve_command()` from the central registry
 - Skill slash commands: `agent/skill_commands.py` scans `~/.hermes/skills/`, injects as **user message** (not system prompt) to preserve prompt caching
 
-### Slash Command Registry (`thefool_cli/commands.py`)
+### Slash Command Registry (`fool_cli/commands.py`)
 
 All slash commands are defined in a central `COMMAND_REGISTRY` list of `CommandDef` objects. Every downstream consumer derives from this registry automatically:
 
@@ -433,7 +433,7 @@ All slash commands are defined in a central `COMMAND_REGISTRY` list of `CommandD
 
 ### Adding a Slash Command
 
-1. Add a `CommandDef` entry to `COMMAND_REGISTRY` in `thefool_cli/commands.py`:
+1. Add a `CommandDef` entry to `COMMAND_REGISTRY` in `fool_cli/commands.py`:
 ```python
 CommandDef("mycommand", "Description of what it does", "Session",
            aliases=("mc",), args_hint="[arg]"),
@@ -466,7 +466,7 @@ if canonical == "mycommand":
 
 ## TUI Architecture (ui-tui + tui_gateway)
 
-The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `hermes --tui` or `THEFOOL_TUI=1`.
+The TUI is a full replacement for the classic (prompt_toolkit) CLI, activated via `hermes --tui` or `FOOL_TUI=1`.
 
 ### Process Model
 
@@ -517,7 +517,7 @@ npm test          # vitest
 
 ### TUI in the Dashboard (`hermes dashboard` → `/chat`)
 
-The dashboard embeds the real `hermes --tui` — **not** a rewrite.  See `thefool_cli/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `thefool_cli/web_server.py`.
+The dashboard embeds the real `hermes --tui` — **not** a rewrite.  See `fool_cli/pty_bridge.py` + the `@app.websocket("/api/pty")` endpoint in `fool_cli/web_server.py`.
 
 - Browser loads `web/src/pages/ChatPage.tsx`, which mounts xterm.js's `Terminal` with the WebGL renderer, `@xterm/addon-fit` for container-driven resize, and `@xterm/addon-unicode11` for modern wide-character widths.
 - `/api/pty?token=…` upgrades to a WebSocket; auth uses the same ephemeral `_SESSION_TOKEN` as REST, via query param (browsers can't set `Authorization` on WS upgrade).
@@ -530,7 +530,7 @@ The dashboard embeds the real `hermes --tui` — **not** a rewrite.  See `thefoo
 
 ### Electron Desktop Chat App (`apps/desktop/`)
 
-A **separate** chat surface from both the classic CLI and the dashboard's embedded TUI. It is an Electron + React + nanostore renderer (`@assistant-ui/react`) that talks to a `tui_gateway` backend over JSON-RPC (`requestGateway(method, params)`). The WebSocket/JSON-RPC transport lives in the framework-agnostic `apps/shared` package (`@thefool/shared` — `JsonRpcGatewayClient` + WS URL helpers), which the web dashboard (`web/`) also consumes; **desktop has no build/runtime dependency on the dashboard frontend** — it spawns a headless `hermes serve` backend server (the same gateway `dashboard` serves, minus the browser UI entirely: `serve` sets `headless_backend=True`, so `cmd_dashboard` skips `_build_web_ui` AND exports `THEFOOL_SERVE_HEADLESS=1` so `mount_spa()` disables the SPA even if a stray `web_dist/` exists — only the JSON-RPC/WS/API surface is reachable). `dashboard` and `serve` share `cmd_dashboard`/`start_server` but are independent surfaces — neither launches the other. The one exception is a backward-compat *fallback*: `serve` is newer, so the desktop spawn (`electron/backend-command.ts` + `backendSupportsServe()` in `electron/main.ts`) detects whether the resolved runtime registers `serve` and, only when it does not (an older managed install / PATH `hermes` the app hasn't updated yet), rewrites the argv to the legacy `dashboard --no-open`. Without that, a new app against an un-upgraded runtime would crash on an unknown subcommand and brick every mid-upgrade user. It does NOT embed `hermes --tui` — it has its own composer, transcript, and slash-command pipeline. For scoped Desktop architecture, state, resolver, transport, and testing rules, read `apps/desktop/AGENTS.md`.
+A **separate** chat surface from both the classic CLI and the dashboard's embedded TUI. It is an Electron + React + nanostore renderer (`@assistant-ui/react`) that talks to a `tui_gateway` backend over JSON-RPC (`requestGateway(method, params)`). The WebSocket/JSON-RPC transport lives in the framework-agnostic `apps/shared` package (`@fool/shared` — `JsonRpcGatewayClient` + WS URL helpers), which the web dashboard (`web/`) also consumes; **desktop has no build/runtime dependency on the dashboard frontend** — it spawns a headless `hermes serve` backend server (the same gateway `dashboard` serves, minus the browser UI entirely: `serve` sets `headless_backend=True`, so `cmd_dashboard` skips `_build_web_ui` AND exports `FOOL_SERVE_HEADLESS=1` so `mount_spa()` disables the SPA even if a stray `web_dist/` exists — only the JSON-RPC/WS/API surface is reachable). `dashboard` and `serve` share `cmd_dashboard`/`start_server` but are independent surfaces — neither launches the other. The one exception is a backward-compat *fallback*: `serve` is newer, so the desktop spawn (`electron/backend-command.ts` + `backendSupportsServe()` in `electron/main.ts`) detects whether the resolved runtime registers `serve` and, only when it does not (an older managed install / PATH `hermes` the app hasn't updated yet), rewrites the argv to the legacy `dashboard --no-open`. Without that, a new app against an un-upgraded runtime would crash on an unknown subcommand and brick every mid-upgrade user. It does NOT embed `hermes --tui` — it has its own composer, transcript, and slash-command pipeline. For scoped Desktop architecture, state, resolver, transport, and testing rules, read `apps/desktop/AGENTS.md`.
 
 **Slash commands in the desktop app are curated client-side, then dispatched to the backend.** The pipeline:
 
@@ -587,7 +587,7 @@ Auto-discovery: any `tools/*.py` file with a top-level `registry.register()` cal
 
 The registry handles schema collection, dispatch, availability checking, and error wrapping. All handlers MUST return a JSON string.
 
-**Path references in tool schemas**: If the schema description mentions file paths (e.g. default output directories), use `display_hermes_home()` to make them profile-aware. The schema is generated at import time, which is after `_apply_profile_override()` sets `THEFOOL_HOME`.
+**Path references in tool schemas**: If the schema description mentions file paths (e.g. default output directories), use `display_hermes_home()` to make them profile-aware. The schema is generated at import time, which is after `_apply_profile_override()` sets `FOOL_HOME`.
 
 **State files**: If a tool stores persistent state (caches, logs, checkpoints), use `get_hermes_home()` for the base directory — never `Path.home() / ".hermes"`. This ensures each profile gets its own state.
 
@@ -621,7 +621,7 @@ Reference: #2810 (bounds pass), #9801 (SHA pinning + audit CI).
 ## Adding Configuration
 
 ### config.yaml options:
-1. Add to `DEFAULT_CONFIG` in `thefool_cli/config.py`
+1. Add to `DEFAULT_CONFIG` in `fool_cli/config.py`
 2. Bump `_config_version` (check the current value at the top of `DEFAULT_CONFIG`)
    ONLY if you need to actively migrate/transform existing user config
    (renaming keys, changing structure). Adding a new key to an existing
@@ -645,7 +645,7 @@ its own provider/model/base_url/max_tokens/reasoning_effort. See
 `archive_after_days`, `backup` (nested).
 
 ### .env variables (SECRETS ONLY — API keys, tokens, passwords):
-1. Add to `OPTIONAL_ENV_VARS` in `thefool_cli/config.py` with metadata:
+1. Add to `OPTIONAL_ENV_VARS` in `fool_cli/config.py` with metadata:
 ```python
 "NEW_API_KEY": {
     "description": "What it's for",
@@ -666,7 +666,7 @@ the env var in code (see `gateway_timeout`, `terminal.cwd` → `TERMINAL_CWD`).
 | Loader | Used by | Location |
 |--------|---------|----------|
 | `load_cli_config()` | CLI mode | `cli.py` — merges CLI-specific defaults + user YAML |
-| `load_config()` | `hermes tools`, `hermes setup`, most CLI subcommands | `thefool_cli/config.py` — merges `DEFAULT_CONFIG` + user YAML |
+| `load_config()` | `hermes tools`, `hermes setup`, most CLI subcommands | `fool_cli/config.py` — merges `DEFAULT_CONFIG` + user YAML |
 | Direct YAML load | Gateway runtime | `gateway/run.py` + `gateway/config.py` — reads user YAML raw |
 
 If you add a new key and the CLI sees it but the gateway doesn't (or vice
@@ -684,12 +684,12 @@ versa), you're on the wrong loader. Check `DEFAULT_CONFIG` coverage.
 
 ## Skin/Theme System
 
-The skin engine (`thefool_cli/skin_engine.py`) provides data-driven CLI visual customization. Skins are **pure data** — no code changes needed to add a new skin.
+The skin engine (`fool_cli/skin_engine.py`) provides data-driven CLI visual customization. Skins are **pure data** — no code changes needed to add a new skin.
 
 ### Architecture
 
 ```
-thefool_cli/skin_engine.py    # SkinConfig dataclass, built-in skins, YAML loader
+fool_cli/skin_engine.py    # SkinConfig dataclass, built-in skins, YAML loader
 ~/.hermes/skins/*.yaml       # User-installed custom skins (drop-in)
 ```
 
@@ -729,7 +729,7 @@ thefool_cli/skin_engine.py    # SkinConfig dataclass, built-in skins, YAML loade
 
 ### Adding a built-in skin
 
-Add to `_BUILTIN_SKINS` dict in `thefool_cli/skin_engine.py`:
+Add to `_BUILTIN_SKINS` dict in `fool_cli/skin_engine.py`:
 
 ```python
 "mytheme": {
@@ -777,7 +777,7 @@ Hermes has two plugin surfaces. Both live under `plugins/` in the repo so
 repo-shipped plugins can be discovered alongside user-installed ones in
 `~/.hermes/plugins/` and pip-installed entry points.
 
-### General plugins (`thefool_cli/plugins.py` + `plugins/<name>/`)
+### General plugins (`fool_cli/plugins.py` + `plugins/<name>/`)
 
 `PluginManager` discovers plugins from `~/.hermes/plugins/`, `./.hermes/plugins/`,
 and pip entry points. Each plugin exposes a `register(ctx)` function that
@@ -829,8 +829,8 @@ providers include **honcho, mem0, supermemory, byterover, hindsight,
 holographic, openviking, retaindb**.
 
 Discovery covers the same four sources as the general `PluginManager` —
-bundled, `$THEFOOL_HOME/plugins/`, `./.hermes/plugins/` (opt-in via
-`THEFOOL_ENABLE_PROJECT_PLUGINS`), and `hermes_agent.memory_providers` entry
+bundled, `$FOOL_HOME/plugins/`, `./.hermes/plugins/` (opt-in via
+`FOOL_ENABLE_PROJECT_PLUGINS`), and `hermes_agent.memory_providers` entry
 points — but with **bundled-first** precedence, the reverse of the general
 system's later-wins order: a memory provider is activated by name, so a
 dropped-in directory must not be able to shadow a shipped one. Discovery
@@ -849,7 +849,7 @@ provider (read from `memory.provider` in config.yaml), so disabled
 providers don't clutter `hermes --help`.
 
 **Rule (Teknium, May 2026):** plugins MUST NOT modify core files
-(`run_agent.py`, `cli.py`, `gateway/run.py`, `thefool_cli/main.py`, etc.).
+(`run_agent.py`, `cli.py`, `gateway/run.py`, `fool_cli/main.py`, etc.).
 If a plugin needs a capability the framework doesn't expose, expand the
 generic plugin surface (new hook, new ctx method) — never hardcode
 plugin-specific logic into core. PR #5295 removed 95 lines of hardcoded
@@ -895,7 +895,7 @@ discovery system** — scanned on first `get_provider_profile()` or
 
 Scan order:
 1. Bundled: `<repo>/plugins/model-providers/<name>/`
-2. User: `$THEFOOL_HOME/plugins/model-providers/<name>/`
+2. User: `$FOOL_HOME/plugins/model-providers/<name>/`
 3. Legacy: `<repo>/providers/<name>.py` (back-compat)
 
 User plugins of the same name override bundled ones — `register_provider()`
@@ -1095,7 +1095,7 @@ go to `~/.hermes/skills/.archive/` and are restorable.
 
 - **Core:** `agent/curator.py` (review loop, auto-transitions, LLM review
   prompt) + `agent/curator_backup.py` (pre-run tar.gz snapshots).
-- **CLI:** `thefool_cli/curator.py` wires `hermes curator <verb>` where
+- **CLI:** `fool_cli/curator.py` wires `hermes curator <verb>` where
   verbs are: `status`, `run`, `pause`, `resume`, `pin`, `unpin`,
   `archive`, `restore`, `prune`, `backup`, `rollback`.
 - **Telemetry:** `tools/skill_usage.py` owns the sidecar
@@ -1165,7 +1165,7 @@ workers spawned by the dispatcher drive it via a dedicated `kanban_*`
 toolset so their schema footprint is zero when they're not inside a
 kanban task.
 
-- **CLI:** `thefool_cli/kanban.py` wires `hermes kanban` with verbs
+- **CLI:** `fool_cli/kanban.py` wires `hermes kanban` with verbs
   `init`, `create`, `list` (alias `ls`), `show`, `assign`, `link`,
   `unlink`, `comment`, `attach`, `attachments`, `attach-rm`, `complete`,
   `request-review`, `request-changes`, `reopen-review`, `block`, `unblock`, `archive`,
@@ -1188,7 +1188,7 @@ kanban task.
 
 Isolation model:
 - **Board** is the hard boundary — workers are spawned with
-  `THEFOOL_KANBAN_BOARD` pinned in their env so they can't see other
+  `FOOL_KANBAN_BOARD` pinned in their env so they can't see other
   boards.
 - **Tenant** is a soft namespace *within* a board — one specialist
   fleet can serve multiple businesses with workspace-path + memory-key
@@ -1222,7 +1222,7 @@ invalidation. See `/skills install --now` for the canonical pattern.
 When `terminal(background=true, notify_on_complete=true)` is used, the gateway runs a watcher that
 detects process completion and triggers a new agent turn. Control verbosity of background process
 messages with `display.background_process_notifications`
-in config.yaml (or `THEFOOL_BACKGROUND_NOTIFICATIONS` env var):
+in config.yaml (or `FOOL_BACKGROUND_NOTIFICATIONS` env var):
 
 - `concise` — one-line status message on completion; failures append a short output tail (default)
 - `all` — running-output updates + final raw-output message
@@ -1235,30 +1235,30 @@ in config.yaml (or `THEFOOL_BACKGROUND_NOTIFICATIONS` env var):
 ## Profiles: Multi-Instance Support
 
 Hermes supports **profiles** — multiple fully isolated instances, each with its own
-`THEFOOL_HOME` directory (config, API keys, memory, sessions, skills, gateway, etc.).
+`FOOL_HOME` directory (config, API keys, memory, sessions, skills, gateway, etc.).
 
-The core mechanism: `_apply_profile_override()` in `thefool_cli/main.py` sets
-`THEFOOL_HOME` before any module imports. All `get_hermes_home()` references
+The core mechanism: `_apply_profile_override()` in `fool_cli/main.py` sets
+`FOOL_HOME` before any module imports. All `get_hermes_home()` references
 automatically scope to the active profile.
 
 ### Rules for profile-safe code
 
-1. **Use `get_hermes_home()` for all THEFOOL_HOME paths.** Import from `thefool_constants`.
+1. **Use `get_hermes_home()` for all FOOL_HOME paths.** Import from `fool_constants`.
    NEVER hardcode `~/.hermes` or `Path.home() / ".hermes"` in code that reads/writes state.
    ```python
    # GOOD
-   from thefool_constants import get_hermes_home
+   from fool_constants import get_hermes_home
    config_path = get_hermes_home() / "config.yaml"
 
    # BAD — breaks profiles
    config_path = Path.home() / ".hermes" / "config.yaml"
    ```
 
-2. **Use `display_hermes_home()` for user-facing messages.** Import from `thefool_constants`.
+2. **Use `display_hermes_home()` for user-facing messages.** Import from `fool_constants`.
    This returns `~/.hermes` for default or `~/.hermes/profiles/<name>` for profiles.
    ```python
    # GOOD
-   from thefool_constants import display_hermes_home
+   from fool_constants import display_hermes_home
    print(f"Config saved to {display_hermes_home()}/config.yaml")
 
    # BAD — shows wrong path for profiles
@@ -1269,11 +1269,11 @@ automatically scope to the active profile.
    which is AFTER `_apply_profile_override()` sets the env var. Just use `get_hermes_home()`,
    not `Path.home() / ".hermes"`.
 
-4. **Tests that mock `Path.home()` must also set `THEFOOL_HOME`** — since code now uses
+4. **Tests that mock `Path.home()` must also set `FOOL_HOME`** — since code now uses
    `get_hermes_home()` (reads env var), not `Path.home() / ".hermes"`:
    ```python
    with patch.object(Path, "home", return_value=tmp_path), \
-        patch.dict(os.environ, {"THEFOOL_HOME": str(tmp_path / ".hermes")}):
+        patch.dict(os.environ, {"FOOL_HOME": str(tmp_path / ".hermes")}):
        ...
    ```
 
@@ -1283,7 +1283,7 @@ automatically scope to the active profile.
    `disconnect()`/`stop()`. This prevents two profiles from using the same credential.
    See `plugins/platforms/irc/adapter.py` for the canonical pattern.
 
-6. **Profile operations are HOME-anchored, not THEFOOL_HOME-anchored** — `_get_profiles_root()`
+6. **Profile operations are HOME-anchored, not FOOL_HOME-anchored** — `_get_profiles_root()`
    returns `Path.home() / ".hermes" / "profiles"`, NOT `get_hermes_home() / "profiles"`.
    This is intentional — it lets `hermes -p coder profile list` see all profiles regardless
    of which one is active.
@@ -1315,12 +1315,12 @@ automatically scope to the active profile.
 ## Known Pitfalls
 
 ### DO NOT hardcode `~/.hermes` paths
-Use `get_hermes_home()` from `thefool_constants` for code paths. Use `display_hermes_home()`
+Use `get_hermes_home()` from `fool_constants` for code paths. Use `display_hermes_home()`
 for user-facing print/log messages. Hardcoding `~/.hermes` breaks profiles — each profile
-has its own `THEFOOL_HOME` directory. This was the source of 5 bugs fixed in PR #3575.
+has its own `FOOL_HOME` directory. This was the source of 5 bugs fixed in PR #3575.
 
 ### All CLI menu-pickers MUST use curses.
-Interactive menus must use `thefool_cli/curses_ui.py`. See `thefool_cli/tools_config.py` for an example.
+Interactive menus must use `fool_cli/curses_ui.py`. See `fool_cli/tools_config.py` for an example.
 
 ### DO NOT use `\033[K` (ANSI erase-to-EOL) in spinner/display code
 Leaks as literal `?[K` text under `prompt_toolkit`'s `patch_stdout`. Use space-padding: `f"\r{line}{' ' * pad}"`.
@@ -1353,21 +1353,21 @@ red flag.
 ### Don't wire in dead code without E2E validation
 Unused code that was never shipped was dead for a reason. Before wiring an
 unused module into a live code path, E2E test the real resolution chain
-with actual imports (not mocks) against a temp `THEFOOL_HOME`.
+with actual imports (not mocks) against a temp `FOOL_HOME`.
 
 ### Tests must not write to `~/.hermes/`
-The `_isolate_hermes_home` autouse fixture in `tests/conftest.py` redirects `THEFOOL_HOME` to a temp dir. Never hardcode `~/.hermes/` paths in tests.
+The `_isolate_hermes_home` autouse fixture in `tests/conftest.py` redirects `FOOL_HOME` to a temp dir. Never hardcode `~/.hermes/` paths in tests.
 
 **Profile tests**: When testing profile features, also mock `Path.home()` so that
 `_get_profiles_root()` and `_get_default_hermes_home()` resolve within the temp dir.
-Use the pattern from `tests/thefool_cli/test_profiles.py`:
+Use the pattern from `tests/fool_cli/test_profiles.py`:
 ```python
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     return home
 ```
 
@@ -1391,7 +1391,7 @@ scripts/run_tests.sh -v --tb=long                     # pass-through pytest flag
 ```
 
 **Flake policy:** the runner auto-retries a failing test FILE once in a fresh
-subprocess (`--file-retries`, default 1; `THEFOOL_TEST_FILE_RETRIES=0` to
+subprocess (`--file-retries`, default 1; `FOOL_TEST_FILE_RETRIES=0` to
 disable). Pass-on-retry counts as green but is printed in a `⚠ FLAKY` summary
 section with both attempts' output. A FLAKY report is a bug to fix, not noise
 to ignore — timing-sensitive tests must not assume a quiet runner (loose

@@ -15,18 +15,18 @@
 # Usage:
 #   source scripts/lib/node-bootstrap.sh
 #   ensure_node   # returns 0 on success, non-zero on failure
-#   if [ "$THEFOOL_NODE_AVAILABLE" = true ]; then ...; fi
+#   if [ "$FOOL_NODE_AVAILABLE" = true ]; then ...; fi
 #
 # Env inputs (set before sourcing to override defaults):
-#   THEFOOL_NODE_MIN_VERSION   (default: 20)   — accepted on PATH
-#   THEFOOL_NODE_TARGET_MAJOR  (default: 22)   — installed when we install
-#   THEFOOL_HOME               (default: $HOME/.hermes)
+#   FOOL_NODE_MIN_VERSION   (default: 20)   — accepted on PATH
+#   FOOL_NODE_TARGET_MAJOR  (default: 22)   — installed when we install
+#   FOOL_HOME               (default: $HOME/.hermes)
 # ============================================================================
 
-THEFOOL_NODE_MIN_VERSION="${THEFOOL_NODE_MIN_VERSION:-20}"
-THEFOOL_NODE_TARGET_MAJOR="${THEFOOL_NODE_TARGET_MAJOR:-22}"
-THEFOOL_HOME="${THEFOOL_HOME:-$HOME/.hermes}"
-THEFOOL_NODE_AVAILABLE=false
+FOOL_NODE_MIN_VERSION="${FOOL_NODE_MIN_VERSION:-20}"
+FOOL_NODE_TARGET_MAJOR="${FOOL_NODE_TARGET_MAJOR:-22}"
+FOOL_HOME="${FOOL_HOME:-$HOME/.hermes}"
+FOOL_NODE_AVAILABLE=false
 
 # ---------------------------------------------------------------------------
 # Logging — prefer the host script's log_* helpers when present
@@ -58,16 +58,16 @@ _nb_get_link_dir() {
 }
 
 # Redirect a Hermes-managed Node's `npm install -g` to the command link dir
-# (already on PATH) instead of the default $THEFOOL_HOME/node/bin, which is off
+# (already on PATH) instead of the default $FOOL_HOME/node/bin, which is off
 # PATH and wiped on every Node upgrade. Scoped to the managed Node via its
 # prefix-local global npmrc; the user's other Node installs / ~/.npmrc are
 # untouched. Idempotent no-op when there's no managed npm.
 _nb_configure_npm_prefix() {
-    [ -x "$THEFOOL_HOME/node/bin/npm" ] || return 0
+    [ -x "$FOOL_HOME/node/bin/npm" ] || return 0
     local _link_dir
     _link_dir="$(_nb_get_link_dir)"
-    mkdir -p "$THEFOOL_HOME/node/etc"
-    printf 'prefix=%s\n' "$(dirname "$_link_dir")" > "$THEFOOL_HOME/node/etc/npmrc"
+    mkdir -p "$FOOL_HOME/node/etc"
+    printf 'prefix=%s\n' "$(dirname "$_link_dir")" > "$FOOL_HOME/node/etc/npmrc"
 }
 
 _nb_node_major() {
@@ -81,8 +81,8 @@ _nb_node_major() {
 # to the current floor when the manifest is unreadable (vendored copy of this
 # script, stripped install tree).
 _nb_npm_range() {
-    if [ -n "${THEFOOL_NPM_TARGET_RANGE:-}" ]; then
-        printf '%s\n' "$THEFOOL_NPM_TARGET_RANGE"
+    if [ -n "${FOOL_NPM_TARGET_RANGE:-}" ]; then
+        printf '%s\n' "$FOOL_NPM_TARGET_RANGE"
         return 0
     fi
     local repo_root manifest range
@@ -107,7 +107,7 @@ _nb_npm_range() {
 # 26.5.1 bundles npm 11.17.0, one minor below our own `engines.npm` floor of
 # >=12. With `engine-strict=true` in the repo .npmrc that is fatal, not a
 # warning, so a brand-new install died at the first `npm ci` with EBADENGINE.
-# The Python side recovers through thefool_cli/npm_engine.py; the installer path
+# The Python side recovers through fool_cli/npm_engine.py; the installer path
 # had no such rung, so provision the right npm here instead of reacting later.
 #
 # Three details are load-bearing, all mirroring upgrade_managed_npm():
@@ -123,7 +123,7 @@ _nb_npm_range() {
 # strictly better than no Node at all, and npm_engine.py still covers the
 # EBADENGINE that follows.
 _nb_ensure_bundled_npm_range() {
-    local npm_bin="$THEFOOL_HOME/node/bin/npm"
+    local npm_bin="$FOOL_HOME/node/bin/npm"
     [ -x "$npm_bin" ] || return 0
 
     local range have want
@@ -148,7 +148,7 @@ _nb_ensure_bundled_npm_range() {
         cd "$tmp_cwd" || exit 1
         CI=1 npm_config_min_release_age=0 \
             "$npm_bin" install --global \
-                --prefix "$THEFOOL_HOME/node" \
+                --prefix "$FOOL_HOME/node" \
                 "npm@$range" \
                 --no-fund --no-audit --progress=false >/dev/null 2>&1
     ); then
@@ -159,13 +159,13 @@ _nb_ensure_bundled_npm_range() {
 
     rm -rf "$tmp_cwd"
     _nb_warn "Could not upgrade bundled npm to $range — \`npm ci\` may fail with EBADENGINE."
-    _nb_warn "Fix manually: npm install -g --prefix \"$THEFOOL_HOME/node\" npm@\"$range\""
+    _nb_warn "Fix manually: npm install -g --prefix \"$FOOL_HOME/node\" npm@\"$range\""
     return 1
 }
 
 _nb_have_modern_node() {
     command -v node >/dev/null 2>&1 || return 1
-    [ "$(_nb_node_major)" -ge "$THEFOOL_NODE_MIN_VERSION" ]
+    [ "$(_nb_node_major)" -ge "$FOOL_NODE_MIN_VERSION" ]
 }
 
 # ---------------------------------------------------------------------------
@@ -174,10 +174,10 @@ _nb_have_modern_node() {
 
 _nb_try_fnm() {
     command -v fnm >/dev/null 2>&1 || return 1
-    _nb_log "fnm detected — installing Node $THEFOOL_NODE_TARGET_MAJOR..."
+    _nb_log "fnm detected — installing Node $FOOL_NODE_TARGET_MAJOR..."
     eval "$(fnm env 2>/dev/null)" || true
-    fnm install "$THEFOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
-    fnm use     "$THEFOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    fnm install "$FOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    fnm use     "$FOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) activated via fnm"
     return 0
@@ -185,8 +185,8 @@ _nb_try_fnm() {
 
 _nb_try_proto() {
     command -v proto >/dev/null 2>&1 || return 1
-    _nb_log "proto detected — installing Node $THEFOOL_NODE_TARGET_MAJOR..."
-    proto install node "$THEFOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    _nb_log "proto detected — installing Node $FOOL_NODE_TARGET_MAJOR..."
+    proto install node "$FOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) activated via proto"
     return 0
@@ -197,9 +197,9 @@ _nb_try_nvm() {
     [ -s "$nvm_sh" ] || return 1
     # shellcheck source=/dev/null
     \. "$nvm_sh" >/dev/null 2>&1 || return 1
-    _nb_log "nvm detected — installing Node $THEFOOL_NODE_TARGET_MAJOR..."
-    nvm install "$THEFOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
-    nvm use     "$THEFOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    _nb_log "nvm detected — installing Node $FOOL_NODE_TARGET_MAJOR..."
+    nvm install "$FOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
+    nvm use     "$FOOL_NODE_TARGET_MAJOR" >/dev/null 2>&1 || return 1
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) activated via nvm"
     return 0
@@ -222,10 +222,10 @@ _nb_try_brew() {
     [ "$(uname -s)" = "Darwin" ] || return 1
     command -v brew >/dev/null 2>&1 || return 1
     _nb_log "Installing Node via Homebrew..."
-    brew install "node@${THEFOOL_NODE_TARGET_MAJOR}" >/dev/null 2>&1 \
+    brew install "node@${FOOL_NODE_TARGET_MAJOR}" >/dev/null 2>&1 \
         || brew install node >/dev/null 2>&1 \
         || return 1
-    brew link --overwrite --force "node@${THEFOOL_NODE_TARGET_MAJOR}" >/dev/null 2>&1 || true
+    brew link --overwrite --force "node@${FOOL_NODE_TARGET_MAJOR}" >/dev/null 2>&1 || true
     _nb_have_modern_node || return 1
     _nb_ok "Node $(node --version) installed via Homebrew"
     return 0
@@ -258,18 +258,18 @@ _nb_install_bundled_node() {
             ;;
     esac
 
-    local index_url="https://nodejs.org/dist/latest-v${THEFOOL_NODE_TARGET_MAJOR}.x/"
+    local index_url="https://nodejs.org/dist/latest-v${FOOL_NODE_TARGET_MAJOR}.x/"
     local tarball
     tarball=$(curl -fsSL "$index_url" \
-        | grep -oE "node-v${THEFOOL_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.xz" \
+        | grep -oE "node-v${FOOL_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.xz" \
         | head -1)
     if [ -z "$tarball" ]; then
         tarball=$(curl -fsSL "$index_url" \
-            | grep -oE "node-v${THEFOOL_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.gz" \
+            | grep -oE "node-v${FOOL_NODE_TARGET_MAJOR}\.[0-9]+\.[0-9]+-${node_os}-${node_arch}\.tar\.gz" \
             | head -1)
     fi
     if [ -z "$tarball" ]; then
-        _nb_warn "Could not resolve Node $THEFOOL_NODE_TARGET_MAJOR binary for $node_os-$node_arch"
+        _nb_warn "Could not resolve Node $FOOL_NODE_TARGET_MAJOR binary for $node_os-$node_arch"
         return 1
     fi
 
@@ -280,7 +280,7 @@ _nb_install_bundled_node() {
         _nb_warn "Download failed"; rm -rf "$tmp"; return 1
     }
 
-    _nb_log "Extracting to $THEFOOL_HOME/node/..."
+    _nb_log "Extracting to $FOOL_HOME/node/..."
     if [[ "$tarball" == *.tar.xz ]]; then
         tar xf  "$tmp/$tarball" -C "$tmp" || { rm -rf "$tmp"; return 1; }
     else
@@ -295,30 +295,30 @@ _nb_install_bundled_node() {
         return 1
     fi
 
-    mkdir -p "$THEFOOL_HOME"
-    rm -rf "$THEFOOL_HOME/node"
-    mv "$extracted" "$THEFOOL_HOME/node"
+    mkdir -p "$FOOL_HOME"
+    rm -rf "$FOOL_HOME/node"
+    mv "$extracted" "$FOOL_HOME/node"
     rm -rf "$tmp"
 
     local _link_dir
     _link_dir="$(_nb_get_link_dir)"
-    # THEFOOL_NODE_SKIP_LINKS=1: the caller only wants the private managed tree
+    # FOOL_NODE_SKIP_LINKS=1: the caller only wants the private managed tree
     # (e.g. the EBADENGINE recovery provisioning a runtime alongside a working
     # system Node). Skipping the links keeps the user's own node/npm first on
     # PATH instead of shadowing them with ours.
-    if [ "${THEFOOL_NODE_SKIP_LINKS:-0}" != "1" ]; then
+    if [ "${FOOL_NODE_SKIP_LINKS:-0}" != "1" ]; then
         mkdir -p "$_link_dir"
-        ln -sf "$THEFOOL_HOME/node/bin/node" "$_link_dir/node"
-        ln -sf "$THEFOOL_HOME/node/bin/npm"  "$_link_dir/npm"
-        ln -sf "$THEFOOL_HOME/node/bin/npx"  "$_link_dir/npx"
+        ln -sf "$FOOL_HOME/node/bin/node" "$_link_dir/node"
+        ln -sf "$FOOL_HOME/node/bin/npm"  "$_link_dir/npm"
+        ln -sf "$FOOL_HOME/node/bin/npx"  "$_link_dir/npx"
     fi
 
     _nb_configure_npm_prefix
 
-    export PATH="$THEFOOL_HOME/node/bin:$PATH"
+    export PATH="$FOOL_HOME/node/bin:$PATH"
 
     _nb_have_modern_node || return 1
-    _nb_ok "Node $(node --version) installed to $THEFOOL_HOME/node/"
+    _nb_ok "Node $(node --version) installed to $FOOL_HOME/node/"
     # The tarball's bundled npm is usually below the repo's engines.npm floor.
     # Best-effort: an old npm still beats no Node.
     _nb_ensure_bundled_npm_range || true
@@ -333,9 +333,9 @@ _nb_managed_tool_broken() {
     local tool="$1"
     local probe
     for probe in \
-        "$THEFOOL_HOME/node/bin/$tool" \
-        "$THEFOOL_HOME/node/${tool}.exe" \
-        "$THEFOOL_HOME/node/$tool"; do
+        "$FOOL_HOME/node/bin/$tool" \
+        "$FOOL_HOME/node/${tool}.exe" \
+        "$FOOL_HOME/node/$tool"; do
         if [ -x "$probe" ] || [ -f "$probe" ]; then
             if ! "$probe" --version >/dev/null 2>&1; then
                 return 0
@@ -345,19 +345,19 @@ _nb_managed_tool_broken() {
     return 1
 }
 
-# The managed node runs but is below THEFOOL_NODE_TARGET_MAJOR — an old tree
+# The managed node runs but is below FOOL_NODE_TARGET_MAJOR — an old tree
 # from a previous install (e.g. 22). Outdated heals the same way broken does,
 # so existing users get upgraded on the next heal probe, not just on a full
 # installer re-run. Mirrors _managed_node_tree_outdated() in
-# thefool_constants.py.
+# fool_constants.py.
 _nb_managed_node_outdated() {
     local probe ver major
-    for probe in "$THEFOOL_HOME/node/bin/node" "$THEFOOL_HOME/node/node"; do
+    for probe in "$FOOL_HOME/node/bin/node" "$FOOL_HOME/node/node"; do
         [ -x "$probe" ] || continue
         ver="$("$probe" --version 2>/dev/null)" || return 1
         major="${ver#v}"; major="${major%%.*}"
         case "$major" in ''|*[!0-9]*) return 1 ;; esac
-        [ "$major" -lt "$THEFOOL_NODE_TARGET_MAJOR" ] && return 0
+        [ "$major" -lt "$FOOL_NODE_TARGET_MAJOR" ] && return 0
         return 1
     done
     return 1
@@ -375,14 +375,14 @@ _nb_managed_node_needs_heal() {
 
 # Redownload the pinned nodejs.org tarball when a managed tree exists but
 # node/npm/npx fail a --version probe. No-op when the tree is healthy or
-# absent. Used by thefool_constants.find_hermes_node_executable() and safe
+# absent. Used by fool_constants.find_hermes_node_executable() and safe
 # to call from install reruns.
 heal_managed_node() {
-    [ -d "$THEFOOL_HOME/node" ] || return 1
+    [ -d "$FOOL_HOME/node" ] || return 1
     if ! _nb_managed_node_needs_heal; then
         return 0
     fi
-    _nb_log "Hermes-managed Node is broken — redownloading to $THEFOOL_HOME/node/..."
+    _nb_log "Hermes-managed Node is broken — redownloading to $FOOL_HOME/node/..."
     _nb_install_bundled_node
 }
 
@@ -391,7 +391,7 @@ heal_managed_node() {
 # ---------------------------------------------------------------------------
 
 ensure_node() {
-    THEFOOL_NODE_AVAILABLE=false
+    FOOL_NODE_AVAILABLE=false
 
     # Repair pre-existing managed installs where `npm install -g` lands off
     # PATH. No-op when there's no managed Node, so it's safe to run first.
@@ -399,15 +399,15 @@ ensure_node() {
 
     if _nb_have_modern_node; then
         _nb_ok "Node $(node --version) found"
-        THEFOOL_NODE_AVAILABLE=true
+        FOOL_NODE_AVAILABLE=true
         return 0
     fi
 
-    if [ -x "$THEFOOL_HOME/node/bin/node" ]; then
-        export PATH="$THEFOOL_HOME/node/bin:$PATH"
+    if [ -x "$FOOL_HOME/node/bin/node" ]; then
+        export PATH="$FOOL_HOME/node/bin:$PATH"
         if _nb_have_modern_node; then
             _nb_ok "Node $(node --version) found (Hermes-managed)"
-            THEFOOL_NODE_AVAILABLE=true
+            FOOL_NODE_AVAILABLE=true
             # A tree from an older install still carries that Node major's
             # bundled npm, and the upgrade in _nb_install_bundled_node is
             # best-effort — one offline install leaves an at-target tree
@@ -420,18 +420,18 @@ ensure_node() {
     fi
 
     # Version managers first — respect the user's existing setup.
-    _nb_try_fnm   && { THEFOOL_NODE_AVAILABLE=true; return 0; }
-    _nb_try_proto && { THEFOOL_NODE_AVAILABLE=true; return 0; }
-    _nb_try_nvm   && { THEFOOL_NODE_AVAILABLE=true; return 0; }
+    _nb_try_fnm   && { FOOL_NODE_AVAILABLE=true; return 0; }
+    _nb_try_proto && { FOOL_NODE_AVAILABLE=true; return 0; }
+    _nb_try_nvm   && { FOOL_NODE_AVAILABLE=true; return 0; }
 
     # Platform package managers.
-    _nb_try_termux_pkg && { THEFOOL_NODE_AVAILABLE=true; return 0; }
-    _nb_try_brew       && { THEFOOL_NODE_AVAILABLE=true; return 0; }
+    _nb_try_termux_pkg && { FOOL_NODE_AVAILABLE=true; return 0; }
+    _nb_try_brew       && { FOOL_NODE_AVAILABLE=true; return 0; }
 
     # Last resort: pinned nodejs.org tarball.
-    _nb_install_bundled_node && { THEFOOL_NODE_AVAILABLE=true; return 0; }
+    _nb_install_bundled_node && { FOOL_NODE_AVAILABLE=true; return 0; }
 
     _nb_warn "Node.js install failed — TUI and browser tools will be unavailable."
-    _nb_warn "Install manually: https://nodejs.org/en/download/  (or: \`brew install node\`, \`fnm install $THEFOOL_NODE_TARGET_MAJOR\`, etc.)"
+    _nb_warn "Install manually: https://nodejs.org/en/download/  (or: \`brew install node\`, \`fnm install $FOOL_NODE_TARGET_MAJOR\`, etc.)"
     return 1
 }

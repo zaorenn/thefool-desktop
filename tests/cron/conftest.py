@@ -1,13 +1,13 @@
 """Cron-test fixtures.
 
-Provides a default ``THEFOOL_MODEL`` for cron run_job tests so each one
+Provides a default ``FOOL_MODEL`` for cron run_job tests so each one
 doesn't have to spell out a model. The global conftest blanks
-THEFOOL_MODEL hermetically; without this autouse fixture every cron test
+FOOL_MODEL hermetically; without this autouse fixture every cron test
 that exercises ``run_job`` would hit the fail-fast guard added in
 ``cron/scheduler.py`` (see issue #23979) and have to be rewritten.
 
-Tests that specifically need ``THEFOOL_MODEL`` unset — model-resolution
-edge cases — call ``monkeypatch.delenv("THEFOOL_MODEL", raising=False)``
+Tests that specifically need ``FOOL_MODEL`` unset — model-resolution
+edge cases — call ``monkeypatch.delenv("FOOL_MODEL", raising=False)``
 inside the test, which overrides this fixture's value for that scope.
 """
 
@@ -47,8 +47,8 @@ def make_cron_provider():
 
 @pytest.fixture(autouse=True)
 def _default_cron_test_model(monkeypatch):
-    """Pin a default THEFOOL_MODEL so cron run_job tests have a resolvable model."""
-    monkeypatch.setenv("THEFOOL_MODEL", "test-cron-default-model")
+    """Pin a default FOOL_MODEL so cron run_job tests have a resolvable model."""
+    monkeypatch.setenv("FOOL_MODEL", "test-cron-default-model")
     yield
 
 

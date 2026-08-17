@@ -324,13 +324,13 @@ class TestTeamsPluginRegistration:
 class TestTeamsInteractiveSetup:
     def test_interactive_setup_persists_credentials(self, tmp_path, monkeypatch):
         """Regression for #19173: interactive_setup must import prompt helpers
-        from thefool_cli.cli_output (not thefool_cli.config) and persist
+        from fool_cli.cli_output (not fool_cli.config) and persist
         credentials to .env without crashing.
         """
         hermes_home = tmp_path / "hermes"
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
 
-        import thefool_cli.cli_output as cli_output_mod
+        import fool_cli.cli_output as cli_output_mod
 
         answers = iter(["client-id", "client-secret", "tenant-id", "aad-1, aad-2"])
         monkeypatch.setattr(cli_output_mod, "prompt", lambda *_a, **_kw: next(answers))

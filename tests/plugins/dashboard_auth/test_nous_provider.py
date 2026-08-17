@@ -31,7 +31,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 import plugins.dashboard_auth.nous as nous_plugin
-from thefool_cli.dashboard_auth import (
+from fool_cli.dashboard_auth import (
     InvalidCodeError,
     LoginStart,
     ProviderError,
@@ -170,22 +170,22 @@ class TestConstruction:
 
 class TestPluginRegister:
     def test_skips_when_client_id_missing(self, monkeypatch):
-        monkeypatch.delenv("THEFOOL_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
-        monkeypatch.delenv("THEFOOL_DASHBOARD_PORTAL_URL", raising=False)
+        monkeypatch.delenv("FOOL_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
+        monkeypatch.delenv("FOOL_DASHBOARD_PORTAL_URL", raising=False)
         ctx = MagicMock()
         nous_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
         # Skip reason is surfaced for the gate's fail-closed message.
-        assert "THEFOOL_DASHBOARD_OAUTH_CLIENT_ID" in nous_plugin.LAST_SKIP_REASON
+        assert "FOOL_DASHBOARD_OAUTH_CLIENT_ID" in nous_plugin.LAST_SKIP_REASON
 
     def test_registers_with_default_portal_url_when_only_client_id_set(
         self, monkeypatch
     ):
-        """Phase 7 follow-up: THEFOOL_DASHBOARD_PORTAL_URL is optional —
+        """Phase 7 follow-up: FOOL_DASHBOARD_PORTAL_URL is optional —
         defaults to the production Nous Portal. The user shouldn't have
         to set it for the common production deployment path."""
-        monkeypatch.setenv("THEFOOL_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
-        monkeypatch.delenv("THEFOOL_DASHBOARD_PORTAL_URL", raising=False)
+        monkeypatch.setenv("FOOL_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
+        monkeypatch.delenv("FOOL_DASHBOARD_PORTAL_URL", raising=False)
         ctx = MagicMock()
         nous_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_called_once()
@@ -200,8 +200,8 @@ class TestPluginRegister:
         """Explicit empty string still falls back to the production
         default — same handling as 'unset' so an empty Fly secret can't
         accidentally point the dashboard at nowhere."""
-        monkeypatch.setenv("THEFOOL_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
-        monkeypatch.setenv("THEFOOL_DASHBOARD_PORTAL_URL", "")
+        monkeypatch.setenv("FOOL_DASHBOARD_OAUTH_CLIENT_ID", "agent:inst1")
+        monkeypatch.setenv("FOOL_DASHBOARD_PORTAL_URL", "")
         ctx = MagicMock()
         nous_plugin.register(ctx)
         registered = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -215,8 +215,8 @@ class TestPluginRegister:
 
 class TestConfigYamlSource:
     """``dashboard.oauth.{client_id,portal_url}`` in ``config.yaml`` is the
-    canonical surface for these settings. ``THEFOOL_DASHBOARD_OAUTH_CLIENT_ID``
-    and ``THEFOOL_DASHBOARD_PORTAL_URL`` are operator overrides that win when
+    canonical surface for these settings. ``FOOL_DASHBOARD_OAUTH_CLIENT_ID``
+    and ``FOOL_DASHBOARD_PORTAL_URL`` are operator overrides that win when
     set — this is the contract Fly.io's platform-secret injection relies on,
     and the contract that lets local devs experiment without setting env
     vars.
@@ -229,7 +229,7 @@ class TestConfigYamlSource:
 
     @pytest.fixture
     def patch_config(self, monkeypatch):
-        """Yield a callable that replaces ``thefool_cli.config.load_config``
+        """Yield a callable that replaces ``fool_cli.config.load_config``
         with a stub returning the given dict. Tests pass the intended
         ``dashboard.oauth`` block; the stub returns the wrapping structure."""
 
@@ -238,7 +238,7 @@ class TestConfigYamlSource:
             if oauth_block is not None:
                 cfg = {"dashboard": {"oauth": oauth_block}}
             monkeypatch.setattr(
-                "thefool_cli.config.load_config", lambda: cfg
+                "fool_cli.config.load_config", lambda: cfg
             )
 
         return _set
@@ -247,8 +247,8 @@ class TestConfigYamlSource:
         """No env var, only config.yaml — plugin reads from config and
         registers successfully. This is the path Teknium's review pushed
         for (".env is for secrets only")."""
-        monkeypatch.delenv("THEFOOL_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
-        monkeypatch.delenv("THEFOOL_DASHBOARD_PORTAL_URL", raising=False)
+        monkeypatch.delenv("FOOL_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
+        monkeypatch.delenv("FOOL_DASHBOARD_PORTAL_URL", raising=False)
         patch_config({"client_id": "agent:from-config"})
         ctx = MagicMock()
         nous_plugin.register(ctx)
@@ -262,9 +262,9 @@ class TestConfigYamlSource:
 
     def test_env_overrides_config_client_id(self, patch_config, monkeypatch):
         """Env wins. Critical for Fly.io: the Portal injects
-        THEFOOL_DASHBOARD_OAUTH_CLIENT_ID at deploy time and we MUST
+        FOOL_DASHBOARD_OAUTH_CLIENT_ID at deploy time and we MUST
         honour it even if a stale config.yaml ships in the image."""
-        monkeypatch.setenv("THEFOOL_DASHBOARD_OAUTH_CLIENT_ID", "agent:from-env")
+        monkeypatch.setenv("FOOL_DASHBOARD_OAUTH_CLIENT_ID", "agent:from-env")
         patch_config({"client_id": "agent:from-config"})
         ctx = MagicMock()
         nous_plugin.register(ctx)
@@ -281,13 +281,13 @@ class TestConfigYamlSource:
         """Neither env nor config.yaml set — skip with a reason that
         mentions BOTH surfaces so operators don't guess wrong about
         which one to populate."""
-        monkeypatch.delenv("THEFOOL_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
+        monkeypatch.delenv("FOOL_DASHBOARD_OAUTH_CLIENT_ID", raising=False)
         patch_config(None)
         ctx = MagicMock()
         nous_plugin.register(ctx)
         ctx.register_dashboard_auth_provider.assert_not_called()
         # Old behaviour: skip reason mentions the env var.
-        assert "THEFOOL_DASHBOARD_OAUTH_CLIENT_ID" in nous_plugin.LAST_SKIP_REASON
+        assert "FOOL_DASHBOARD_OAUTH_CLIENT_ID" in nous_plugin.LAST_SKIP_REASON
         # New behaviour: skip reason ALSO mentions the config.yaml path
         # so the user knows it's a valid alternative.
         assert "dashboard.oauth.client_id" in nous_plugin.LAST_SKIP_REASON, (
@@ -559,7 +559,7 @@ class TestVerifySession:
         self, provider, rsa_keypair
     ):
         """Operators need to see the actual iss/aud the token carries to debug
-        config drift between THEFOOL_DASHBOARD_PORTAL_URL/CLIENT_ID and Portal."""
+        config drift between FOOL_DASHBOARD_PORTAL_URL/CLIENT_ID and Portal."""
         token = _mint_token(rsa_keypair, iss="https://evil.example")
         with pytest.raises(ProviderError) as excinfo:
             provider.verify_session(access_token=token)

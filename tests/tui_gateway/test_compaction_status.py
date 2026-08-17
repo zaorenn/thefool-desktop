@@ -22,12 +22,12 @@ def server():
     with patch.dict(
         "sys.modules",
         {
-            "thefool_constants": MagicMock(
+            "fool_constants": MagicMock(
                 get_hermes_home=MagicMock(return_value="/tmp/hermes_test_compaction")
             ),
-            "thefool_cli.env_loader": MagicMock(),
-            "thefool_cli.banner": MagicMock(),
-            "thefool_state": MagicMock(),
+            "fool_cli.env_loader": MagicMock(),
+            "fool_cli.banner": MagicMock(),
+            "fool_state": MagicMock(),
         },
     ):
         mod = importlib.import_module("tui_gateway.server")

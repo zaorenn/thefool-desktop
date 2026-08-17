@@ -48,7 +48,7 @@ function writeLegacySdk(root) {
   mkdirSync(packageRoot, { recursive: true })
   writeFileSync(
     join(packageRoot, 'package.json'),
-    `${JSON.stringify({ name: '@thefool/plugin-sdk', type: 'module', exports: './index.js' }, null, 2)}\n`
+    `${JSON.stringify({ name: '@fool/plugin-sdk', type: 'module', exports: './index.js' }, null, 2)}\n`
   )
   writeFileSync(join(packageRoot, 'index.js'), proxyModule(exportNames))
 }

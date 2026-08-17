@@ -1,4 +1,4 @@
-import { driveChargeSettlement, type SettlementOutcome } from '@thefool/shared/charge-settlement'
+import { driveChargeSettlement, type SettlementOutcome } from '@fool/shared/charge-settlement'
 
 import type {
   BillingChargeResponse,

@@ -16,7 +16,7 @@ cron 子系统提供定时任务执行能力——从简单的单次延迟到带
 | `cron/scheduler.py` | 调度器循环——到期任务检测、执行、重复计数跟踪 |
 | `tools/cronjob_tools.py` | 面向模型的 `cronjob` 工具注册与处理器 |
 | `gateway/run.py` | Gateway 集成——在长运行循环中触发 cron tick |
-| `thefool_cli/cron.py` | CLI `hermes cron` 子命令 |
+| `fool_cli/cron.py` | CLI `hermes cron` 子命令 |
 
 ## 调度模型
 
@@ -144,7 +144,7 @@ import requests, json
 脚本超时默认为 120 秒。`_get_script_timeout()` 通过三层链路解析限制：
 
 1. **模块级覆盖** — `_SCRIPT_TIMEOUT`（用于测试/monkeypatching）。仅在与默认值不同时使用。
-2. **环境变量** — `THEFOOL_CRON_SCRIPT_TIMEOUT`
+2. **环境变量** — `FOOL_CRON_SCRIPT_TIMEOUT`
 3. **配置** — `config.yaml` 中的 `cron.script_timeout_seconds`（通过 `load_config()` 读取）
 4. **默认值** — 120 秒
 

@@ -14,7 +14,7 @@ def clean_env(monkeypatch):
         "GEMINI_API_KEY",
         "GOOGLE_API_KEY",
         "GEMINI_BASE_URL",
-        "THEFOOL_SESSION_PLATFORM",
+        "FOOL_SESSION_PLATFORM",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -117,7 +117,7 @@ class TestGenerateGeminiTts:
 
     def test_x_goog_api_client_header_is_set(self, tmp_path, monkeypatch, mock_gemini_response):
         """Gemini TTS requests should include Hermes client context."""
-        from thefool_cli import __version__
+        from fool_cli import __version__
         from tools.tts_tool import _generate_gemini_tts
 
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")

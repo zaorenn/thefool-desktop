@@ -57,19 +57,19 @@ from pathlib import Path
 from typing import Callable, Dict, Any, Iterator, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
-from thefool_cli._subprocess_compat import windows_hide_flags
-from thefool_constants import display_hermes_home
+from fool_cli._subprocess_compat import windows_hide_flags
+from fool_constants import display_hermes_home
 
 logger = logging.getLogger(__name__)
 def get_env_value(name, default=None):
     """Read env values through the live config module.
 
-    Tests may monkeypatch and later restore ``thefool_cli.config.get_env_value``
+    Tests may monkeypatch and later restore ``fool_cli.config.get_env_value``
     before this module is imported. Resolve the helper at call time so TTS does
     not keep a stale imported function for the rest of the test process.
     """
     try:
-        from thefool_cli.config import get_env_value as _get_env_value
+        from fool_cli.config import get_env_value as _get_env_value
     except ImportError:
         return os.getenv(name, default)
     value = _get_env_value(name)
@@ -250,7 +250,7 @@ DEFAULT_GEMINI_TTS_VOICE = "Kore"
 DEFAULT_GEMINI_TTS_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 DEFAULT_GEMINI_AUDIO_TAGS = False
 GEMINI_AUDIO_TAG_REWRITE_TASK = "tts_audio_tags"
-# Base URL now resolved via thefool_cli.models.deepinfra_base_url (shared).
+# Base URL now resolved via fool_cli.models.deepinfra_base_url (shared).
 DEFAULT_DEEPINFRA_TTS_VOICE = "default"
 # PCM output specs for Gemini TTS (fixed by the API)
 GEMINI_TTS_SAMPLE_RATE = 24000
@@ -260,7 +260,7 @@ TTS_RESPONSE_BODY_LIMIT_BYTES = 16 * 1024 * 1024
 TTS_RESPONSE_BODY_CHUNK_BYTES = 64 * 1024
 
 def _get_default_output_dir() -> str:
-    from thefool_constants import get_hermes_dir
+    from fool_constants import get_hermes_dir
     return str(get_hermes_dir("cache/audio", "audio_cache"))
 
 DEFAULT_OUTPUT_DIR = _get_default_output_dir()
@@ -634,11 +634,11 @@ def _load_tts_config() -> Dict[str, Any]:
     for any missing fields.
     """
     try:
-        from thefool_cli.config import load_config
+        from fool_cli.config import load_config
         config = load_config()
         return config.get("tts") or {}
     except ImportError:
-        logger.debug("thefool_cli.config not available, using default TTS config")
+        logger.debug("fool_cli.config not available, using default TTS config")
         return {}
     except Exception as e:
         logger.warning("Failed to load TTS config: %s", e, exc_info=True)
@@ -909,7 +909,7 @@ def _dispatch_to_plugin_provider(
         return None
     try:
         from agent.tts_registry import get_provider
-        from thefool_cli.plugins import _ensure_plugins_discovered
+        from fool_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         plugin_provider = get_provider(key)
@@ -1934,7 +1934,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     DeepInfra's audio endpoint is OpenAI-compatible, so there's no need
     to duplicate the SDK call — we just pass an explicit api_key /
     base_url / model / voice through. Model ids and the base URL come from
-    the shared ``thefool_cli.models`` helpers so every DeepInfra surface
+    the shared ``fool_cli.models`` helpers so every DeepInfra surface
     resolves them identically.
     """
     api_key = _resolve_provider_key("DEEPINFRA_API_KEY", "deepinfra")
@@ -1951,7 +1951,7 @@ def _generate_deepinfra_tts(text: str, output_path: str, tts_config: Dict[str, A
     if not isinstance(di_config, dict):
         di_config = {}
 
-    from thefool_cli.models import deepinfra_base_url, deepinfra_model_ids
+    from fool_cli.models import deepinfra_base_url, deepinfra_model_ids
 
     model = di_config.get("model")
     if not isinstance(model, str) or not model.strip():
@@ -2452,7 +2452,7 @@ def _resolve_gemini_persona_prompt_path(gemini_config: Dict[str, Any]) -> Option
     path = Path(expanded).expanduser()
     if not path.is_absolute():
         try:
-            from thefool_constants import get_hermes_home
+            from fool_constants import get_hermes_home
             path = get_hermes_home() / path
         except Exception:
             path = Path.cwd() / path
@@ -2666,7 +2666,7 @@ def _generate_gemini_tts(text: str, output_path: str, tts_config: Dict[str, Any]
     headers = {"Content-Type": "application/json"}
     if urlparse(base_url).hostname == "generativelanguage.googleapis.com":
         try:
-            import thefool_cli as _hermes_cli
+            import fool_cli as _hermes_cli
 
             _hermes_version = str(_hermes_cli.__version__)
         except Exception:
@@ -2903,9 +2903,9 @@ def _get_piper_voices_dir() -> Path:
     """Return the directory where Hermes caches Piper voice models.
 
     Resolves to ``~/.hermes/cache/piper-voices/`` under the active
-    THEFOOL_HOME so voice downloads follow profile boundaries.
+    FOOL_HOME so voice downloads follow profile boundaries.
     """
-    from thefool_constants import get_hermes_dir
+    from fool_constants import get_hermes_dir
     root = Path(get_hermes_dir("cache/piper-voices", "piper_voices_cache"))
     root.mkdir(parents=True, exist_ok=True)
     return root
@@ -3191,7 +3191,7 @@ def _text_to_speech_single(
     # ElevenLabs can produce Opus natively (no ffmpeg needed). Edge TTS
     # always outputs MP3 and needs ffmpeg for conversion.
     from gateway.session_context import get_session_env
-    platform = get_session_env("THEFOOL_SESSION_PLATFORM", "").lower()
+    platform = get_session_env("FOOL_SESSION_PLATFORM", "").lower()
     want_opus = platform in OPUS_VOICE_PLATFORMS
 
     # Determine output path
@@ -3560,7 +3560,7 @@ def text_to_speech_tool(
         )
 
     from gateway.session_context import get_session_env
-    platform = get_session_env("THEFOOL_SESSION_PLATFORM", "").lower()
+    platform = get_session_env("FOOL_SESSION_PLATFORM", "").lower()
     want_opus = platform in OPUS_VOICE_PLATFORMS
     delivery_profile = _resolve_audio_delivery_profile(platform, tts_config)
 
@@ -3771,7 +3771,7 @@ def check_tts_requirements() -> bool:
 
     try:
         from agent.tts_registry import get_provider
-        from thefool_cli.plugins import _ensure_plugins_discovered
+        from fool_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         plugin = get_provider(provider)

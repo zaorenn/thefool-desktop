@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from thefool_cli import env_loader
+from fool_cli import env_loader
 
 
 @pytest.fixture(autouse=True)

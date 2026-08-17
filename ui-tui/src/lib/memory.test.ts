@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { performHeapDump } from './memory.js'
 
-const ENV_KEYS = ['THEFOOL_AUTO_HEAPDUMP', 'THEFOOL_HEAPDUMP_DIR', 'THEFOOL_HEAPDUMP_MAX_BYTES'] as const
+const ENV_KEYS = ['FOOL_AUTO_HEAPDUMP', 'FOOL_HEAPDUMP_DIR', 'FOOL_HEAPDUMP_MAX_BYTES'] as const
 
 describe('performHeapDump auto opt-in gate (#21767)', () => {
   let saved: Record<string, string | undefined>
@@ -21,7 +21,7 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
     }
 
     dir = mkdtempSync(join(tmpdir(), 'hermes-heapdump-test-'))
-    process.env.THEFOOL_HEAPDUMP_DIR = dir
+    process.env.FOOL_HEAPDUMP_DIR = dir
   })
 
   afterEach(() => {
@@ -36,7 +36,7 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
     rmSync(dir, { force: true, recursive: true })
   })
 
-  it('writes diagnostics only for auto-high without THEFOOL_AUTO_HEAPDUMP', async () => {
+  it('writes diagnostics only for auto-high without FOOL_AUTO_HEAPDUMP', async () => {
     const result = await performHeapDump('auto-high')
 
     expect(result.success).toBe(true)
@@ -49,7 +49,7 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
     expect(files.some(f => f.endsWith('.heapsnapshot'))).toBe(false)
   })
 
-  it('writes diagnostics only for auto-critical without THEFOOL_AUTO_HEAPDUMP', async () => {
+  it('writes diagnostics only for auto-critical without FOOL_AUTO_HEAPDUMP', async () => {
     const result = await performHeapDump('auto-critical')
 
     expect(result.success).toBe(true)
@@ -60,8 +60,8 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
     expect(files.some(f => f.endsWith('.heapsnapshot'))).toBe(false)
   })
 
-  it('writes both diagnostics and snapshot for auto-high when THEFOOL_AUTO_HEAPDUMP=1', async () => {
-    process.env.THEFOOL_AUTO_HEAPDUMP = '1'
+  it('writes both diagnostics and snapshot for auto-high when FOOL_AUTO_HEAPDUMP=1', async () => {
+    process.env.FOOL_AUTO_HEAPDUMP = '1'
 
     const result = await performHeapDump('auto-high')
 
@@ -76,7 +76,7 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
 
   it('accepts truthy spellings (true|yes|on, case-insensitive) as opt-in', async () => {
     for (const value of ['true', 'YES', 'On']) {
-      process.env.THEFOOL_AUTO_HEAPDUMP = value
+      process.env.FOOL_AUTO_HEAPDUMP = value
       const result = await performHeapDump('auto-high')
 
       expect(result.success).toBe(true)
@@ -86,7 +86,7 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
 
   it('treats other values (0, off, garbage) as opt-out for auto triggers', async () => {
     for (const value of ['0', 'off', 'nope']) {
-      process.env.THEFOOL_AUTO_HEAPDUMP = value
+      process.env.FOOL_AUTO_HEAPDUMP = value
       const result = await performHeapDump('auto-high')
 
       expect(result.success).toBe(true)
@@ -95,7 +95,7 @@ describe('performHeapDump auto opt-in gate (#21767)', () => {
     }
   })
 
-  it('writes both for manual triggers regardless of THEFOOL_AUTO_HEAPDUMP', async () => {
+  it('writes both for manual triggers regardless of FOOL_AUTO_HEAPDUMP', async () => {
     const result = await performHeapDump('manual')
 
     expect(result.success).toBe(true)
@@ -113,24 +113,24 @@ describe('heapdump retention guard (#21767)', () => {
   let dir: string
 
   beforeEach(() => {
-    savedDir = process.env.THEFOOL_HEAPDUMP_DIR
-    savedMax = process.env.THEFOOL_HEAPDUMP_MAX_BYTES
-    delete process.env.THEFOOL_AUTO_HEAPDUMP
+    savedDir = process.env.FOOL_HEAPDUMP_DIR
+    savedMax = process.env.FOOL_HEAPDUMP_MAX_BYTES
+    delete process.env.FOOL_AUTO_HEAPDUMP
     dir = mkdtempSync(join(tmpdir(), 'hermes-heapdump-prune-'))
-    process.env.THEFOOL_HEAPDUMP_DIR = dir
+    process.env.FOOL_HEAPDUMP_DIR = dir
   })
 
   afterEach(() => {
     if (savedDir === undefined) {
-      delete process.env.THEFOOL_HEAPDUMP_DIR
+      delete process.env.FOOL_HEAPDUMP_DIR
     } else {
-      process.env.THEFOOL_HEAPDUMP_DIR = savedDir
+      process.env.FOOL_HEAPDUMP_DIR = savedDir
     }
 
     if (savedMax === undefined) {
-      delete process.env.THEFOOL_HEAPDUMP_MAX_BYTES
+      delete process.env.FOOL_HEAPDUMP_MAX_BYTES
     } else {
-      process.env.THEFOOL_HEAPDUMP_MAX_BYTES = savedMax
+      process.env.FOOL_HEAPDUMP_MAX_BYTES = savedMax
     }
 
     rmSync(dir, { force: true, recursive: true })
@@ -149,7 +149,7 @@ describe('heapdump retention guard (#21767)', () => {
     }
 
     // Cap at 2KB → a fresh diagnostics write should trigger a prune down to ~cap.
-    process.env.THEFOOL_HEAPDUMP_MAX_BYTES = String(2 * 1024)
+    process.env.FOOL_HEAPDUMP_MAX_BYTES = String(2 * 1024)
 
     const result = await performHeapDump('auto-high')
     expect(result.success).toBe(true)

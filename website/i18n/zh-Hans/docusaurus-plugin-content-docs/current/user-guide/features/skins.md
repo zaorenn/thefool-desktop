@@ -105,7 +105,7 @@ CLI 界面中使用的文字字符串。
 |----|------|------|--------|
 | `tool_prefix` | 字符串 | CLI 中工具输出行的前缀字符 | `┊` |
 | `tool_emojis` | 字典 | 各工具的 emoji 覆盖，用于 spinner 和进度显示（`{tool_name: emoji}`） | `{}` |
-| `banner_logo` | 字符串 | Rich 标记 ASCII 艺术 logo（替换默认的 THEFOOL_AGENT 横幅） | `""` |
+| `banner_logo` | 字符串 | Rich 标记 ASCII 艺术 logo（替换默认的 FOOL_AGENT 横幅） | `""` |
 | `banner_hero` | 字符串 | Rich 标记英雄艺术图（替换默认的双蛇杖图案） | `""` |
 
 ## 自定义皮肤
@@ -259,11 +259,11 @@ npm start
 6. 点击 **Save** 将皮肤 YAML 写入 `~/.hermes/skins/`。
 7. 点击 **Activate** 将其设为当前皮肤（更新 `config.yaml` 中的 `display.skin`）。
 
-Hermes Mod 遵循 `THEFOOL_HOME` 环境变量，因此也适用于[配置文件](/user-guide/profiles)。
+Hermes Mod 遵循 `FOOL_HOME` 环境变量，因此也适用于[配置文件](/user-guide/profiles)。
 
 ## 操作说明
 
-- 内置皮肤从 `thefool_cli/skin_engine.py` 加载。
+- 内置皮肤从 `fool_cli/skin_engine.py` 加载。
 - 未知皮肤自动回退到 `default`。
 - `/skin` 立即更新当前会话的活动 CLI 主题。
 - `~/.hermes/skins/` 中的用户皮肤优先于同名内置皮肤。

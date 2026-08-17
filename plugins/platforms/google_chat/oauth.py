@@ -43,15 +43,15 @@ familiar with that flow can read this without surprises.
 Token storage layout
 --------------------
 - Per-user tokens (keyed by sender email):
-    ``${THEFOOL_HOME}/google_chat_user_tokens/<sanitized_email>.json``
+    ``${FOOL_HOME}/google_chat_user_tokens/<sanitized_email>.json``
 - Legacy single-user token (fallback, untouched for backward compat):
-    ``${THEFOOL_HOME}/google_chat_user_token.json``
+    ``${FOOL_HOME}/google_chat_user_token.json``
 - Per-user pending OAuth state during /setup-files start → exchange:
-    ``${THEFOOL_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
+    ``${FOOL_HOME}/google_chat_user_oauth_pending/<sanitized_email>.json``
 - Legacy pending state:
-    ``${THEFOOL_HOME}/google_chat_user_oauth_pending.json``
+    ``${FOOL_HOME}/google_chat_user_oauth_pending.json``
 - OAuth client secret (profile-scoped — each profile registers its own):
-    ``${THEFOOL_HOME}/google_chat_user_client_secret.json``
+    ``${FOOL_HOME}/google_chat_user_client_secret.json``
 """
 
 from __future__ import annotations
@@ -75,16 +75,16 @@ from packaging.requirements import Requirement
 # after the in-tree → plugin migration. See adapter.py for context.
 logger = logging.getLogger("gateway.platforms.google_chat_user_oauth")
 
-# Use the project's THEFOOL_HOME helper so the token follows the user's
-# profile (e.g. tests can override via THEFOOL_HOME=/tmp/...).
+# Use the project's FOOL_HOME helper so the token follows the user's
+# profile (e.g. tests can override via FOOL_HOME=/tmp/...).
 try:
-    from thefool_constants import display_hermes_home, get_hermes_home
+    from fool_constants import display_hermes_home, get_hermes_home
 except (ModuleNotFoundError, ImportError):
-    # Fallback for environments where thefool_constants isn't importable
+    # Fallback for environments where fool_constants isn't importable
     # (mirrors the same fallback used by the google-workspace skill's
     # _hermes_home.py shim).
     def get_hermes_home() -> Path:
-        val = os.environ.get("THEFOOL_HOME", "").strip()
+        val = os.environ.get("FOOL_HOME", "").strip()
         return Path(val) if val else Path.home() / ".hermes"
 
     def display_hermes_home() -> str:
@@ -98,9 +98,9 @@ from utils import atomic_replace
 
 
 def _hermes_home() -> Path:
-    """Resolve THEFOOL_HOME at call time (NOT module import).
+    """Resolve FOOL_HOME at call time (NOT module import).
 
-    Tests and ``THEFOOL_HOME=...`` env overrides need this to be late-
+    Tests and ``FOOL_HOME=...`` env overrides need this to be late-
     binding. If we cached the path at import time, switching profiles
     or tweaking env vars in tests would silently keep using the old
     path."""
@@ -402,7 +402,7 @@ def install_deps() -> bool:
 
     print("Installing Google Chat dependencies...")
     try:
-        from thefool_cli.tools_config import _pip_install
+        from fool_cli.tools_config import _pip_install
 
         result = _pip_install(["--quiet"] + missing)
         if result.returncode != 0:
@@ -440,7 +440,7 @@ def check_auth(email: Optional[str] = None) -> bool:
 
 
 def store_client_secret(path: str) -> None:
-    """Validate and copy the user's OAuth client_secret.json into THEFOOL_HOME."""
+    """Validate and copy the user's OAuth client_secret.json into FOOL_HOME."""
     src = Path(path).expanduser().resolve()
     if not src.exists():
         print(f"ERROR: File not found: {src}")

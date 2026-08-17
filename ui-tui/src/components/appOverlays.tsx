@@ -1,4 +1,4 @@
-import { Box, stringWidth, Text } from '@thefool/ink'
+import { Box, stringWidth, Text } from '@fool/ink'
 import { useStore } from '@nanostores/react'
 import type { ReactNode } from 'react'
 

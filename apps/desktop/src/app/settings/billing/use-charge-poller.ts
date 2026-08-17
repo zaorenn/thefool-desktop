@@ -1,9 +1,9 @@
-import { refusalPolicy } from '@thefool/shared/billing-policy'
+import { refusalPolicy } from '@fool/shared/billing-policy'
 import {
   driveChargeSettlement,
   SETTLEMENT_POLL_CAP_MS,
   SETTLEMENT_POLL_INTERVAL_MS
-} from '@thefool/shared/charge-settlement'
+} from '@fool/shared/charge-settlement'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useRef, useState } from 'react'
 

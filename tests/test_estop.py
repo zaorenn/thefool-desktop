@@ -23,8 +23,8 @@ from agent import estop
 
 @pytest.fixture
 def hermes_home(tmp_path, monkeypatch):
-    """Point THEFOOL_HOME at a temp dir and reset estop module log state."""
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    """Point FOOL_HOME at a temp dir and reset estop module log state."""
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     estop._reset_log_state_for_tests()
     return tmp_path
 
@@ -229,7 +229,7 @@ async def test_gateway_internal_events_bypass_estop(hermes_home):
 
 
 def test_cli_pause_engages_with_reason(hermes_home, capsys):
-    from thefool_cli.subcommands.pause import cmd_pause
+    from fool_cli.subcommands.pause import cmd_pause
 
     rc = cmd_pause(argparse.Namespace(reason="ops incident"))
     assert rc == 0
@@ -239,7 +239,7 @@ def test_cli_pause_engages_with_reason(hermes_home, capsys):
 
 
 def test_cli_pause_idempotent(hermes_home, capsys):
-    from thefool_cli.subcommands.pause import cmd_pause
+    from fool_cli.subcommands.pause import cmd_pause
 
     assert cmd_pause(argparse.Namespace(reason=None)) == 0
     assert cmd_pause(argparse.Namespace(reason=None)) == 0
@@ -247,7 +247,7 @@ def test_cli_pause_idempotent(hermes_home, capsys):
 
 
 def test_cli_resume_disengages(hermes_home, capsys):
-    from thefool_cli.subcommands.pause import cmd_pause, cmd_resume
+    from fool_cli.subcommands.pause import cmd_pause, cmd_resume
 
     cmd_pause(argparse.Namespace(reason=None))
     rc = cmd_resume(argparse.Namespace())
@@ -257,7 +257,7 @@ def test_cli_resume_disengages(hermes_home, capsys):
 
 
 def test_cli_resume_when_not_paused(hermes_home, capsys):
-    from thefool_cli.subcommands.pause import cmd_resume
+    from fool_cli.subcommands.pause import cmd_resume
 
     rc = cmd_resume(argparse.Namespace())
     assert rc == 0
@@ -265,7 +265,7 @@ def test_cli_resume_when_not_paused(hermes_home, capsys):
 
 
 def test_builtin_subcommands_include_pause_resume():
-    from thefool_cli.main import _BUILTIN_SUBCOMMANDS
+    from fool_cli.main import _BUILTIN_SUBCOMMANDS
 
     assert "pause" in _BUILTIN_SUBCOMMANDS
     assert "resume" in _BUILTIN_SUBCOMMANDS
@@ -275,7 +275,7 @@ def test_builtin_subcommands_include_pause_resume():
 
 
 def test_status_line_when_paused(hermes_home):
-    from thefool_cli.status import _estop_status_line
+    from fool_cli.status import _estop_status_line
 
     assert _estop_status_line() is None
     estop.engage(reason="ops")
@@ -292,7 +292,7 @@ def test_status_line_when_paused(hermes_home):
 
 def test_is_engaged_fails_safe_on_stat_error(hermes_home, monkeypatch):
     """A stat failure must report ENGAGED (fail safe) — the pause has to
-    hold even when THEFOOL_HOME is misbehaving, matching the module's
+    hold even when FOOL_HOME is misbehaving, matching the module's
     corrupt-sentinel doctrine."""
     class _BoomPath:
         def exists(self):
@@ -369,7 +369,7 @@ async def test_gateway_pause_command_engages_and_resumes(hermes_home):
 
 
 def test_pause_command_registered_for_gateway():
-    from thefool_cli.commands import GATEWAY_KNOWN_COMMANDS, resolve_command
+    from fool_cli.commands import GATEWAY_KNOWN_COMMANDS, resolve_command
 
     cmd = resolve_command("pause")
     assert cmd is not None and cmd.name == "pause"

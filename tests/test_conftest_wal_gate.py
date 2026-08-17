@@ -1,9 +1,9 @@
-"""The conftest WAL gate must agree with thefool_state, and must not import it.
+"""The conftest WAL gate must agree with fool_state, and must not import it.
 
 ``tests/conftest.py::_wal_is_usable`` duplicates the SQLite WAL-reset version
-predicate instead of importing ``thefool_state``. That is deliberate: importing
-``thefool_state`` during collection caches ``DEFAULT_DB_PATH`` from the real
-``~/.hermes`` before the per-test ``THEFOOL_HOME`` redirect, which makes tests
+predicate instead of importing ``fool_state``. That is deliberate: importing
+``fool_state`` during collection caches ``DEFAULT_DB_PATH`` from the real
+``~/.hermes`` before the per-test ``FOOL_HOME`` redirect, which makes tests
 read the developer's live production database.
 
 Duplication needs a guard, so these tests pin the two implementations in
@@ -14,7 +14,7 @@ import sqlite3
 
 import pytest
 
-from thefool_state import is_sqlite_wal_reset_vulnerable
+from fool_state import is_sqlite_wal_reset_vulnerable
 from tests.conftest import _wal_is_usable
 
 
@@ -38,17 +38,17 @@ def test_conftest_gate_agrees_with_hermes_state(version_info, monkeypatch):
     """``_wai_is_usable`` must be the exact inverse of the canonical predicate."""
     monkeypatch.setattr(sqlite3, "sqlite_version_info", version_info)
     assert _wal_is_usable() is not is_sqlite_wal_reset_vulnerable(version_info), (
-        f"conftest gate and thefool_state disagree for SQLite {version_info}"
+        f"conftest gate and fool_state disagree for SQLite {version_info}"
     )
 
 
 def test_conftest_does_not_import_hermes_state_at_collection():
-    """The gate must stay import-free of thefool_state.
+    """The gate must stay import-free of fool_state.
 
     Importing it during collection caches DEFAULT_DB_PATH from the real
     ~/.hermes, so tests read live production sessions instead of a tempdir.
     Reading the source is not an option here (banned), so assert on behavior:
-    the gate must work with ``thefool_state`` absent from ``sys.modules`` and
+    the gate must work with ``fool_state`` absent from ``sys.modules`` and
     blocked from being imported.
     """
     import builtins
@@ -58,20 +58,20 @@ def test_conftest_does_not_import_hermes_state_at_collection():
     blocked: list[str] = []
 
     def guard(name, *args, **kwargs):
-        if name == "thefool_state" or name.startswith("thefool_state."):
+        if name == "fool_state" or name.startswith("fool_state."):
             blocked.append(name)
             raise AssertionError(
-                "conftest._wal_is_usable imported thefool_state — this caches "
+                "conftest._wal_is_usable imported fool_state — this caches "
                 "DEFAULT_DB_PATH from the real ~/.hermes during collection"
             )
         return real_import(name, *args, **kwargs)
 
-    saved = sys.modules.pop("thefool_state", None)
+    saved = sys.modules.pop("fool_state", None)
     builtins.__import__ = guard
     try:
         _wal_is_usable()  # must not raise
     finally:
         builtins.__import__ = real_import
         if saved is not None:
-            sys.modules["thefool_state"] = saved
+            sys.modules["fool_state"] = saved
     assert not blocked

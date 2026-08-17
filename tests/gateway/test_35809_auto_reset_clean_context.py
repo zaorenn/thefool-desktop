@@ -39,7 +39,7 @@ import inspect
 from gateway import run as gateway_run
 from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionSource, SessionStore
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 # ---------------------------------------------------------------------------

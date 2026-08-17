@@ -12,7 +12,7 @@ import type { HermesConfigRecord } from '@/types/hermes'
 //
 // Distinct from session/hooks/use-hermes-config.ts, which is side-effecting —
 // it pushes personality/cwd/voice/… into the session stores for live chat.
-export const THEFOOL_CONFIG_KEY = ['hermes-config-record'] as const
+export const FOOL_CONFIG_KEY = ['hermes-config-record'] as const
 
 // Per-profile cache key. The base key (no profile suffix) is the app-wide
 // active profile, unchanged for every caller that passes nothing. An explicit
@@ -20,7 +20,7 @@ export const THEFOOL_CONFIG_KEY = ['hermes-config-record'] as const
 // profile — gets its own suffixed key so switching the selector refetches and
 // never paints stale cross-profile config (the AGENTS.md scope-in-key rule).
 export const hermesConfigKey = (profile?: null | string) =>
-  profile == null ? THEFOOL_CONFIG_KEY : ([...THEFOOL_CONFIG_KEY, normalizeProfileKey(profile)] as const)
+  profile == null ? FOOL_CONFIG_KEY : ([...FOOL_CONFIG_KEY, normalizeProfileKey(profile)] as const)
 
 // staleTime 0 → serve cache instantly, background-revalidate on every mount.
 // `profile` scopes both the query key and the fetch; omitting it preserves the
@@ -38,7 +38,7 @@ export const useHermesConfigRecord = (profile?: null | string) =>
 // setHermesConfigCache writes the app-wide (base-key) record. Pass a profile to
 // write the suffixed per-profile cache instead — keeps the selector's optimistic
 // write-through landing on the same key its query reads.
-export const setHermesConfigCache = writeCache<HermesConfigRecord>(THEFOOL_CONFIG_KEY)
+export const setHermesConfigCache = writeCache<HermesConfigRecord>(FOOL_CONFIG_KEY)
 export const hermesConfigCacheWriter = (profile?: null | string) =>
   writeCache<HermesConfigRecord>(hermesConfigKey(profile))
 

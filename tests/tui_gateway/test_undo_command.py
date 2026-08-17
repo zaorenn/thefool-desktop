@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 @pytest.fixture()
@@ -28,7 +28,7 @@ def hermes_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     yield home
 
 
@@ -39,8 +39,8 @@ def server(hermes_home):
     with patch.dict(
         "sys.modules",
         {
-            "thefool_cli.env_loader": MagicMock(),
-            "thefool_cli.banner": MagicMock(),
+            "fool_cli.env_loader": MagicMock(),
+            "fool_cli.banner": MagicMock(),
         },
     ):
         mod = importlib.import_module("tui_gateway.server")

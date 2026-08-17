@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from thefool_state import SessionCompressionInProgressError, SessionDB
+from fool_state import SessionCompressionInProgressError, SessionDB
 
 
 @pytest.fixture

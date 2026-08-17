@@ -175,16 +175,16 @@ class TestFullRepoScan:
         # into this branch, this set should be empty. If not, these are
         # the expected matches.
         pr_60741_sites = {
-            "thefool_cli/main.py",
-            "thefool_cli/onepassword_secrets_cli.py",
-            "thefool_cli/setup.py",
+            "fool_cli/main.py",
+            "fool_cli/onepassword_secrets_cli.py",
+            "fool_cli/setup.py",
             "tools/transcription_tools.py",
             "tools/tts_tool.py",
         }
 
         # Run the full scan
         roots = [
-            REPO_ROOT / "thefool_cli",
+            REPO_ROOT / "fool_cli",
             REPO_ROOT / "gateway",
             REPO_ROOT / "tools",
             REPO_ROOT / "cron",

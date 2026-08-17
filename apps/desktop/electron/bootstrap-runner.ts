@@ -11,8 +11,8 @@
  *     installStamp,        // INSTALL_STAMP from main.ts (may be null in dev)
  *     activeRoot,          // ACTIVE_HERMES_ROOT
  *     sourceRepoRoot,      // SOURCE_REPO_ROOT (for dev install.ps1 lookup)
- *     hermesHome,          // THEFOOL_HOME
- *     logRoot,             // THEFOOL_HOME/logs
+ *     hermesHome,          // FOOL_HOME
+ *     logRoot,             // FOOL_HOME/logs
  *     emit: ev => {...}    // event sink (sender.send or similar)
  *   })
  *
@@ -468,9 +468,9 @@ function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, herme
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          // Pass THEFOOL_HOME through so install.ps1 respects the caller's
+          // Pass FOOL_HOME through so install.ps1 respects the caller's
           // choice rather than re-computing the default.
-          THEFOOL_HOME: hermesHome || process.env.THEFOOL_HOME || ''
+          FOOL_HOME: hermesHome || process.env.FOOL_HOME || ''
         }
       })
     )
@@ -566,7 +566,7 @@ function spawnBash(scriptPath, args, { emit, stageName, abortSignal, hermesHome 
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
-        THEFOOL_HOME: hermesHome || process.env.THEFOOL_HOME || ''
+        FOOL_HOME: hermesHome || process.env.FOOL_HOME || ''
       }
     })
 

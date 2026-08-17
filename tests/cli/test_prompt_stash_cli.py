@@ -32,7 +32,7 @@ def _make_cli(**kwargs):
         "agent": {},
         "terminal": {"env_type": "local"},
     }
-    clean_env = {"LLM_MODEL": "", "THEFOOL_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "FOOL_MAX_ITERATIONS": ""}
     prompt_toolkit_stubs = {
         "prompt_toolkit": MagicMock(),
         "prompt_toolkit.history": MagicMock(),
@@ -73,7 +73,7 @@ class TestStashStateInit:
 
     def test_stash_starts_empty(self, cli):
         # Duck-typed rather than isinstance: _make_cli reloads the `cli`
-        # module, which re-imports thefool_cli.prompt_toolkit stubs and can
+        # module, which re-imports fool_cli.prompt_toolkit stubs and can
         # yield a distinct-but-equivalent PromptStash class object.
         stash = cli._prompt_stash
         assert type(stash).__name__ == "PromptStash"

@@ -62,9 +62,9 @@ SUBPROCESS_SCRIPT = r"""
 import json, os, sys, tempfile
 sys.path.insert(0, sys.argv[1])
 
-# Isolated THEFOOL_HOME so the config write is hermetic.
+# Isolated FOOL_HOME so the config write is hermetic.
 home = tempfile.mkdtemp()
-os.environ["THEFOOL_HOME"] = home
+os.environ["FOOL_HOME"] = home
 
 # Clear FAL-related env so dispatch decisions are config-driven.
 for k in (
@@ -87,7 +87,7 @@ for name in list(sys.modules):
     if (name.startswith("tools.")
             or name.startswith("agent.")
             or name.startswith("plugins.")
-            or name.startswith("thefool_cli.")):
+            or name.startswith("fool_cli.")):
         sys.modules.pop(name, None)
 
 import tools.image_generation_tool as image_tool

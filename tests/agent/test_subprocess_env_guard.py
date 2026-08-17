@@ -5,7 +5,7 @@ Every child-process env in the codebase must be built through
 ``hermes_subprocess_env`` / ``_sanitize_subprocess_env``, which the factory
 wraps) so profile-home propagation and secret-scrubbing have a single owner.
 History: ~11 commits over 6 months each fixed one more spawn site that missed
-``THEFOOL_HOME`` or secret-scrub propagation.
+``FOOL_HOME`` or secret-scrub propagation.
 
 This test greps the source tree for ``os.environ.copy()`` appearing within
 ``PROXIMITY_LINES`` lines of a spawn call (``Popen`` / ``subprocess.run`` /
@@ -24,8 +24,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Directories that make up the shipped source tree.
-SCAN_DIRS = ("agent", "thefool_cli", "tools", "gateway", "cron", "tui_gateway")
-SCAN_ROOT_FILES = ("cli.py", "thefool_constants.py")
+SCAN_DIRS = ("agent", "fool_cli", "tools", "gateway", "cron", "tui_gateway")
+SCAN_ROOT_FILES = ("cli.py", "fool_constants.py")
 
 # How many lines around an `os.environ.copy()` we look for a spawn call.
 PROXIMITY_LINES = 20

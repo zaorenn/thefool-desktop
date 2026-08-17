@@ -12,7 +12,7 @@ from __future__ import annotations
 
 
 def test_default_per_platform_streaming_flags():
-    from thefool_cli.config import DEFAULT_CONFIG
+    from fool_cli.config import DEFAULT_CONFIG
     plats = DEFAULT_CONFIG["display"]["platforms"]
     assert plats["telegram"]["streaming"] is True
     assert plats["discord"]["streaming"] is False

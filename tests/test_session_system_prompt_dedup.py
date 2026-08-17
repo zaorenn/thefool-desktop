@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from thefool_state import SCHEMA_VERSION, SessionDB
+from fool_state import SCHEMA_VERSION, SessionDB
 
 
 @pytest.fixture()

@@ -9,8 +9,8 @@ from agent.redact import mask_secret, redact_cdp_url, redact_sensitive_text, Red
 
 @pytest.fixture(autouse=True)
 def _ensure_redaction_enabled(monkeypatch):
-    """Ensure THEFOOL_REDACT_SECRETS is not disabled by prior test imports."""
-    monkeypatch.delenv("THEFOOL_REDACT_SECRETS", raising=False)
+    """Ensure FOOL_REDACT_SECRETS is not disabled by prior test imports."""
+    monkeypatch.delenv("FOOL_REDACT_SECRETS", raising=False)
     # Also patch the module-level snapshot so it reflects the cleared env var
     monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 

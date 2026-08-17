@@ -1,0 +1,4 @@
+[console_scripts]
+fool = fool_cli.main:main
+fool-acp = acp_adapter.entry:main
+fool-agent = run_agent:main

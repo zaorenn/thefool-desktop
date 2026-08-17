@@ -1,4 +1,4 @@
-import { Box, type ScrollBoxHandle, Text } from '@thefool/ink'
+import { Box, type ScrollBoxHandle, Text } from '@fool/ink'
 import { type RefObject, useState } from 'react'
 
 import type { Theme } from '../theme.js'

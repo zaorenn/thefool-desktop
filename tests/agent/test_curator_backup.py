@@ -15,16 +15,16 @@ import pytest
 
 @pytest.fixture
 def backup_env(monkeypatch, tmp_path):
-    """Isolate THEFOOL_HOME + reload modules so every test starts clean."""
+    """Isolate FOOL_HOME + reload modules so every test starts clean."""
     home = tmp_path / ".hermes"
     home.mkdir()
     (home / "skills").mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     # Reload so get_hermes_home picks up the env var fresh.
-    import thefool_constants
-    importlib.reload(thefool_constants)
+    import fool_constants
+    importlib.reload(fool_constants)
     from agent import curator_backup
     importlib.reload(curator_backup)
     return {"home": home, "skills": home / "skills", "cb": curator_backup}
@@ -200,7 +200,7 @@ def test_real_run_takes_pre_snapshot(backup_env, monkeypatch):
     skills = backup_env["skills"]
     _write_skill(skills, "alpha")
 
-    # Reload curator module against the freshly-env'd thefool_constants
+    # Reload curator module against the freshly-env'd fool_constants
     from agent import curator
     importlib.reload(curator)
 
@@ -232,7 +232,7 @@ def test_real_run_takes_pre_snapshot(backup_env, monkeypatch):
 
 
 def _write_cron_jobs(home: Path, jobs: list) -> Path:
-    """Write a synthetic cron/jobs.json under THEFOOL_HOME. Returns the path.
+    """Write a synthetic cron/jobs.json under FOOL_HOME. Returns the path.
     Mirrors cron.jobs.save_jobs() wrapper shape: `{"jobs": [...], "updated_at": ...}`.
     """
     cron_dir = home / "cron"
@@ -246,9 +246,9 @@ def _write_cron_jobs(home: Path, jobs: list) -> Path:
 
 
 def _reload_cron_jobs(home: Path):
-    """Reload cron.jobs so its module-level THEFOOL_DIR picks up the tmp HOME."""
-    import thefool_constants
-    importlib.reload(thefool_constants)
+    """Reload cron.jobs so its module-level FOOL_DIR picks up the tmp HOME."""
+    import fool_constants
+    importlib.reload(fool_constants)
     if "cron.jobs" in sys.modules:
         import cron.jobs as _cj
         importlib.reload(_cj)

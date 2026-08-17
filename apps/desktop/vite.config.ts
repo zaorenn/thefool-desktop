@@ -159,9 +159,9 @@ export default defineConfig(({ command }) => ({
     alias: {
       '@/debug/dev-only': debugEntry(command, process.env as Record<string, string>),
       '@': path.resolve(__dirname, './src'),
-      '@thefool/plugin-sdk': path.resolve(__dirname, './src/sdk/index.ts'),
-      '@thefool/shared/billing': path.resolve(__dirname, '../shared/src/billing-types.ts'),
-      '@thefool/shared': path.resolve(__dirname, '../shared/src'),
+      '@fool/plugin-sdk': path.resolve(__dirname, './src/sdk/index.ts'),
+      '@fool/shared/billing': path.resolve(__dirname, '../shared/src/billing-types.ts'),
+      '@fool/shared': path.resolve(__dirname, '../shared/src'),
       react: reactDir,
       'react-dom': reactDomDir,
       'react/jsx-dev-runtime': path.join(reactDir, 'jsx-dev-runtime.js'),

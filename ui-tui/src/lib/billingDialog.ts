@@ -1,4 +1,4 @@
-import type { BillingBlock } from '@thefool/shared/billing'
+import type { BillingBlock } from '@fool/shared/billing'
 
 export interface BillingDialogCopy {
   cancelLabel: string

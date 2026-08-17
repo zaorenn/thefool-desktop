@@ -97,7 +97,7 @@ def test_cron_run_job_codex_path_handles_internal_401_refresh(monkeypatch):
     monkeypatch.setattr(run_agent, "OpenAI", _FakeOpenAI)
     monkeypatch.setattr(run_agent, "AIAgent", _Codex401ThenSuccessAgent)
     monkeypatch.setattr(
-        "thefool_cli.runtime_provider.resolve_runtime_provider",
+        "fool_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **kwargs: {
             "provider": "openai-codex",
             "api_mode": "codex_responses",
@@ -105,7 +105,7 @@ def test_cron_run_job_codex_path_handles_internal_401_refresh(monkeypatch):
             "api_key": "codex-token",
         },
     )
-    monkeypatch.setattr("thefool_cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
+    monkeypatch.setattr("fool_cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
 
     _Codex401ThenSuccessAgent.refresh_attempts = 0
     _Codex401ThenSuccessAgent.last_init = {}
@@ -137,8 +137,8 @@ def test_gateway_run_agent_codex_path_handles_internal_401_refresh(monkeypatch):
             "api_key": "codex-token",
         },
     )
-    monkeypatch.setenv("THEFOOL_TOOL_PROGRESS", "false")
-    monkeypatch.setenv("THEFOOL_MODEL", "gpt-5.3-codex")
+    monkeypatch.setenv("FOOL_TOOL_PROGRESS", "false")
+    monkeypatch.setenv("FOOL_MODEL", "gpt-5.3-codex")
 
     _Codex401ThenSuccessAgent.refresh_attempts = 0
     _Codex401ThenSuccessAgent.last_init = {}
@@ -157,7 +157,7 @@ def test_gateway_run_agent_codex_path_handles_internal_401_refresh(monkeypatch):
     runner.hooks.loaded_hooks = []
     runner._session_db = None
     # Ensure model resolution returns the codex model even if xdist
-    # leaked env vars cleared THEFOOL_MODEL.
+    # leaked env vars cleared FOOL_MODEL.
     monkeypatch.setattr(
         gateway_run.GatewayRunner,
         "_resolve_turn_agent_config",

@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 import threading
 
-from thefool_state import SCHEMA_VERSION, SessionDB
+from fool_state import SCHEMA_VERSION, SessionDB
 
 
 def _open_pair(tmp_path):

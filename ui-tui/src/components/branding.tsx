@@ -1,4 +1,4 @@
-import { Box, Text, useStdout } from '@thefool/ink'
+import { Box, Text, useStdout } from '@fool/ink'
 import { useEffect, useState } from 'react'
 import unicodeSpinners from 'unicode-animations'
 
@@ -281,7 +281,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
 
   // MCP headline counts *connected* servers, not configured-but-disabled ones,
   // so it matches the classic CLI banner (`sum(s.connected)` in
-  // thefool_cli/banner.py) and the "connected" label on the collapse toggle.
+  // fool_cli/banner.py) and the "connected" label on the collapse toggle.
   const mcpServers = info.mcp_servers ?? []
   const mcpConnected = mcpServers.filter(s => s.connected).length
 

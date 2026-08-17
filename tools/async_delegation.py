@@ -46,7 +46,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, Iterator, List, Optional
 
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 from tools.daemon_pool import DaemonThreadPoolExecutor
 from tools.thread_context import propagate_context_to_thread
 
@@ -140,7 +140,7 @@ def _connect() -> sqlite3.Connection:
 
 
 def _initialize_schema(conn: sqlite3.Connection) -> None:
-    from thefool_state import apply_wal_with_fallback
+    from fool_state import apply_wal_with_fallback
 
     apply_wal_with_fallback(conn, db_label="state.db (async_delegation)")
     conn.execute(
@@ -221,9 +221,9 @@ def _capture_routing_origin() -> Dict[str, Any]:
         from gateway.session_context import get_session_env
 
         for evt_key, env_name in (
-            ("scope_id", "THEFOOL_SESSION_SCOPE_ID"),
-            ("user_id", "THEFOOL_SESSION_USER_ID"),
-            ("user_name", "THEFOOL_SESSION_USER_NAME"),
+            ("scope_id", "FOOL_SESSION_SCOPE_ID"),
+            ("user_id", "FOOL_SESSION_USER_ID"),
+            ("user_name", "FOOL_SESSION_USER_NAME"),
         ):
             value = get_session_env(env_name, "")
             if value:
@@ -725,7 +725,7 @@ def _prune_completed_locked() -> None:
 def _current_origin_session_id() -> str:
     """Raw session id of the ORIGINATING api_server request, or ``""``.
 
-    The obvious source — ``THEFOOL_SESSION_ID`` via ``get_session_env`` — is
+    The obvious source — ``FOOL_SESSION_ID`` via ``get_session_env`` — is
     NOT safe to read at dispatch time: constructing a child agent
     (``agent/agent_init.py``) calls ``set_current_session_id(child.session_id)``,
     clobbering that ContextVar *and* ``os.environ`` with the subagent's
@@ -733,7 +733,7 @@ def _current_origin_session_id() -> str:
     it, so the completion wake would self-post into the subagent's own
     (unread) session instead of the spawner's.
 
-    The request-scoped ``THEFOOL_SESSION_CHAT_ID`` binding survives child
+    The request-scoped ``FOOL_SESSION_CHAT_ID`` binding survives child
     construction: ``_bind_api_server_session`` binds ``chat_id`` to the raw
     ``X-Hermes-Session-Id``, and its only writer is ``set_session_vars`` —
     ``set_current_session_id`` never touches it. Gate on the platform: on
@@ -743,9 +743,9 @@ def _current_origin_session_id() -> str:
     try:
         from gateway.session_context import get_session_env
 
-        if get_session_env("THEFOOL_SESSION_PLATFORM", "") != "api_server":
+        if get_session_env("FOOL_SESSION_PLATFORM", "") != "api_server":
             return ""
-        return get_session_env("THEFOOL_SESSION_CHAT_ID", "") or ""
+        return get_session_env("FOOL_SESSION_CHAT_ID", "") or ""
     except Exception:
         return ""
 

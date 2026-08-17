@@ -145,7 +145,7 @@ class MyBackendImageGenProvider(ImageGenProvider):
 
             # Two shapes supported:
             #   - URL string: return it as `image`
-            #   - base64 data: save under $THEFOOL_HOME/cache/images/ via save_b64_image()
+            #   - base64 data: save under $FOOL_HOME/cache/images/ via save_b64_image()
             if result.get("image_b64"):
                 path = save_b64_image(
                     result["image_b64"],
@@ -239,7 +239,7 @@ error_response(
 
 ## 处理 base64 与 URL 输出
 
-部分后端返回图像 URL（fal、Replicate）；其他后端返回 base64 载荷（OpenAI gpt-image-2）。对于 base64 情况，使用 `save_b64_image()` — 它将文件写入 `$THEFOOL_HOME/cache/images/<prefix>_<timestamp>_<uuid>.<ext>` 并返回绝对 `Path`。将该路径（转为 `str`）作为 `image=` 传入 `success_response()`。Gateway 投递（Telegram 图片气泡、Discord 附件）同时识别 URL 和绝对路径。
+部分后端返回图像 URL（fal、Replicate）；其他后端返回 base64 载荷（OpenAI gpt-image-2）。对于 base64 情况，使用 `save_b64_image()` — 它将文件写入 `$FOOL_HOME/cache/images/<prefix>_<timestamp>_<uuid>.<ext>` 并返回绝对 `Path`。将该路径（转为 `str`）作为 `image=` 传入 `success_response()`。Gateway 投递（Telegram 图片气泡、Discord 附件）同时识别 URL 和绝对路径。
 
 ## 用户覆盖
 
@@ -248,16 +248,16 @@ error_response(
 ## 测试
 
 ```bash
-export THEFOOL_HOME=/tmp/hermes-imggen-test
-mkdir -p $THEFOOL_HOME/plugins/image_gen/my-backend
+export FOOL_HOME=/tmp/hermes-imggen-test
+mkdir -p $FOOL_HOME/plugins/image_gen/my-backend
 # …copy __init__.py + plugin.yaml into that dir…
 
 export MY_BACKEND_API_KEY=your-test-key
 hermes plugins enable my-backend
 
 # Pick it as the active provider
-echo "image_gen:" >> $THEFOOL_HOME/config.yaml
-echo "  provider: my-backend" >> $THEFOOL_HOME/config.yaml
+echo "image_gen:" >> $FOOL_HOME/config.yaml
+echo "  provider: my-backend" >> $FOOL_HOME/config.yaml
 
 # Exercise it
 hermes -z "Generate an image of a corgi in a spacesuit"

@@ -20,8 +20,8 @@ from types import SimpleNamespace
 
 import pytest
 
-import thefool_state
-from thefool_state import SessionDB
+import fool_state
+from fool_state import SessionDB
 
 
 @pytest.fixture
@@ -107,7 +107,7 @@ def test_non_expired_lock_from_dead_pid_is_reclaimed(
         return False
 
     monkeypatch.setattr(
-        thefool_state, "psutil", SimpleNamespace(pid_exists=process_is_gone)
+        fool_state, "psutil", SimpleNamespace(pid_exists=process_is_gone)
     )
 
     assert db.try_acquire_compression_lock(
@@ -131,7 +131,7 @@ def test_probe_doubt_keeps_lease_until_ttl(
         raise RuntimeError("transient probe failure")
 
     monkeypatch.setattr(
-        thefool_state, "psutil", SimpleNamespace(pid_exists=probe_blows_up)
+        fool_state, "psutil", SimpleNamespace(pid_exists=probe_blows_up)
     )
 
     assert db.try_acquire_compression_lock(
@@ -159,7 +159,7 @@ def test_unstructured_holder_waits_for_ttl(
         "sess1", "legacy_holder", ttl_seconds=300
     ) is True
     monkeypatch.setattr(
-        thefool_state,
+        fool_state,
         "psutil",
         SimpleNamespace(
             pid_exists=lambda _pid: pytest.fail(
@@ -168,7 +168,7 @@ def test_unstructured_holder_waits_for_ttl(
         ),
     )
     monkeypatch.setattr(
-        thefool_state.os,
+        fool_state.os,
         "kill",
         lambda *_args: pytest.fail("unstructured holder must not probe a PID"),
     )

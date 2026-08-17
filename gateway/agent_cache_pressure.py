@@ -234,7 +234,7 @@ def read_anon_rss_mb() -> Optional[int]:
     where only total RSS is available.
     """
     try:
-        from thefool_cli.mem_trim import collect_memory_snapshot
+        from fool_cli.mem_trim import collect_memory_snapshot
 
         snapshot = collect_memory_snapshot()
         anon_kib = snapshot.get("rss_anon_kib")

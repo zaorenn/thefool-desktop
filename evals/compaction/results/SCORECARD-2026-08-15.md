@@ -163,7 +163,7 @@ mining, per-epoch anchor windows) before default flip.
 14. **Why did PR #79268 fix invisible overlays in the TUI?**  
    gold: `renderNodeToOutput skips boxes Yoga squeezes to height 0`
 15. **What was the specific ModuleNotFoundError message caused by the wheel subpackage discovery trap in #34701?**  
-   gold: `ModuleNotFoundError: No module named 'thefool_cli.dashboard_auth'`
+   gold: `ModuleNotFoundError: No module named 'fool_cli.dashboard_auth'`
 
 </details>
 
@@ -181,7 +181,7 @@ mining, per-epoch anchor windows) before default flip.
 2. **According to the contribution rubric in AGENTS.md, which type of config belongs in '.env' and which belongs in 'config.yaml'?**  
    gold: `.env is for secrets only (API keys, tokens, passwords). All behavioral settings... go in config.yaml.`
 3. **What specific file and line number were identified as the cause of an AssertionError (assert 56 == 55) in the Python tests?**  
-   gold: `tests/thefool_cli/test_session_recovery_lost_and_found.py:327`
+   gold: `tests/fool_cli/test_session_recovery_lost_and_found.py:327`
 4. **What was the root cause of issue #73793 regarding mid-turn message rendering?**  
    gold: `redirect/steer paths spliced the mid-turn user bubble BEFORE the active assistant stream row`
 5. **Which PR was verified to already be on 'main', resulting in nothing needing to be salvaged for it?**  
@@ -304,7 +304,7 @@ mining, per-epoch anchor windows) before default flip.
 2. **On which specific PR did Teknium say, 'tf are you saying to me. Stop giving me such random verbose details'?**  
    gold: `PR #6391`
 3. **Which file path should be checked for the canonical list of provider models?**  
-   gold: `thefool_cli/models.py`
+   gold: `fool_cli/models.py`
 4. **What was the identified bug in PR #2314 regarding provider names?**  
    gold: `checking for "alibaba-coding-plan"`
 5. **What is the mandatory line limit for PR reviews requested by Teknium?**  
@@ -317,7 +317,7 @@ mining, per-epoch anchor windows) before default flip.
    gold: `24ba86627515ad5fda69a39ef338c365713448bc`
 9. **In the 'Pop-laboratory' style infographic for the Auxiliary Client fix, what were the two specific outcomes shown in cell 2?**  
    gold: `Messages wrapper keeps /anthropic and OpenAI fallback keeps /v1`
-10. **What specific SQL update was added to the migration path in thefool_cli/kanban_db.py to prevent losing active wake on upgrade?**  
+10. **What specific SQL update was added to the migration path in fool_cli/kanban_db.py to prevent losing active wake on upgrade?**  
    gold: `UPDATE kanban_notify_subs SET delivery_mode = 'notify+wake' WHERE platform != 'tui'`
 11. **Which test failed in CI slice 5/12 for the kanban delivery modes PR?**  
    gold: `tests/gateway/test_kanban_notifier_apiserver_wake.py::test_apiserver_sub_wakes_real_session_via_self_post`

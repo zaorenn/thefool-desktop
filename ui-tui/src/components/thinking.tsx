@@ -1,4 +1,4 @@
-import { Box, NoSelect, Text } from '@thefool/ink'
+import { Box, NoSelect, Text } from '@fool/ink'
 import { memo, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import spinners, { type BrailleSpinnerName } from 'unicode-animations'
 

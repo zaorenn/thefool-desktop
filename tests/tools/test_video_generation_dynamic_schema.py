@@ -20,7 +20,7 @@ def _reset_registry():
 
 @pytest.fixture
 def cfg_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     return tmp_path
 
 

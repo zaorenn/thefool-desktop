@@ -997,7 +997,7 @@ def _make_cooldown_runner(monkeypatch, tmp_path, agent_cls, session_db, session_
     """Scaffolding for the restart-persistence tests: a fresh GatewayRunner
     wired to a REAL AsyncSessionDB facade (not a MagicMock) so the hygiene
     cooldown check/write paths exercise the actual SQLite-backed methods."""
-    from thefool_state import AsyncSessionDB
+    from fool_state import AsyncSessionDB
 
     fake_dotenv = types.ModuleType("dotenv")
     fake_dotenv.load_dotenv = lambda *args, **kwargs: None
@@ -1090,7 +1090,7 @@ async def test_hygiene_compression_cooldown_survives_gateway_restart(
     assert the second runner still honors the cooldown — i.e. it does not
     re-instantiate a compression agent for the same failing session.
     """
-    from thefool_state import SessionDB
+    from fool_state import SessionDB
 
     gateway_run = importlib.import_module("gateway.run")
     session_id = "sess-restart"

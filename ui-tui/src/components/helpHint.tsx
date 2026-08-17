@@ -1,4 +1,4 @@
-import { Box, Text } from '@thefool/ink'
+import { Box, Text } from '@fool/ink'
 
 import { HOTKEYS } from '../content/hotkeys.js'
 import type { Theme } from '../theme.js'

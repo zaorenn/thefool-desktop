@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from thefool_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
+from fool_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 
 
 @pytest.fixture()

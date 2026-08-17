@@ -68,7 +68,7 @@ def _make_fake_runner(session_db, *, fail_process=False):
     The watcher now talks to the SessionDB through the AsyncSessionDB facade,
     so wrap the recording stand-in the same way the gateway does.
     """
-    from thefool_state import AsyncSessionDB
+    from fool_state import AsyncSessionDB
 
     fake = types.SimpleNamespace()
     fake._session_db = AsyncSessionDB(session_db)
@@ -110,22 +110,22 @@ async def test_watcher_wraps_calls_via_asyncio_to_thread(monkeypatch):
     """Explicitly assert the offload goes through asyncio.to_thread.
 
     Patches the AsyncSessionDB facade's ``asyncio.to_thread`` (it lives in
-    thefool_state) and records which SessionDB callables were handed to it.
+    fool_state) and records which SessionDB callables were handed to it.
     Mutation-survivable: dropping any await removes its callable from the set.
     """
-    import thefool_state
+    import fool_state
 
     db = _RecordingSessionDB(loop_thread_ident=-1)
     fake = _make_fake_runner(db, fail_process=False)
 
     wrapped = []
-    real_to_thread = thefool_state.asyncio.to_thread
+    real_to_thread = fool_state.asyncio.to_thread
 
     async def _spy_to_thread(func, *args, **kwargs):
         wrapped.append(getattr(func, "__name__", repr(func)))
         return await real_to_thread(func, *args, **kwargs)
 
-    monkeypatch.setattr(thefool_state.asyncio, "to_thread", _spy_to_thread)
+    monkeypatch.setattr(fool_state.asyncio, "to_thread", _spy_to_thread)
 
     await _run_one_tick(fake, monkeypatch)
 

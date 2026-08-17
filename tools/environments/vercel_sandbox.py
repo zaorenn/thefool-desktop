@@ -2,7 +2,7 @@
 
 Uses the Vercel Python SDK to run commands in cloud sandboxes through Hermes'
 shared ``BaseEnvironment`` shell contract. When persistence is enabled, the
-backend stores task-scoped snapshot metadata under ``THEFOOL_HOME`` and restores
+backend stores task-scoped snapshot metadata under ``FOOL_HOME`` and restores
 new sandboxes from those snapshots on later task reuse.
 """
 
@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 from tools.environments.base import (
     BaseEnvironment,
     _ThreadedProcessHandle,

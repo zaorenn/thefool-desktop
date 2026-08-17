@@ -117,7 +117,7 @@ class TestLoadMCPConfig:
                 "env": {},
             }
         }
-        with patch("thefool_cli.config.load_config", return_value={"mcp_servers": servers}):
+        with patch("fool_cli.config.load_config", return_value={"mcp_servers": servers}):
             from tools.mcp_tool import _load_mcp_config
             result = _load_mcp_config()
             assert "filesystem" in result
@@ -125,7 +125,7 @@ class TestLoadMCPConfig:
 
     def test_mcp_servers_not_dict_returns_empty(self):
         """mcp_servers set to non-dict value -> empty dict."""
-        with patch("thefool_cli.config.load_config", return_value={"mcp_servers": "invalid"}):
+        with patch("fool_cli.config.load_config", return_value={"mcp_servers": "invalid"}):
             from tools.mcp_tool import _load_mcp_config
             result = _load_mcp_config()
             assert result == {}
@@ -141,9 +141,9 @@ class TestLoadMCPConfig:
         }
         manager = SimpleNamespace(get_portable_mcp_servers=lambda: portable)
         with (
-            patch("thefool_cli.config.load_config", return_value={"mcp_servers": native}),
-            patch("thefool_cli.plugins.discover_plugins"),
-            patch("thefool_cli.plugins.get_plugin_manager", return_value=manager),
+            patch("fool_cli.config.load_config", return_value={"mcp_servers": native}),
+            patch("fool_cli.plugins.discover_plugins"),
+            patch("fool_cli.plugins.get_plugin_manager", return_value=manager),
             patch.dict(os.environ, {"PORT": "3000"}),
         ):
             from tools.mcp_tool import _load_mcp_config
@@ -158,8 +158,8 @@ class TestLoadMCPConfig:
     ):
         import json
         import yaml
-        from thefool_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
-        from thefool_cli import plugins as plugins_mod
+        from fool_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
+        from fool_cli import plugins as plugins_mod
 
         home = tmp_path / "home"
         plugin = home / "plugins" / "portable"
@@ -183,8 +183,8 @@ class TestLoadMCPConfig:
         )
         bundled = tmp_path / "bundled"
         bundled.mkdir()
-        monkeypatch.setenv("THEFOOL_HOME", str(home))
-        monkeypatch.setenv("THEFOOL_BUNDLED_PLUGINS", str(bundled))
+        monkeypatch.setenv("FOOL_HOME", str(home))
+        monkeypatch.setenv("FOOL_BUNDLED_PLUGINS", str(bundled))
         monkeypatch.setattr(plugins_mod, "_plugin_manager", None)
 
         from tools.mcp_tool import _load_mcp_config
@@ -1253,7 +1253,7 @@ class TestBuildSafeEnv:
     def test_secret_source_injected_vars_are_passed(self, monkeypatch):
         """Vars tagged by an external secret source (Bitwarden/1Password) are
         deliberately allowed for MCP stdio servers."""
-        from thefool_cli import env_loader
+        from fool_cli import env_loader
         from tools.mcp_tool import _build_safe_env
 
         monkeypatch.setitem(env_loader._SECRET_SOURCES, "ALPACA_API_KEY", "bitwarden")

@@ -14,7 +14,7 @@ import pytest
 
 import agent.skill_commands as skill_commands
 import tools.skills_tool as skills_tool
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 SKILL_BODY = (
     "Kick off a task in a fresh isolated git worktree instead of the current checkout. "

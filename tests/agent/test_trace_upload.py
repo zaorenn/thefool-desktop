@@ -101,7 +101,7 @@ def test_converter_keeps_secrets_when_redact_disabled():
 def test_load_session_messages_closes_database_on_failure(monkeypatch):
     db = MagicMock()
     db.resolve_session_id.side_effect = RuntimeError("read failed")
-    monkeypatch.setattr("thefool_state.SessionDB", lambda: db)
+    monkeypatch.setattr("fool_state.SessionDB", lambda: db)
 
     with pytest.raises(RuntimeError, match="read failed"):
         load_session_messages("s1")

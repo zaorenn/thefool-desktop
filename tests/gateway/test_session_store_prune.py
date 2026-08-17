@@ -25,16 +25,16 @@ from gateway.session import SessionEntry, SessionStore
 
 
 def test_session_store_default_db_uses_runtime_hermes_home(tmp_path, monkeypatch):
-    """SessionStore must honor runtime THEFOOL_HOME when opening the default DB.
+    """SessionStore must honor runtime FOOL_HOME when opening the default DB.
 
     Regression for the import-time DEFAULT_DB_PATH freeze: importing
-    thefool_state before a fixture redirected THEFOOL_HOME used to pin every
+    fool_state before a fixture redirected FOOL_HOME used to pin every
     default SessionDB() at the developer's real ~/.hermes/state.db.
     """
     config = GatewayConfig(default_reset_policy=SessionResetPolicy(mode="none"))
     fake_home = tmp_path / "alt_hermes_home"
     fake_home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(fake_home))
+    monkeypatch.setenv("FOOL_HOME", str(fake_home))
 
     with patch("gateway.session.SessionStore._ensure_loaded"):
         store = SessionStore(sessions_dir=tmp_path / "sessions", config=config)

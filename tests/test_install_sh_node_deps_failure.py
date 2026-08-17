@@ -61,8 +61,8 @@ exit 0
     env = os.environ.copy()
     env.update(
         {
-            "THEFOOL_HOME": str(hermes_home),
-            "THEFOOL_INSTALL_DIR": str(install_dir),
+            "FOOL_HOME": str(hermes_home),
+            "FOOL_INSTALL_DIR": str(install_dir),
             "NPM_CALLS": str(npm_calls),
             "NPM_FAIL_DIRECTORY": fail_directory or "",
             "PATH": f"{bin_dir}:{env['PATH']}",

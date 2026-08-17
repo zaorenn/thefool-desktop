@@ -33,7 +33,7 @@ import pytest
 from agent.tool_dispatch_helpers import make_tool_result_message
 from agent.agent_runtime_helpers import sanitize_api_messages
 from agent.tool_executor import execute_tool_calls_segmented
-from thefool_state import SessionDB
+from fool_state import SessionDB
 from run_agent import AIAgent
 
 

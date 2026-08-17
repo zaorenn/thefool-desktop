@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from thefool_cli.bang_shell import (
+from fool_cli.bang_shell import (
     USAGE_HINT,
     bang_shell_enabled,
     is_bang_command,
@@ -68,19 +68,19 @@ class TestBangContextGating:
     """Bang mode is CLI-only — gateway/cron users have their own shells."""
 
     def test_enabled_in_plain_cli(self, monkeypatch):
-        for var in ("THEFOOL_GATEWAY_SESSION", "THEFOOL_CRON_SESSION",
-                    "THEFOOL_SESSION_PLATFORM"):
+        for var in ("FOOL_GATEWAY_SESSION", "FOOL_CRON_SESSION",
+                    "FOOL_SESSION_PLATFORM"):
             monkeypatch.delenv(var, raising=False)
         assert bang_shell_enabled() is True
 
     @pytest.mark.parametrize("var,value", [
-        ("THEFOOL_GATEWAY_SESSION", "1"),
-        ("THEFOOL_CRON_SESSION", "true"),
-        ("THEFOOL_SESSION_PLATFORM", "discord"),
+        ("FOOL_GATEWAY_SESSION", "1"),
+        ("FOOL_CRON_SESSION", "true"),
+        ("FOOL_SESSION_PLATFORM", "discord"),
     ])
     def test_disabled_in_non_cli_contexts(self, monkeypatch, var, value):
-        for v in ("THEFOOL_GATEWAY_SESSION", "THEFOOL_CRON_SESSION",
-                  "THEFOOL_SESSION_PLATFORM"):
+        for v in ("FOOL_GATEWAY_SESSION", "FOOL_CRON_SESSION",
+                  "FOOL_SESSION_PLATFORM"):
             monkeypatch.delenv(v, raising=False)
         monkeypatch.setenv(var, value)
         assert bang_shell_enabled() is False
@@ -157,7 +157,7 @@ class TestBangHandlerDispatch:
 
     def test_bare_bang_prints_usage_and_runs_nothing(self):
         cli = _make_cli()
-        with patch("thefool_cli.bang_shell.run_bang_command") as runner:
+        with patch("fool_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!") is True
         runner.assert_not_called()
         assert any(USAGE_HINT in line for line in _printed(cli))
@@ -180,8 +180,8 @@ class TestBangHandlerDispatch:
     def test_disabled_context_falls_through(self, monkeypatch):
         """Gateway sessions must not execute bang commands."""
         cli = _make_cli()
-        monkeypatch.setenv("THEFOOL_GATEWAY_SESSION", "1")
-        with patch("thefool_cli.bang_shell.run_bang_command") as runner:
+        monkeypatch.setenv("FOOL_GATEWAY_SESSION", "1")
+        with patch("fool_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!echo nope") is False
         runner.assert_not_called()
 
@@ -193,7 +193,7 @@ class TestBangApprovalGate:
         cli = _make_cli()
         gate = MagicMock(return_value={"approved": True, "message": None})
         with patch("tools.terminal_tool._check_all_guards", gate), \
-             patch("thefool_cli.bang_shell.run_bang_command", return_value=0):
+             patch("fool_cli.bang_shell.run_bang_command", return_value=0):
             cli.handle_bang_shell("!rm -rf ./build")
 
         gate.assert_called_once()
@@ -203,7 +203,7 @@ class TestBangApprovalGate:
         cli = _make_cli()
         gate = MagicMock(return_value={"approved": True, "message": None})
         with patch("tools.terminal_tool._check_all_guards", gate), \
-             patch("thefool_cli.bang_shell.run_bang_command", return_value=0):
+             patch("fool_cli.bang_shell.run_bang_command", return_value=0):
             cli.handle_bang_shell("!ls")
         gate.assert_called_once()
 
@@ -214,7 +214,7 @@ class TestBangApprovalGate:
             "message": "Command denied: recursive delete",
         })
         with patch("tools.terminal_tool._check_all_guards", gate), \
-             patch("thefool_cli.bang_shell.run_bang_command") as runner:
+             patch("fool_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!rm -rf /important") is True
 
         runner.assert_not_called()
@@ -223,7 +223,7 @@ class TestBangApprovalGate:
     def test_real_gate_blocks_a_hardline_command(self):
         """End-to-end through the real approval module — no execution."""
         cli = _make_cli()
-        with patch("thefool_cli.bang_shell.run_bang_command") as runner:
+        with patch("fool_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!rm -rf /") is True
         runner.assert_not_called()
 

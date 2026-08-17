@@ -54,7 +54,7 @@ import uuid
 from pathlib import PureWindowsPath
 from typing import Any, Dict, List, Optional, Tuple
 
-from thefool_cli._subprocess_compat import windows_hide_flags
+from fool_cli._subprocess_compat import windows_hide_flags
 from tools.computer_use.backend import (
     ActionResult,
     CaptureResult,
@@ -163,11 +163,11 @@ def _action_result_from(
 # hardcoded version floor, which would rot and can't know what "latest" is.
 #
 # There is intentionally no version *pin* knob: the upstream installer always
-# fetches the latest release, so a `THEFOOL_CUA_DRIVER_VERSION` env var would
+# fetches the latest release, so a `FOOL_CUA_DRIVER_VERSION` env var would
 # only have *looked* like it pinned. For a reproducible version, point
-# `THEFOOL_CUA_DRIVER_CMD` at a specific binary instead.
+# `FOOL_CUA_DRIVER_CMD` at a specific binary instead.
 
-_CUA_DRIVER_CMD_ENV = "THEFOOL_CUA_DRIVER_CMD"
+_CUA_DRIVER_CMD_ENV = "FOOL_CUA_DRIVER_CMD"
 _CUA_DRIVER_DEFAULT_CMD = "cua-driver"
 _CUA_DRIVER_ARGS = ["mcp"]  # stdio MCP transport (fallback when the
                             # driver doesn't expose `manifest` — see
@@ -216,7 +216,7 @@ _CUA_TELEMETRY_ENV_VAR = "CUA_DRIVER_RS_TELEMETRY_ENABLED"
 def _computer_use_cfg() -> Dict[str, Any]:
     """The ``computer_use`` config block, or ``{}`` when config is unreadable."""
     try:
-        from thefool_cli.config import load_config
+        from fool_cli.config import load_config
 
         return (load_config() or {}).get("computer_use") or {}
     except Exception:
@@ -558,7 +558,7 @@ def _wsl_windows_path_to_posix(path: str) -> str:
     if not re.match(r"^[A-Za-z]:[\\/]", path):
         return path
     try:
-        from thefool_constants import is_wsl
+        from fool_constants import is_wsl
 
         if not is_wsl():
             return path
@@ -950,7 +950,7 @@ def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
     """Return candidate cua-driver commands in resolution order.
 
     ``override`` is authoritative when supplied. Otherwise a non-empty
-    ``THEFOOL_CUA_DRIVER_CMD`` is authoritative; only when neither is set do we
+    ``FOOL_CUA_DRIVER_CMD`` is authoritative; only when neither is set do we
     use PATH and canonical install locations.
 
     Desktop apps launched from Finder/Dock often inherit a narrow PATH that
@@ -994,7 +994,7 @@ def _candidate_cua_driver_commands(override: Optional[str] = None) -> List[str]:
 def resolve_cua_driver_cmd(override: Optional[str] = None) -> Optional[str]:
     """Resolve the cua-driver executable for every runtime/status surface.
 
-    A supplied override (or ``THEFOOL_CUA_DRIVER_CMD``) is never silently
+    A supplied override (or ``FOOL_CUA_DRIVER_CMD``) is never silently
     replaced by another binary. Otherwise resolve PATH first, then canonical
     user-local installation locations used by the official installer.
     """
@@ -1228,7 +1228,7 @@ def _maybe_repair_runtime_contract(contract: Dict[str, Any]) -> Dict[str, Any]:
 
     Returns the post-repair contract state (or the original state when no
     repair was attempted / the repair failed). Never raises. An explicit
-    ``THEFOOL_CUA_DRIVER_CMD`` override is authoritative even when broken, and
+    ``FOOL_CUA_DRIVER_CMD`` override is authoritative even when broken, and
     a missing binary means installation was never requested — both are left
     for the caller's error message.
     """
@@ -1248,7 +1248,7 @@ def _maybe_repair_runtime_contract(contract: Dict[str, Any]) -> Dict[str, Any]:
         contract.get("reason") or "runtime contract is incomplete",
     )
     try:
-        from thefool_cli.tools_config import install_cua_driver
+        from fool_cli.tools_config import install_cua_driver
 
         if not install_cua_driver(upgrade=False, show_installer_progress=False):
             return contract
@@ -1756,7 +1756,7 @@ class _CuaDriverSession:
             # passes but the wrapper times out" reports are undiagnosable
             # from a bare "never reached ready".
             phase = getattr(self, "_startup_phase", "unknown")
-            from thefool_constants import display_hermes_home
+            from fool_constants import display_hermes_home
             raise RuntimeError(
                 "cua-driver session never reached ready (timeout 30s; "
                 f"stuck in phase: {phase}). "
@@ -2606,7 +2606,7 @@ class CuaDriverBackend(ComputerUseBackend):
             reason = contract.get("reason") or "runtime contract is incomplete"
             if os.environ.get(_CUA_DRIVER_CMD_ENV, "").strip():
                 repair = (
-                    "Update the binary selected by THEFOOL_CUA_DRIVER_CMD or "
+                    "Update the binary selected by FOOL_CUA_DRIVER_CMD or "
                     "remove that override."
                 )
             else:

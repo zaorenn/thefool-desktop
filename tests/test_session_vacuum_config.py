@@ -3,20 +3,20 @@ from unittest.mock import MagicMock
 
 
 def test_default_config_exposes_vacuum_interval():
-    from thefool_cli.config import DEFAULT_CONFIG
+    from fool_cli.config import DEFAULT_CONFIG
 
     assert DEFAULT_CONFIG["sessions"]["min_vacuum_interval_days"] == 30
 
 
 def test_cli_auto_maintenance_forwards_vacuum_interval(monkeypatch, tmp_path: Path):
     import cli
-    import thefool_cli.config
-    import thefool_constants
+    import fool_cli.config
+    import fool_constants
 
     session_db = MagicMock()
     session_db.get_meta.return_value = "already-done"
     monkeypatch.setattr(
-        thefool_cli.config,
+        fool_cli.config,
         "load_config",
         lambda: {
             "sessions": {
@@ -28,7 +28,7 @@ def test_cli_auto_maintenance_forwards_vacuum_interval(monkeypatch, tmp_path: Pa
             }
         },
     )
-    monkeypatch.setattr(thefool_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(fool_constants, "get_hermes_home", lambda: tmp_path)
 
     cli._run_state_db_auto_maintenance(session_db)
 

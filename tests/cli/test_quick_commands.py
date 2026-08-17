@@ -126,7 +126,7 @@ class TestGatewayQuickCommands:
         """Quick command output must redact sensitive patterns before returning."""
         from gateway.run import GatewayRunner
 
-        # Ensure redaction is active regardless of host THEFOOL_REDACT_SECRETS state
+        # Ensure redaction is active regardless of host FOOL_REDACT_SECRETS state
         # or test ordering
         monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)
 

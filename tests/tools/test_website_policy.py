@@ -66,7 +66,7 @@ def test_check_website_access_matches_parent_domain_subdomains(tmp_path):
 
 
 def test_default_config_exposes_website_blocklist_shape():
-    from thefool_cli.config import DEFAULT_CONFIG
+    from fool_cli.config import DEFAULT_CONFIG
 
     website_blocklist = DEFAULT_CONFIG["security"]["website_blocklist"]
     assert website_blocklist["enabled"] is False
@@ -293,8 +293,8 @@ def test_check_website_access_fails_open_on_malformed_config(tmp_path, monkeypat
     with pytest.raises(WebsitePolicyError):
         check_website_access("https://example.com", config_path=config_path)
 
-    # Simulate default path by pointing THEFOOL_HOME to tmp_path
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    # Simulate default path by pointing FOOL_HOME to tmp_path
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     from tools import website_policy
     website_policy.invalidate_cache()
 

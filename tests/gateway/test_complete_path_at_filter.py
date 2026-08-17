@@ -4,7 +4,7 @@ Reported during the TUI v2 blitz retest:
   - typing `@folder:` (and `@folder` with no colon yet) surfaced files
     alongside directories — the gateway-side completion lives in
     `tui_gateway/server.py` and was never touched by the earlier fix to
-    `thefool_cli/commands.py`.
+    `fool_cli/commands.py`.
   - typing `@appChrome` required the full `@ui-tui/src/components/app…`
     path to find the file — users expect Cmd-P-style fuzzy basename
     matching across the repo, not a strict directory prefix filter.
@@ -46,7 +46,7 @@ def _reset_fuzzy_cache(monkeypatch):
     server._fuzzy_cache.clear()
     # #70041: _launch_configured_cwd() reads the launch profile's config.yaml
     # via _load_cfg(), which resolves through _hermes_home captured at module
-    # import time — before the per-test THEFOOL_HOME redirect applies. When the
+    # import time — before the per-test FOOL_HOME redirect applies. When the
     # developer's real config sets terminal.cwd, _completion_cwd() returns that
     # directory instead of the test's tmp_path (from monkeypatch.chdir). Patch
     # it to None so _completion_cwd falls through to os.getcwd(), which

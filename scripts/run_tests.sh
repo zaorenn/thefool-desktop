@@ -39,7 +39,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ── Locate python ───────────────────────────────────────────────────────────
 # Probe local venvs first; fall back to the Nix devShell's editable venv
-# (THEFOOL_PYTHON is exported by the devShell hook and ships [dev] extras:
+# (FOOL_PYTHON is exported by the devShell hook and ships [dev] extras:
 # pytest, pytest-asyncio, pytest-timeout, ruff, ty).
 #
 # A candidate must have pytest INSTALLED, not merely exist. The release venv
@@ -82,16 +82,16 @@ fi
 
 if [ -n "$VENV" ]; then
   PYTHON="$VENV_PYTHON"
-elif [ -n "${THEFOOL_PYTHON:-}" ] && [ -x "$THEFOOL_PYTHON" ] \
-    && "$THEFOOL_PYTHON" -c 'import pytest' 2>/dev/null; then
-  # Guard with an import check: THEFOOL_PYTHON may point at the RELEASE
+elif [ -n "${FOOL_PYTHON:-}" ] && [ -x "$FOOL_PYTHON" ] \
+    && "$FOOL_PYTHON" -c 'import pytest' 2>/dev/null; then
+  # Guard with an import check: FOOL_PYTHON may point at the RELEASE
   # venv (no pytest) when inherited from a wrapped `hermes` binary rather
   # than the devShell hook.
-  PYTHON="$THEFOOL_PYTHON"
-  echo "▶ no local venv — using Nix dev venv via THEFOOL_PYTHON: $PYTHON"
+  PYTHON="$FOOL_PYTHON"
+  echo "▶ no local venv — using Nix dev venv via FOOL_PYTHON: $PYTHON"
 else
   echo "error: no virtualenv with pytest found in $REPO_ROOT/.venv or $REPO_ROOT/venv," >&2
-  echo "       and THEFOOL_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
+  echo "       and FOOL_PYTHON is not a python with pytest (enter the Nix devShell or create a venv)" >&2
   if [ -n "$SKIPPED_VENVS" ]; then
     echo "       (skipped for missing pytest:$SKIPPED_VENVS — install dev extras there, or create $REPO_ROOT/.venv)" >&2
   fi
@@ -127,23 +127,23 @@ done
 # The runner's own documented environment knobs must survive the hermetic
 # `env -i` below, or they are silent no-ops for anyone invoking this script:
 #
-#   * THEFOOL_TEST_WORKERS / PATHS / FILE_TIMEOUT / FILE_RETRIES / SLICE are
+#   * FOOL_TEST_WORKERS / PATHS / FILE_TIMEOUT / FILE_RETRIES / SLICE are
 #     read by run_tests_parallel.py at argparse-default time — inside the
 #     stripped environment.
-#   * THEFOOL_TEST_IMAGE is read by tests/docker/conftest.py to skip its
+#   * FOOL_TEST_IMAGE is read by tests/docker/conftest.py to skip its
 #     session-scoped `docker build`. CI's docker.yml sets it to the image
 #     the build step just loaded; stripping it made every per-file pytest
 #     subprocess rebuild the 5GB image from a cold builder cache instead
 #     (~4 min per worker per run, and the rebuilt image lacked the
-#     THEFOOL_GIT_SHA build-arg the workflow bakes in).
+#     FOOL_GIT_SHA build-arg the workflow bakes in).
 #
 # These are test-infrastructure knobs, not credentials — same class as the
-# THEFOOL_RUN_SLOW_PET_TESTS / THEFOOL_E2E_BROWSER opt-ins already forwarded.
-# Keep this an explicit allowlist (no THEFOOL_TEST_* glob) so the "no
+# FOOL_RUN_SLOW_PET_TESTS / FOOL_E2E_BROWSER opt-ins already forwarded.
+# Keep this an explicit allowlist (no FOOL_TEST_* glob) so the "no
 # credential can leak" property stays auditable at a glance.
 TEST_ENV=()
-for _test_var in THEFOOL_TEST_IMAGE THEFOOL_TEST_WORKERS THEFOOL_TEST_PATHS \
-  THEFOOL_TEST_FILE_TIMEOUT THEFOOL_TEST_FILE_RETRIES THEFOOL_TEST_SLICE; do
+for _test_var in FOOL_TEST_IMAGE FOOL_TEST_WORKERS FOOL_TEST_PATHS \
+  FOOL_TEST_FILE_TIMEOUT FOOL_TEST_FILE_RETRIES FOOL_TEST_SLICE; do
   if [ -n "${!_test_var:-}" ]; then
     TEST_ENV+=("$_test_var=${!_test_var}")
   fi
@@ -176,8 +176,8 @@ exec env -i \
   LC_ALL=C.UTF-8 \
   PYTHONHASHSEED=0 \
   PYTHONUTF8=1 \
-  ${THEFOOL_RUN_SLOW_PET_TESTS:+THEFOOL_RUN_SLOW_PET_TESTS="$THEFOOL_RUN_SLOW_PET_TESTS"} \
-  ${THEFOOL_E2E_BROWSER:+THEFOOL_E2E_BROWSER="$THEFOOL_E2E_BROWSER"} \
+  ${FOOL_RUN_SLOW_PET_TESTS:+FOOL_RUN_SLOW_PET_TESTS="$FOOL_RUN_SLOW_PET_TESTS"} \
+  ${FOOL_E2E_BROWSER:+FOOL_E2E_BROWSER="$FOOL_E2E_BROWSER"} \
   ${EXTRA_PYTHONPATH:+PYTHONPATH="$EXTRA_PYTHONPATH"} \
   ${EXTRA_PYTEST_PLUGINS:+PYTEST_PLUGINS="$EXTRA_PYTEST_PLUGINS"} \
   "$PYTHON" "$SCRIPT_DIR/run_tests_parallel.py" "$@"

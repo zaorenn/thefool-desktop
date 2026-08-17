@@ -7,7 +7,7 @@
 # Yani markanın görsel tarafı için upstream'de TEK BİR SATIR bile değişmiyor.
 # Bölge B: sıfır çakışma, kalıcı.
 #
-# Kurulum: ~/.thefool/skins/the-fool.yaml
+# Kurulum: ~/.fool/skins/the-fool.yaml
 # Etkinleştirme: config.yaml -> display.skin: the-fool
 
 name: the-fool

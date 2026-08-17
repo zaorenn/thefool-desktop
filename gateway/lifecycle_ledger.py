@@ -11,7 +11,7 @@ cross-correlating four log files and two external APIs to answer "what
 killed the gateway?".
 
 This module closes that gap with a tiny state machine persisted to
-``<THEFOOL_HOME>/state/gateway.lifecycle.json``:
+``<FOOL_HOME>/state/gateway.lifecycle.json``:
 
 * On startup, :func:`record_startup` reads the sentinel left by the
   previous life.  ``phase == "running"`` means that life never reached any
@@ -59,17 +59,17 @@ _LOW_MEM_AVAILABLE_FRACTION = 0.05  # < 5% of MemTotal available
 
 
 def _process_hermes_home() -> Path:
-    """THEFOOL_HOME for process-level identity files (ignore task overrides)."""
-    val = os.environ.get("THEFOOL_HOME", "").strip()
+    """FOOL_HOME for process-level identity files (ignore task overrides)."""
+    val = os.environ.get("FOOL_HOME", "").strip()
     if val:
         return Path(val)
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     return get_hermes_home()
 
 
 def get_lifecycle_sentinel_path(home: Optional[Path] = None) -> Path:
-    """Return ``<THEFOOL_HOME>/state/gateway.lifecycle.json``."""
+    """Return ``<FOOL_HOME>/state/gateway.lifecycle.json``."""
     base = home if home is not None else _process_hermes_home()
     return base.joinpath(*_LIFECYCLE_RELATIVE)
 
@@ -314,7 +314,7 @@ def read_prior_exit_label(profile_home: Path) -> str:
     """Container-boot helper: one-word summary of how the profile's last
     gateway life ended.  ``clean`` / ``unclean`` / ``unknown`` (no sentinel
     or never ran).  Read-only and exception-free — used by
-    ``thefool_cli.container_boot`` to annotate ``container-boot.log``.
+    ``fool_cli.container_boot`` to annotate ``container-boot.log``.
     """
     try:
         sentinel = _read_json(get_lifecycle_sentinel_path(profile_home))

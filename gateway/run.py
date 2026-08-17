@@ -13,12 +13,12 @@ Usage:
     python cli.py --gateway
 """
 
-# IMPORTANT: thefool_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See thefool_bootstrap.py for full rationale.
+# IMPORTANT: fool_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See fool_bootstrap.py for full rationale.
 try:
-    import thefool_bootstrap  # noqa: F401
+    import fool_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when thefool_bootstrap isn't registered in the venv
+    # Graceful fallback when fool_bootstrap isn't registered in the venv
     # yet — happens during partial ``hermes update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
@@ -64,8 +64,8 @@ from agent.interrupt_compat import request_hard_interrupt
 from agent.turn_context import (
     compression_made_progress,
 )
-from thefool_cli.config import _is_ssh_remote_tilde_cwd, cfg_get
-from thefool_cli.fallback_config import get_fallback_chain
+from fool_cli.config import _is_ssh_remote_tilde_cwd, cfg_get
+from fool_cli.fallback_config import get_fallback_chain
 
 # --- Agent cache tuning ---------------------------------------------------
 # Bounds the per-session AIAgent cache to prevent unbounded growth in
@@ -968,7 +968,7 @@ def _telegramize_command_mentions(text: str, platform: Any) -> str:
     if platform_value != "telegram":
         return text
 
-    from thefool_cli.commands import _sanitize_telegram_name
+    from fool_cli.commands import _sanitize_telegram_name
 
     def _replace(match: re.Match[str]) -> str:
         sanitized = _sanitize_telegram_name(match.group(1))
@@ -982,7 +982,7 @@ def _telegramize_command_mentions(text: str, platform: Any) -> str:
 # after a gateway restart when the user's next message starts new work.
 #
 # The freshness signal is the timestamp of the last transcript row, which
-# ``thefool_state.get_messages`` carries on every persisted message.  This
+# ``fool_state.get_messages`` carries on every persisted message.  This
 # handles the two auto-continue cases uniformly:
 #   * resume_pending (gateway restart/shutdown watchdog marked the session)
 #   * tool-tail     (last persisted message is a tool result the agent
@@ -1046,9 +1046,9 @@ def _auto_continue_freshness_window() -> float:
     Thin wrapper that delegates to the canonical implementation in
     ``gateway.session`` (the single source of truth shared with the
     routing-time zombie gate in ``get_or_create_session``).  Reads
-    ``THEFOOL_AUTO_CONTINUE_FRESHNESS`` (bridged from ``config.yaml``
+    ``FOOL_AUTO_CONTINUE_FRESHNESS`` (bridged from ``config.yaml``
     ``agent.gateway_auto_continue_freshness`` at gateway startup, same
-    pattern as ``THEFOOL_AGENT_TIMEOUT``).  Falls back to the module default
+    pattern as ``FOOL_AGENT_TIMEOUT``).  Falls back to the module default
     when unset or malformed.  Non-positive values disable the freshness gate
     (restores the pre-fix "always fresh" behaviour for users who want to opt
     out).  Kept here so existing call sites and test patches importing it
@@ -1077,12 +1077,12 @@ def _startup_restore_drain_timeout_secs() -> float:
     slot rather than spawning a second agent.  So on timeout we release the
     gate and let the slow turn finish in the background.
 
-    Reads ``THEFOOL_STARTUP_RESTORE_DRAIN_TIMEOUT`` (bridged from
+    Reads ``FOOL_STARTUP_RESTORE_DRAIN_TIMEOUT`` (bridged from
     ``config.yaml`` ``agent.gateway_startup_restore_drain_timeout`` at gateway
     startup, same pattern as the other ``agent.*`` knobs).  Non-positive
     disables the bound (restores the historical "wait forever" behaviour).
     """
-    raw = os.environ.get("THEFOOL_STARTUP_RESTORE_DRAIN_TIMEOUT")
+    raw = os.environ.get("FOOL_STARTUP_RESTORE_DRAIN_TIMEOUT")
     if raw is None or raw == "":
         return float(_STARTUP_RESTORE_DRAIN_TIMEOUT_SECS_DEFAULT)
     try:
@@ -1105,7 +1105,7 @@ def _as_thread_info(info: Any) -> Optional[Tuple[str, str]]:
 def _float_env(name: str, default: float) -> float:
     """Read an env var as float, falling back to ``default`` on typos/empty.
 
-    A misconfigured env var (e.g. ``THEFOOL_AGENT_TIMEOUT=abc``) must not
+    A misconfigured env var (e.g. ``FOOL_AGENT_TIMEOUT=abc``) must not
     crash the gateway or an agent turn.  Unset/empty also falls back.
     """
     raw = os.environ.get(name)
@@ -1437,7 +1437,7 @@ def _build_gateway_agent_history(
     timestamp prefix from its stored metadata.
     """
 
-    from thefool_time import get_timezone as _get_msg_tz
+    from fool_time import get_timezone as _get_msg_tz
     from gateway.message_timestamps import (
         render_user_content_with_timestamp as _render_msg_ts,
     )
@@ -1933,15 +1933,15 @@ _ensure_ssl_certs()
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Resolve Hermes home directory (respects THEFOOL_HOME override)
-from thefool_constants import get_hermes_home, get_hermes_home_override
+# Resolve Hermes home directory (respects FOOL_HOME override)
+from fool_constants import get_hermes_home, get_hermes_home_override
 from utils import atomic_json_write, base_url_hostname, is_truthy_value
 _hermes_home = get_hermes_home()
 
 # Load environment variables from ~/.hermes/.env first.
 # User-managed env files should override stale shell exports on restart.
 from dotenv import load_dotenv  # noqa: F401  # backward-compat for tests that monkeypatch this symbol
-from thefool_cli.env_loader import load_hermes_dotenv
+from fool_cli.env_loader import load_hermes_dotenv
 _env_path = _hermes_home / '.env'
 load_hermes_dotenv(hermes_home=_hermes_home, project_env=Path(__file__).resolve().parents[1] / '.env')
 
@@ -1951,7 +1951,7 @@ def _reload_runtime_env_preserving_config_authority() -> None:
 
     Gateway processes are long-lived, so per-turn code reloads ~/.hermes/.env to
     pick up rotated API keys. config.yaml remains authoritative for agent budget
-    settings such as agent.max_turns; otherwise a stale THEFOOL_MAX_ITERATIONS in
+    settings such as agent.max_turns; otherwise a stale FOOL_MAX_ITERATIONS in
     .env can replace the startup bridge on later turns.
 
     In multiplex mode this is a NO-OP for the credential reload: secrets come
@@ -1976,12 +1976,12 @@ def _reload_runtime_env_preserving_config_authority() -> None:
 
 
 def _bridge_max_turns_from_config(home: "Path") -> None:
-    """Bridge config.yaml agent.max_turns into THEFOOL_MAX_ITERATIONS (a global)."""
+    """Bridge config.yaml agent.max_turns into FOOL_MAX_ITERATIONS (a global)."""
     config_path = home / 'config.yaml'
     if not config_path.exists():
         return
     try:
-        from thefool_cli.config import _expand_env_vars, read_user_config_raw
+        from fool_cli.config import _expand_env_vars, read_user_config_raw
         # Presence-sensitive env bridge: raw read is deliberate (only keys the
         # user actually wrote get bridged); overlay + expansion applied below.
         cfg = read_user_config_raw(config_path)
@@ -1993,7 +1993,7 @@ def _bridge_max_turns_from_config(home: "Path") -> None:
         # overlay a managed agent.max_turns / timezone / redact_secrets would be
         # replaced by the user's value after the first turn. Fail-open.
         try:
-            from thefool_cli import managed_scope
+            from fool_cli import managed_scope
             cfg = managed_scope.apply_managed_overlay(cfg)
         except Exception:
             pass
@@ -2002,22 +2002,22 @@ def _bridge_max_turns_from_config(home: "Path") -> None:
 
     agent_cfg = cfg.get("agent", {})
     if isinstance(agent_cfg, dict) and "max_turns" in agent_cfg:
-        os.environ["THEFOOL_MAX_ITERATIONS"] = str(agent_cfg["max_turns"])
+        os.environ["FOOL_MAX_ITERATIONS"] = str(agent_cfg["max_turns"])
     # config-authoritative knobs for the session-search index (config.yaml
     # sessions.* wins over stale env; env stays the cross-process carrier).
     sessions_cfg = cfg.get("sessions", {})
     if isinstance(sessions_cfg, dict):
         if "cjk_fts" in sessions_cfg:
-            os.environ["THEFOOL_CJK_FTS"] = str(sessions_cfg["cjk_fts"])
+            os.environ["FOOL_CJK_FTS"] = str(sessions_cfg["cjk_fts"])
         if "search_slow_ms" in sessions_cfg:
-            os.environ["THEFOOL_SEARCH_SLOW_MS"] = str(sessions_cfg["search_slow_ms"])
+            os.environ["FOOL_SEARCH_SLOW_MS"] = str(sessions_cfg["search_slow_ms"])
 
 
 def _current_max_iterations() -> int:
     """Return the current per-turn iteration budget after runtime env refresh."""
     _reload_runtime_env_preserving_config_authority()
     try:
-        return int(os.getenv("THEFOOL_MAX_ITERATIONS", "500"))
+        return int(os.getenv("FOOL_MAX_ITERATIONS", "500"))
     except (TypeError, ValueError):
         return 500
 
@@ -2053,7 +2053,7 @@ class SecondaryPortBindingConfigError(MultiplexConfigError):
 
 def _multiplex_profile_homes(config: object) -> list[tuple[str, "Path"]]:
     """Return the authoritative profile set for one multiplex gateway config."""
-    from thefool_cli.profiles import profiles_to_serve
+    from fool_cli.profiles import profiles_to_serve
 
     return list(
         profiles_to_serve(
@@ -2082,13 +2082,13 @@ def _profile_runtime_scope(profile_home: "Path"):
     returns an isolated dict — which is what keeps subprocesses (MCP, kanban)
     from inheriting cross-profile secrets.
     """
-    from thefool_constants import set_hermes_home_override, reset_hermes_home_override
+    from fool_constants import set_hermes_home_override, reset_hermes_home_override
     from agent.secret_scope import (
         build_profile_secret_scope,
         set_secret_scope,
         reset_secret_scope,
     )
-    from thefool_cli.env_loader import hydrate_profile_secret_sources
+    from fool_cli.env_loader import hydrate_profile_secret_sources
 
     home_token = set_hermes_home_override(str(profile_home))
     hydrate_profile_secret_sources(Path(profile_home))
@@ -2161,9 +2161,9 @@ _DOCKER_MEDIA_OUTPUT_CONTAINER_PATHS = {"/output", "/outputs"}
 # This env var is internal bridge plumbing, not a user-facing configuration
 # source. Initialize it from the canonical config default after dotenv loading
 # so an ambient process/.env value can never control lease safety on its own.
-from thefool_cli.config_defaults import DEFAULT_CONFIG as _DEFAULT_CONFIG
+from fool_cli.config_defaults import DEFAULT_CONFIG as _DEFAULT_CONFIG
 
-os.environ["THEFOOL_TURN_LEASE_TIMEOUT"] = str(
+os.environ["FOOL_TURN_LEASE_TIMEOUT"] = str(
     _DEFAULT_CONFIG["agent"]["gateway_turn_lease_timeout"]
 )
 
@@ -2175,7 +2175,7 @@ if _config_path.exists():
         # Presence-sensitive env bridge: raw read is deliberate — only keys the
         # user actually wrote may be bridged (a defaults merge would export the
         # whole DEFAULT_CONFIG into the env). Overlay + expansion applied below.
-        from thefool_cli.config import _expand_env_vars, read_user_config_raw
+        from fool_cli.config import _expand_env_vars, read_user_config_raw
         _cfg = read_user_config_raw(_config_path)
         # Expand ${ENV_VAR} references before bridging to env vars.
         _cfg = _expand_env_vars(_cfg)
@@ -2188,7 +2188,7 @@ if _config_path.exists():
         # overlay every HERMES_*/TERMINAL_* env var below would carry the user's
         # value even when an administrator pinned it. Fail-open via the helper.
         try:
-            from thefool_cli import managed_scope
+            from fool_cli import managed_scope
             _cfg = managed_scope.apply_managed_overlay(_cfg)
         except Exception:
             pass
@@ -2274,7 +2274,7 @@ if _config_path.exists():
             # below via the plugin auxiliary registry.
             _aux_bridged_keys = {"vision", "web_extract", "approval"}
             try:
-                from thefool_cli.plugins import get_plugin_auxiliary_tasks
+                from fool_cli.plugins import get_plugin_auxiliary_tasks
                 for _entry in get_plugin_auxiliary_tasks():
                     _aux_bridged_keys.add(_entry["key"])
             except Exception:
@@ -2302,43 +2302,43 @@ if _config_path.exists():
         # config.yaml is the documented, authoritative source for these
         # settings — it unconditionally wins over .env values. Previously
         # the guards below read `if X not in os.environ` and let stale
-        # .env entries (e.g. THEFOOL_MAX_ITERATIONS=60 written by an old
+        # .env entries (e.g. FOOL_MAX_ITERATIONS=60 written by an old
         # `hermes setup` run) silently shadow the user's current config.
         # See PR #18413 / the 60-vs-500 max_turns incident.
         _agent_cfg = _cfg.get("agent", {})
         if _agent_cfg and isinstance(_agent_cfg, dict):
             if "max_turns" in _agent_cfg:
-                os.environ["THEFOOL_MAX_ITERATIONS"] = str(_agent_cfg["max_turns"])
+                os.environ["FOOL_MAX_ITERATIONS"] = str(_agent_cfg["max_turns"])
             if "gateway_timeout" in _agent_cfg:
-                os.environ["THEFOOL_AGENT_TIMEOUT"] = str(_agent_cfg["gateway_timeout"])
+                os.environ["FOOL_AGENT_TIMEOUT"] = str(_agent_cfg["gateway_timeout"])
             if "gateway_turn_lease_timeout" in _agent_cfg:
-                os.environ["THEFOOL_TURN_LEASE_TIMEOUT"] = str(
+                os.environ["FOOL_TURN_LEASE_TIMEOUT"] = str(
                     _agent_cfg["gateway_turn_lease_timeout"]
                 )
             if "gateway_timeout_warning" in _agent_cfg:
-                os.environ["THEFOOL_AGENT_TIMEOUT_WARNING"] = str(_agent_cfg["gateway_timeout_warning"])
+                os.environ["FOOL_AGENT_TIMEOUT_WARNING"] = str(_agent_cfg["gateway_timeout_warning"])
             if "gateway_notify_interval" in _agent_cfg:
-                os.environ["THEFOOL_AGENT_NOTIFY_INTERVAL"] = str(_agent_cfg["gateway_notify_interval"])
+                os.environ["FOOL_AGENT_NOTIFY_INTERVAL"] = str(_agent_cfg["gateway_notify_interval"])
             if "session_stall_timeout" in _agent_cfg:
-                os.environ["THEFOOL_SESSION_STALL_TIMEOUT"] = str(
+                os.environ["FOOL_SESSION_STALL_TIMEOUT"] = str(
                     _agent_cfg["session_stall_timeout"]
                 )
             if "reconnect_attention_after" in _agent_cfg:
                 # Internal bridge only — config.yaml (agent.reconnect_attention_after)
                 # is the documented, user-facing setting.
-                os.environ["THEFOOL_RECONNECT_ATTENTION_AFTER_SECONDS"] = str(
+                os.environ["FOOL_RECONNECT_ATTENTION_AFTER_SECONDS"] = str(
                     _agent_cfg["reconnect_attention_after"]
                 )
             if "restart_drain_timeout" in _agent_cfg:
-                os.environ["THEFOOL_RESTART_DRAIN_TIMEOUT"] = str(_agent_cfg["restart_drain_timeout"])
+                os.environ["FOOL_RESTART_DRAIN_TIMEOUT"] = str(_agent_cfg["restart_drain_timeout"])
             if "cron_drain_timeout" in _agent_cfg:
-                os.environ["THEFOOL_CRON_DRAIN_TIMEOUT"] = str(_agent_cfg["cron_drain_timeout"])
+                os.environ["FOOL_CRON_DRAIN_TIMEOUT"] = str(_agent_cfg["cron_drain_timeout"])
             if "gateway_auto_continue_freshness" in _agent_cfg:
-                os.environ["THEFOOL_AUTO_CONTINUE_FRESHNESS"] = str(
+                os.environ["FOOL_AUTO_CONTINUE_FRESHNESS"] = str(
                     _agent_cfg["gateway_auto_continue_freshness"]
                 )
             if "gateway_startup_restore_drain_timeout" in _agent_cfg:
-                os.environ["THEFOOL_STARTUP_RESTORE_DRAIN_TIMEOUT"] = str(
+                os.environ["FOOL_STARTUP_RESTORE_DRAIN_TIMEOUT"] = str(
                     _agent_cfg["gateway_startup_restore_drain_timeout"]
                 )
         # config-authoritative knobs for the session-search index; same
@@ -2346,45 +2346,45 @@ if _config_path.exists():
         _sessions_cfg = _cfg.get("sessions", {})
         if _sessions_cfg and isinstance(_sessions_cfg, dict):
             if "cjk_fts" in _sessions_cfg:
-                os.environ["THEFOOL_CJK_FTS"] = str(_sessions_cfg["cjk_fts"])
+                os.environ["FOOL_CJK_FTS"] = str(_sessions_cfg["cjk_fts"])
             if "search_slow_ms" in _sessions_cfg:
-                os.environ["THEFOOL_SEARCH_SLOW_MS"] = str(
+                os.environ["FOOL_SEARCH_SLOW_MS"] = str(
                     _sessions_cfg["search_slow_ms"]
                 )
         _display_cfg = _cfg.get("display", {})
         if _display_cfg and isinstance(_display_cfg, dict):
             if "busy_input_mode" in _display_cfg:
-                os.environ["THEFOOL_GATEWAY_BUSY_INPUT_MODE"] = str(_display_cfg["busy_input_mode"])
+                os.environ["FOOL_GATEWAY_BUSY_INPUT_MODE"] = str(_display_cfg["busy_input_mode"])
             if "busy_text_mode" in _display_cfg:
-                os.environ["THEFOOL_GATEWAY_BUSY_TEXT_MODE"] = str(_display_cfg["busy_text_mode"])
+                os.environ["FOOL_GATEWAY_BUSY_TEXT_MODE"] = str(_display_cfg["busy_text_mode"])
             if "busy_ack_enabled" in _display_cfg:
-                os.environ["THEFOOL_GATEWAY_BUSY_ACK_ENABLED"] = str(_display_cfg["busy_ack_enabled"])
+                os.environ["FOOL_GATEWAY_BUSY_ACK_ENABLED"] = str(_display_cfg["busy_ack_enabled"])
             # This process-level env var is documented as an override for
             # service managers, so preserve it when already set. Other display
             # bridges stay config-authoritative for backwards compatibility.
             if (
                 "busy_steer_ack_enabled" in _display_cfg
-                and "THEFOOL_GATEWAY_BUSY_STEER_ACK_ENABLED" not in os.environ
+                and "FOOL_GATEWAY_BUSY_STEER_ACK_ENABLED" not in os.environ
             ):
-                os.environ["THEFOOL_GATEWAY_BUSY_STEER_ACK_ENABLED"] = str(
+                os.environ["FOOL_GATEWAY_BUSY_STEER_ACK_ENABLED"] = str(
                     _display_cfg["busy_steer_ack_enabled"]
                 )
-        # Timezone: bridge config.yaml → THEFOOL_TIMEZONE env var.
+        # Timezone: bridge config.yaml → FOOL_TIMEZONE env var.
         _tz_cfg = _cfg.get("timezone", "")
         if _tz_cfg and isinstance(_tz_cfg, str):
-            os.environ["THEFOOL_TIMEZONE"] = _tz_cfg.strip()
+            os.environ["FOOL_TIMEZONE"] = _tz_cfg.strip()
         # Security settings
         _security_cfg = _cfg.get("security", {})
         if isinstance(_security_cfg, dict):
             _redact = _security_cfg.get("redact_secrets")
             if _redact is not None:
-                os.environ["THEFOOL_REDACT_SECRETS"] = str(_redact).lower()
+                os.environ["FOOL_REDACT_SECRETS"] = str(_redact).lower()
         # Gateway settings (media delivery allowlist + recency trust + strict mode)
         _gateway_cfg = _cfg.get("gateway", {})
         if isinstance(_gateway_cfg, dict):
             _strict = _gateway_cfg.get("strict")
             if _strict is not None:
-                os.environ["THEFOOL_MEDIA_DELIVERY_STRICT"] = (
+                os.environ["FOOL_MEDIA_DELIVERY_STRICT"] = (
                     "1" if _strict else "0"
                 )
             _allow_dirs = _gateway_cfg.get("media_delivery_allow_dirs")
@@ -2396,15 +2396,15 @@ if _config_path.exists():
                 else:
                     _allow_dirs_str = ""
                 if _allow_dirs_str:
-                    os.environ["THEFOOL_MEDIA_ALLOW_DIRS"] = _allow_dirs_str
+                    os.environ["FOOL_MEDIA_ALLOW_DIRS"] = _allow_dirs_str
             _trust_recent = _gateway_cfg.get("trust_recent_files")
             if _trust_recent is not None:
-                os.environ["THEFOOL_MEDIA_TRUST_RECENT_FILES"] = (
+                os.environ["FOOL_MEDIA_TRUST_RECENT_FILES"] = (
                     "1" if _trust_recent else "0"
                 )
             _trust_recent_seconds = _gateway_cfg.get("trust_recent_files_seconds")
             if _trust_recent_seconds is not None:
-                os.environ["THEFOOL_MEDIA_TRUST_RECENT_SECONDS"] = str(_trust_recent_seconds)
+                os.environ["FOOL_MEDIA_TRUST_RECENT_SECONDS"] = str(_trust_recent_seconds)
             # Bridge gateway.platform_connect_timeout → the internal env var the
             # connect path + Discord adapter ready-wait both read (#19776).
             # Unlike the agent.*/display.* bridges above (config-authoritative),
@@ -2412,9 +2412,9 @@ if _config_path.exists():
             # already set explicitly; otherwise config.yaml supplies the value.
             if (
                 "platform_connect_timeout" in _gateway_cfg
-                and not os.environ.get("THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
+                and not os.environ.get("FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
             ):
-                os.environ["THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT"] = str(
+                os.environ["FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT"] = str(
                     _gateway_cfg["platform_connect_timeout"]
                 )
     except Exception as _bridge_err:
@@ -2438,7 +2438,7 @@ if _config_path.exists():
 
 # Apply IPv4 preference if configured (before any HTTP clients are created).
 try:
-    from thefool_constants import apply_ipv4_preference
+    from fool_constants import apply_ipv4_preference
     _network_cfg = (_cfg if '_cfg' in dir() else {}).get("network", {})
     if isinstance(_network_cfg, dict) and _network_cfg.get("force_ipv4"):
         apply_ipv4_preference(force=True)
@@ -2447,22 +2447,22 @@ except Exception as _bootstrap_exc:
 
 # Validate config structure early — log warnings so gateway operators see problems
 try:
-    from thefool_cli.config import print_config_warnings
+    from fool_cli.config import print_config_warnings
     print_config_warnings()
 except Exception as _bootstrap_exc:
     print(f"  Warning: config validation failed: {_bootstrap_exc}", file=sys.stderr)
 
 # Warn if user has deprecated MESSAGING_CWD / TERMINAL_CWD in .env
 try:
-    from thefool_cli.config import warn_deprecated_cwd_env_vars
+    from fool_cli.config import warn_deprecated_cwd_env_vars
     warn_deprecated_cwd_env_vars()
 except Exception as _bootstrap_exc:
     print(f"  Warning: deprecation check failed: {_bootstrap_exc}", file=sys.stderr)
 
 # Gateway runs in quiet mode - suppress debug output and use cwd directly (no temp dirs)
-os.environ["THEFOOL_QUIET"] = "1"
+os.environ["FOOL_QUIET"] = "1"
 
-# THEFOOL_EXEC_ASK is set in start_gateway(), not at import time. Importing this
+# FOOL_EXEC_ASK is set in start_gateway(), not at import time. Importing this
 # module from CLI tools (e.g. send_message → _gateway_runner_ref) must not flip
 # interactive CLI sessions into ask-mode, or Dangerous Command prompts become
 # silent pending_approval with no Approve/Deny UI.
@@ -2680,12 +2680,12 @@ def _resolve_runtime_agent_kwargs() -> dict:
     resolve credentials using the fallback provider chain from config.yaml
     before giving up.
     """
-    from thefool_cli.runtime_provider import (
+    from fool_cli.runtime_provider import (
         resolve_runtime_provider,
         format_runtime_provider_error,
         _get_model_config,
     )
-    from thefool_cli.auth import AuthError, is_rate_limited_auth_error
+    from fool_cli.auth import AuthError, is_rate_limited_auth_error
 
     try:
         runtime = resolve_runtime_provider()
@@ -2707,7 +2707,7 @@ def _resolve_runtime_agent_kwargs() -> dict:
 
     model_cfg = _get_model_config()
     max_tokens = None
-    _env_mt = os.environ.get("THEFOOL_MAX_TOKENS")
+    _env_mt = os.environ.get("FOOL_MAX_TOKENS")
     if _env_mt:
         try:
             max_tokens = int(_env_mt)
@@ -2740,7 +2740,7 @@ def _resolve_runtime_agent_kwargs() -> dict:
 
 def _resolve_runtime_agent_kwargs_for_provider(provider: str) -> dict:
     """Resolve runtime credentials for a specific provider (e.g. from channel override)."""
-    from thefool_cli.runtime_provider import (
+    from fool_cli.runtime_provider import (
         resolve_runtime_provider,
         format_runtime_provider_error,
     )
@@ -2779,7 +2779,7 @@ def _credential_pool_for_provider(provider: Optional[str]):
 
 def _try_resolve_fallback_provider() -> dict | None:
     """Attempt to resolve credentials from the fallback_model/fallback_providers config."""
-    from thefool_cli.runtime_provider import resolve_runtime_provider
+    from fool_cli.runtime_provider import resolve_runtime_provider
     try:
         # Canonical gateway loader: managed overlay + ${VAR} expansion +
         # root-model normalization now reach the fallback chain too (a raw
@@ -2790,7 +2790,7 @@ def _try_resolve_fallback_provider() -> dict | None:
             return None
         for entry in fb_list:
             try:
-                from thefool_cli.fallback_config import resolve_entry_api_key
+                from fool_cli.fallback_config import resolve_entry_api_key
 
                 runtime = resolve_runtime_provider(
                     requested=entry.get("provider"),
@@ -3340,7 +3340,7 @@ def _check_unavailable_skill(command_name: str) -> str | None:
                     )
 
         # Check optional skills (shipped with repo but not installed)
-        from thefool_constants import get_optional_skills_dir
+        from fool_constants import get_optional_skills_dir
         repo_root = Path(__file__).resolve().parent.parent
         optional_dir = get_optional_skills_dir(repo_root / "optional-skills")
         if optional_dir.exists():
@@ -3393,7 +3393,7 @@ def _load_gateway_config(config_path: "Path | None" = None) -> dict:
     ``_hermes_home`` still see their fixture). Callers handling multiplexed
     profile routes may pass that profile's explicit config path. The canonical
     path shares the mtime-keyed raw-yaml cache from
-    ``thefool_cli.config.read_raw_config``.
+    ``fool_cli.config.read_raw_config``.
 
     Managed scope is overlaid on the result (via the shared helper) so the
     gateway honors administrator-pinned values — neither read_raw_config nor a
@@ -3404,7 +3404,7 @@ def _load_gateway_config(config_path: "Path | None" = None) -> dict:
     raw: dict = {}
     used_canonical = False
     try:
-        from thefool_cli.config import get_config_path, read_raw_config
+        from fool_cli.config import get_config_path, read_raw_config
         # Fast path: if _hermes_home agrees with the canonical config
         # location, reuse the shared cache. Otherwise fall through to a
         # direct read (keeps test fixtures with a monkeypatched
@@ -3430,7 +3430,7 @@ def _load_gateway_config(config_path: "Path | None" = None) -> dict:
     # so the overlay is required on both paths for the gateway to honor pinned
     # values. Helper is fail-open and a no-op when no managed scope exists.
     try:
-        from thefool_cli import managed_scope
+        from fool_cli import managed_scope
         raw = managed_scope.apply_managed_overlay(raw if isinstance(raw, dict) else {})
     except Exception:
         pass
@@ -3443,7 +3443,7 @@ def _load_gateway_config(config_path: "Path | None" = None) -> dict:
     # gateway would resolve an empty model for ``model: {name: <id>}`` configs
     # while the CLI resolves it correctly. See issue #34500. Fail-open.
     try:
-        from thefool_cli.config import _normalize_root_model_keys
+        from fool_cli.config import _normalize_root_model_keys
         raw = _normalize_root_model_keys(raw)
     except Exception:
         pass
@@ -3463,7 +3463,7 @@ def _checkpoint_agent_kwargs(config: dict | None) -> dict:
     elif not isinstance(cp_cfg, dict):
         cp_cfg = {}
 
-    from thefool_cli.config import DEFAULT_CONFIG
+    from fool_cli.config import DEFAULT_CONFIG
     defaults = DEFAULT_CONFIG["checkpoints"]
     return {
         "checkpoints_enabled": cp_cfg.get("enabled", defaults["enabled"]),
@@ -3493,7 +3493,7 @@ def _load_gateway_runtime_config() -> dict:
     cfg = _load_gateway_config()
     if not isinstance(cfg, dict) or not cfg:
         return {}
-    from thefool_cli.config import _expand_env_vars
+    from fool_cli.config import _expand_env_vars
 
     expanded = _expand_env_vars(cfg)
     return expanded if isinstance(expanded, dict) else {}
@@ -3573,7 +3573,7 @@ def _resolve_hermes_bin() -> Optional[list[str]]:
 
     Tries in order:
     1. ``shutil.which("hermes")`` — standard PATH lookup
-    2. ``sys.executable -m thefool_cli.main`` — fallback when Hermes is running
+    2. ``sys.executable -m fool_cli.main`` — fallback when Hermes is running
        from a venv/module invocation and the ``hermes`` shim is not on PATH
 
     Returns argv parts ready for quoting/joining, or ``None`` if neither works.
@@ -3587,8 +3587,8 @@ def _resolve_hermes_bin() -> Optional[list[str]]:
     try:
         import importlib.util
 
-        if importlib.util.find_spec("thefool_cli") is not None:
-            return [sys.executable, "-m", "thefool_cli.main"]
+        if importlib.util.find_spec("fool_cli") is not None:
+            return [sys.executable, "-m", "fool_cli.main"]
     except Exception:
         pass
 
@@ -4001,7 +4001,7 @@ _RECONNECT_BACKOFF_CAP = 300
 # User-facing setting: agent.reconnect_attention_after in config.yaml
 # (bridged to this env var above). 0 disables.
 _RECONNECT_ATTENTION_AFTER_SECONDS = _float_env(
-    "THEFOOL_RECONNECT_ATTENTION_AFTER_SECONDS", 7200
+    "FOOL_RECONNECT_ATTENTION_AFTER_SECONDS", 7200
 )
 
 
@@ -5085,7 +5085,7 @@ class TurnRunner:
         # session_key is propagated via contextvars in _set_session_env()
         # (_SESSION_KEY) and via set_current_session_key() (_approval_session_key)
         # below — both concurrency-safe and inherited by tool worker threads.
-        # We deliberately do NOT write os.environ["THEFOOL_SESSION_KEY"] here:
+        # We deliberately do NOT write os.environ["FOOL_SESSION_KEY"] here:
         # os.environ is process-global, so concurrent gateway sessions (e.g.
         # two Discord threads) would clobber each other's value, and a tool
         # thread whose contextvar is unset would fall back to os.environ and
@@ -5093,7 +5093,7 @@ class TurnRunner:
         # the wrong thread (#24100). The non-gateway surfaces don't depend on
         # this write: CLI and cron bind the session via contextvars
         # (set_current_session_key / session context), and only the TUI
-        # slash-worker *subprocess* exports THEFOOL_SESSION_KEY (from its own
+        # slash-worker *subprocess* exports FOOL_SESSION_KEY (from its own
         # --session-key argv, a separate process) — so removing this in-process
         # gateway write does not affect any of them.
 
@@ -6797,7 +6797,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # so operators knowingly enable tirith or configure auxiliary.approval
         # for unattended gateways.
         try:
-            from thefool_cli.config import load_config as _load_full_config
+            from fool_cli.config import load_config as _load_full_config
             _appr_cfg = _load_full_config()
             _appr_mode = str(
                 cfg_get(_appr_cfg, "approvals", "mode", default="manual") or "manual"
@@ -6819,15 +6819,15 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Initialize session database for session_search tool support
         self._session_db = None
         try:
-            from thefool_state import AsyncSessionDB, SessionDB
+            from fool_state import AsyncSessionDB, SessionDB
             self._session_db = AsyncSessionDB(SessionDB())
         except Exception as e:
             # WARNING (not DEBUG) so the failure appears in errors.log — matches
             # cli.py's handling of the same init path.  Users hitting NFS-mounted
-            # THEFOOL_HOME silently lost /resume, /title, /history, /branch, and
+            # FOOL_HOME silently lost /resume, /title, /history, /branch, and
             # session search without this.  The underlying cause (usually
             # "locking protocol" from NFS) is now also captured by
-            # thefool_state.get_last_init_error() for slash-command error strings.
+            # fool_state.get_last_init_error() for slash-command error strings.
             logger.warning("SQLite session store not available: %s", e)
             # Surface the failure to the user via their home channel(s) once
             # the gateway connects.  Without this, state.db corruption or
@@ -6844,7 +6844,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # but never raised.
         if self._session_db is not None:
             try:
-                from thefool_cli.config import load_config as _load_full_config
+                from fool_cli.config import load_config as _load_full_config
                 _sess_cfg = (_load_full_config().get("sessions") or {})
                 # Non-destructive stale-session archive, independent of prune.
                 if _sess_cfg.get("auto_archive", False):
@@ -6870,7 +6870,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # under ~/.hermes/checkpoints/.  Opt-in via checkpoints.auto_prune,
         # idempotent via .last_prune marker.
         try:
-            from thefool_cli.config import load_config as _load_full_config
+            from fool_cli.config import load_config as _load_full_config
             _ckpt_cfg = (_load_full_config().get("checkpoints") or {})
             if _ckpt_cfg.get("auto_prune", False):
                 from tools.checkpoint_manager import maybe_auto_prune_checkpoints
@@ -7116,9 +7116,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             return
 
         # Push the global voice.auto_tts default (config.yaml) onto the adapter.
-        # Lazy import to avoid adding a module-level dep from gateway → thefool_cli.
+        # Lazy import to avoid adding a module-level dep from gateway → fool_cli.
         try:
-            from thefool_cli.config import load_config as _load_full_config
+            from fool_cli.config import load_config as _load_full_config
             _full_cfg = _load_full_config()
             _auto_tts_default = bool(
                 (_full_cfg.get("voice") or {}).get("auto_tts", False)
@@ -7213,7 +7213,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         cleanup, so the next start dies with "PID file race lost" (#14128).
 
         Each await uses the existing per-adapter timeout budget
-        (``THEFOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT``). On timeout the old
+        (``FOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT``). On timeout the old
         task is cancelled and detached, then teardown forces forward progress;
         the loop never hangs even if an adapter swallows cancellation. Never
         raises.
@@ -7254,13 +7254,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _adapter_disconnect_timeout_secs(self) -> float:
         """Return the per-adapter disconnect timeout used during shutdown."""
-        raw = os.getenv("THEFOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
+        raw = os.getenv("FOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
         if raw:
             try:
                 timeout = float(raw)
             except ValueError:
                 logger.warning(
-                    "Ignoring invalid THEFOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT=%r",
+                    "Ignoring invalid FOOL_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT=%r",
                     raw,
                 )
             else:
@@ -7279,13 +7279,13 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         the reconnect watcher, which retries with the full budget (and
         ``is_reconnect=True``, preserving the offline update queue — #46621).
         """
-        raw = os.getenv("THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
+        raw = os.getenv("FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
         if raw:
             try:
                 timeout = float(raw)
             except ValueError:
                 logger.warning(
-                    "Ignoring invalid THEFOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT=%r",
+                    "Ignoring invalid FOOL_GATEWAY_PLATFORM_CONNECT_TIMEOUT=%r",
                     raw,
                 )
             else:
@@ -7391,7 +7391,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 _profile = source.profile
             else:
                 try:
-                    from thefool_cli.profiles import get_active_profile_name
+                    from fool_cli.profiles import get_active_profile_name
                     _profile = get_active_profile_name() or "default"
                 except Exception:
                     _profile = None
@@ -7747,7 +7747,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # doesn't fail with "model must be a non-empty string".
         if not model and runtime_kwargs.get("provider"):
             try:
-                from thefool_cli.models import get_default_model_for_provider
+                from fool_cli.models import get_default_model_for_provider
                 model = get_default_model_for_provider(runtime_kwargs["provider"])
                 if model:
                     logger.info(
@@ -7802,7 +7802,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         mode, attach `request_overrides` so the API call is marked
         accordingly.
         """
-        from thefool_cli.models import resolve_fast_mode_overrides
+        from fool_cli.models import resolve_fast_mode_overrides
 
         runtime = {
             "api_key": runtime_kwargs.get("api_key"),
@@ -8348,7 +8348,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     def _log_scale_to_zero_not_armed_reason(self) -> None:
         """Log why the idle watcher did NOT arm — but only for an OPTED-IN instance.
 
-        A non-opted instance (no THEFOOL_SCALE_TO_ZERO stamp) not arming is the normal
+        A non-opted instance (no FOOL_SCALE_TO_ZERO stamp) not arming is the normal
         case and must stay silent. When the Labs stamp IS set but the watcher still
         didn't arm, that's the surprising case worth one INFO line so "why won't it
         suspend/wake?" is a log grep, not a box-dive.
@@ -8422,7 +8422,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         """Watch for idle, drive the relay dormant, then self-suspend the machine.
 
         Started ONLY when _scale_to_zero_should_arm() (opted in via the Labs
-        THEFOOL_SCALE_TO_ZERO stamp + relay-only/absent messaging + a wakeUrl).
+        FOOL_SCALE_TO_ZERO stamp + relay-only/absent messaging + a wakeUrl).
         On a sustained idle window it runs the DORMANT sequence (D12/F12/F14):
           - mark runtime status `draining` (composes with the existing state
             machine, §3.4(6); does NOT set _running=False),
@@ -8648,7 +8648,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if not session_id:
             return False
         try:
-            from thefool_cli.goals import GoalManager
+            from fool_cli.goals import GoalManager
             return GoalManager(session_id=session_id).is_active()
         except Exception as exc:
             logger.debug("goal continuation: active-state recheck failed: %s", exc)
@@ -8751,7 +8751,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         observe-the-marker latency the live-validation gate checks (point a).
         Reconciles once at startup. A marker stamped with a PRIOR
         instantiation epoch (one that survived a machine restart on the durable
-        THEFOOL_HOME volume — NS-570) is treated as absent by ``drain_requested``
+        FOOL_HOME volume — NS-570) is treated as absent by ``drain_requested``
         and is NOT honoured; only a marker from the current instantiation flips
         the gateway into drain. Best-effort: any tick error is logged and the
         loop continues (a transient stat() failure must not wedge the gateway).
@@ -8874,12 +8874,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     def _load_prefill_messages() -> List[Dict[str, Any]]:
         """Load ephemeral prefill messages from config or env var.
         
-        Checks THEFOOL_PREFILL_MESSAGES_FILE env var first, then falls back to
+        Checks FOOL_PREFILL_MESSAGES_FILE env var first, then falls back to
         the top-level prefill_messages_file key in ~/.hermes/config.yaml.
         agent.prefill_messages_file is accepted as a legacy fallback.
         Relative paths are resolved from ~/.hermes/.
         """
-        file_path = os.getenv("THEFOOL_PREFILL_MESSAGES_FILE", "")
+        file_path = os.getenv("FOOL_PREFILL_MESSAGES_FILE", "")
         if not file_path:
             cfg = _load_gateway_runtime_config()
             file_path = str(cfg.get("prefill_messages_file", "") or "")
@@ -8908,12 +8908,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     def _load_ephemeral_system_prompt() -> str:
         """Load ephemeral system prompt from config or env var.
 
-        Checks THEFOOL_EPHEMERAL_SYSTEM_PROMPT env var first, then
+        Checks FOOL_EPHEMERAL_SYSTEM_PROMPT env var first, then
         ``display.personality`` / ``agent.system_prompt`` in config.yaml.
         """
-        from thefool_cli.config import resolve_ephemeral_system_prompt_from_config
+        from fool_cli.config import resolve_ephemeral_system_prompt_from_config
 
-        prompt = os.getenv("THEFOOL_EPHEMERAL_SYSTEM_PROMPT", "")
+        prompt = os.getenv("FOOL_EPHEMERAL_SYSTEM_PROMPT", "")
         if prompt:
             return prompt
         cfg = _load_gateway_runtime_config()
@@ -8931,14 +8931,14 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         """Resolve model for this channel: channel_overrides else global default.
 
         Delegates the precedence rule to
-        :func:`thefool_cli.model_switch.resolve_effective_model` (session
+        :func:`fool_cli.model_switch.resolve_effective_model` (session
         override > channel override > global default) — the single owner
         shared with the API server, so the two surfaces cannot diverge
         again (see 7dd00bb47d).  This call site has no session tier: session
         /model overrides are applied later by
         ``_apply_session_model_override`` on the resolved runtime.
         """
-        from thefool_cli.model_switch import resolve_effective_model
+        from fool_cli.model_switch import resolve_effective_model
 
         override = None
         config = getattr(self, "config", None)
@@ -8989,7 +8989,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         """Load reasoning effort from config.yaml, respecting per-model overrides.
 
         Thin wrapper over the shared chokepoint
-        :func:`thefool_constants.resolve_reasoning_config` (per-model override >
+        :func:`fool_constants.resolve_reasoning_config` (per-model override >
         global ``agent.reasoning_effort``; YAML boolean False = disabled).
         Closes #21256.
 
@@ -8997,7 +8997,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             model: The effective model for the calling session. When empty,
                    the config's ``model.default`` is used.
         """
-        from thefool_constants import resolve_reasoning_config
+        from fool_constants import resolve_reasoning_config
         cfg = _load_gateway_runtime_config()
         return resolve_reasoning_config(cfg, model)
 
@@ -9151,7 +9151,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     @staticmethod
     def _load_busy_input_mode() -> str:
         """Load gateway drain-time busy-input behavior from config/env."""
-        mode = os.getenv("THEFOOL_GATEWAY_BUSY_INPUT_MODE", "").strip().lower()
+        mode = os.getenv("FOOL_GATEWAY_BUSY_INPUT_MODE", "").strip().lower()
         if not mode:
             cfg = _load_gateway_runtime_config()
             mode = str(cfg_get(cfg, "display", "busy_input_mode", default="") or "").strip().lower()
@@ -9173,7 +9173,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         ``busy_input_mode`` and maps to non-queue text handling here).
         """
         # Legacy explicit override wins for backward compat.
-        legacy = os.getenv("THEFOOL_GATEWAY_BUSY_TEXT_MODE", "").strip().lower()
+        legacy = os.getenv("FOOL_GATEWAY_BUSY_TEXT_MODE", "").strip().lower()
         if not legacy:
             cfg = _load_gateway_runtime_config()
             legacy = str(cfg_get(cfg, "display", "busy_text_mode", default="") or "").strip().lower()
@@ -9258,7 +9258,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     @staticmethod
     def _load_restart_drain_timeout() -> float:
         """Load graceful gateway restart/stop drain timeout in seconds."""
-        raw = os.getenv("THEFOOL_RESTART_DRAIN_TIMEOUT", "").strip()
+        raw = os.getenv("FOOL_RESTART_DRAIN_TIMEOUT", "").strip()
         if not raw:
             cfg = _load_gateway_runtime_config()
             raw = str(cfg_get(cfg, "agent", "restart_drain_timeout", default="") or "").strip()
@@ -9277,7 +9277,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     @staticmethod
     def _load_restart_after_turn_timeout() -> float:
         """Load in-band restart wait-for-idle timeout in seconds (#77184)."""
-        env_raw = os.getenv("THEFOOL_RESTART_AFTER_TURN_TIMEOUT")
+        env_raw = os.getenv("FOOL_RESTART_AFTER_TURN_TIMEOUT")
         if env_raw is not None and str(env_raw).strip() != "":
             raw: object = env_raw
         else:
@@ -9300,7 +9300,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     @staticmethod
     def _load_cron_drain_timeout() -> float:
         """Load the cron-only floor under the stop()/drain wait (#82161)."""
-        env_raw = os.getenv("THEFOOL_CRON_DRAIN_TIMEOUT")
+        env_raw = os.getenv("FOOL_CRON_DRAIN_TIMEOUT")
         if env_raw is not None and str(env_raw).strip() != "":
             raw: object = env_raw
         else:
@@ -9332,7 +9332,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
           - ``error``  — only the final raw-output message when exit code is non-zero
           - ``off``    — no watcher messages at all
         """
-        mode = os.getenv("THEFOOL_BACKGROUND_NOTIFICATIONS", "")
+        mode = os.getenv("FOOL_BACKGROUND_NOTIFICATIONS", "")
         if not mode:
             cfg = _load_gateway_runtime_config()
             raw = cfg_get(cfg, "display", "background_process_notifications")
@@ -9396,7 +9396,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         that genuinely lacks the key clears the chain.
         """
         try:
-            from thefool_cli.config import read_user_config_raw
+            from fool_cli.config import read_user_config_raw
             cfg_path = _hermes_home / "config.yaml"
             if not cfg_path.exists():
                 self._fallback_model = None
@@ -9407,12 +9407,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # below fixes the managed-scope/${VAR} drift without losing that.
             cfg = read_user_config_raw(cfg_path)
             try:
-                from thefool_cli import managed_scope
+                from fool_cli import managed_scope
                 cfg = managed_scope.apply_managed_overlay(cfg)
             except Exception:
                 pass
             try:
-                from thefool_cli.config import _expand_env_vars
+                from fool_cli.config import _expand_env_vars
                 expanded = _expand_env_vars(cfg)
                 if isinstance(expanded, dict):
                     cfg = expanded
@@ -9474,7 +9474,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     def _get_max_concurrent_sessions(self) -> Optional[int]:
         """Return the configured active chat session cap, if enabled."""
         try:
-            from thefool_cli.active_sessions import resolve_max_concurrent_sessions
+            from fool_cli.active_sessions import resolve_max_concurrent_sessions
 
             return resolve_max_concurrent_sessions(getattr(self, "config", None))
         except Exception:
@@ -9490,7 +9490,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         active_count = self._running_agent_count()
         if active_count < max_sessions:
             return None
-        from thefool_cli.active_sessions import active_session_limit_message
+        from fool_cli.active_sessions import active_session_limit_message
 
         return active_session_limit_message(active_count, max_sessions)
 
@@ -9506,7 +9506,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if local_limit_message is not None:
             return None, local_limit_message
         try:
-            from thefool_cli.active_sessions import try_acquire_active_session
+            from fool_cli.active_sessions import try_acquire_active_session
 
             platform = source.platform.value if source and source.platform else "gateway"
             return try_acquire_active_session(
@@ -10016,7 +10016,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Check if busy ack is disabled — skip sending but still process the input.
         # Placed before debounce so we don't stamp a "last ack" timestamp that was
         # never actually delivered.
-        busy_ack_enabled = os.environ.get("THEFOOL_GATEWAY_BUSY_ACK_ENABLED", "true").lower() == "true"
+        busy_ack_enabled = os.environ.get("FOOL_GATEWAY_BUSY_ACK_ENABLED", "true").lower() == "true"
         if not busy_ack_enabled:
             logger.debug("Busy ack suppressed for session %s", session_key)
             return True  # input still processed, just no ack sent
@@ -10038,7 +10038,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # like STT transcript echo suppression: keep the behavior, drop only
         # the confirmation bubble.
         if is_steer_mode:
-            steer_ack_env = os.environ.get("THEFOOL_GATEWAY_BUSY_STEER_ACK_ENABLED")
+            steer_ack_env = os.environ.get("FOOL_GATEWAY_BUSY_STEER_ACK_ENABLED")
             if steer_ack_env is not None:
                 steer_ack_enabled = steer_ack_env.strip().lower() in {"1", "true", "yes", "on"}
             else:
@@ -10720,7 +10720,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         reason: str,
         **extra: Any,
     ) -> None:
-        """Run thefool_cli.lifecycle.finalize_session off the event loop, bounded.
+        """Run fool_cli.lifecycle.finalize_session off the event loop, bounded.
 
         finalize_session() invokes plugin ``on_session_finalize`` hooks
         synchronously; a hook doing heavy blocking work (observability trace
@@ -10732,7 +10732,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         """
 
         def _call() -> None:
-            from thefool_cli.lifecycle import finalize_session
+            from fool_cli.lifecycle import finalize_session
 
             finalize_session(
                 session_id=session_id,
@@ -10986,7 +10986,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # that triggered the /restart command closing its console.
         if sys.platform == "win32":
             import textwrap
-            from thefool_cli._subprocess_compat import (
+            from fool_cli._subprocess_compat import (
                 windows_detach_flags_without_breakaway,
                 windows_detach_popen_kwargs,
             )
@@ -10995,7 +10995,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             watcher = textwrap.dedent(
                 """
                 import os, subprocess, sys, time
-                from thefool_cli._subprocess_compat import windows_detach_flags_without_breakaway
+                from fool_cli._subprocess_compat import windows_detach_flags_without_breakaway
                 pid = int(sys.argv[1])
                 restart_after_s = float(sys.argv[2])
                 cmd = sys.argv[3:]
@@ -11079,7 +11079,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # ERROR_ACCESS_DENIED, surfaced as OSError.  Retry once without the
             # breakaway bit, preserving argv and the scrubbed watcher_env.
             # Mirrors the canonical fallback in
-            # thefool_cli/gateway_windows.py::_spawn_detached.
+            # fool_cli/gateway_windows.py::_spawn_detached.
             try:
                 subprocess.Popen(
                     watcher_argv,
@@ -11174,7 +11174,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 return
 
             try:
-                from thefool_cli.gateway import get_service_name
+                from fool_cli.gateway import get_service_name
 
                 service_name = get_service_name()
             except Exception:
@@ -11265,7 +11265,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         turns, never wedged. Fail-open per agent: an unreadable activity
         summary means "not wedged".
         """
-        timeout = _float_env("THEFOOL_AGENT_TIMEOUT", 1800)
+        timeout = _float_env("FOOL_AGENT_TIMEOUT", 1800)
         if timeout <= 0:
             return 0
         wedged = 0
@@ -11921,7 +11921,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         exact = 0
         fallback = 0
         try:
-            agent_timeout = max(1.0, _float_env("THEFOOL_AGENT_TIMEOUT", 1800))
+            agent_timeout = max(1.0, _float_env("FOOL_AGENT_TIMEOUT", 1800))
             marker_max_age = max(60 * 60, int(agent_timeout * 2))
             exact = await self.async_session_store.recover_interrupted_turns(
                 max_age_seconds=marker_max_age
@@ -12019,10 +12019,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # config.yaml → env bridge did the right thing at a glance (instead
         # of silently running at a stale .env value for weeks).
         try:
-            _effective_max_iter = int(os.getenv("THEFOOL_MAX_ITERATIONS", "500"))
+            _effective_max_iter = int(os.getenv("FOOL_MAX_ITERATIONS", "500"))
             logger.info(
                 "Agent budget: max_iterations=%d (agent.max_turns from config.yaml, "
-                "or THEFOOL_MAX_ITERATIONS from .env, or default 500)",
+                "or FOOL_MAX_ITERATIONS from .env, or default 500)",
                 _effective_max_iter,
             )
         except Exception:
@@ -12033,7 +12033,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # state at import time, so this log line is the source of truth
         # for this process's lifetime.
         try:
-            _redact_raw = os.getenv("THEFOOL_REDACT_SECRETS", "true")
+            _redact_raw = os.getenv("FOOL_REDACT_SECRETS", "true")
             _redact_on = _redact_raw.lower() in {"1", "true", "yes", "on"}
             if _redact_on:
                 logger.info(
@@ -12042,7 +12042,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 )
             else:
                 logger.warning(
-                    "Secret redaction: DISABLED (THEFOOL_REDACT_SECRETS=%s). "
+                    "Secret redaction: DISABLED (FOOL_REDACT_SECRETS=%s). "
                     "API keys and tokens may appear verbatim in chat output, "
                     "session JSONs, and logs. Set security.redact_secrets: true "
                     "in config.yaml to re-enable.",
@@ -12051,7 +12051,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         except Exception:
             pass
         try:
-            from thefool_cli.profiles import get_active_profile_name
+            from fool_cli.profiles import get_active_profile_name
             _profile = get_active_profile_name()
             if _profile and _profile != "default":
                 logger.info("Active profile: %s", _profile)
@@ -12067,7 +12067,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         except Exception:
             pass
         try:
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
             from agent.monitoring.gateway_health_export import start_gateway_health_export
             self._gateway_health_export_runtime = start_gateway_health_export(load_config())
             if getattr(self._gateway_health_export_runtime, "enabled", False):
@@ -12079,9 +12079,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # in gateway.log and `hermes status` surfaces it; we do NOT block
         # startup or surface it inline to user messages, since the gateway
         # operator is the one who can act on it (uninstall the package,
-        # rotate credentials).  See thefool_cli/security_advisories.py.
+        # rotate credentials).  See fool_cli/security_advisories.py.
         try:
-            from thefool_cli.security_advisories import (
+            from fool_cli.security_advisories import (
                 detect_compromised,
                 gateway_log_message,
             )
@@ -12193,12 +12193,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         
         # Discover Python plugins before shell hooks so plugin block
         # decisions take precedence in tie cases.  The CLI startup path
-        # does this via an explicit call in thefool_cli/main.py; the
+        # does this via an explicit call in fool_cli/main.py; the
         # gateway lazily imports run_agent inside per-request handlers,
         # so the discover_plugins() side-effect in model_tools.py is NOT
         # guaranteed to have run by the time we reach this point.
         try:
-            from thefool_cli.plugins import discover_plugins
+            from fool_cli.plugins import discover_plugins
             discover_plugins()
         except Exception:
             logger.warning(
@@ -12239,7 +12239,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         # Register declarative shell hooks from cli-config.yaml.  Gateway
         # has no TTY, so consent has to come from one of the three opt-in
-        # channels (--accept-hooks on launch, THEFOOL_ACCEPT_HOOKS env var,
+        # channels (--accept-hooks on launch, FOOL_ACCEPT_HOOKS env var,
         # or hooks_auto_accept: true in config.yaml).  We pass
         # accept_hooks=False here and let register_from_config resolve
         # the effective value from env + config itself — the CLI-side
@@ -12247,7 +12247,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # hooks_auto_accept here would just duplicate that lookup.
         # Failures are logged but must never block gateway startup.
         try:
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
             from agent.shell_hooks import register_from_config
             _hooks_cfg = load_config()
             register_from_config(_hooks_cfg, accept_hooks=False)
@@ -12894,7 +12894,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         self._spawn_supervised(self._loop_wakeup_watcher, "loop_wakeup_watcher")
 
         # Start the scale-to-zero idle watcher ONLY when this instance is opted
-        # in (the NAS "Labs" THEFOOL_SCALE_TO_ZERO stamp), messaging is
+        # in (the NAS "Labs" FOOL_SCALE_TO_ZERO stamp), messaging is
         # relay-only/absent, and a wakeUrl is registered (decisions.md D1/D11/
         # §3.4(1)). A non-opted instance never starts it, so behaviour is exactly
         # as today. When armed, the watcher drives the relay dormant on sustained
@@ -13489,7 +13489,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _session_stall_timeout_seconds(self) -> float:
         """Return configured stall timeout (seconds); 0 disables the watchdog."""
-        return _float_env("THEFOOL_SESSION_STALL_TIMEOUT", 300)
+        return _float_env("FOOL_SESSION_STALL_TIMEOUT", 300)
 
     def _iter_gateway_adapters(self):
         """Yield every live platform adapter (default + multiplex profiles)."""
@@ -13740,7 +13740,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     def _active_profile_name(self) -> str:
         """Return the profile name this gateway represents."""
         try:
-            from thefool_cli.profiles import get_active_profile_name
+            from fool_cli.profiles import get_active_profile_name
             return get_active_profile_name() or "default"
         except Exception:
             return "default"
@@ -14687,7 +14687,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         0) unless ``gateway.multiplex_profiles`` is on.
 
         Each profile's adapters are created and connected under that profile's
-        THEFOOL_HOME + secret scope (``_profile_runtime_scope``), stored in
+        FOOL_HOME + secret scope (``_profile_runtime_scope``), stored in
         ``self._profile_adapters[profile]``, and given a message handler that
         stamps ``source.profile`` before delegating to the shared
         ``_handle_message`` — so the agent turn resolves that profile's config,
@@ -14699,7 +14699,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             return 0
 
         try:
-            from thefool_cli.profiles import get_active_profile_name
+            from fool_cli.profiles import get_active_profile_name
         except Exception:
             return 0
 
@@ -14759,7 +14759,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             )
             # Per-profile PairingStores so authz_mixin can route pairing
             # checks to the right whitelist. The active profile gets a store
-            # at its THEFOOL_HOME; additional served profiles resolve from
+            # at its FOOL_HOME; additional served profiles resolve from
             # their own profile homes. See gateway.pairing.PairingStore.
             for name in served:
                 if name and name not in self.pairing_stores:
@@ -14782,7 +14782,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         with _profile_runtime_scope(profile_home):
             profile_runtime_cfg = _load_gateway_runtime_config()
-            from thefool_cli.plugins import discover_plugins
+            from fool_cli.plugins import discover_plugins
 
             discover_plugins()
             profile_cfg = load_gateway_config()
@@ -14977,7 +14977,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             while self._running:
                 adapter = None
                 try:
-                    from thefool_cli.profiles import get_profile_dir
+                    from fool_cli.profiles import get_profile_dir
                     from gateway.config import load_gateway_config
 
                     profile_home = get_profile_dir(profile_name)
@@ -15142,7 +15142,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         handler in ``_profile_runtime_scope`` so allowlists/tokens from that
         profile's ``.env`` are visible to ``get_secret`` / authz.
         """
-        from thefool_cli.profiles import get_profile_dir
+        from fool_cli.profiles import get_profile_dir
 
         try:
             profile_home = get_profile_dir(profile_name)
@@ -15196,7 +15196,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     async def _handle_gateway_platform_event(self, event: dict, source) -> None:
         """Authorize and publish one normalized adapter event to plugin hooks."""
         try:
-            from thefool_cli.lifecycle import has_hook, invoke_hook
+            from fool_cli.lifecycle import has_hook, invoke_hook
 
             if not has_hook("gateway_platform_event"):
                 return
@@ -15209,7 +15209,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _make_profile_platform_event_handler(self, profile_name: str):
         """Bind platform-event auth and hook dispatch to one multiplex profile."""
-        from thefool_cli.profiles import get_profile_dir
+        from fool_cli.profiles import get_profile_dir
 
         try:
             profile_home = get_profile_dir(profile_name)
@@ -15712,7 +15712,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     #
     # Replaces the historical hand-written per-command if-chain: each
     # command's mid-run behavior is declared on its CommandDef
-    # (busy_policy / busy_handler in thefool_cli/commands.py) and resolved
+    # (busy_policy / busy_handler in fool_cli/commands.py) and resolved
     # here through a single handler table. Reply strings are byte-identical
     # to the old chain.
     # ------------------------------------------------------------------
@@ -15841,7 +15841,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         return ""
 
     async def _busy_egress_command(self, event: MessageEvent, quick_key: str, source):
-        from thefool_cli.proxy_cli import format_status_text
+        from fool_cli.proxy_cli import format_status_text
 
         return format_status_text()
 
@@ -16017,7 +16017,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # asyncio task created via create_task(), which snapshots the spawning
         # context with copy_context(). If a *concurrent* message had already
         # bound its session via set_session_vars() when this task was created,
-        # we inherited ITS THEFOOL_SESSION_* ContextVars. Until we bind our own
+        # we inherited ITS FOOL_SESSION_* ContextVars. Until we bind our own
         # (a few steps down, in _set_session_env), any subprocess spawned here
         # would read the foreign session's identity via the subprocess-env
         # bridge — the _UNSET-strip guard there can't help because the vars are
@@ -16104,7 +16104,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # (e.g. customer handover ingest) without triggering the pairing flow.
         if not is_internal:
             try:
-                from thefool_cli.lifecycle import invoke_hook as _invoke_hook
+                from fool_cli.lifecycle import invoke_hook as _invoke_hook
                 _hook_results = _invoke_hook(
                     "pre_gateway_dispatch",
                     event=event,
@@ -16240,7 +16240,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     _estop_cmd = None
                 if _estop_cmd:
                     try:
-                        from thefool_cli.commands import (
+                        from fool_cli.commands import (
                             resolve_command as _resolve_estop_cmd,
                         )
                         _estop_allow = _resolve_estop_cmd(_estop_cmd) is not None
@@ -16307,7 +16307,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 _recognized_cmd = None
                 if cmd:
                     try:
-                        from thefool_cli.commands import resolve_command as _resolve_update_cmd
+                        from fool_cli.commands import resolve_command as _resolve_update_cmd
                     except Exception:
                         _resolve_update_cmd = None
                     if _resolve_update_cmd is not None:
@@ -16506,7 +16506,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # wall-clock age alone isn't sufficient.  Evict only when the agent
         # has been *idle* beyond the inactivity threshold (or when the agent
         # object has no activity tracker and wall-clock age is extreme).
-        _raw_stale_timeout = _float_env("THEFOOL_AGENT_TIMEOUT", 1800)
+        _raw_stale_timeout = _float_env("FOOL_AGENT_TIMEOUT", 1800)
         _quick_state = self._peek_session_state(_quick_key)
         _stale_ts = _quick_state.turn.started_ts if _quick_state else 0
         if _quick_state is not None and _quick_state.turn.agent is not None and _stale_ts:
@@ -16557,10 +16557,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if self._is_session_running(_quick_key):
             # Resolve the command once; every command's mid-run behavior is
             # declared on its CommandDef (busy_policy / busy_handler in
-            # thefool_cli/commands.py) and dispatched through the single
+            # fool_cli/commands.py) and dispatched through the single
             # resolver _dispatch_busy_slash_command below — no per-command
             # if-chain here.
-            from thefool_cli.commands import resolve_command as _resolve_cmd_inner
+            from fool_cli.commands import resolve_command as _resolve_cmd_inner
             _evt_cmd = event.get_command()
             _cmd_def_inner = _resolve_cmd_inner(_evt_cmd) if _evt_cmd else None
 
@@ -16600,7 +16600,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
             effective_busy_input_mode = self._effective_busy_input_mode(source)
             _telegram_followup_grace = float(
-                os.getenv("THEFOOL_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3.0")
+                os.getenv("FOOL_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3.0")
             )
             _grace_state = self._peek_session_state(_quick_key)
             _started_at = _grace_state.turn.started_ts if _grace_state else 0
@@ -16763,7 +16763,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Check for commands
         command = event.get_command()
 
-        from thefool_cli.commands import (
+        from fool_cli.commands import (
             GATEWAY_KNOWN_COMMANDS,
             is_gateway_known_command,
             resolve_command as _resolve_cmd,
@@ -16821,7 +16821,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # hatches for a live agent.
         if command and is_gateway_known_command(canonical):
             try:
-                from thefool_cli.plugins import fire_pre_command_hook
+                from fool_cli.plugins import fire_pre_command_hook
                 fire_pre_command_hook(
                     surface="gateway",
                     command=str(canonical),
@@ -16933,7 +16933,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             return await self._handle_status_command(event)
 
         if canonical == "egress":
-            from thefool_cli.proxy_cli import format_status_text
+            from fool_cli.proxy_cli import format_status_text
 
             return format_status_text()
 
@@ -16995,7 +16995,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # so role alternation is preserved). The live agent scans the
             # project with its own read-only tools and writes/updates
             # AGENTS.md via write_file. No engine, works on any backend.
-            from thefool_cli.init_command import build_init_prompt_for_cwd
+            from fool_cli.init_command import build_init_prompt_for_cwd
 
             _init_notes = event.get_command_args().strip()
             try:
@@ -17204,11 +17204,11 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # default MoA preset, then restore the prior model. To *switch* to a
             # MoA preset for the session, pick it from the model picker (MoA
             # presets surface as a virtual "Mixture of Agents" provider).
-            from thefool_cli.moa_config import (
+            from fool_cli.moa_config import (
                 moa_usage,
                 normalize_moa_config,
             )
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
 
             moa_payload = event.get_command_args().strip()
             if not moa_payload:
@@ -17309,10 +17309,10 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Plugin-registered slash commands
         if command:
             try:
-                from thefool_cli.plugins import get_plugin_command_handler
+                from fool_cli.plugins import get_plugin_command_handler
                 # Normalize underscores to hyphens so Telegram's underscored
                 # autocomplete form matches plugin commands registered with
-                # hyphens. See thefool_cli/commands.py:_build_telegram_menu.
+                # hyphens. See fool_cli/commands.py:_build_telegram_menu.
                 plugin_handler = get_plugin_command_handler(command.replace("_", "-"))
                 if plugin_handler:
                     user_args = event.get_command_args().strip()
@@ -17941,7 +17941,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         if _msg_raw_ctx is not None:
                             _msg_config_ctx = int(_msg_raw_ctx)
                     try:
-                        from thefool_cli.config import get_compatible_custom_providers
+                        from fool_cli.config import get_compatible_custom_providers
 
                         _msg_custom_providers = get_compatible_custom_providers(_msg_cfg)
                     except Exception:
@@ -17973,7 +17973,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     _msg_config_ctx = None
                 if _msg_config_ctx is not None and isinstance(_msg_model_cfg, dict):
                     try:
-                        from thefool_cli.route_identity import should_clear_context_pin_async
+                        from fool_cli.route_identity import should_clear_context_pin_async
 
                         if await should_clear_context_pin_async(
                             None,  # model match already checked above
@@ -17988,7 +17988,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         _msg_config_ctx = None
                 if _msg_custom_providers and _msg_base_url:
                     try:
-                        from thefool_cli.config import get_custom_provider_context_length
+                        from fool_cli.config import get_custom_provider_context_length
 
                         _msg_custom_ctx = get_custom_provider_context_length(
                             model=_msg_model,
@@ -18173,7 +18173,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _install_plugin_message_injector(self) -> None:
         """Publish this live gateway's plugin message scheduler."""
-        from thefool_cli.plugins import get_plugin_manager
+        from fool_cli.plugins import get_plugin_manager
 
         get_plugin_manager().set_gateway_message_injector(
             self,
@@ -18182,7 +18182,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
     def _clear_plugin_message_injector(self) -> None:
         """Remove this runner's scheduler without clobbering a newer owner."""
-        from thefool_cli.plugins import get_plugin_manager
+        from fool_cli.plugins import get_plugin_manager
 
         get_plugin_manager().clear_gateway_message_injector(self)
 
@@ -18699,7 +18699,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     owner_key=_quick_key,
                     generation=run_generation,
                     timeout=_float_env(
-                        "THEFOOL_TURN_LEASE_TIMEOUT", DEFAULT_LEASE_WAIT
+                        "FOOL_TURN_LEASE_TIMEOUT", DEFAULT_LEASE_WAIT
                     ),
                 )
             except TurnLeaseTimeoutError:
@@ -18851,7 +18851,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
                 if _hyg_config_context_length is not None:
                     try:
-                        from thefool_cli.route_identity import should_clear_context_pin_async
+                        from fool_cli.route_identity import should_clear_context_pin_async
 
                         if await should_clear_context_pin_async(
                             _hyg_configured_model,
@@ -18871,7 +18871,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 if _hyg_config_context_length is None and _hyg_base_url:
                     try:
                         try:
-                            from thefool_cli.config import (
+                            from fool_cli.config import (
                                 get_compatible_custom_providers as _gw_gcp,
                                 get_custom_provider_context_length as _gw_gccl,
                             )
@@ -19633,7 +19633,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # human-readable prefix the model sees) is gated behind
         # gateway.message_timestamps.enabled — default OFF.
         try:
-            from thefool_time import get_timezone as _get_evt_tz
+            from fool_time import get_timezone as _get_evt_tz
             from gateway.message_timestamps import (
                 coerce_message_timestamp as _coerce_msg_ts,
                 render_user_content_with_timestamp as _render_msg_ts,
@@ -20512,7 +20512,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     configured_provider = provider
                     configured_base_url = base_url
                 try:
-                    from thefool_cli.config import get_compatible_custom_providers
+                    from fool_cli.config import get_compatible_custom_providers
                     custom_provs = get_compatible_custom_providers(data)
                 except Exception:
                     custom_provs = data.get("custom_providers")
@@ -20530,7 +20530,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         if config_context_length is not None:
             try:
-                from thefool_cli.route_identity import should_clear_context_pin
+                from fool_cli.route_identity import should_clear_context_pin
 
                 if should_clear_context_pin(
                     configured_model,
@@ -20546,7 +20546,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         if config_context_length is None and custom_provs and base_url:
             try:
-                from thefool_cli.config import get_custom_provider_context_length
+                from fool_cli.config import get_custom_provider_context_length
 
                 custom_ctx = get_custom_provider_context_length(
                     model=model,
@@ -20800,7 +20800,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         except Exception:
             origin = None
         try:
-            from thefool_cli.suggestions_cmd import handle_suggestions_command
+            from fool_cli.suggestions_cmd import handle_suggestions_command
 
             return handle_suggestions_command(args, origin=origin, surface="gateway")
         except Exception as e:
@@ -20833,12 +20833,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         except Exception:
             origin = None
         try:
-            from thefool_cli.blueprint_cmd import handle_blueprint_command
+            from fool_cli.blueprint_cmd import handle_blueprint_command
 
             return handle_blueprint_command(args, origin=origin, surface="gateway")
         except Exception as e:
             logger.debug("blueprint command failed: %s", e)
-            from thefool_cli.blueprint_cmd import BlueprintCommandResult
+            from fool_cli.blueprint_cmd import BlueprintCommandResult
 
             return BlueprintCommandResult(f"Cron blueprint command failed: {e}")
 
@@ -20850,7 +20850,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         GatewayRunner.config is a GatewayConfig dataclass, not the full
         user config mapping. Top-level config blocks such as ``goals`` are
-        therefore only available through thefool_cli.config.load_config().
+        therefore only available through fool_cli.config.load_config().
         """
         try:
             goals_cfg = (
@@ -20859,7 +20859,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 else getattr(self.config, "goals", {}) or {}
             )
             if not goals_cfg:
-                from thefool_cli.config import load_config
+                from fool_cli.config import load_config
 
                 goals_cfg = (load_config() or {}).get("goals") or {}
             return int(goals_cfg.get("max_turns", 20) or 20)
@@ -20873,7 +20873,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         goals module can't be loaded.
         """
         try:
-            from thefool_cli.goals import GoalManager
+            from fool_cli.goals import GoalManager
         except Exception as exc:
             logger.debug("goal manager unavailable: %s", exc)
             return None, None
@@ -20900,7 +20900,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         Returns ``(manager, session_entry)`` or ``(None, None)``.
         """
         try:
-            from thefool_cli.heartbeat import HeartbeatManager
+            from fool_cli.heartbeat import HeartbeatManager
         except Exception as exc:
             logger.debug("heartbeat manager unavailable: %s", exc)
             return None, None
@@ -20946,7 +20946,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if existing is not None and not existing.done():
             return
 
-        from thefool_cli.heartbeat import POLL_SECONDS
+        from fool_cli.heartbeat import POLL_SECONDS
 
         async def _poll_loop():
             while True:
@@ -20959,7 +20959,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         # Busy sessions coalesce their tick to the next idle poll.
                         if quick_key in self._running_agents:
                             continue
-                        from thefool_cli.heartbeat import HeartbeatManager
+                        from fool_cli.heartbeat import HeartbeatManager
 
                         mgr = HeartbeatManager(session_id=session_id)
                         if not mgr.has_heartbeat():
@@ -21074,7 +21074,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         queue and takes priority naturally.
         """
         try:
-            from thefool_cli.goals import GoalManager
+            from fool_cli.goals import GoalManager
         except Exception as exc:
             logger.debug("goal continuation: goals module unavailable: %s", exc)
             return
@@ -21090,7 +21090,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             return
 
         try:
-            from thefool_cli.goals import gather_background_processes as _gather_bg
+            from fool_cli.goals import gather_background_processes as _gather_bg
             _bg_procs = _gather_bg()
         except Exception:
             _bg_procs = None
@@ -21221,7 +21221,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         next tick; the idle wakeup watcher fires it when due.
         """
         try:
-            from thefool_cli.loops import LoopManager
+            from fool_cli.loops import LoopManager
         except Exception as exc:
             logger.debug("loop completion: loops module unavailable: %s", exc)
             return
@@ -21262,7 +21262,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         warned_no_route: set = set()
         while self._running:
             try:
-                from thefool_cli.loops import (
+                from fool_cli.loops import (
                     LoopManager,
                     goal_blocks_loop_tick,
                     list_active_loops,
@@ -21943,7 +21943,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         than trusted. When absent, falls back to standard
         ``platform_toolsets.<platform>`` resolution.
         """
-        from thefool_cli.tools_config import _get_platform_tools
+        from fool_cli.tools_config import _get_platform_tools
 
         override = None
         try:
@@ -22368,7 +22368,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if not callable(wait_fn) or not source.chat_id:
             return None
         # 0 means the operator disabled the turn limit; the backstop still needs one.
-        timeout = _float_env("THEFOOL_AGENT_TIMEOUT", 1800) or 1800
+        timeout = _float_env("FOOL_AGENT_TIMEOUT", 1800) or 1800
         try:
             return _as_thread_info(await wait_fn(str(source.chat_id), timeout))
         except Exception:
@@ -22718,7 +22718,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
     async def _disable_telegram_topic_mode_for_chat(self, source: SessionSource) -> str:
         """Cleanly disable topic mode for a chat via /topic off."""
         if not self._session_db:
-            from thefool_state import format_session_db_unavailable
+            from fool_state import format_session_db_unavailable
             return format_session_db_unavailable(prefix=t("gateway.shared.session_db_unavailable_prefix"))
         chat_id = str(source.chat_id or "")
         if not chat_id:
@@ -23170,7 +23170,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         (e.g. a prior "Always Approve" click) without a gateway restart.
         """
         try:
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
             cfg = load_config()
             return cfg if isinstance(cfg, dict) else {}
         except Exception:
@@ -23854,7 +23854,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if not error:
             return
 
-        from thefool_state import classify_persistence_error, format_session_db_unavailable
+        from fool_state import classify_persistence_error, format_session_db_unavailable
 
         cause = classify_persistence_error(error)
         hint = format_session_db_unavailable()
@@ -24041,7 +24041,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         try:
             from agent.image_routing import decide_image_input_mode
             from agent.auxiliary_client import _read_main_model, _read_main_provider
-            from thefool_cli.config import load_config
+            from fool_cli.config import load_config
 
             cfg = user_config if isinstance(user_config, dict) else load_config()
             resolved_provider = (provider or "").strip()
@@ -26420,7 +26420,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             slack_tools = "1" if _slack_tools_loaded() else "0"
 
         try:
-            from thefool_constants import display_hermes_home
+            from fool_constants import display_hermes_home
 
             home_display = str(display_hermes_home())
         except Exception:
@@ -26829,7 +26829,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 logger.debug("Pressure release failed for %s: %s", key, _e)
             del agent
         try:
-            from thefool_cli.mem_trim import trim_memory
+            from fool_cli.mem_trim import trim_memory
 
             trim_memory(force=True, reason="agent_cache_pressure")
         except Exception:
@@ -27499,7 +27499,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         return None
 
     def _resolve_profile_home_for_source(self, source: SessionSource) -> "Path":
-        """Resolve which profile's THEFOOL_HOME should serve this inbound source.
+        """Resolve which profile's FOOL_HOME should serve this inbound source.
 
         Resolution order:
           1. ``source.profile`` — set by /p/<profile>/ URL prefix, per-credential
@@ -27509,12 +27509,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
           3. The active profile (the multiplexer's own home).
         """
         from gateway.profile_routing import ProfileRouteRejected
-        from thefool_cli.profiles import (
+        from fool_cli.profiles import (
             get_active_profile_name,
             get_profile_dir,
             profile_exists,
         )
-        from thefool_constants import get_hermes_home
+        from fool_constants import get_hermes_home
         
         # Track whether a profile was explicitly requested (vs. falling back to default)
         explicit_profile = None
@@ -27534,7 +27534,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             if explicit_profile and not profile_exists(name):
                 logger.warning(
                     "Profile %r does not exist for source %s/%s (guild_id=%s), "
-                    "falling back to global THEFOOL_HOME",
+                    "falling back to global FOOL_HOME",
                     explicit_profile,
                     source.platform.value,
                     source.chat_id,
@@ -27548,7 +27548,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # Catch normalization errors, path errors, etc.
             logger.warning(
                 "Failed to resolve profile directory for source %s/%s (guild_id=%s), "
-                "falling back to global THEFOOL_HOME: %s",
+                "falling back to global FOOL_HOME: %s",
                 source.platform.value,
                 source.chat_id,
                 getattr(source, "guild_id", None),
@@ -27646,7 +27646,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
 
         # Tool progress mode — resolved per-platform with env var fallback
         _resolved_tp = resolve_display_setting(user_config, platform_key, "tool_progress")
-        _env_tp = os.getenv("THEFOOL_TOOL_PROGRESS_MODE")
+        _env_tp = os.getenv("FOOL_TOOL_PROGRESS_MODE")
         _display_cfg = display_config if isinstance(display_config, dict) else {}
         _platforms_cfg = _display_cfg.get("platforms") or {}
         _platform_cfg = _platforms_cfg.get(platform_key) or {}
@@ -28297,9 +28297,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # Periodic "still working" notifications for long-running tasks.
         # Fires every N seconds so the user knows the agent hasn't died.
         # Config: agent.gateway_notify_interval in config.yaml, or
-        # THEFOOL_AGENT_NOTIFY_INTERVAL env var.  Default 180s (3 min).
+        # FOOL_AGENT_NOTIFY_INTERVAL env var.  Default 180s (3 min).
         # 0 = disable notifications.
-        _NOTIFY_INTERVAL_RAW = _float_env("THEFOOL_AGENT_NOTIFY_INTERVAL", 180)
+        _NOTIFY_INTERVAL_RAW = _float_env("FOOL_AGENT_NOTIFY_INTERVAL", 180)
         _NOTIFY_INTERVAL = _NOTIFY_INTERVAL_RAW if _NOTIFY_INTERVAL_RAW > 0 else None
         _long_running_mode = _display_surface_mode(
             "long_running_notifications",
@@ -28447,11 +28447,11 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             # configured duration is caught and killed.  (#4815)
             #
             # Config: agent.gateway_timeout in config.yaml, or
-            # THEFOOL_AGENT_TIMEOUT env var (env var takes precedence).
+            # FOOL_AGENT_TIMEOUT env var (env var takes precedence).
             # Default 1800s (30 min inactivity).  0 = unlimited.
-            _agent_timeout_raw = _float_env("THEFOOL_AGENT_TIMEOUT", 1800)
+            _agent_timeout_raw = _float_env("FOOL_AGENT_TIMEOUT", 1800)
             _agent_timeout = _agent_timeout_raw if _agent_timeout_raw > 0 else None
-            _agent_warning_raw = _float_env("THEFOOL_AGENT_TIMEOUT_WARNING", 900)
+            _agent_warning_raw = _float_env("FOOL_AGENT_TIMEOUT_WARNING", 900)
             _agent_warning = _agent_warning_raw if _agent_warning_raw > 0 else None
             _warning_fired = False
 
@@ -28761,7 +28761,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 # Aggregators (openrouter, etc.) keep the vendor/model slug, so
                 # they're left untouched.
                 try:
-                    from thefool_cli.model_normalize import (
+                    from fool_cli.model_normalize import (
                         _AGGREGATOR_PROVIDERS,
                         normalize_model_for_provider,
                     )
@@ -28874,7 +28874,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 _pending_cmd_word = _pending_parts[0][1:].lower() if _pending_parts else ""
                 if _pending_cmd_word:
                     try:
-                        from thefool_cli.commands import resolve_command as _rc_pending
+                        from fool_cli.commands import resolve_command as _rc_pending
                         if _rc_pending(_pending_cmd_word):
                             logger.info(
                                 "Discarding command '/%s' from pending queue — "
@@ -29400,7 +29400,7 @@ def _run_planned_stop_watcher(
     This watcher runs on every platform (cheap, defensive) and bridges
     the gap on Windows by translating a filesystem marker into the
     same shutdown-handler invocation a real SIGTERM would have produced
-    on POSIX. The CLI's ``thefool_cli.gateway_windows.stop()`` writes
+    on POSIX. The CLI's ``fool_cli.gateway_windows.stop()`` writes
     the marker via ``write_planned_stop_marker(pid)`` and then waits
     for the gateway PID to exit; this watcher is what makes that
     exit happen cleanly.
@@ -29488,7 +29488,7 @@ def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop
         cleanup_screenshot_cache,
         cleanup_video_cache,
     )
-    from thefool_cli.debug import _sweep_expired_pastes
+    from fool_cli.debug import _sweep_expired_pastes
 
     IMAGE_CACHE_EVERY = 60   # ticks — once per hour at default 60s interval
     CHANNEL_DIR_EVERY = 5    # ticks — every 5 minutes
@@ -29589,8 +29589,8 @@ def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop
         # SQLite connections are thread-bound and this runs off-loop.
         if tick_count % AUTO_ARCHIVE_EVERY == 0:
             try:
-                from thefool_cli.config import load_config as _load_full_config
-                from thefool_state import SessionDB
+                from fool_cli.config import load_config as _load_full_config
+                from fool_state import SessionDB
                 _sess_cfg = (_load_full_config().get("sessions") or {})
                 if _sess_cfg.get("auto_archive", False):
                     _adb = SessionDB()
@@ -29609,7 +29609,7 @@ def _start_gateway_housekeeping(stop_event: threading.Event, adapters=None, loop
         # the 60s housekeeping cadence does not create a trim storm.
         if tick_count % MEMORY_TRIM_EVERY == 0:
             try:
-                from thefool_cli.mem_trim import trim_memory
+                from fool_cli.mem_trim import trim_memory
 
                 trim_memory(reason="messaging gateway housekeeping")
             except Exception as exc:
@@ -29634,7 +29634,7 @@ def _start_cron_ticker(stop_event: threading.Event, adapters=None, loop=None, in
     (``cron.scheduler_provider``); the gateway resolves a provider and runs its
     ``start()`` directly (see ``start_gateway``). This shim runs ONLY the
     built-in in-process tick loop, exactly as before, for any external caller
-    or test that still references this symbol (e.g. thefool_cli/debug.py). It no
+    or test that still references this symbol (e.g. fool_cli/debug.py). It no
     longer runs gateway housekeeping — that moved to
     ``_start_gateway_housekeeping``.
     """
@@ -29732,10 +29732,10 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     """
     # Enable interactive exec approval for dangerous commands on messaging
     # platforms. Set here (not at module import) so incidental imports of
-    # gateway.run from CLI/tool code do not poison THEFOOL_EXEC_ASK.
-    os.environ["THEFOOL_EXEC_ASK"] = "1"
+    # gateway.run from CLI/tool code do not poison FOOL_EXEC_ASK.
+    os.environ["FOOL_EXEC_ASK"] = "1"
 
-    from thefool_cli.resource_limits import apply_nofile_soft_limit
+    from fool_cli.resource_limits import apply_nofile_soft_limit
 
     apply_nofile_soft_limit()
 
@@ -29747,9 +29747,9 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     record_boot_fingerprint()
 
     # ── Duplicate-instance guard ──────────────────────────────────────
-    # Prevent two gateways from running under the same THEFOOL_HOME.
-    # The PID file is scoped to THEFOOL_HOME, so future multi-profile
-    # setups (each profile using a distinct THEFOOL_HOME) will naturally
+    # Prevent two gateways from running under the same FOOL_HOME.
+    # The PID file is scoped to FOOL_HOME, so future multi-profile
+    # setups (each profile using a distinct FOOL_HOME) will naturally
     # allow concurrent instances without tripping this guard.
     from gateway.status import (
         acquire_gateway_runtime_lock,
@@ -29896,7 +29896,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
         else:
             hermes_home = str(get_hermes_home())
             logger.error(
-                "Another gateway instance is already running (PID %d, THEFOOL_HOME=%s). "
+                "Another gateway instance is already running (PID %d, FOOL_HOME=%s). "
                 "Use 'hermes gateway restart' to replace it, or 'hermes gateway stop' first.",
                 existing_pid, hermes_home,
             )
@@ -29918,7 +29918,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # Centralized logging — agent.log (INFO+), errors.log (WARNING+),
     # and gateway.log (INFO+, gateway-component records only).
     # Idempotent, so repeated calls from AIAgent.__init__ won't duplicate.
-    from thefool_logging import setup_logging, _safe_stderr
+    from fool_logging import setup_logging, _safe_stderr
     setup_logging(hermes_home=_hermes_home, mode="gateway")
 
     # Startup security posture audit — warn-on-load, never blocks. Surfaces
@@ -29926,11 +29926,11 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # so operators get the "you're exposed" signal the June 2026 MCP-config
     # persistence campaign victims never had.
     try:
-        from thefool_cli.security_audit_startup import log_startup_security_warnings
+        from fool_cli.security_audit_startup import log_startup_security_warnings
 
         _audit_cfg = None
         try:
-            from thefool_cli.config import read_raw_config
+            from fool_cli.config import read_raw_config
 
             _audit_cfg = read_raw_config()
         except Exception:
@@ -30150,7 +30150,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # Lifecycle ledger (NS-608): report if the previous gateway life died
     # uncleanly (SIGKILL / OOM / VM death — no exit path ran), then claim
     # the sentinel for this life. Placed after the PID-file/lock claim so
-    # only the authoritative gateway for this THEFOOL_HOME touches the
+    # only the authoritative gateway for this FOOL_HOME touches the
     # sentinel — a --replace loser exiting above must not clobber it.
     try:
         from gateway.lifecycle_ledger import record_startup as _lifecycle_record_startup
@@ -30159,7 +30159,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
         logger.debug("Lifecycle ledger startup record failed: %s", _lc_exc)
 
     try:
-        from thefool_cli.nous_auth_keepalive import start_nous_auth_keepalive
+        from fool_cli.nous_auth_keepalive import start_nous_auth_keepalive
 
         start_nous_auth_keepalive()
     except Exception as exc:
@@ -30253,7 +30253,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 
     # Multiplex profiles: tell the built-in ticker which profile homes to
     # tick so secondary-profile cron jobs actually fire (#69377).
-    # Without this, only the process-global THEFOOL_HOME (default profile)
+    # Without this, only the process-global FOOL_HOME (default profile)
     # is iterated and every secondary profile's cron store is silently
     # ignored — jobs show as "scheduled" with a valid next_run_at but
     # never execute because no ticker owns that store.
@@ -30315,7 +30315,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     await runner.wait_for_shutdown()
 
     try:
-        from thefool_cli.nous_auth_keepalive import stop_nous_auth_keepalive
+        from fool_cli.nous_auth_keepalive import stop_nous_auth_keepalive
 
         stop_nous_auth_keepalive()
     except Exception:
@@ -30390,18 +30390,18 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
 def main():
     """CLI entry point for the gateway."""
     # Advertise the agent harness to child processes (AI_AGENT is the
-    # cross-agent standard; THEFOOL_AGENT the Hermes-specific marker — see
-    # _advertise_agent_env in thefool_cli/main.py, kept inline here to avoid
+    # cross-agent standard; FOOL_AGENT the Hermes-specific marker — see
+    # _advertise_agent_env in fool_cli/main.py, kept inline here to avoid
     # importing that module's startup side effects). The value must equal our
     # public agent-harness registry id (``hermes-agent``) — standard-var
     # matching is exact. setdefault so an outer harness is never clobbered.
     os.environ.setdefault("AI_AGENT", "hermes-agent")
-    os.environ.setdefault("THEFOOL_AGENT", "true")
+    os.environ.setdefault("FOOL_AGENT", "true")
 
     # Force UTF-8 stdio on Windows — gateway logs and startup banner would
     # otherwise UnicodeEncodeError on cp1252 consoles.  No-op on POSIX.
     try:
-        from thefool_cli.stdio import configure_windows_stdio
+        from fool_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
     except Exception:
         pass
@@ -30474,7 +30474,7 @@ def _exit_after_graceful_shutdown(exit_code: int) -> None:
 
     Logging IS drained here: the rotating file handlers are driven by an
     async ``QueueListener`` on a dedicated thread (see
-    ``thefool_logging._register_queued_handler``), so records emitted right
+    ``fool_logging._register_queued_handler``), so records emitted right
     before shutdown may still be sitting in the in-memory queue. ``os._exit``
     below bypasses ``atexit``, so the ``atexit``-registered listener drain
     never runs on this path — we drain explicitly (bounded, via
@@ -30513,7 +30513,7 @@ def _exit_after_graceful_shutdown(exit_code: int) -> None:
     # join would re-freeze the shutdown. drain_log_queue() no-ops when logging
     # never initialized a queue (very early aborts), so this is always safe.
     try:
-        from thefool_logging import drain_log_queue
+        from fool_logging import drain_log_queue
         drain_log_queue(timeout=1.0)
     except Exception:
         pass

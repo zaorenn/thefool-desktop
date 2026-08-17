@@ -110,7 +110,7 @@ TEAMS_ALLOWED_USERS=<your-aad-object-id>
 
 ```bash
 cd /path/to/hermes-agent
-THEFOOL_UID=$(id -u) THEFOOL_GID=$(id -g) docker compose up -d gateway
+FOOL_UID=$(id -u) FOOL_GID=$(id -g) docker compose up -d gateway
 ```
 
 **Native / systemd install** (typical `hermes` one-liner installer under `~/.hermes/hermes-agent`):

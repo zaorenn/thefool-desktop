@@ -2,7 +2,7 @@
 
 Spawns one subprocess per (version, scenario) cell — pinned to either
 ``origin/main`` (no plugin hook, no STT command-provider registry; only
-the legacy ``THEFOOL_LOCAL_STT_COMMAND`` escape hatch exists) or this PR's
+the legacy ``FOOL_LOCAL_STT_COMMAND`` escape hatch exists) or this PR's
 worktree (both new surfaces present).
 
 Each subprocess clears all STT-related env vars + writes a
@@ -63,15 +63,15 @@ SUBPROCESS_SCRIPT = r"""
 import json, os, sys, tempfile
 sys.path.insert(0, sys.argv[1])
 
-# Isolated THEFOOL_HOME so the config write is hermetic.
+# Isolated FOOL_HOME so the config write is hermetic.
 home = tempfile.mkdtemp()
-os.environ["THEFOOL_HOME"] = home
+os.environ["FOOL_HOME"] = home
 
 # Clear STT-related env so dispatch decisions are config-driven.
 for k in (
     "GROQ_API_KEY", "OPENAI_API_KEY", "VOICE_TOOLS_OPENAI_KEY",
     "MISTRAL_API_KEY", "XAI_API_KEY",
-    "THEFOOL_LOCAL_STT_COMMAND",
+    "FOOL_LOCAL_STT_COMMAND",
 ):
     os.environ.pop(k, None)
 
@@ -90,7 +90,7 @@ for name in list(sys.modules):
     if (name.startswith("tools.")
             or name.startswith("agent.")
             or name.startswith("plugins.")
-            or name.startswith("thefool_cli.")):
+            or name.startswith("fool_cli.")):
         sys.modules.pop(name, None)
 
 # Try importing transcription_registry — only exists on PR side.

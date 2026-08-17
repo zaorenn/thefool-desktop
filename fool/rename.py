@@ -117,6 +117,10 @@ PROTECTED: tuple[re.Pattern[str], ...] = (
     re.compile(r"NousResearch/hermes-agent"),
     re.compile(r"github\.com/nousresearch"),
     re.compile(r"hermes-agent(?:-[a-z-]+)?"),   # beceri/paket kimlikleri
+    # GitHub deposunun ADI `thefool-desktop`. Kisaltma kurali (`thefool` ->
+    # `fool`) bunu `fool-desktop` yapip guncelleme/bootstrap adreslerini
+    # olmayan bir depoya yonlendirmisti. Depo adi disaridan sabit.
+    re.compile(r"thefool-desktop"),
 )
 
 #: Dönüştürülecek dosya uzantıları.

@@ -28,7 +28,7 @@ import os
 import uuid
 from typing import Any, Dict
 
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 

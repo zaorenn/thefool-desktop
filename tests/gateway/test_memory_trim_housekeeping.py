@@ -18,7 +18,7 @@ class _OneTickStopEvent:
 
 
 def test_gateway_housekeeping_calls_periodic_memory_trim(monkeypatch):
-    import thefool_cli.mem_trim as mem_trim
+    import fool_cli.mem_trim as mem_trim
 
     calls = []
     monkeypatch.setattr(

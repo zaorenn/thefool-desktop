@@ -104,7 +104,7 @@ echo 'HONCHO_API_KEY=***' >> ~/.hermes/.env
 
 ## 配置选项
 
-Honcho 在 `~/.honcho/config.json`（全局）或 `$THEFOOL_HOME/honcho.json`（profile 本地）中配置。设置向导会自动处理。
+Honcho 在 `~/.honcho/config.json`（全局）或 `$FOOL_HOME/honcho.json`（profile 本地）中配置。设置向导会自动处理。
 
 ### 完整配置参考
 

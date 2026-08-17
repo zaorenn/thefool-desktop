@@ -40,8 +40,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
         ("You are Hermes Agent", "You are Fool Agent"),
         ("Nous Research", "Fool Labs"),
         ("Hermes couldn't start", "The Fool couldn't start"),
-        ("edit ~/.hermes/.env", "edit ~/.thefool/.env"),
-        ("run: hermes update", "run: thefool update"),
+        ("edit ~/.hermes/.env", "edit ~/.fool/.env"),
+        ("run: hermes update", "run: fool update"),
     ],
 )
 def test_user_visible_text_is_rebranded(source: str, expected: str) -> None:
@@ -52,10 +52,10 @@ def test_user_visible_text_is_rebranded(source: str, expected: str) -> None:
     "source",
     [
         # Backend sözleşmesi: bunlar ASLA değişmemeli.
-        "Set THEFOOL_HOME to override",
-        "from thefool_cli.main import main",
-        "THEFOOL_API_TIMEOUT=1800",
-        "import thefool_constants",
+        "Set FOOL_HOME to override",
+        "from fool_cli.main import main",
+        "FOOL_API_TIMEOUT=1800",
+        "import fool_constants",
         "run_agent.py --help",
         "acp_adapter.entry:main",
     ],
@@ -217,7 +217,7 @@ def test_cli_entry_points_are_rebranded() -> None:
     body = scripts.group(1)
     assert f"{branding.CLI} =" in body
     # Modül yolları korunmalı — yalnızca komut adı değişti.
-    assert "thefool_cli.main:main" in body
+    assert "fool_cli.main:main" in body
 
 
 # =============================================================================
@@ -231,14 +231,14 @@ def test_command_descriptions_carry_no_upstream_brand() -> None:
     ``CommandDef.__post_init__`` tüm açıklamaları geçerken markalar, bu yüzden
     upstream yeni komut eklediğinde de otomatik kapsanır.
     """
-    from thefool_cli.commands import COMMAND_REGISTRY
+    from fool_cli.commands import COMMAND_REGISTRY
 
     leftovers = [c.name for c in COMMAND_REGISTRY if "Hermes" in c.description]
     assert not leftovers, f"Markalanmamış komut açıklamaları: {leftovers}"
 
 
 def test_version_banner_is_branded() -> None:
-    from thefool_cli.banner import format_banner_version_label
+    from fool_cli.banner import format_banner_version_label
 
     label = format_banner_version_label()
     assert label.startswith(branding.NAME)
@@ -253,14 +253,14 @@ def test_version_banner_is_branded() -> None:
 def test_python_and_electron_agree_on_data_dir() -> None:
     """İki taraf ayrışırsa masaüstü uygulaması backend'ini bulamaz.
 
-    Python ``thefool_constants._get_platform_default_hermes_home()`` ve Electron
+    Python ``fool_constants._get_platform_default_hermes_home()`` ve Electron
     ``main.ts::resolveHermesHome()`` veri dizinini BAĞIMSIZ hesaplıyor. Bu test
     ikisinin aynı adı kullandığını doğrular.
     """
-    posix_name = branding.HOME_DIR_NAME           # ".thefool"
-    windows_name = posix_name.lstrip(".")          # "thefool"
+    posix_name = branding.HOME_DIR_NAME           # ".fool"
+    windows_name = posix_name.lstrip(".")          # "fool"
 
-    py = (REPO_ROOT / "thefool_constants.py").read_text(encoding="utf-8")
+    py = (REPO_ROOT / "fool_constants.py").read_text(encoding="utf-8")
     assert f'base / "{windows_name}"' in py, "Python Windows yolu ayrışmış"
     assert f'Path.home() / "{posix_name}"' in py, "Python POSIX yolu ayrışmış"
 
@@ -275,9 +275,9 @@ def test_python_and_electron_agree_on_data_dir() -> None:
 
 def test_the_fool_never_uses_the_upstream_hermes_data_dir() -> None:
     """Kullanıcının kurulu Hermes verisine dokunmama garantisi."""
-    import thefool_constants
+    import fool_constants
 
-    home = str(thefool_constants.get_hermes_home()).lower().replace("\\", "/")
+    home = str(fool_constants.get_hermes_home()).lower().replace("\\", "/")
     assert not home.endswith("local/hermes")
     assert not home.endswith("/.hermes")
 
@@ -289,7 +289,7 @@ def test_the_fool_never_uses_the_upstream_hermes_data_dir() -> None:
 
 def test_model_catalog_makes_no_network_call_by_default() -> None:
     """Katalog sürümle birlikte geliyor; her açılışta Nous'a istek gitmiyor."""
-    from thefool_cli import model_catalog
+    from fool_cli import model_catalog
 
     assert model_catalog.DEFAULT_CATALOG_URL == ""
     assert model_catalog.DEFAULT_CATALOG_FALLBACK_URLS == ()
@@ -299,7 +299,7 @@ def test_model_catalog_makes_no_network_call_by_default() -> None:
 
 def test_diagnostics_upload_is_disabled_by_default() -> None:
     """Loglar ve sistem bilgisi üçüncü tarafa gitmemeli."""
-    import thefool_cli.diagnostics_upload as diag
+    import fool_cli.diagnostics_upload as diag
 
     assert diag.NAS_BASE == ""
     with pytest.raises(RuntimeError, match="disabled in The Fool"):
@@ -308,7 +308,7 @@ def test_diagnostics_upload_is_disabled_by_default() -> None:
 
 def test_nous_account_commands_are_gone() -> None:
     """Var olmayan bir planı vaat eden komut, olmayan komuttan kötüdür."""
-    from thefool_cli.commands import COMMAND_REGISTRY
+    from fool_cli.commands import COMMAND_REGISTRY
 
     names = {c.name for c in COMMAND_REGISTRY}
     assert "subscription" not in names
@@ -316,7 +316,7 @@ def test_nous_account_commands_are_gone() -> None:
 
 
 def test_no_command_promises_a_plan_we_do_not_have() -> None:
-    from thefool_cli.commands import COMMAND_REGISTRY
+    from fool_cli.commands import COMMAND_REGISTRY
 
     bogus = [c.name for c in COMMAND_REGISTRY if branding.VENDOR in c.description]
     assert not bogus, f"'{branding.VENDOR}' vaadi taşıyan komutlar: {bogus}"
@@ -333,14 +333,14 @@ def test_agent_identifies_itself_as_fool_agent() -> None:
     Markalaşmanın en derin katmanı: arayüzdeki her yazı değişse bile bu
     değişmezse ajan kendini hâlâ Hermes Agent sanır.
     """
-    from agent.prompt_builder import DEFAULT_AGENT_IDENTITY, THEFOOL_AGENT_HELP_GUIDANCE
+    from agent.prompt_builder import DEFAULT_AGENT_IDENTITY, FOOL_AGENT_HELP_GUIDANCE
 
     assert DEFAULT_AGENT_IDENTITY.startswith(f"You are {branding.AGENT},")
     assert "Hermes" not in DEFAULT_AGENT_IDENTITY
     assert "Nous Research" not in DEFAULT_AGENT_IDENTITY
 
-    assert branding.AGENT in THEFOOL_AGENT_HELP_GUIDANCE
-    assert "nousresearch.com" not in THEFOOL_AGENT_HELP_GUIDANCE
+    assert branding.AGENT in FOOL_AGENT_HELP_GUIDANCE
+    assert "nousresearch.com" not in FOOL_AGENT_HELP_GUIDANCE
 
 
 def test_anthropic_sanitizer_covers_the_fool_identity() -> None:
@@ -407,14 +407,14 @@ def test_skill_index_branding_preserves_skill_names() -> None:
 def test_default_soul_matches_the_agent_identity() -> None:
     """SOUL.md, DEFAULT_AGENT_IDENTITY'yi gölgeler — ikisi ayrışmamalı."""
     from agent.prompt_builder import DEFAULT_AGENT_IDENTITY
-    from thefool_cli.default_soul import DEFAULT_SOUL_MD
+    from fool_cli.default_soul import DEFAULT_SOUL_MD
 
     assert DEFAULT_SOUL_MD == DEFAULT_AGENT_IDENTITY
 
 
 def test_upstream_default_soul_is_upgradable_in_place() -> None:
     """Hermes'ten gelen makine-serili SOUL.md sessizce kimliği ele geçirmemeli."""
-    from thefool_cli.default_soul import is_legacy_template_soul
+    from fool_cli.default_soul import is_legacy_template_soul
 
     upstream_soul = (
         "You are Hermes Agent, an intelligent AI assistant created by Nous Research. "
@@ -470,30 +470,30 @@ def test_bootstrap_installs_the_fool_not_upstream() -> None:
 def test_legacy_hermes_env_still_resolves(monkeypatch: pytest.MonkeyPatch) -> None:
     """FOOL-SEAM: env-compat — eski ayarlar sessizce yok sayılmamalı.
 
-    Kullanıcı ``setx HERMES_HOME`` yapmış olabilir. Yok sayılırsa uygulama
+    Kullanıcı ``setx FOOL_HOME`` yapmış olabilir. Yok sayılırsa uygulama
     hatasız açılır ama YANLIŞ dizini kullanır — oturumlar ve hafıza kaybolmuş
     görünür. Teşhisi en zor hata türü.
     """
     from fool import compat
 
-    monkeypatch.delenv("THEFOOL_HOME", raising=False)
-    monkeypatch.setenv("HERMES_HOME", r"C:\eski\yol")
-    assert compat.getenv("THEFOOL_HOME") == r"C:\eski\yol"
+    monkeypatch.delenv("FOOL_HOME", raising=False)
+    monkeypatch.setenv("FOOL_HOME", r"C:\eski\yol")
+    assert compat.getenv("FOOL_HOME") == r"C:\eski\yol"
 
 
 def test_new_env_name_wins_over_legacy(monkeypatch: pytest.MonkeyPatch) -> None:
     """İkisi birden ayarlıysa davranış belirsiz kalmamalı."""
     from fool import compat
 
-    monkeypatch.setenv("HERMES_HOME", r"C:\eski")
-    monkeypatch.setenv("THEFOOL_HOME", r"C:\yeni")
-    assert compat.getenv("THEFOOL_HOME") == r"C:\yeni"
+    monkeypatch.setenv("FOOL_HOME", r"C:\eski")
+    monkeypatch.setenv("FOOL_HOME", r"C:\yeni")
+    assert compat.getenv("FOOL_HOME") == r"C:\yeni"
 
 
 def test_home_resolution_honours_legacy_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Uçtan uca: gerçek veri dizini çözümlemesi eski değişkeni görüyor mu."""
-    import thefool_constants
+    import fool_constants
 
-    monkeypatch.delenv("THEFOOL_HOME", raising=False)
-    monkeypatch.setenv("HERMES_HOME", r"C:\eski\thefool-home")
-    assert str(thefool_constants._hermes_home_from_env()) == r"C:\eski\thefool-home"
+    monkeypatch.delenv("FOOL_HOME", raising=False)
+    monkeypatch.setenv("FOOL_HOME", r"C:\eski\fool-home")
+    assert str(fool_constants._hermes_home_from_env()) == r"C:\eski\fool-home"

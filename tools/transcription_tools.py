@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from urllib.parse import urljoin
 
-from thefool_cli._subprocess_compat import windows_hide_flags
+from fool_cli._subprocess_compat import windows_hide_flags
 from utils import is_truthy_value
 from tools.managed_tool_gateway import resolve_managed_tool_gateway
 from tools.tool_backend_helpers import (
@@ -56,12 +56,12 @@ logger = logging.getLogger(__name__)
 def get_env_value(name, default=None):
     """Read env values through the live config module.
 
-    Tests may monkeypatch and later restore ``thefool_cli.config.get_env_value``
+    Tests may monkeypatch and later restore ``fool_cli.config.get_env_value``
     before this module is imported. Resolve the helper at call time so STT does
     not keep a stale imported function for the rest of the test process.
     """
     try:
-        from thefool_cli.config import get_env_value as _get_env_value
+        from fool_cli.config import get_env_value as _get_env_value
     except ImportError:
         return os.getenv(name, default)
     value = _get_env_value(name)
@@ -113,15 +113,15 @@ DEFAULT_STT_MODEL = os.getenv("STT_OPENAI_MODEL", "whisper-1")
 DEFAULT_GROQ_STT_MODEL = os.getenv("STT_GROQ_MODEL", "whisper-large-v3-turbo")
 DEFAULT_MISTRAL_STT_MODEL = os.getenv("STT_MISTRAL_MODEL", "voxtral-mini-latest")
 DEFAULT_ELEVENLABS_STT_MODEL = os.getenv("STT_ELEVENLABS_MODEL", "scribe_v2")
-LOCAL_STT_COMMAND_ENV = "THEFOOL_LOCAL_STT_COMMAND"
-LOCAL_STT_LANGUAGE_ENV = "THEFOOL_LOCAL_STT_LANGUAGE"
+LOCAL_STT_COMMAND_ENV = "FOOL_LOCAL_STT_COMMAND"
+LOCAL_STT_LANGUAGE_ENV = "FOOL_LOCAL_STT_LANGUAGE"
 COMMON_LOCAL_BIN_DIRS = ("/opt/homebrew/bin", "/usr/local/bin")
 
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 OPENAI_BASE_URL = os.getenv("STT_OPENAI_BASE_URL", "https://api.openai.com/v1")
 XAI_STT_BASE_URL = os.getenv("XAI_STT_BASE_URL", "https://api.x.ai/v1")
 ELEVENLABS_STT_BASE_URL = os.getenv("ELEVENLABS_STT_BASE_URL", "https://api.elevenlabs.io/v1")
-# DeepInfra STT base URL now resolved via thefool_cli.models.deepinfra_base_url (shared).
+# DeepInfra STT base URL now resolved via fool_cli.models.deepinfra_base_url (shared).
 
 SUPPORTED_FORMATS = {".mp3", ".mp4", ".mpeg", ".mpga", ".m4a", ".wav", ".webm", ".ogg", ".oga", ".opus", ".aac", ".flac", ".caf"}
 LOCAL_NATIVE_AUDIO_FORMATS = {".wav", ".aiff", ".aif"}
@@ -164,7 +164,7 @@ _IDLE_UNLOAD_CHECK_INTERVAL = 30  # seconds between idle checks
 def _load_stt_config() -> dict:
     """Load the ``stt`` section from user config, falling back to defaults."""
     try:
-        from thefool_cli.config import load_config
+        from fool_cli.config import load_config
         return load_config().get("stt") or {}
     except Exception:
         return {}
@@ -190,7 +190,7 @@ def _resolve_stt_language(
       1. ``stt.<provider>.language`` (plus any *extra_keys* aliases, e.g.
          ElevenLabs' historical ``language_code``)
       2. ``stt.language``           — global default for every provider
-      3. ``THEFOOL_LOCAL_STT_LANGUAGE`` env var (legacy escape hatch)
+      3. ``FOOL_LOCAL_STT_LANGUAGE`` env var (legacy escape hatch)
       4. ``None``                   — let the provider auto-detect
 
     Returns a stripped ISO-639-1-ish code or None. Never returns "".
@@ -404,7 +404,7 @@ BUILTIN_STT_PROVIDERS = frozenset({
 #   3. Plugin-registered TranscriptionProvider  → plugin dispatch.
 #   4. No match                                 → "No STT provider available".
 #
-# The single-env-var ``THEFOOL_LOCAL_STT_COMMAND`` escape hatch is preserved
+# The single-env-var ``FOOL_LOCAL_STT_COMMAND`` escape hatch is preserved
 # untouched via the built-in ``local_command`` path. Use the command-provider
 # registry when you want MULTIPLE shell-driven STT engines, or you want a
 # named provider you can pick via ``stt.provider`` in config.yaml.
@@ -1038,7 +1038,7 @@ def _get_provider(stt_config: dict) -> str:
                 return "local"
             logger.warning(
                 "STT provider 'local' configured but unavailable "
-                "(install faster-whisper or set THEFOOL_LOCAL_STT_COMMAND)"
+                "(install faster-whisper or set FOOL_LOCAL_STT_COMMAND)"
             )
             return "none"
 
@@ -1231,7 +1231,7 @@ def _dispatch_to_plugin_provider(
         return None
     try:
         from agent.transcription_registry import get_provider
-        from thefool_cli.plugins import _ensure_plugins_discovered
+        from fool_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         plugin_provider = get_provider(key)
@@ -1405,7 +1405,7 @@ def _apply_pre_transcription_hook(
     it.
     """
     try:
-        from thefool_cli.plugins import has_hook, invoke_hook
+        from fool_cli.plugins import has_hook, invoke_hook
 
         # No-hook short-circuit: keep the no-plugin dispatch path
         # byte-identical (no kwargs built, no invoke_hook call).
@@ -2155,7 +2155,7 @@ def _transcribe_groq(
 
     Honours an optional ISO-639-1 language hint resolved from a
     ``pre_transcription`` hook override > ``stt.groq.language`` >
-    ``stt.language`` (config.yaml) > ``THEFOOL_LOCAL_STT_LANGUAGE`` (env).
+    ``stt.language`` (config.yaml) > ``FOOL_LOCAL_STT_LANGUAGE`` (env).
     When none is set, Groq Whisper auto-detects.
     """
     api_key = _resolve_provider_key("GROQ_API_KEY", "groq")
@@ -2685,14 +2685,14 @@ def _transcribe_deepinfra(
     DeepInfra's STT endpoint is OpenAI-compatible, so the actual SDK
     call lives in :func:`_transcribe_openai` — this wrapper only owns
     DeepInfra-specific credential and model resolution, using the shared
-    ``thefool_cli.models`` helpers so every DeepInfra surface resolves the
+    ``fool_cli.models`` helpers so every DeepInfra surface resolves the
     base URL and model ids identically.
     """
     api_key = _resolve_provider_key("DEEPINFRA_API_KEY", "deepinfra")
     if not api_key:
         return {"success": False, "transcript": "", "error": "DEEPINFRA_API_KEY not set"}
 
-    from thefool_cli.models import deepinfra_base_url, deepinfra_model_ids
+    from fool_cli.models import deepinfra_base_url, deepinfra_model_ids
 
     stt_config = _load_stt_config()
     # ``stt.deepinfra: null`` in YAML yields None, not {} — coalesce so the

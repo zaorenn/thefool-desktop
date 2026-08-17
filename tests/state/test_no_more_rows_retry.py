@@ -18,7 +18,7 @@ import sqlite3
 
 import pytest
 
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 @pytest.fixture

@@ -19,7 +19,7 @@
     /* Path aliases */
     "paths": {
       "@/*": ["./src/*"],
-      "@thefool/shared": ["../apps/shared/src/index.ts"]
+      "@fool/shared": ["../apps/shared/src/index.ts"]
     },
 
     /* Linting */

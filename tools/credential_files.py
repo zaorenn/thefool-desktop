@@ -26,7 +26,7 @@ import posixpath
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Dict, List, Optional
-from thefool_cli.config import cfg_get
+from fool_cli.config import cfg_get
 
 try:  # pragma: no cover - exercised via the fail-closed test below
     from agent.file_safety import get_read_block_error
@@ -55,7 +55,7 @@ _config_files: List[Dict[str, str]] | None = None
 
 
 def _resolve_hermes_home() -> Path:
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
     return get_hermes_home()
 
 
@@ -65,15 +65,15 @@ def register_credential_file(
 ) -> bool:
     """Register a credential file for mounting into remote sandboxes.
 
-    *relative_path* is relative to ``THEFOOL_HOME`` (e.g. ``google_token.json``).
+    *relative_path* is relative to ``FOOL_HOME`` (e.g. ``google_token.json``).
     Returns True if the file exists on the host and was registered.
 
     Security: rejects absolute paths and path traversal sequences (``..``).
-    The resolved host path must remain inside THEFOOL_HOME so that a malicious
+    The resolved host path must remain inside FOOL_HOME so that a malicious
     skill cannot declare ``required_credential_files: ['../../.ssh/id_rsa']``
     and exfiltrate sensitive host files into a container sandbox.
 
-    Containment alone is not sufficient, because THEFOOL_HOME is exactly where
+    Containment alone is not sufficient, because FOOL_HOME is exactly where
     the MASTER credential stores live. A skill legitimately needs its own
     service token (``google_token.json``); it never needs ``.env`` (every
     provider key), ``auth.json`` (all provider tokens and OAuth grants),
@@ -84,10 +84,10 @@ def register_credential_file(
     """
     hermes_home = _resolve_hermes_home()
 
-    # Reject absolute paths — they bypass the THEFOOL_HOME sandbox entirely.
+    # Reject absolute paths — they bypass the FOOL_HOME sandbox entirely.
     if os.path.isabs(relative_path):
         logger.warning(
-            "credential_files: rejected absolute path %r (must be relative to THEFOOL_HOME)",
+            "credential_files: rejected absolute path %r (must be relative to FOOL_HOME)",
             relative_path,
         )
         return False
@@ -95,7 +95,7 @@ def register_credential_file(
     host_path = hermes_home / relative_path
 
     # Resolve symlinks and normalise ``..`` before the containment check so
-    # that traversal like ``../. ssh/id_rsa`` cannot escape THEFOOL_HOME.
+    # that traversal like ``../. ssh/id_rsa`` cannot escape FOOL_HOME.
     from tools.path_security import validate_within_dir
 
     containment_error = validate_within_dir(host_path, hermes_home)
@@ -113,7 +113,7 @@ def register_credential_file(
         return False
 
     # Master credential stores are never mountable, even though they sit
-    # inside THEFOOL_HOME and therefore pass the containment check above.
+    # inside FOOL_HOME and therefore pass the containment check above.
     # Fails CLOSED: if the canonical guard can't be consulted we refuse the
     # mount rather than risk bind-mounting auth.json into a sandbox. The
     # import lives at module top (no circular-import concern — file_safety is
@@ -181,7 +181,7 @@ def _load_config_files() -> List[Dict[str, str]]:
 
     result: List[Dict[str, str]] = []
     try:
-        from thefool_cli.config import read_raw_config
+        from fool_cli.config import read_raw_config
         hermes_home = _resolve_hermes_home()
         cfg = read_raw_config()
         cred_files = cfg_get(cfg, "terminal", "credential_files")
@@ -386,7 +386,7 @@ def iter_skills_files(
 # ---------------------------------------------------------------------------
 
 # The cache subdirectories that should be mirrored into remote backends.
-# Each tuple is (new_subpath, old_name) matching thefool_constants.get_hermes_dir().
+# Each tuple is (new_subpath, old_name) matching fool_constants.get_hermes_dir().
 _CACHE_DIRS: list[tuple[str, str]] = [
     ("cache/documents", "document_cache"),
     ("cache/images", "image_cache"),
@@ -417,7 +417,7 @@ def get_cache_directory_mounts(
     ``container_path`` keys.  The host path is resolved via
     ``get_hermes_dir()`` for backward compatibility with old directory layouts.
     """
-    from thefool_constants import get_hermes_dir
+    from fool_constants import get_hermes_dir
 
     mounts: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:
@@ -540,7 +540,7 @@ def iter_cache_files(
     Used by Modal to upload files individually and resync before each command.
     Skips symlinks.  The container paths use the new ``cache/<subdir>`` layout.
     """
-    from thefool_constants import get_hermes_dir
+    from fool_constants import get_hermes_dir
 
     result: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:

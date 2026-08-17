@@ -1,4 +1,4 @@
-import type { BillingBlock } from '@thefool/shared/billing'
+import type { BillingBlock } from '@fool/shared/billing'
 import { describe, expect, it } from 'vitest'
 
 import { billingDialogCopy } from './billingDialog.js'

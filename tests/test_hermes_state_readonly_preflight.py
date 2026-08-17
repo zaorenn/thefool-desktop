@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-import thefool_state
-from thefool_state import SessionDB, preflight_db_writability
+import fool_state
+from fool_state import SessionDB, preflight_db_writability
 
 pytestmark = [
     pytest.mark.skipif(sys.platform == "win32", reason="POSIX chmod semantics"),
@@ -36,10 +36,10 @@ pytestmark = [
 
 @pytest.fixture()
 def hermes_home(tmp_path, monkeypatch):
-    """Isolated THEFOOL_HOME so the repair scope covers tmp DBs."""
+    """Isolated FOOL_HOME so the repair scope covers tmp DBs."""
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     return home
 
 
@@ -181,7 +181,7 @@ class TestSessionDBIntegration:
         first = SessionDB(db_path)
         first.close()
         os.chmod(db_path, 0o444)
-        thefool_state._set_last_init_error(None)
+        fool_state._set_last_init_error(None)
         try:
             with pytest.raises(sqlite3.OperationalError) as exc_info:
                 SessionDB(db_path)
@@ -190,4 +190,4 @@ class TestSessionDBIntegration:
             assert "chmod" in msg
         finally:
             os.chmod(db_path, 0o644)
-            thefool_state._set_last_init_error(None)
+            fool_state._set_last_init_error(None)

@@ -45,7 +45,7 @@ def _reset():
 
 class TestConfigGate:
     def test_default_enabled(self):
-        with patch("thefool_cli.config.load_config", return_value={"voice": {}}):
+        with patch("fool_cli.config.load_config", return_value={"voice": {}}):
             assert vm.thinking_sound_enabled() is True
 
 

@@ -42,7 +42,7 @@ class _FakeCronAgent:
         )
         assert result["approved"] is False
         assert result["outcome"] == "blocked"
-        assert get_session_env("THEFOOL_CRON_SESSION") == "1"
+        assert get_session_env("FOOL_CRON_SESSION") == "1"
         return {
             "completed": True,
             "failed": False,
@@ -57,10 +57,10 @@ class _FakeCronAgent:
 @pytest.fixture(autouse=True)
 def _clear_approval_state(monkeypatch):
     reset_session_vars()
-    monkeypatch.delenv("THEFOOL_CRON_SESSION", raising=False)
-    monkeypatch.delenv("THEFOOL_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("THEFOOL_INTERACTIVE", raising=False)
-    monkeypatch.delenv("THEFOOL_EXEC_ASK", raising=False)
+    monkeypatch.delenv("FOOL_CRON_SESSION", raising=False)
+    monkeypatch.delenv("FOOL_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("FOOL_INTERACTIVE", raising=False)
+    monkeypatch.delenv("FOOL_EXEC_ASK", raising=False)
     approval_module._permanent_approved.clear()
     approval_module.clear_session("default")
     approval_module.clear_session("cron-isolation-session")
@@ -88,17 +88,17 @@ def test_run_job_cron_execute_code_deny_does_not_pollute_later_gateway_execute_c
     monkeypatch, tmp_path
 ):
     """Cron deny stays scoped; a later gateway approval still reaches its user."""
-    monkeypatch.setenv("THEFOOL_MODEL", "test-model")
+    monkeypatch.setenv("FOOL_MODEL", "test-model")
     monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
     monkeypatch.setattr(approval_module, "_get_approval_mode", lambda: "manual")
     monkeypatch.setattr(approval_module, "_get_cron_approval_mode", lambda: "deny")
-    monkeypatch.setattr("thefool_state.SessionDB", _DummySessionDB)
+    monkeypatch.setattr("fool_state.SessionDB", _DummySessionDB)
     monkeypatch.setattr("run_agent.AIAgent", _FakeCronAgent)
     monkeypatch.setattr(
-        "thefool_constants.resolve_reasoning_config", lambda *_args, **_kwargs: None
+        "fool_constants.resolve_reasoning_config", lambda *_args, **_kwargs: None
     )
     monkeypatch.setattr(
-        "thefool_cli.runtime_provider.resolve_runtime_provider",
+        "fool_cli.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "api_key": "test-key",
             "base_url": None,
@@ -127,15 +127,15 @@ def test_run_job_cron_execute_code_deny_does_not_pollute_later_gateway_execute_c
     assert success is True
     assert error is None
     assert final_response == "cron execute_code blocked"
-    assert os.environ.get("THEFOOL_CRON_SESSION") is None
-    assert get_session_env("THEFOOL_CRON_SESSION") == ""
+    assert os.environ.get("FOOL_CRON_SESSION") is None
+    assert get_session_env("FOOL_CRON_SESSION") == ""
 
     # A completed in-process job must restore the truly-unset ContextVar state,
     # not leave an explicit empty value that shadows the standalone cron env
     # fallback in this reused context.
-    monkeypatch.setenv("THEFOOL_CRON_SESSION", "1")
-    assert get_session_env("THEFOOL_CRON_SESSION") == "1"
-    monkeypatch.delenv("THEFOOL_CRON_SESSION")
+    monkeypatch.setenv("FOOL_CRON_SESSION", "1")
+    assert get_session_env("FOOL_CRON_SESSION") == "1"
+    monkeypatch.delenv("FOOL_CRON_SESSION")
 
     session_key = "cron-isolation-session"
     key_token = approval_module.set_current_session_key(session_key)
@@ -145,7 +145,7 @@ def test_run_job_cron_execute_code_deny_does_not_pollute_later_gateway_execute_c
         session_key=session_key,
         cron_session="",
     )
-    monkeypatch.setenv("THEFOOL_GATEWAY_SESSION", "1")
+    monkeypatch.setenv("FOOL_GATEWAY_SESSION", "1")
     try:
         _register_gateway_auto_approve(session_key)
         result = approval_module.check_execute_code_guard(

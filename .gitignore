@@ -33,8 +33,8 @@ logs/
 data/
 # Bundled community plugin index seed (shipped as package data) — the bare
 # `data/` pattern above would otherwise swallow it.
-!thefool_cli/data/
-!thefool_cli/data/plugin_index.json
+!fool_cli/data/
+!fool_cli/data/plugin_index.json
 .pytest_cache/
 test_durations.json
 .pytest-cache/
@@ -80,7 +80,7 @@ ignored/
 environments/benchmarks/evals/
 
 # Web UI build output
-thefool_cli/web_dist/
+fool_cli/web_dist/
 # Cross-process web UI build lock (flock target, always empty)
 .web_ui_build.lock
 apps/desktop/build/
@@ -137,8 +137,8 @@ models-dev-upstream/
 opencode.json
 config/mcporter.json
 
-thefool_cli/tui_dist/*
-thefool_cli/scripts/
+fool_cli/tui_dist/*
+fool_cli/scripts/
 docs/superpowers/*
 # Working directory for the Hermes Agent's session state (~/.hermes/ at runtime;
 # also created in-repo when an agent operates in this checkout). Plans, audit

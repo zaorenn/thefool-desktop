@@ -207,7 +207,7 @@ class TestCacheDirEnvPassthrough:
             get_document_cache_dir,
             get_image_cache_dir,
         )
-        assert env["THEFOOL_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
-        assert env["THEFOOL_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
-        assert env["THEFOOL_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())
+        assert env["FOOL_IMAGE_CACHE_DIR"] == str(get_image_cache_dir())
+        assert env["FOOL_AUDIO_CACHE_DIR"] == str(get_audio_cache_dir())
+        assert env["FOOL_DOCUMENT_CACHE_DIR"] == str(get_document_cache_dir())
         assert env["WHATSAPP_SEND_READ_RECEIPTS"] == "true"

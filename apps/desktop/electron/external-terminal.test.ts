@@ -37,7 +37,7 @@ test('terminalScriptEnv drops PATH in any casing and keeps the rest', () => {
     '/home/b/.hermes'
   )
 
-  assert.deepEqual(env, { PYTHONPATH: '/repo', PYTHONUTF8: '1', THEFOOL_HOME: '/home/b/.hermes' })
+  assert.deepEqual(env, { PYTHONPATH: '/repo', PYTHONUTF8: '1', FOOL_HOME: '/home/b/.hermes' })
 })
 
 test('terminalScriptEnv skips empty values and an absent home', () => {
@@ -46,7 +46,7 @@ test('terminalScriptEnv skips empty values and an absent home', () => {
 
 test('buildTerminalScript execs the resolved runtime with its env', () => {
   const script = buildTerminalScript({
-    args: ['-m', 'thefool_cli.main', '--tui', '--resume', 'sess'],
+    args: ['-m', 'fool_cli.main', '--tui', '--resume', 'sess'],
     command: '/home/b/.hermes/hermes-agent/venv/bin/python',
     cwd: "/home/b/o'brien",
     env: { PYTHONPATH: '/home/b/.hermes/hermes-agent' },
@@ -59,7 +59,7 @@ test('buildTerminalScript execs the resolved runtime with its env', () => {
       '#!/bin/sh',
       `cd '/home/b/o'\\''brien' || exit 1`,
       `export PYTHONPATH='/home/b/.hermes/hermes-agent'`,
-      `exec '/home/b/.hermes/hermes-agent/venv/bin/python' '-m' 'thefool_cli.main' '--tui' '--resume' 'sess'`,
+      `exec '/home/b/.hermes/hermes-agent/venv/bin/python' '-m' 'fool_cli.main' '--tui' '--resume' 'sess'`,
       ''
     ].join('\n')
   )

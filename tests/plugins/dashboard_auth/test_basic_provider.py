@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import plugins.dashboard_auth.basic as basic_plugin
-from thefool_cli.dashboard_auth import (
+from fool_cli.dashboard_auth import (
     InvalidCredentialsError,
     RefreshExpiredError,
     assert_protocol_compliance,
@@ -29,11 +29,11 @@ def basic():
 @pytest.fixture(autouse=True)
 def _clear_basic_env(monkeypatch):
     for var in (
-        "THEFOOL_DASHBOARD_BASIC_AUTH_USERNAME",
-        "THEFOOL_DASHBOARD_BASIC_AUTH_PASSWORD",
-        "THEFOOL_DASHBOARD_BASIC_AUTH_PASSWORD_HASH",
-        "THEFOOL_DASHBOARD_BASIC_AUTH_SECRET",
-        "THEFOOL_DASHBOARD_BASIC_AUTH_TTL_SECONDS",
+        "FOOL_DASHBOARD_BASIC_AUTH_USERNAME",
+        "FOOL_DASHBOARD_BASIC_AUTH_PASSWORD",
+        "FOOL_DASHBOARD_BASIC_AUTH_PASSWORD_HASH",
+        "FOOL_DASHBOARD_BASIC_AUTH_SECRET",
+        "FOOL_DASHBOARD_BASIC_AUTH_TTL_SECONDS",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -169,8 +169,8 @@ class TestRegister:
 
 
     def test_registers_with_env_plaintext_password(self, basic, monkeypatch):
-        monkeypatch.setenv("THEFOOL_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
-        monkeypatch.setenv("THEFOOL_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
+        monkeypatch.setenv("FOOL_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
+        monkeypatch.setenv("FOOL_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
         monkeypatch.setattr(basic, "_load_config_basic_auth_section", lambda: {})
         ctx = MagicMock()
         basic.register(ctx)
@@ -191,7 +191,7 @@ class TestRegister:
             lambda: {"username": "admin", "password_hash": cfg_hash},
         )
         # Env plaintext should win over the config hash.
-        monkeypatch.setenv("THEFOOL_DASHBOARD_BASIC_AUTH_PASSWORD", "env-pw")
+        monkeypatch.setenv("FOOL_DASHBOARD_BASIC_AUTH_PASSWORD", "env-pw")
         ctx = MagicMock()
         basic.register(ctx)
         provider = ctx.register_dashboard_auth_provider.call_args.args[0]
@@ -208,9 +208,9 @@ class TestRegister:
         # other's tokens (the restart-/multi-worker-survival contract).
         shared = secrets.token_bytes(32).hex()
         monkeypatch.setattr(basic, "_load_config_basic_auth_section", lambda: {})
-        monkeypatch.setenv("THEFOOL_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
-        monkeypatch.setenv("THEFOOL_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
-        monkeypatch.setenv("THEFOOL_DASHBOARD_BASIC_AUTH_SECRET", shared)
+        monkeypatch.setenv("FOOL_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
+        monkeypatch.setenv("FOOL_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
+        monkeypatch.setenv("FOOL_DASHBOARD_BASIC_AUTH_SECRET", shared)
 
         ctx1, ctx2 = MagicMock(), MagicMock()
         basic.register(ctx1)

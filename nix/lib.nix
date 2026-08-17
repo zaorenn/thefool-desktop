@@ -135,16 +135,16 @@ let
             "plans"
             # Nix build definitions (Python build doesn't need these)
             "nix"
-            # Skills are shipped via THEFOOL_BUNDLED_SKILLS /
-            # THEFOOL_OPTIONAL_SKILLS (see hermes-agent.nix), not via the
+            # Skills are shipped via FOOL_BUNDLED_SKILLS /
+            # FOOL_OPTIONAL_SKILLS (see hermes-agent.nix), not via the
             # wheel's data_files — setup.py's _data_file_tree returns []
             # for a missing dir, so the wheel builds fine without them.
             # This keeps SKILL.md edits from rebuilding the Python venv.
             "skills"
             "optional-skills"
             # locales/ and optional-mcps/ are bare data dirs (no
-            # __init__.py) shipped via symlinks + THEFOOL_BUNDLED_LOCALES
-            # / THEFOOL_OPTIONAL_MCPS, not via the wheel. Excluding them
+            # __init__.py) shipped via symlinks + FOOL_BUNDLED_LOCALES
+            # / FOOL_OPTIONAL_MCPS, not via the wheel. Excluding them
             # keeps catalog edits from rebuilding the Python venv.
             "locales"
             "optional-mcps"

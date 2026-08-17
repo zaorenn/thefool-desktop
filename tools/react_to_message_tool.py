@@ -24,7 +24,7 @@ from utils import env_var_enabled
 def _open_session_db():
     """Open the SessionDB for the profile owning this turn, or ``None``."""
     try:
-        from thefool_state import SessionDB
+        from fool_state import SessionDB
 
         return SessionDB()
     except Exception:
@@ -90,8 +90,8 @@ def _react_to_message_with_db(
 def react_to_message_tool(emoji: str, message_row_id=None, messages_back=None) -> str:
     """Attach (or with an empty ``emoji`` retract) the agent's reaction."""
     emoji = (emoji or "").strip()
-    session_key = get_session_env("THEFOOL_SESSION_KEY", "") or get_session_env(
-        "THEFOOL_SESSION_ID", ""
+    session_key = get_session_env("FOOL_SESSION_KEY", "") or get_session_env(
+        "FOOL_SESSION_ID", ""
     )
 
     if not session_key:
@@ -125,7 +125,7 @@ def check_react_requirements() -> bool:
     reads the right config whether that gateway is local, SSH, URL, or cloud.
     """
     try:
-        from thefool_cli.config import load_config_readonly
+        from fool_cli.config import load_config_readonly
 
         display = load_config_readonly().get("display")
     except Exception:

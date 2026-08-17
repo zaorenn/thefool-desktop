@@ -10,7 +10,7 @@ from unittest.mock import patch as mock_patch
 import pytest
 
 import tools.approval as approval_module
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 from tools.approval import (
     _get_approval_mode,
     _normalize_approval_mode,
@@ -37,7 +37,7 @@ class TestApprovalModeParsing:
 
 
     def test_config_bool_false_maps_to_off(self):
-        with mock_patch("thefool_cli.config.load_config_readonly", return_value={"approvals": {"mode": False}}):
+        with mock_patch("fool_cli.config.load_config_readonly", return_value={"approvals": {"mode": False}}):
             assert _get_approval_mode() == "off"
 
 
@@ -59,9 +59,9 @@ class TestSmartApproval:
         dangerous, pattern_key, _ = detect_dangerous_command(command)
         assert dangerous is True
 
-        monkeypatch.setenv("THEFOOL_SESSION_KEY", session_key)
-        monkeypatch.setenv("THEFOOL_EXEC_ASK", "1")
-        monkeypatch.delenv("THEFOOL_CRON_SESSION", raising=False)
+        monkeypatch.setenv("FOOL_SESSION_KEY", session_key)
+        monkeypatch.setenv("FOOL_EXEC_ASK", "1")
+        monkeypatch.delenv("FOOL_CRON_SESSION", raising=False)
         monkeypatch.setattr(
             approval_module,
             "_get_approval_config",
@@ -239,7 +239,7 @@ class TestSessionKeyContext:
     def test_context_session_key_overrides_process_env(self):
         token = approval_module.set_current_session_key("alice")
         try:
-            with mock_patch.dict("os.environ", {"THEFOOL_SESSION_KEY": "bob"}, clear=False):
+            with mock_patch.dict("os.environ", {"FOOL_SESSION_KEY": "bob"}, clear=False):
                 assert approval_module.get_current_session_key() == "alice"
         finally:
             approval_module.reset_current_session_key(token)
@@ -308,8 +308,8 @@ class TestTeePattern:
             "cat file | tee ~/.ssh/authorized_keys",
             "echo x | tee /dev/sda",
             "echo x | tee ~/.hermes/.env",
-            "echo x | tee $THEFOOL_HOME/.env",
-            'echo x | tee "$THEFOOL_HOME/.env"',
+            "echo x | tee $FOOL_HOME/.env",
+            'echo x | tee "$FOOL_HOME/.env"',
         ):
             dangerous, key, desc = detect_dangerous_command(command)
             assert dangerous is True, command
@@ -335,7 +335,7 @@ class TestHermesConfigWriteProtection:
             "echo 'approvals:' > ~/.hermes/config.yaml",
             "echo '  mode: off' >> ~/.hermes/config.yaml",
             "echo x | tee ~/.hermes/config.yaml",
-            "echo x | tee $THEFOOL_HOME/config.yaml",
+            "echo x | tee $FOOL_HOME/config.yaml",
             "cp /tmp/evil.yaml ~/.hermes/config.yaml",
         ):
             dangerous, key, desc = detect_dangerous_command(command)
@@ -376,7 +376,7 @@ class TestSensitiveRedirectPattern:
     def test_redirect_to_sensitive_target(self):
         authorized_keys = Path.home() / ".ssh" / "authorized_keys"
         for command in (
-            "echo x > $THEFOOL_HOME/.env",
+            "echo x > $FOOL_HOME/.env",
             "cat key >> $HOME/.ssh/authorized_keys",
             "cat key >> ~/.ssh/authorized_keys",
             f"cat key >> {authorized_keys}",
@@ -502,7 +502,7 @@ class TestWindowsAbsolutePathFolding:
     SSH, and Hermes config/env files returned "safe" without an approval prompt.
     The OS-specific ``Path.home()`` / ``get_hermes_home()`` tests above only
     exercise this branch on a Windows host; these monkeypatch a Windows-style
-    HOME/THEFOOL_HOME so the fold is verified on the POSIX CI runner too."""
+    HOME/FOOL_HOME so the fold is verified on the POSIX CI runner too."""
 
     def test_windows_home_multiseg_and_forward_slash_fold(self, monkeypatch):
         # The multi-segment suffix (\.ssh\authorized_keys) must also have its
@@ -632,7 +632,7 @@ class TestSmartDeniedPrompt:
         assert "[s]ession" not in rendered and "[a]lways" not in rendered
 
     def test_smart_deny_uses_locale_specific_once_deny_choices(self, monkeypatch, capsys):
-        monkeypatch.setenv("THEFOOL_LANGUAGE", "tr")
+        monkeypatch.setenv("FOOL_LANGUAGE", "tr")
         from agent import i18n
         i18n.reset_language_cache()
         prompts = []
@@ -677,13 +677,13 @@ class TestGatewayProtection:
     """Prevent agents from starting the gateway outside systemd management."""
 
     def test_gateway_run_backgrounded_detected(self):
-        cmd = "kill 1605 && cd ~/.hermes/hermes-agent && source venv/bin/activate && python -m thefool_cli.main gateway run --replace &disown; echo done"
+        cmd = "kill 1605 && cd ~/.hermes/hermes-agent && source venv/bin/activate && python -m fool_cli.main gateway run --replace &disown; echo done"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "systemctl" in desc
         for variant in (
-            "python -m thefool_cli.main gateway run --replace &",
-            "nohup python -m thefool_cli.main gateway run --replace",
+            "python -m fool_cli.main gateway run --replace &",
+            "nohup python -m fool_cli.main gateway run --replace",
         ):
             assert detect_dangerous_command(variant)[0] is True, variant
 
@@ -812,7 +812,7 @@ class TestPgrepKillExpansion:
         """`kill $(pidof hermes)` is the BSD/Linux equivalent of the
         pgrep expansion and bypasses the pkill/killall name pattern
         in the same way. See issue #33071."""
-        dangerous, _, desc = detect_dangerous_command("kill -TERM $(pidof thefool_cli.main)")
+        dangerous, _, desc = detect_dangerous_command("kill -TERM $(pidof fool_cli.main)")
         assert dangerous is True
         assert "pidof" in desc.lower() or "pgrep" in desc.lower()
         assert detect_dangerous_command("kill -9 `pidof hermes`")[0] is True
@@ -1135,18 +1135,18 @@ class TestApprovalTimeoutIsNotConsent:
 
         self._saved_env = {
             k: os.environ.get(k)
-            for k in ("THEFOOL_GATEWAY_SESSION", "THEFOOL_CRON_SESSION",
-                      "THEFOOL_YOLO_MODE",
-                      "THEFOOL_SESSION_KEY", "THEFOOL_INTERACTIVE")
+            for k in ("FOOL_GATEWAY_SESSION", "FOOL_CRON_SESSION",
+                      "FOOL_YOLO_MODE",
+                      "FOOL_SESSION_KEY", "FOOL_INTERACTIVE")
         }
-        os.environ.pop("THEFOOL_YOLO_MODE", None)
-        os.environ.pop("THEFOOL_INTERACTIVE", None)
-        # THEFOOL_CRON_SESSION takes priority over THEFOOL_GATEWAY_SESSION in
+        os.environ.pop("FOOL_YOLO_MODE", None)
+        os.environ.pop("FOOL_INTERACTIVE", None)
+        # FOOL_CRON_SESSION takes priority over FOOL_GATEWAY_SESSION in
         # _is_gateway_approval_context(); a leaked value from a parent cron
         # process would force the cron path and break these gateway tests.
-        os.environ.pop("THEFOOL_CRON_SESSION", None)
-        os.environ["THEFOOL_GATEWAY_SESSION"] = "1"
-        os.environ["THEFOOL_SESSION_KEY"] = self.SESSION_KEY
+        os.environ.pop("FOOL_CRON_SESSION", None)
+        os.environ["FOOL_GATEWAY_SESSION"] = "1"
+        os.environ["FOOL_SESSION_KEY"] = self.SESSION_KEY
 
     def teardown_method(self):
         from tools import approval as mod
@@ -1560,9 +1560,9 @@ class TestTirithImportErrorFailOpenPolicy:
         }
         real_import = builtins.__import__
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
-            with _patch("thefool_cli.config.load_config_readonly", return_value=cfg):
+            with _patch("fool_cli.config.load_config_readonly", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
-                    with mock_patch.dict("os.environ", {"THEFOOL_INTERACTIVE": "1"}, clear=False):
+                    with mock_patch.dict("os.environ", {"FOOL_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards("echo hello", "local")
 
         assert result.get("approved") is True
@@ -1585,9 +1585,9 @@ class TestTirithImportErrorFailOpenPolicy:
 
         real_import = builtins.__import__
         with _patch("builtins.__import__", side_effect=self._make_failing_import(real_import)):
-            with _patch("thefool_cli.config.load_config_readonly", return_value=cfg):
+            with _patch("fool_cli.config.load_config_readonly", return_value=cfg):
                 with _patch("tools.approval.detect_dangerous_command", return_value=(False, None, None)):
-                    with mock_patch.dict("os.environ", {"THEFOOL_INTERACTIVE": "1"}, clear=False):
+                    with mock_patch.dict("os.environ", {"FOOL_INTERACTIVE": "1"}, clear=False):
                         result = check_all_command_guards(
                             "echo hello",
                             "local",
@@ -1664,7 +1664,7 @@ class TestApprovalPromptRedaction:
             "print(api_key)"
         )
         cfg = {"approvals": {"mode": "manual"}}
-        with _patch("thefool_cli.config.load_config_readonly", return_value=cfg):
+        with _patch("fool_cli.config.load_config_readonly", return_value=cfg):
             with _patch("tools.approval._is_gateway_approval_context",
                         return_value=True):
                 with _patch("tools.approval._get_approval_mode",
@@ -1692,7 +1692,7 @@ class TestCliApprovalTimeoutClassifiedSeparately:
     def _interactive_env(self):
         return mock_patch.dict(
             "os.environ",
-            {"THEFOOL_INTERACTIVE": "1"},
+            {"FOOL_INTERACTIVE": "1"},
             clear=False,
         )
 
@@ -1724,7 +1724,7 @@ class TestCliApprovalTimeoutClassifiedSeparately:
 
         cfg = {"approvals": {"mode": "manual"}}
         with self._interactive_env():
-            with _patch("thefool_cli.config.load_config_readonly", return_value=cfg):
+            with _patch("fool_cli.config.load_config_readonly", return_value=cfg):
                 result = mod.check_all_command_guards(
                     "rm -rf /var/data", "local",
                     approval_callback=lambda *a, **kw: "timeout",
@@ -1748,7 +1748,7 @@ class TestCliApprovalTimeoutClassifiedSeparately:
 
         cfg = {"approvals": {"mode": "manual"}}
         with self._interactive_env():
-            with _patch("thefool_cli.config.load_config_readonly", return_value=cfg):
+            with _patch("fool_cli.config.load_config_readonly", return_value=cfg):
                 result = mod.check_all_command_guards(
                     "rm -rf /var/data", "local",
                     approval_callback=lambda *a, **kw: "deny",
@@ -1771,7 +1771,7 @@ class TestCliApprovalTimeoutClassifiedSeparately:
 
         cfg = {"approvals": {"mode": "manual"}}
         with self._interactive_env():
-            with _patch("thefool_cli.config.load_config_readonly", return_value=cfg):
+            with _patch("fool_cli.config.load_config_readonly", return_value=cfg):
                 result = mod.request_tool_approval(
                     "write_file", "plugin flagged this write",
                     approval_callback=lambda *a, **kw: "timeout",

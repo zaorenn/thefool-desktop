@@ -1,4 +1,4 @@
-from thefool_state import AsyncSessionDB, SessionDB
+from fool_state import AsyncSessionDB, SessionDB
 """Tests for gateway /status behavior and token persistence."""
 
 from datetime import datetime
@@ -448,7 +448,7 @@ async def test_profile_command_reports_source_stamped_profile(monkeypatch, tmp_p
     )
     runner = _make_runner(session_entry)
     runner.config.multiplex_profiles = True
-    monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+    monkeypatch.setenv("FOOL_HOME", str(hermes_home))
 
     event = _make_event("/profile")
     event.source.profile = "milo"

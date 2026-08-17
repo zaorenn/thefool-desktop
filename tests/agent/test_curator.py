@@ -16,11 +16,11 @@ import pytest
 
 @pytest.fixture
 def curator_env(tmp_path, monkeypatch):
-    """Isolated THEFOOL_HOME + freshly reloaded curator + skill_usage modules."""
+    """Isolated FOOL_HOME + freshly reloaded curator + skill_usage modules."""
     home = tmp_path / ".hermes"
     (home / "skills").mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
 
     import tools.skill_usage as usage
     importlib.reload(usage)
@@ -42,12 +42,12 @@ def curator_env(tmp_path, monkeypatch):
 
     # Teardown: a curator review launched with synchronous=False spawns a
     # daemon "curator-review" thread that calls save_state() when it finishes.
-    # save_state() resolves the state path from THEFOOL_HOME at write time, so a
+    # save_state() resolves the state path from FOOL_HOME at write time, so a
     # straggler thread that outlives this test would write into whatever home
     # the *next* test has configured (or the default ~/.hermes once monkeypatch
     # restores the env) — corrupting an unrelated test's state file. This race
     # is invisible on a fast machine but flakes under CI load. Join any such
-    # thread here, while THEFOOL_HOME is still pinned to this test's tmp home
+    # thread here, while FOOL_HOME is still pinned to this test's tmp home
     # (curator_env depends on monkeypatch, so this teardown runs before the
     # monkeypatch env is restored). See the salvage of #14261 CI flake.
     for t in threading.enumerate():
@@ -526,7 +526,7 @@ def test_curator_does_not_instruct_model_to_pin():
 
 
 def test_cli_pin_refuses_bundled_skill(curator_env, capsys):
-    from thefool_cli import curator as cli
+    from fool_cli import curator as cli
     skills_dir = curator_env["home"] / "skills"
     _write_skill(skills_dir, "ship-skill")
     (skills_dir / ".bundled_manifest").write_text(
@@ -678,9 +678,9 @@ def test_curator_slot_is_canonical_aux_task():
     (test_aux_config.py) for the main tasks — this test pins `curator`
     specifically so the unification doesn't silently regress.
     """
-    from thefool_cli.config import DEFAULT_CONFIG
-    from thefool_cli.main import _AUX_TASKS
-    from thefool_cli.web_server import _AUX_TASK_SLOTS
+    from fool_cli.config import DEFAULT_CONFIG
+    from fool_cli.main import _AUX_TASKS
+    from fool_cli.web_server import _AUX_TASK_SLOTS
 
     # 1. DEFAULT_CONFIG.auxiliary — schema source
     assert "curator" in DEFAULT_CONFIG["auxiliary"], \
@@ -690,11 +690,11 @@ def test_curator_slot_is_canonical_aux_task():
     assert slot["model"] == ""
     assert slot["timeout"] > 0, "curator timeout should be set (reviews run long)"
 
-    # 2. thefool_cli/main.py _AUX_TASKS — CLI picker
+    # 2. fool_cli/main.py _AUX_TASKS — CLI picker
     aux_keys = {k for k, _name, _desc in _AUX_TASKS}
     assert "curator" in aux_keys, "curator missing from _AUX_TASKS (CLI picker)"
 
-    # 3. thefool_cli/web_server.py _AUX_TASK_SLOTS — REST API allowlist
+    # 3. fool_cli/web_server.py _AUX_TASK_SLOTS — REST API allowlist
     assert "curator" in _AUX_TASK_SLOTS, \
         "curator missing from _AUX_TASK_SLOTS (dashboard REST API)"
 
@@ -739,15 +739,15 @@ def test_review_fork_forwards_runtime_pool_and_overrides(curator_env, monkeypatc
             pass
 
     monkeypatch.setattr(
-        "thefool_cli.config.load_config",
+        "fool_cli.config.load_config",
         lambda: {"model": {"provider": "custom:hyper-charm", "default": "glm-5.2"}},
     )
     monkeypatch.setattr(
-        "thefool_cli.config.load_config_readonly",
+        "fool_cli.config.load_config_readonly",
         lambda: {"model": {"provider": "custom:hyper-charm", "default": "glm-5.2"}},
     )
     monkeypatch.setattr(
-        "thefool_cli.runtime_provider.resolve_runtime_provider",
+        "fool_cli.runtime_provider.resolve_runtime_provider",
         _fake_resolve_runtime_provider,
     )
     monkeypatch.setattr("run_agent.AIAgent", _StubAgent)
@@ -766,15 +766,15 @@ def test_review_fork_uses_runtime_model_and_output_cap(curator_env, monkeypatch)
     captured = {}
 
     monkeypatch.setattr(
-        "thefool_cli.config.load_config",
+        "fool_cli.config.load_config",
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
-        "thefool_cli.config.load_config_readonly",
+        "fool_cli.config.load_config_readonly",
         lambda: {"model": {"provider": "custom:gateway", "default": "gateway"}},
     )
     monkeypatch.setattr(
-        "thefool_cli.runtime_provider.resolve_runtime_provider",
+        "fool_cli.runtime_provider.resolve_runtime_provider",
         lambda **_kwargs: {
             "provider": "custom",
             "model": "real-model-id",

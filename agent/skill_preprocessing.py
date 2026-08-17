@@ -5,14 +5,14 @@ import re
 import subprocess
 from pathlib import Path
 
-from thefool_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
+from fool_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
 
 logger = logging.getLogger(__name__)
 
-# Matches ${THEFOOL_SKILL_DIR} / ${THEFOOL_SESSION_ID} tokens in SKILL.md.
-# Tokens that don't resolve (e.g. ${THEFOOL_SESSION_ID} with no session) are
+# Matches ${FOOL_SKILL_DIR} / ${FOOL_SESSION_ID} tokens in SKILL.md.
+# Tokens that don't resolve (e.g. ${FOOL_SESSION_ID} with no session) are
 # left as-is so the user can debug them.
-_SKILL_TEMPLATE_RE = re.compile(r"\$\{(THEFOOL_SKILL_DIR|THEFOOL_SESSION_ID)\}")
+_SKILL_TEMPLATE_RE = re.compile(r"\$\{(FOOL_SKILL_DIR|FOOL_SESSION_ID)\}")
 
 # Matches inline shell snippets like:  !`date +%Y-%m-%d`
 # Non-greedy, single-line only -- no newlines inside the backticks.
@@ -25,7 +25,7 @@ _INLINE_SHELL_MAX_OUTPUT = 4000
 def load_skills_config() -> dict:
     """Load the ``skills`` section of config.yaml (best-effort)."""
     try:
-        from thefool_cli.config import load_config_readonly
+        from fool_cli.config import load_config_readonly
 
         cfg = load_config_readonly() or {}
         skills_cfg = cfg.get("skills")
@@ -41,7 +41,7 @@ def substitute_template_vars(
     skill_dir: Path | None,
     session_id: str | None,
 ) -> str:
-    """Replace ${THEFOOL_SKILL_DIR} / ${THEFOOL_SESSION_ID} in skill content.
+    """Replace ${FOOL_SKILL_DIR} / ${FOOL_SESSION_ID} in skill content.
 
     Only substitutes tokens for which a concrete value is available --
     unresolved tokens are left in place so the author can spot them.
@@ -53,9 +53,9 @@ def substitute_template_vars(
 
     def _replace(match: re.Match) -> str:
         token = match.group(1)
-        if token == "THEFOOL_SKILL_DIR" and skill_dir_str:
+        if token == "FOOL_SKILL_DIR" and skill_dir_str:
             return skill_dir_str
-        if token == "THEFOOL_SESSION_ID" and session_id:
+        if token == "FOOL_SESSION_ID" and session_id:
             return str(session_id)
         return match.group(0)
 

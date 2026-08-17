@@ -48,9 +48,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 from agent.skill_utils import is_excluded_skill_path
-from thefool_cli.sizefmt import format_bytes
+from fool_cli.sizefmt import format_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ def _utc_id(now: Optional[datetime] = None) -> str:
 
 def _load_config() -> Dict[str, Any]:
     try:
-        from thefool_cli.config import load_config_readonly
+        from fool_cli.config import load_config_readonly
         cfg = load_config_readonly()
     except Exception as e:
         logger.debug("Failed to load config for curator backup: %s", e)

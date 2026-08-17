@@ -7,12 +7,12 @@ they survive refactors of where reactions are stored.
 
 import pytest
 
-from thefool_state import SessionDB
+from fool_state import SessionDB
 
 
 @pytest.fixture
 def db(tmp_path, monkeypatch):
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     return SessionDB(db_path=tmp_path / "state.db")
 
 

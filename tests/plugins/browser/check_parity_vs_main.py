@@ -46,9 +46,9 @@ SUBPROCESS_SCRIPT = r"""
 import json, os, sys, tempfile
 sys.path.insert(0, sys.argv[1])
 
-# Isolated THEFOOL_HOME for the config write.
+# Isolated FOOL_HOME for the config write.
 home = tempfile.mkdtemp()
-os.environ["THEFOOL_HOME"] = home
+os.environ["FOOL_HOME"] = home
 
 # Clear every browser-related env var so is_available() is deterministic.
 for k in (

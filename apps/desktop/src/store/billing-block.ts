@@ -1,4 +1,4 @@
-import type { BillingBlock } from '@thefool/shared'
+import type { BillingBlock } from '@fool/shared'
 import { atom } from 'nanostores'
 
 import { openExternalLink } from '@/lib/external-link'

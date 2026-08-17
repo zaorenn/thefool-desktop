@@ -22,7 +22,7 @@ def _reset_backend():
     from tools.computer_use.tool import reset_backend_for_tests
     reset_backend_for_tests()
     # Force the noop backend.
-    with patch.dict(os.environ, {"THEFOOL_COMPUTER_USE_BACKEND": "noop"}, clear=False):
+    with patch.dict(os.environ, {"FOOL_COMPUTER_USE_BACKEND": "noop"}, clear=False):
         yield
     reset_backend_for_tests()
 
@@ -82,7 +82,7 @@ class TestRegistration:
         driver.write_text("#!/bin/sh\nexit 0\n")
         driver.chmod(0o755)
 
-        monkeypatch.setenv("THEFOOL_CUA_DRIVER_CMD", str(driver))
+        monkeypatch.setenv("FOOL_CUA_DRIVER_CMD", str(driver))
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
         assert cua_backend.resolve_cua_driver_cmd() == str(driver)
@@ -849,7 +849,7 @@ class TestContractAutoRepair:
                  "cua_driver_runtime_contract_status",
                  side_effect=[self._incompatible(), {"ready": True}],
              ), \
-             patch("thefool_cli.tools_config.install_cua_driver",
+             patch("fool_cli.tools_config.install_cua_driver",
                    return_value=True) as installer, \
              patch.object(cua_backend, "_maybe_nudge_update"), \
              patch("tools.lazy_deps.ensure"):
@@ -870,7 +870,7 @@ class TestContractAutoRepair:
                  "cua_driver_runtime_contract_status",
                  return_value=self._incompatible(),
              ), \
-             patch("thefool_cli.tools_config.install_cua_driver",
+             patch("fool_cli.tools_config.install_cua_driver",
                    return_value=False), \
              patch("tools.lazy_deps.ensure") as mock_ensure:
             with pytest.raises(RuntimeError, match="0.20.0 or newer"):
@@ -887,7 +887,7 @@ class TestContractAutoRepair:
                  "cua_driver_runtime_contract_status",
                  return_value=self._incompatible(),
              ), \
-             patch("thefool_cli.tools_config.install_cua_driver",
+             patch("fool_cli.tools_config.install_cua_driver",
                    return_value=False) as installer, \
              patch("tools.lazy_deps.ensure"):
             for _ in range(2):
@@ -900,15 +900,15 @@ class TestContractAutoRepair:
         from tools.computer_use import cua_backend
 
         monkeypatch.setattr(cua_backend, "_contract_repair_attempted", False)
-        monkeypatch.setenv("THEFOOL_CUA_DRIVER_CMD", "/opt/custom/cua-driver")
+        monkeypatch.setenv("FOOL_CUA_DRIVER_CMD", "/opt/custom/cua-driver")
         with patch.object(
                  cua_backend,
                  "cua_driver_runtime_contract_status",
                  return_value=self._incompatible(),
              ), \
-             patch("thefool_cli.tools_config.install_cua_driver") as installer, \
+             patch("fool_cli.tools_config.install_cua_driver") as installer, \
              patch("tools.lazy_deps.ensure"):
-            with pytest.raises(RuntimeError, match="THEFOOL_CUA_DRIVER_CMD"):
+            with pytest.raises(RuntimeError, match="FOOL_CUA_DRIVER_CMD"):
                 cua_backend.CuaDriverBackend().start()
         installer.assert_not_called()
 
@@ -928,7 +928,7 @@ class TestContractAutoRepair:
                  "cua_driver_runtime_contract_status",
                  return_value=state,
              ), \
-             patch("thefool_cli.tools_config.install_cua_driver") as installer, \
+             patch("fool_cli.tools_config.install_cua_driver") as installer, \
              patch("tools.lazy_deps.ensure"):
             with pytest.raises(RuntimeError, match="not installed"):
                 cua_backend.CuaDriverBackend().start()
@@ -1938,7 +1938,7 @@ class TestMcpInvocationResolution:
 
     def test_falls_back_when_manifest_missing_command(self):
         """If the manifest knows the args but not the command, keep our
-        resolved driver path (so THEFOOL_CUA_DRIVER_CMD still wins)."""
+        resolved driver path (so FOOL_CUA_DRIVER_CMD still wins)."""
         from unittest.mock import patch
         from tools.computer_use.cua_backend import _resolve_mcp_invocation
 
@@ -2504,7 +2504,7 @@ class TestElementSpillFile:
                              window_title="Discord", png_bytes_len=0)
 
     def test_spill_file_holds_full_untruncated_tree(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         from tools.computer_use.tool import _capture_response
 
         out = json.loads(_capture_response(self._dense_capture()))
@@ -2519,7 +2519,7 @@ class TestElementSpillFile:
         assert spill["elements"][119]["label"].startswith("msg 119")
 
     def test_no_spill_when_nothing_dropped(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         from tools.computer_use.backend import CaptureResult, UIElement
         from tools.computer_use.tool import _capture_response
 
@@ -2533,7 +2533,7 @@ class TestElementSpillFile:
         assert "elements_file" not in out
 
     def test_spill_pruning_bounds_cache_growth(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         from tools.computer_use import tool as cu_tool
 
         cap = self._dense_capture()
@@ -2555,7 +2555,7 @@ class TestElementSpillFile:
 
 class TestBoundsScaleField:
     def test_scale_reported_when_spaces_diverge(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
         from tools.computer_use.backend import CaptureResult, UIElement
         from tools.computer_use.tool import _capture_response
 

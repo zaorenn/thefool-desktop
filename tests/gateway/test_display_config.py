@@ -192,10 +192,10 @@ class TestConfigMigration:
         }
         config_path.write_text(yaml.dump(config), encoding="utf-8")
 
-        monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
-        # Re-import to pick up the new THEFOOL_HOME
+        monkeypatch.setenv("FOOL_HOME", str(tmp_path))
+        # Re-import to pick up the new FOOL_HOME
         import importlib
-        import thefool_cli.config as cfg_mod
+        import fool_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         result = cfg_mod.migrate_config(interactive=False, quiet=True)

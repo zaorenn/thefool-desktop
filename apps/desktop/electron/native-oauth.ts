@@ -29,7 +29,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 
 // The gateway status field that lists supported auth flows. See
-// thefool_cli/web_server.py status handler.
+// fool_cli/web_server.py status handler.
 const NATIVE_FLOW_ID = 'native_pkce'
 
 export interface NativePkcePair {

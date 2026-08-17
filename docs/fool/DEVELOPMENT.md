@@ -67,7 +67,7 @@ uv run --with pyyaml python -c "..."
 `uv run --with`, `.venv` üzerine geçici bir katman kurmaya çalışıyor; Electron
 veya pytest dosyaları kilitliyorsa yarıda kalıyor ve **paketleri silinmiş bir
 venv** bırakıyor. Belirti: `ModuleNotFoundError: No module named 'yaml'` ve
-`thefool` komutunun aniden patlaması. Onarım:
+`fool` komutunun aniden patlaması. Onarım:
 
 ```bash
 uv pip install --python .venv -e ".[dev]"
@@ -109,8 +109,8 @@ chunk'lar diskten geliyor.
 .venv/Scripts/python.exe -m pytest tests/fool/ -q
 
 # Upstream testleri
-.venv/Scripts/python.exe -m pytest tests/thefool_cli/ -q \
-  --ignore=tests/thefool_cli/test_doctor_journal_modes.py
+.venv/Scripts/python.exe -m pytest tests/fool_cli/ -q \
+  --ignore=tests/fool_cli/test_doctor_journal_modes.py
 ```
 
 `test_doctor_journal_modes.py` Windows'ta **upstream'de de** toplanamıyor

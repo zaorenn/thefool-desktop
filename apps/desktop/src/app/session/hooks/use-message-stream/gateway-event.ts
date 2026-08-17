@@ -1,6 +1,6 @@
-import type { BillingBlock } from '@thefool/shared'
-import { registryBackendScopeKey } from '@thefool/shared'
-import type { HermesSkin } from '@thefool/shared/skin'
+import type { BillingBlock } from '@fool/shared'
+import { registryBackendScopeKey } from '@fool/shared'
+import type { HermesSkin } from '@fool/shared/skin'
 import type { QueryClient } from '@tanstack/react-query'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 

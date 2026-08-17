@@ -15,7 +15,7 @@ from unittest.mock import mock_open, patch
 
 
 def _import_cli():
-    import thefool_cli.config as config_mod
+    import fool_cli.config as config_mod
 
     if not hasattr(config_mod, "save_env_value_secure"):
         config_mod.save_env_value_secure = lambda key, value: {
@@ -137,7 +137,7 @@ class TestRunCleanupWiring(unittest.TestCase):
                     "agent.auxiliary_client.shutdown_cached_clients",
                     lambda *a, **k: None,
                 ),
-                patch("thefool_cli.plugins.invoke_hook", lambda *a, **k: None),
+                patch("fool_cli.plugins.invoke_hook", lambda *a, **k: None),
             ):
                 if extra_patches.get("terminals_raise"):
                     with patch.object(

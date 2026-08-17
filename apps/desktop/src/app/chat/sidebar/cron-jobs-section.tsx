@@ -1,4 +1,4 @@
-import { createCronTriggerController, type CronTriggerController } from '@thefool/shared'
+import { createCronTriggerController, type CronTriggerController } from '@fool/shared'
 import { useStore } from '@nanostores/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 

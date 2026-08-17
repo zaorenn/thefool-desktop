@@ -1390,7 +1390,7 @@ class ShellFileOperations(FileOperations):
             "try:\n"
             "    size = os.path.getsize(p)\n"
             "    if size > MAX:\n"
-            "        print('THEFOOL_UTF16:NO'); sys.exit(0)\n"
+            "        print('FOOL_UTF16:NO'); sys.exit(0)\n"
             "    with open(p, 'rb') as f:\n"
             "        data = f.read()\n"
             "    sample = data[:SAMPLE]\n"
@@ -1407,7 +1407,7 @@ class ShellFileOperations(FileOperations):
             "        elif odd == 0 and even >= 2:\n"
             "            enc = 'utf-16-be'\n"
             "    if enc is None:\n"
-            "        print('THEFOOL_UTF16:NO'); sys.exit(0)\n"
+            "        print('FOOL_UTF16:NO'); sys.exit(0)\n"
             "    text = data.decode(enc, 'replace')\n"
             "    if text[:1] == '\\ufeff':\n"
             "        text = text[1:]\n"
@@ -1417,10 +1417,10 @@ class ShellFileOperations(FileOperations):
             "    sel = lines[offset - 1: offset - 1 + limit]\n"
             "    out = {'total_lines': total, 'encoding': enc,\n"
             "           'content': '\\n'.join(sel)}\n"
-            "    print('THEFOOL_UTF16:OK')\n"
+            "    print('FOOL_UTF16:OK')\n"
             "    print(json.dumps(out, ensure_ascii=True))\n"
             "except Exception:\n"
-            "    print('THEFOOL_UTF16:NO'); sys.exit(0)\n"
+            "    print('FOOL_UTF16:NO'); sys.exit(0)\n"
         )
 
         result = self._exec(f"python3 -c {self._escape_shell_arg(snippet)}")
@@ -1428,10 +1428,10 @@ class ShellFileOperations(FileOperations):
             result = self._exec(f"python -c {self._escape_shell_arg(snippet)}")
 
         stdout = _strip_terminal_fence_leaks(result.stdout or "")
-        marker = stdout.find("THEFOOL_UTF16:OK")
+        marker = stdout.find("FOOL_UTF16:OK")
         if result.exit_code != 0 or marker < 0:
             return None
-        payload = stdout[marker + len("THEFOOL_UTF16:OK"):].strip()
+        payload = stdout[marker + len("FOOL_UTF16:OK"):].strip()
         try:
             data = json.loads(payload.split("\n", 1)[0] if "\n" in payload else payload)
             content = data["content"]

@@ -6,7 +6,7 @@
 // to work anywhere:
 //
 //  1. WHAT to run. The desktop's Hermes runtime is often a venv Python invoked
-//     as `python -m thefool_cli.main`, not a `hermes` on PATH — so the command
+//     as `python -m fool_cli.main`, not a `hermes` on PATH — so the command
 //     and its PYTHONPATH have to be carried over verbatim. We write them into a
 //     small launcher script instead of trying to quote a nested command through
 //     a terminal emulator's `-e` argument, which every emulator parses
@@ -65,7 +65,7 @@ export function terminalScriptEnv(
   }
 
   if (hermesHome) {
-    out.THEFOOL_HOME = hermesHome
+    out.FOOL_HOME = hermesHome
   }
 
   return out

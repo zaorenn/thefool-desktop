@@ -174,7 +174,7 @@ def _install_fakes(
     cleanup_platform: Platform = Platform.TELEGRAM,
 ):
     """Wire up the module stubs every _run_agent test needs."""
-    monkeypatch.setenv("THEFOOL_TOOL_PROGRESS_MODE", "all")
+    monkeypatch.setenv("FOOL_TOOL_PROGRESS_MODE", "all")
 
     fake_dotenv = types.ModuleType("dotenv")
     fake_dotenv.load_dotenv = lambda *a, **k: None

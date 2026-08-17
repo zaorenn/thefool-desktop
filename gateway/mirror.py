@@ -14,7 +14,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from thefool_cli.config import get_hermes_home
+from fool_cli.config import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +113,7 @@ def _find_session_id(
     """
     # Primary: state.db
     try:
-        from thefool_state import SessionDB
+        from fool_state import SessionDB
         db = SessionDB()
         try:
             finder = getattr(db, "find_session_by_origin", None)
@@ -192,7 +192,7 @@ def _append_to_sqlite(session_id: str, message: dict) -> None:
     """Append a message to the SQLite session database."""
     db = None
     try:
-        from thefool_state import SessionDB
+        from fool_state import SessionDB
         db = SessionDB()
         db.append_message(
             session_id=session_id,

@@ -16,11 +16,11 @@ def _write_config(home, body: str) -> None:
 @pytest.fixture
 def gateway_home(monkeypatch, tmp_path):
     monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.delenv("THEFOOL_PREFILL_MESSAGES_FILE", raising=False)
-    monkeypatch.delenv("THEFOOL_EPHEMERAL_SYSTEM_PROMPT", raising=False)
-    monkeypatch.delenv("THEFOOL_GATEWAY_BUSY_INPUT_MODE", raising=False)
-    monkeypatch.delenv("THEFOOL_RESTART_DRAIN_TIMEOUT", raising=False)
-    monkeypatch.delenv("THEFOOL_BACKGROUND_NOTIFICATIONS", raising=False)
+    monkeypatch.delenv("FOOL_PREFILL_MESSAGES_FILE", raising=False)
+    monkeypatch.delenv("FOOL_EPHEMERAL_SYSTEM_PROMPT", raising=False)
+    monkeypatch.delenv("FOOL_GATEWAY_BUSY_INPUT_MODE", raising=False)
+    monkeypatch.delenv("FOOL_RESTART_DRAIN_TIMEOUT", raising=False)
+    monkeypatch.delenv("FOOL_BACKGROUND_NOTIFICATIONS", raising=False)
     return tmp_path
 
 

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-_RUNTIME = "thefool_cli.runtime_provider.resolve_runtime_provider"
+_RUNTIME = "fool_cli.runtime_provider.resolve_runtime_provider"
 _PNG_DATA_URI = "data:image/png;base64,dGVzdC1pbWFnZS1kYXRh"  # "test-image-data"
 
 
@@ -138,7 +138,7 @@ class TestHelpers:
         hermes_home.mkdir()
         auth_json = hermes_home / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
 
         with pytest.raises(ValueError, match="credential store"):
             _to_image_url_part(str(auth_json))

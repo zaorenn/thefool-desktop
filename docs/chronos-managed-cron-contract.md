@@ -129,7 +129,7 @@ Arm (or re-arm, idempotently) exactly one one-shot for a job.
 This is the agent endpoint NAS calls in Endpoint 3 step 3. Two hops on hosted
 deployments:
 
-1. **Dashboard app** (`thefool_cli/web_server.py`) — the agent's only public
+1. **Dashboard app** (`fool_cli/web_server.py`) — the agent's only public
    HTTP surface (the Fly proxy exposes exactly one port, the dashboard's). It
    is in `PUBLIC_API_PATHS` so the dashboard cookie gate lets the bearer-JWT
    callback through to the verifier. The dashboard verifies the JWT, resolves
@@ -183,7 +183,7 @@ There is deliberately no in-dashboard execution fallback. The verifier is
   `get_job` returns `None` after the final fire → the agent does **not** re-arm
   → the schedule stops cleanly with no orphaned one-shot.
 - **Multi-replica agents:** the store CAS makes the fire at-most-once across N
-  gateway replicas sharing one `THEFOOL_HOME` — exactly one replica runs each
+  gateway replicas sharing one `FOOL_HOME` — exactly one replica runs each
   fire.
 
 ## Reconcile (self-healing)

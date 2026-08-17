@@ -36,8 +36,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from thefool_constants import get_hermes_home
-from thefool_time import now as _hermes_now
+from fool_constants import get_hermes_home
+from fool_time import now as _hermes_now
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)

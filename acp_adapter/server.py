@@ -109,13 +109,13 @@ def _named_custom_provider_catalogs() -> list[tuple[str, str, list[tuple[str, st
     unchanged.
     """
     try:
-        from thefool_cli.config import (
+        from fool_cli.config import (
             get_compatible_custom_providers,
             is_provider_enabled,
             load_config,
         )
-        from thefool_cli.models import cached_fetch_api_models
-        from thefool_cli.providers import custom_provider_slug
+        from fool_cli.models import cached_fetch_api_models
+        from fool_cli.providers import custom_provider_slug
     except ImportError:
         return []
 
@@ -191,9 +191,9 @@ def _named_custom_provider_catalogs() -> list[tuple[str, str, list[tuple[str, st
     return catalogs
 
 try:
-    from thefool_cli import __version__ as THEFOOL_VERSION
+    from fool_cli import __version__ as FOOL_VERSION
 except Exception:
-    THEFOOL_VERSION = "0.0.0"
+    FOOL_VERSION = "0.0.0"
 
 # Thread pool for running AIAgent (synchronous) in parallel.
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="acp-agent")
@@ -205,7 +205,7 @@ _LIST_SESSIONS_PAGE_SIZE = 50
 # Per-provider cap for the ACP model selector. ACP clients (Zed, Buzz) render
 # the whole `availableModels` array in one dropdown, so an unbounded
 # cross-provider catalog degrades the picker. Mirrors the cap the MoA picker
-# already uses (`thefool_cli/moa_cmd.py`). This bounds each provider's row, not
+# already uses (`fool_cli/moa_cmd.py`). This bounds each provider's row, not
 # the total; aggregator providers stay intentionally uncapped inside the shared
 # inventory, and the current model is always kept via the fallback insert below.
 ACP_MAX_MODELS_PER_PROVIDER = 200
@@ -707,8 +707,8 @@ class HermesACPAgent(acp.Agent):
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
 
         try:
-            from thefool_cli.inventory import build_models_payload, load_picker_context
-            from thefool_cli.models import normalize_provider, provider_label
+            from fool_cli.inventory import build_models_payload, load_picker_context
+            from fool_cli.models import normalize_provider, provider_label
 
             normalized_provider = normalize_provider(provider)
             context = load_picker_context().with_overrides(
@@ -827,7 +827,7 @@ class HermesACPAgent(acp.Agent):
         new_model = raw_model.strip()
 
         try:
-            from thefool_cli.models import detect_provider_for_model, parse_model_input
+            from fool_cli.models import detect_provider_for_model, parse_model_input
 
             target_provider, new_model = parse_model_input(new_model, current_provider)
             if target_provider == current_provider:
@@ -937,7 +937,7 @@ class HermesACPAgent(acp.Agent):
 
         title = row.get("title")
         # The `sessions` table does not have an `updated_at` column (see
-        # thefool_state.py schema — only started_at/ended_at). Use "now" as
+        # fool_state.py schema — only started_at/ended_at). Use "now" as
         # the updated_at since we're emitting this notification precisely
         # because the title was just refreshed.
         updated_at = datetime.now(timezone.utc).isoformat()
@@ -1066,7 +1066,7 @@ class HermesACPAgent(acp.Agent):
         registry was unchanged, or when the session was closed while waiting.
         """
         try:
-            from thefool_cli.mcp_startup import mcp_discovery_in_flight
+            from fool_cli.mcp_startup import mcp_discovery_in_flight
         except Exception:
             return
         if not mcp_discovery_in_flight():
@@ -1079,7 +1079,7 @@ class HermesACPAgent(acp.Agent):
 
         def _wait_then_refresh() -> None:
             try:
-                from thefool_cli.mcp_startup import join_mcp_discovery
+                from fool_cli.mcp_startup import join_mcp_discovery
 
                 if not join_mcp_discovery(timeout=30.0):
                     return
@@ -1157,7 +1157,7 @@ class HermesACPAgent(acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="hermes-agent", version=THEFOOL_VERSION),
+            agent_info=Implementation(name="hermes-agent", version=FOOL_VERSION),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -1835,13 +1835,13 @@ class HermesACPAgent(acp.Agent):
         # thread — setting it here would write to the event-loop thread's TLS,
         # not the executor's. Interactive routing uses a contextvar in
         # tools.approval (set_hermes_interactive_context) rather than
-        # os.environ["THEFOOL_INTERACTIVE"], so concurrent executor workers can't
+        # os.environ["FOOL_INTERACTIVE"], so concurrent executor workers can't
         # race on a process-global flag — one session's restore can't drop
         # another onto the non-interactive auto-approve path mid-run
         # (GHSA-96vc-wcxf-jjff). The contextvar write is isolated by the
         # contextvars.copy_context() wrapper around the executor call below.
         # ACP's conn.request_permission maps cleanly to the interactive
-        # callback shape — not the gateway-queue THEFOOL_EXEC_ASK path,
+        # callback shape — not the gateway-queue FOOL_EXEC_ASK path,
         # which requires a notify_cb registered in _gateway_notify_cbs.
         previous_approval_cb = None
         interactive_token = None
@@ -1850,7 +1850,7 @@ class HermesACPAgent(acp.Agent):
 
         def _run_agent() -> dict:
             nonlocal previous_approval_cb, interactive_token, edit_approval_token, previous_session_id
-            # Bind THEFOOL_SESSION_KEY for this session so per-session caches
+            # Bind FOOL_SESSION_KEY for this session so per-session caches
             # (e.g. the interactive sudo password cache in tools.terminal_tool)
             # scope to the ACP session rather than leaking across sessions
             # that land on the same reused executor thread. This call runs
@@ -1869,7 +1869,7 @@ class HermesACPAgent(acp.Agent):
                 # model emits absolute paths under ~/.hermes/workspace and the
                 # edit silently lands outside the editor's workspace.
                 # cron_session="" explicitly marks this as a non-cron context,
-                # masking any leaked process-global THEFOOL_CRON_SESSION (#37968).
+                # masking any leaked process-global FOOL_CRON_SESSION (#37968).
                 session_tokens = set_session_vars(
                     session_key=session_id, session_id=session_id, cwd=state.cwd,
                     cron_session="",
@@ -1902,8 +1902,8 @@ class HermesACPAgent(acp.Agent):
             # the new task so clients can render a per-session board). Save
             # and restore around the agent call so a re-used executor thread
             # never leaks one session's id into the next session's tools.
-            previous_session_id = os.environ.get("THEFOOL_SESSION_ID")
-            os.environ["THEFOOL_SESSION_ID"] = session_id
+            previous_session_id = os.environ.get("FOOL_SESSION_ID")
+            os.environ["FOOL_SESSION_ID"] = session_id
             # Auto-titling fires inside the turn prologue now; give the agent
             # this session's notifier so a new title reaches the client as a
             # session-info update instead of waiting for the next one.
@@ -1930,11 +1930,11 @@ class HermesACPAgent(acp.Agent):
                 # Restore the interactive contextvar for this context.
                 if interactive_token is not None:
                     reset_hermes_interactive_context(interactive_token)
-                # Restore THEFOOL_SESSION_ID symmetrically.
+                # Restore FOOL_SESSION_ID symmetrically.
                 if previous_session_id is None:
-                    os.environ.pop("THEFOOL_SESSION_ID", None)
+                    os.environ.pop("FOOL_SESSION_ID", None)
                 else:
-                    os.environ["THEFOOL_SESSION_ID"] = previous_session_id
+                    os.environ["FOOL_SESSION_ID"] = previous_session_id
                 if approval_cb:
                     try:
                         from tools import terminal_tool as _terminal_tool
@@ -1962,7 +1962,7 @@ class HermesACPAgent(acp.Agent):
             pre_turn_hermes_id = getattr(state.agent, "session_id", None)
             # Wrap the executor call in a fresh copy of the current context so
             # concurrent ACP sessions on the shared ThreadPoolExecutor don't
-            # stomp on each other's ContextVar writes (THEFOOL_SESSION_KEY in
+            # stomp on each other's ContextVar writes (FOOL_SESSION_KEY in
             # particular — used by the interactive sudo password cache scope).
             ctx = contextvars.copy_context()
             result = await loop.run_in_executor(_executor, ctx.run, _run_agent)
@@ -2407,7 +2407,7 @@ class HermesACPAgent(acp.Agent):
         return f"Queued for the next turn. ({depth} queued)"
 
     def _cmd_version(self, args: str, state: SessionState) -> str:
-        return f"Hermes Agent v{THEFOOL_VERSION}"
+        return f"Hermes Agent v{FOOL_VERSION}"
 
     # ---- Model switching (ACP protocol method) -------------------------------
 

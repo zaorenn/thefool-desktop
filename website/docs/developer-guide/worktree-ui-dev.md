@@ -29,8 +29,8 @@ Two env vars name the canonical checkout:
 
 | Variable | Meaning |
 |----------|---------|
-| `THEFOOL_MAIN_CHECKOUT` | The deps checkout — where `node_modules` really lives, and whose `.venv/bin/python` runs the backend. |
-| `THEFOOL_GUI_DEPS_CHECKOUT` | Where the desktop deps (`apps/desktop/node_modules`) live. Defaults to `THEFOOL_MAIN_CHECKOUT`; override only if you keep desktop deps elsewhere. |
+| `FOOL_MAIN_CHECKOUT` | The deps checkout — where `node_modules` really lives, and whose `.venv/bin/python` runs the backend. |
+| `FOOL_GUI_DEPS_CHECKOUT` | Where the desktop deps (`apps/desktop/node_modules`) live. Defaults to `FOOL_MAIN_CHECKOUT`; override only if you keep desktop deps elsewhere. |
 
 Neither is read by Hermes itself — they're private to these helpers. The variables Hermes *does* read are covered in [Environment Variables](../reference/environment-variables.md).
 
@@ -43,14 +43,14 @@ htui() {
   local root
   root="$(_hermes_root)" || { echo "htui: not in a Hermes checkout" >&2; return 1; }
   ( cd "$root" && PYTHONPATH="$root" \
-      "$THEFOOL_MAIN_CHECKOUT/.venv/bin/python" -m thefool_cli.main --tui --dev "$@" )
+      "$FOOL_MAIN_CHECKOUT/.venv/bin/python" -m fool_cli.main --tui --dev "$@" )
 }
 ```
 
-`--dev` compiles from source, so it links `ui-tui/node_modules` from `THEFOOL_MAIN_CHECKOUT` when the root lockfile matches and installs locally otherwise (see [`_hermes_root` / linking helpers](#shared-helpers)).
+`--dev` compiles from source, so it links `ui-tui/node_modules` from `FOOL_MAIN_CHECKOUT` when the root lockfile matches and installs locally otherwise (see [`_hermes_root` / linking helpers](#shared-helpers)).
 
-:::warning `--dev` and `THEFOOL_TUI_DIR` are mutually exclusive
-`THEFOOL_TUI_DIR` points Hermes at a *prebuilt* bundle (Nix, system packages), which has no source to hot-reload. If it's set in your shell, `hermes --tui --dev` exits with an error. Run `unset THEFOOL_TUI_DIR` before `htui`.
+:::warning `--dev` and `FOOL_TUI_DIR` are mutually exclusive
+`FOOL_TUI_DIR` points Hermes at a *prebuilt* bundle (Nix, system packages), which has no source to hot-reload. If it's set in your shell, `hermes --tui --dev` exits with an error. Run `unset FOOL_TUI_DIR` before `htui`.
 :::
 
 ## `hgui` — desktop app from the worktree
@@ -61,7 +61,7 @@ The desktop app is heavier: it needs `node_modules` at both the repo root and `a
 hgui() {
   local root deps desktop
   root="$(_hermes_root)" || { echo "hgui: not in a Hermes checkout" >&2; return 1; }
-  deps="${THEFOOL_GUI_DEPS_CHECKOUT:-$THEFOOL_MAIN_CHECKOUT}"
+  deps="${FOOL_GUI_DEPS_CHECKOUT:-$FOOL_MAIN_CHECKOUT}"
   desktop="$root/apps/desktop"
 
   # Borrow deps when locks match; otherwise install locally in the worktree.
@@ -80,10 +80,10 @@ hgui() {
 
   ( cd "$desktop"
     export PATH="$root/node_modules/.bin:$PATH"
-    THEFOOL_DESKTOP_HERMES_ROOT="$root" \
-    THEFOOL_DESKTOP_PYTHON="$THEFOOL_MAIN_CHECKOUT/.venv/bin/python" \
-    THEFOOL_DESKTOP_IGNORE_EXISTING=1 \
-    THEFOOL_DESKTOP_CWD="$root" \
+    FOOL_DESKTOP_HERMES_ROOT="$root" \
+    FOOL_DESKTOP_PYTHON="$FOOL_MAIN_CHECKOUT/.venv/bin/python" \
+    FOOL_DESKTOP_IGNORE_EXISTING=1 \
+    FOOL_DESKTOP_CWD="$root" \
     npm run dev )
 }
 ```
@@ -92,10 +92,10 @@ The desktop env vars it sets are all real backend-resolution knobs:
 
 | Variable | Role in `hgui` |
 |----------|----------------|
-| `THEFOOL_DESKTOP_HERMES_ROOT` | Runs the backend from **this worktree**, not the packaged/PATH `hermes`. |
-| `THEFOOL_DESKTOP_PYTHON` | Reuses the deps checkout's venv instead of re-resolving a Python. |
-| `THEFOOL_DESKTOP_IGNORE_EXISTING` | Ignores any `hermes` on `PATH` so it can't shadow the worktree. |
-| `THEFOOL_DESKTOP_CWD` | Opens the desktop chat rooted at the worktree. |
+| `FOOL_DESKTOP_HERMES_ROOT` | Runs the backend from **this worktree**, not the packaged/PATH `hermes`. |
+| `FOOL_DESKTOP_PYTHON` | Reuses the deps checkout's venv instead of re-resolving a Python. |
+| `FOOL_DESKTOP_IGNORE_EXISTING` | Ignores any `hermes` on `PATH` so it can't shadow the worktree. |
+| `FOOL_DESKTOP_CWD` | Opens the desktop chat rooted at the worktree. |
 
 Two footguns `hgui` handles that a bare `npm run dev` does not:
 
@@ -111,7 +111,7 @@ Both functions resolve the enclosing checkout and link deps the same way:
 _hermes_root() {
   local root
   root="$(git rev-parse --show-toplevel 2>/dev/null)" || return 1
-  [[ -f "$root/thefool_cli/main.py" && -d "$root/ui-tui" ]] && print -r "$root"
+  [[ -f "$root/fool_cli/main.py" && -d "$root/ui-tui" ]] && print -r "$root"
 }
 
 # Symlink node_modules from the deps checkout — never over an existing tree.
@@ -126,7 +126,7 @@ _hermes_gui_cleanup() {
   local root="$1"
   [[ -n "$root" ]] && pkill -TERM -f "${root}/apps/desktop/node_modules/electron" 2>/dev/null
   lsof -t -i:5174 >/dev/null 2>&1 && killport 5174
-  pgrep -f 'thefool_cli\.main.*dashboard.*--port 0' 2>/dev/null | xargs -r kill -TERM 2>/dev/null
+  pgrep -f 'fool_cli\.main.*dashboard.*--port 0' 2>/dev/null | xargs -r kill -TERM 2>/dev/null
 }
 ```
 
@@ -139,7 +139,7 @@ A symlink to a divergent `node_modules` is worse than no install — the worktre
 ## See also
 
 - [Git Worktrees](../user-guide/git-worktrees.md) — the isolation model these helpers build on
-- [TUI](../user-guide/tui.md) — `hermes --tui --dev` and the `THEFOOL_TUI_DIR` prebuild path
+- [TUI](../user-guide/tui.md) — `hermes --tui --dev` and the `FOOL_TUI_DIR` prebuild path
 - [Desktop App](../user-guide/desktop.md) — building from source and the backend resolution ladder
 - [`apps/desktop/README.md`](https://github.com/NousResearch/hermes-agent/blob/main/apps/desktop/README.md) — dev server, sandbox script, and packaging
 - [Environment Variables](../reference/environment-variables.md) — every `HERMES_*` variable Hermes reads

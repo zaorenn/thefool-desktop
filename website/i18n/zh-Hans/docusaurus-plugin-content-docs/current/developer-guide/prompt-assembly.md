@@ -28,7 +28,7 @@ Hermes 刻意将以下内容分离：
 
 已缓存的系统 prompt 大致按以下顺序组装：
 
-1. agent 身份 — 优先使用 `THEFOOL_HOME` 中的 `SOUL.md`，否则回退到 `prompt_builder.py` 中的 `DEFAULT_AGENT_IDENTITY`
+1. agent 身份 — 优先使用 `FOOL_HOME` 中的 `SOUL.md`，否则回退到 `prompt_builder.py` 中的 `DEFAULT_AGENT_IDENTITY`
 2. 工具感知行为指导
 3. Honcho 静态块（激活时）
 4. 可选系统消息
@@ -167,7 +167,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
     if project_context:
         sections.append(project_context)
 
-    # SOUL.md from THEFOOL_HOME (independent of project context)
+    # SOUL.md from FOOL_HOME (independent of project context)
     if not skip_soul:
         soul_content = load_soul_md()
         if soul_content:
@@ -241,7 +241,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 - 项目上下文文件，如 `.hermes.md`、`HERMES.md`、`AGENTS.md`、`CLAUDE.md` 或 `.cursorrules` — 注入仓库特定的工作规则。
 - Skills — 打包可复用的工作流和参考资料，无需编辑核心 prompt 代码。
 - 可选系统 prompt 配置 / API 覆盖 — 添加部署特定的指令文本，无需 fork Hermes。
-- 临时覆盖层，如 `THEFOOL_EPHEMERAL_SYSTEM_PROMPT` 或 prefill 消息 — 添加不应成为已缓存 prompt 前缀一部分的轮次级指导。
+- 临时覆盖层，如 `FOOL_EPHEMERAL_SYSTEM_PROMPT` 或 prefill 消息 — 添加不应成为已缓存 prompt 前缀一部分的轮次级指导。
 
 ### 何时应编辑代码
 

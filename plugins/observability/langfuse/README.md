@@ -21,9 +21,9 @@ hermes plugins enable observability/langfuse
 Set these in `~/.hermes/.env` (or via `hermes tools`):
 
 ```bash
-THEFOOL_LANGFUSE_PUBLIC_KEY=pk-lf-...
-THEFOOL_LANGFUSE_SECRET_KEY=sk-lf-...
-THEFOOL_LANGFUSE_BASE_URL=https://cloud.langfuse.com   # or your self-hosted URL
+FOOL_LANGFUSE_PUBLIC_KEY=pk-lf-...
+FOOL_LANGFUSE_SECRET_KEY=sk-lf-...
+FOOL_LANGFUSE_BASE_URL=https://cloud.langfuse.com   # or your self-hosted URL
 ```
 
 Without the SDK or credentials the hooks no-op silently — the plugin fails
@@ -38,22 +38,22 @@ hermes chat -q "hello"              # then check Langfuse for a "Hermes turn" tr
 
 Generation observations include the Hermes system prompt when the provider
 uses a separate `system` param (Anthropic Messages API). Open an **LLM call**
-child span to inspect `role: system` (truncated via `THEFOOL_LANGFUSE_MAX_CHARS`).
+child span to inspect `role: system` (truncated via `FOOL_LANGFUSE_MAX_CHARS`).
 
 ## Optional tuning
 
 ```bash
-THEFOOL_LANGFUSE_ENV=production       # environment tag
-THEFOOL_LANGFUSE_RELEASE=v1.0.0       # release tag
-THEFOOL_LANGFUSE_SAMPLE_RATE=0.5      # sample 50% of traces
-THEFOOL_LANGFUSE_MAX_CHARS=12000      # max chars per field (default: 12000)
-THEFOOL_LANGFUSE_CAPTURE=sanitized    # content capture mode (see below)
-THEFOOL_LANGFUSE_DEBUG=true           # verbose plugin logging
+FOOL_LANGFUSE_ENV=production       # environment tag
+FOOL_LANGFUSE_RELEASE=v1.0.0       # release tag
+FOOL_LANGFUSE_SAMPLE_RATE=0.5      # sample 50% of traces
+FOOL_LANGFUSE_MAX_CHARS=12000      # max chars per field (default: 12000)
+FOOL_LANGFUSE_CAPTURE=sanitized    # content capture mode (see below)
+FOOL_LANGFUSE_DEBUG=true           # verbose plugin logging
 ```
 
 ## Capture modes
 
-`THEFOOL_LANGFUSE_CAPTURE` controls how much *content* (prompts, responses,
+`FOOL_LANGFUSE_CAPTURE` controls how much *content* (prompts, responses,
 tool arguments/results) is exported. Structural metadata — IDs, roles, tool
 names, token usage, cost, timing — is always captured in every mode.
 

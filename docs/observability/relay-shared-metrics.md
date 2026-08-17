@@ -47,7 +47,7 @@ or dynamic Relay plugins.
 
 Hermes core owns one Relay host and one isolated Relay session scope per Hermes
 session. Core lifecycle producers use
-`thefool_cli.observability.relay_runtime` to obtain the shared session handle or
+`fool_cli.observability.relay_runtime` to obtain the shared session handle or
 run Relay scope, LLM, tool, and mark APIs in that session context. New product
 marks do not require Hermes plugin registration. Shared-metrics marks must
 still contain only fields approved by the versioned allowlist; the hard
@@ -130,8 +130,8 @@ multi-skill semantics are defined.
 Local state is written under:
 
 ```text
-$THEFOOL_HOME/telemetry/shared_metrics/metrics.sqlite3
-$THEFOOL_HOME/telemetry/shared_metrics/outbox/*.json
+$FOOL_HOME/telemetry/shared_metrics/metrics.sqlite3
+$FOOL_HOME/telemetry/shared_metrics/outbox/*.json
 ```
 
 The database keeps transactional aggregate and package-outbox state. Package
@@ -148,11 +148,11 @@ use v2, which accepts both the retired model-call contract and the current
 model-route contract so upgrades can drain pending counters safely.
 
 Each package contains an `install_id` generated as a random UUID. Despite the
-schema field name, its current scope is one `THEFOOL_HOME`, so it is more
+schema field name, its current scope is one `FOOL_HOME`, so it is more
 precisely a persistent pseudonymous profile identifier. It is not derived from
 hardware, account, host, path, or credential data. It remains stable across
 packages from that profile and can therefore link those local packages.
-Deleting `$THEFOOL_HOME/telemetry/shared_metrics` resets the identifier together
+Deleting `$FOOL_HOME/telemetry/shared_metrics` resets the identifier together
 with all aggregates and package files.
 
 This slice has no remote-delivery path. A future remote exporter must not reuse
@@ -160,8 +160,8 @@ the persistent local identifier by default. It requires a separate product and
 privacy decision covering consent, identity scope, rotation or keyed
 pseudonymization, reset behavior, retention, and deletion.
 
-The install identity is scoped to one `THEFOOL_HOME`. To reset it, stop Hermes
-processes and remove `$THEFOOL_HOME/telemetry/shared_metrics`. This deliberately
+The install identity is scoped to one `FOOL_HOME`. To reset it, stop Hermes
+processes and remove `$FOOL_HOME/telemetry/shared_metrics`. This deliberately
 removes the old identity, aggregate database, and queued local packages
 together; the next consented session creates a new identity. Disabling shared
 metrics stops new collection but does not silently delete previously collected

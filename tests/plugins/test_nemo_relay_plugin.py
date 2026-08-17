@@ -15,9 +15,9 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
-from thefool_cli import lifecycle, plugins as plugin_api
-from thefool_cli.observability import relay_runtime, relay_shared_metrics
-from thefool_cli.plugins import PluginManager
+from fool_cli import lifecycle, plugins as plugin_api
+from fool_cli.observability import relay_runtime, relay_shared_metrics
+from fool_cli.plugins import PluginManager
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -260,7 +260,7 @@ mode = "test"
 """,
         encoding="utf-8",
     )
-    monkeypatch.setenv("THEFOOL_NEMO_RELAY_PLUGINS_TOML", str(plugins_toml))
+    monkeypatch.setenv("FOOL_NEMO_RELAY_PLUGINS_TOML", str(plugins_toml))
     return plugins_toml
 
 
@@ -282,7 +282,7 @@ def test_manifest_fields():
 
 
 def test_nemo_relay_plugin_is_discoverable_as_bundled_plugin(tmp_path, monkeypatch):
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path / "hermes_test"))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path / "hermes_test"))
 
     manager = PluginManager()
     manager.discover_and_load()
@@ -301,13 +301,13 @@ def test_shared_metrics_and_rich_plugin_share_one_core_session(
 
     fake = _FakeNemoRelay()
     hermes_home = tmp_path / "hermes-home"
-    monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
-    monkeypatch.setenv("THEFOOL_NEMO_RELAY_ATIF_ENABLED", "1")
+    monkeypatch.setenv("FOOL_HOME", str(hermes_home))
+    monkeypatch.setenv("FOOL_NEMO_RELAY_ATIF_ENABLED", "1")
     monkeypatch.setenv(
-        "THEFOOL_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY", str(tmp_path / "atif")
+        "FOOL_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY", str(tmp_path / "atif")
     )
     monkeypatch.setattr(
-        "thefool_cli.config.read_raw_config_readonly",
+        "fool_cli.config.read_raw_config_readonly",
         lambda: {"telemetry": {"shared_metrics": {"enabled": True}}},
     )
     plugin = _fresh_plugin(monkeypatch, fake)
@@ -464,7 +464,7 @@ def test_relay_tool_request_rewrite_precedes_hermes_authorization_boundary(
     tmp_path,
     monkeypatch,
 ):
-    from thefool_cli.middleware import apply_tool_request_middleware
+    from fool_cli.middleware import apply_tool_request_middleware
 
     fake = _FakeNemoRelay()
     plugin = _fresh_plugin(monkeypatch, fake)

@@ -412,7 +412,7 @@ class TestRunConversationCodexPath:
         profile remains the filesystem boundary."""
         captured = self._capture_routing_agent(monkeypatch)
         with patch(
-            "thefool_cli.config.load_config_readonly",
+            "fool_cli.config.load_config_readonly",
             return_value={"approvals": {"mode": "off"}},
         ):
             agent = _make_codex_agent()
@@ -431,7 +431,7 @@ class TestRunConversationCodexPath:
         subsystem's compatibility behavior for codex app-server routing too."""
         captured = self._capture_routing_agent(monkeypatch)
         with patch(
-            "thefool_cli.config.load_config_readonly",
+            "fool_cli.config.load_config_readonly",
             return_value={"approvals": {"mode": False}},
         ):
             agent = _make_codex_agent()
@@ -450,7 +450,7 @@ class TestRunConversationCodexPath:
         this fix is a no-op for users who haven't opted out."""
         captured = self._capture_routing_agent(monkeypatch)
         with patch(
-            "thefool_cli.config.load_config",
+            "fool_cli.config.load_config",
             return_value={"approvals": {"mode": "manual"}},
         ):
             agent = _make_codex_agent()
@@ -465,7 +465,7 @@ class TestRunConversationCodexPath:
     def test_frozen_yolo_env_auto_approves_codex_server_requests(
         self, monkeypatch
     ):
-        """--yolo / THEFOOL_YOLO_MODE (frozen into _YOLO_MODE_FROZEN at import
+        """--yolo / FOOL_YOLO_MODE (frozen into _YOLO_MODE_FROZEN at import
         time — a prompt-injection-safe process-scoped bypass) should flow
         through to codex app-server routing so gateway/cron contexts do not
         fail closed when the user launched with yolo mode."""
@@ -474,7 +474,7 @@ class TestRunConversationCodexPath:
         captured = self._capture_routing_agent(monkeypatch)
         monkeypatch.setattr(_approval, "_YOLO_MODE_FROZEN", True)
         with patch(
-            "thefool_cli.config.load_config",
+            "fool_cli.config.load_config",
             return_value={"approvals": {"mode": "manual"}},
         ):
             agent = _make_codex_agent()
@@ -493,7 +493,7 @@ class TestRunConversationCodexPath:
         time, independent of the startup-time approvals config."""
         captured = self._capture_routing_agent(monkeypatch)
         with patch(
-            "thefool_cli.config.load_config",
+            "fool_cli.config.load_config",
             return_value={"approvals": {"mode": "manual"}},
         ):
             agent = _make_codex_agent()

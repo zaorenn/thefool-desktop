@@ -23,7 +23,7 @@ if TYPE_CHECKING:  # pragma: no cover — runtime import is lazy (see below)
 
 from utils import atomic_json_write, atomic_yaml_write, base_url_host_matches, base_url_hostname
 
-from thefool_constants import OPENROUTER_MODELS_URL
+from fool_constants import OPENROUTER_MODELS_URL
 from agent.message_metadata import PERSISTENCE_ONLY_MESSAGE_FIELDS
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ def _resolve_requests_verify(base_url: str = "") -> bool | str:
        provider's configured bundle (not the process ``SSL_CERT_FILE``) logs a
        spurious CERTIFICATE_VERIFY_FAILED on every probe even though the chat
        path succeeds (per-provider ``ssl_ca_cert`` was reaching only httpx).
-    3. Env vars ``THEFOOL_CA_BUNDLE`` / ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``
+    3. Env vars ``FOOL_CA_BUNDLE`` / ``REQUESTS_CA_BUNDLE`` / ``SSL_CERT_FILE``
        (a single var covers both ``requests`` and ``httpx`` in-process).
     4. ``True`` — defer to the requests default (certifi).
 
@@ -71,7 +71,7 @@ def _resolve_requests_verify(base_url: str = "") -> bool | str:
     """
     if base_url:
         try:
-            from thefool_cli.config import get_custom_provider_tls_settings
+            from fool_cli.config import get_custom_provider_tls_settings
             tls = get_custom_provider_tls_settings(base_url)
             if tls.get("ssl_verify") is False:
                 return False
@@ -80,7 +80,7 @@ def _resolve_requests_verify(base_url: str = "") -> bool | str:
                 return ca
         except Exception:
             pass  # fall through to env vars — never break a probe on config lookup
-    for env_var in ("THEFOOL_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
+    for env_var in ("FOOL_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
         val = os.getenv(env_var)
         if val and os.path.isfile(val):
             return val
@@ -264,7 +264,7 @@ _LOCAL_PROBE_DISK_TTL_SECONDS = 300.0
 
 
 def _local_probe_disk_cache_path() -> Path:
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
     return get_hermes_home() / "cache" / "local_endpoint_probes.json"
 
 
@@ -314,7 +314,7 @@ def _local_probe_disk_put(kind: str, key: str, value: Any) -> None:
 
 def _get_model_metadata_cache_path() -> Path:
     """Return path to the OpenRouter model metadata disk cache."""
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
     return get_hermes_home() / "cache" / "openrouter_model_metadata.json"
 
 
@@ -1446,7 +1446,7 @@ def _resolve_endpoint_context_length(
 
 def _get_context_cache_path() -> Path:
     """Return path to the persistent context length cache file."""
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
     return get_hermes_home() / "context_length_cache.yaml"
 
 
@@ -2698,12 +2698,12 @@ def get_model_context_length(
     # acting context, so they're ignored here.
     if (provider or "").strip().lower() == "moa":
         try:
-            from thefool_cli.config import (
+            from fool_cli.config import (
                 get_compatible_custom_providers,
                 load_config,
             )
-            from thefool_cli.moa_config import resolve_moa_preset
-            from thefool_cli.runtime_provider import resolve_runtime_provider
+            from fool_cli.moa_config import resolve_moa_preset
+            from fool_cli.runtime_provider import resolve_runtime_provider
 
             config = load_config()
             effective_custom_providers = custom_providers
@@ -2748,7 +2748,7 @@ def get_model_context_length(
     # See #15779.
     if custom_providers and base_url and model:
         try:
-            from thefool_cli.config import get_custom_provider_context_length
+            from fool_cli.config import get_custom_provider_context_length
             cp_ctx = get_custom_provider_context_length(
                 model=model,
                 base_url=base_url,
@@ -3032,7 +3032,7 @@ def get_model_context_length(
     # returns the provider-enforced limit which is what users can actually use.
     if effective_provider in {"copilot", "copilot-acp", "github-copilot"}:
         try:
-            from thefool_cli.models import get_copilot_model_context
+            from fool_cli.models import get_copilot_model_context
             ctx = get_copilot_model_context(model, api_key=api_key)
             if ctx:
                 return ctx

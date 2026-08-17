@@ -14,7 +14,7 @@ from cli import HermesCLI
 
 
 def _import_cli():
-    import thefool_cli.config as config_mod
+    import fool_cli.config as config_mod
 
     if not hasattr(config_mod, "save_env_value_secure"):
         config_mod.save_env_value_secure = lambda key, value: {
@@ -127,14 +127,14 @@ class TestHandleIndicatorCommand(unittest.TestCase):
 
 class TestIndicatorRegistry(unittest.TestCase):
     def test_indicator_in_registry(self):
-        from thefool_cli.commands import COMMAND_REGISTRY
+        from fool_cli.commands import COMMAND_REGISTRY
 
         names = [c.name for c in COMMAND_REGISTRY]
         self.assertIn("indicator", names)
 
     def test_indicator_subcommands_match_handler(self):
-        from thefool_cli.commands import COMMAND_REGISTRY
-        from thefool_constants import INDICATOR_STYLES
+        from fool_cli.commands import COMMAND_REGISTRY
+        from fool_constants import INDICATOR_STYLES
 
         indicator = next(c for c in COMMAND_REGISTRY if c.name == "indicator")
         self.assertEqual(indicator.category, "Configuration")

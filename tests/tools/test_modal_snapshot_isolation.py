@@ -29,14 +29,14 @@ def _reset_modules(prefixes: tuple[str, ...]):
 
 @pytest.fixture(autouse=True)
 def _restore_tool_modules():
-    original_hermes_home = os.environ.get("THEFOOL_HOME")
+    original_hermes_home = os.environ.get("FOOL_HOME")
     original_modules = {
         name: module
         for name, module in sys.modules.items()
         if name == "tools"
         or name.startswith("tools.")
-        or name == "thefool_cli"
-        or name.startswith("thefool_cli.")
+        or name == "fool_cli"
+        or name.startswith("fool_cli.")
         or name == "modal"
         or name.startswith("modal.")
     }
@@ -44,10 +44,10 @@ def _restore_tool_modules():
         yield
     finally:
         if original_hermes_home is None:
-            os.environ.pop("THEFOOL_HOME", None)
+            os.environ.pop("FOOL_HOME", None)
         else:
-            os.environ["THEFOOL_HOME"] = original_hermes_home
-        _reset_modules(("tools", "thefool_cli", "modal"))
+            os.environ["FOOL_HOME"] = original_hermes_home
+        _reset_modules(("tools", "fool_cli", "modal"))
         sys.modules.update(original_modules)
 
 
@@ -57,14 +57,14 @@ def _install_modal_test_modules(
     fail_on_snapshot_ids: set[str] | None = None,
     snapshot_id: str = "im-fresh",
 ):
-    _reset_modules(("tools", "thefool_cli", "modal"))
+    _reset_modules(("tools", "fool_cli", "modal"))
 
-    thefool_cli = types.ModuleType("thefool_cli")
-    thefool_cli.__path__ = []  # type: ignore[attr-defined]
-    sys.modules["thefool_cli"] = thefool_cli
+    fool_cli = types.ModuleType("fool_cli")
+    fool_cli.__path__ = []  # type: ignore[attr-defined]
+    sys.modules["fool_cli"] = fool_cli
     hermes_home = tmp_path / "hermes-home"
-    os.environ["THEFOOL_HOME"] = str(hermes_home)
-    sys.modules["thefool_cli.config"] = types.SimpleNamespace(
+    os.environ["FOOL_HOME"] = str(hermes_home)
+    sys.modules["fool_cli.config"] = types.SimpleNamespace(
         get_hermes_home=lambda: hermes_home,
     )
 

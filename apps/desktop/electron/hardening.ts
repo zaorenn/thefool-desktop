@@ -193,7 +193,7 @@ function encryptDesktopSecret(value, safeStorageApi, options: { allowPlainText?:
       'Secure token storage is unavailable (no OS keyring service was found), so Hermes Desktop cannot save remote gateway tokens. ' +
         'Either enable an OS keyring (e.g. GNOME Keyring or KWallet providing org.freedesktop.secrets) and try again, ' +
         'confirm the plain-text storage option when prompted in Settings → Gateway, ' +
-        'or set THEFOOL_DESKTOP_REMOTE_URL and THEFOOL_DESKTOP_REMOTE_TOKEN in your environment.'
+        'or set FOOL_DESKTOP_REMOTE_URL and FOOL_DESKTOP_REMOTE_TOKEN in your environment.'
     )
   }
 
@@ -206,7 +206,7 @@ function encryptDesktopSecret(value, safeStorageApi, options: { allowPlainText?:
     const detail = error instanceof Error && error.message ? ` (${error.message})` : ''
     throw new Error(
       `Failed to encrypt the remote gateway token for secure storage${detail}. ` +
-        'Set THEFOOL_DESKTOP_REMOTE_URL and THEFOOL_DESKTOP_REMOTE_TOKEN in your environment as a fallback.'
+        'Set FOOL_DESKTOP_REMOTE_URL and FOOL_DESKTOP_REMOTE_TOKEN in your environment as a fallback.'
     )
   }
 }
@@ -224,7 +224,7 @@ function encryptDesktopSecret(value, safeStorageApi, options: { allowPlainText?:
 // so the caller (and tests) can distinguish "enabled" from "left untouched".
 // Never throws: a failure here is non-fatal — encryption simply stays
 // unavailable and the user can fall back to the plain-text opt-in or the
-// THEFOOL_DESKTOP_REMOTE_* env vars.
+// FOOL_DESKTOP_REMOTE_* env vars.
 function enableBasicPasswordStoreEncryption({ platform, passwordStoreSwitch, safeStorageApi }: any = {}) {
   if (platform !== 'linux' || passwordStoreSwitch !== 'basic') {
     return false

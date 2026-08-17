@@ -38,7 +38,7 @@ def _run_helper(
     hermes_home = target if hermes_home is None else hermes_home
     script = (
         "set -eu\n"
-        f'THEFOOL_HOME="{hermes_home}"\n'
+        f'FOOL_HOME="{hermes_home}"\n'
         f"{_chown_hermes_tree_function(text)}\n"
         f'chown() {{ printf "%s\\n" "$*" >> "{log_path}"; }}\n'
         f'chown_hermes_tree "{target}"\n'
@@ -97,32 +97,32 @@ def test_chown_helper_refuses_target_under_symlinked_home(
     )
 
     assert proc.returncode == 0, proc.stderr
-    assert not log_path.exists(), "must not chown through a symlinked THEFOOL_HOME"
+    assert not log_path.exists(), "must not chown through a symlinked FOOL_HOME"
     assert "refusing recursive chown through symlinked path" in proc.stdout
 
 
 def test_stage2_uses_symlink_safe_helper_for_hermes_home_trees(stage2_text: str) -> None:
-    assert 'chown_hermes_tree "$THEFOOL_HOME/$sub"' in stage2_text
-    assert 'chown_hermes_tree "$THEFOOL_HOME/profiles"' in stage2_text
-    assert 'chown_hermes_tree "$THEFOOL_HOME/cron"' in stage2_text
-    assert 'chown -R hermes:hermes "$THEFOOL_HOME/$sub"' not in stage2_text
-    assert 'chown -R hermes:hermes "$THEFOOL_HOME/profiles"' not in stage2_text
-    assert 'chown -R hermes:hermes "$THEFOOL_HOME/cron"' not in stage2_text
+    assert 'chown_hermes_tree "$FOOL_HOME/$sub"' in stage2_text
+    assert 'chown_hermes_tree "$FOOL_HOME/profiles"' in stage2_text
+    assert 'chown_hermes_tree "$FOOL_HOME/cron"' in stage2_text
+    assert 'chown -R hermes:hermes "$FOOL_HOME/$sub"' not in stage2_text
+    assert 'chown -R hermes:hermes "$FOOL_HOME/profiles"' not in stage2_text
+    assert 'chown -R hermes:hermes "$FOOL_HOME/cron"' not in stage2_text
 
 
 def test_stage2_skips_top_level_chown_for_symlinked_hermes_home(
     stage2_text: str,
 ) -> None:
-    assert 'refuse_symlinked_path "chown" "$THEFOOL_HOME"' in stage2_text
+    assert 'refuse_symlinked_path "chown" "$FOOL_HOME"' in stage2_text
 
 
 def test_stage2_skips_recursive_repairs_when_tree_is_already_owned(
     stage2_text: str,
 ) -> None:
     assert "tree_has_non_hermes_owner() {" in stage2_text
-    assert 'if [ -e "$THEFOOL_HOME/$sub" ] && tree_has_non_hermes_owner "$THEFOOL_HOME/$sub"; then' in stage2_text
-    assert 'if [ -d "$THEFOOL_HOME/profiles" ] && tree_has_non_hermes_owner "$THEFOOL_HOME/profiles"; then' in stage2_text
+    assert 'if [ -e "$FOOL_HOME/$sub" ] && tree_has_non_hermes_owner "$FOOL_HOME/$sub"; then' in stage2_text
+    assert 'if [ -d "$FOOL_HOME/profiles" ] && tree_has_non_hermes_owner "$FOOL_HOME/profiles"; then' in stage2_text
     # Sibling every-boot chown blocks carry the same warm-boot gate.
-    assert 'if [ -d "$THEFOOL_HOME/cron" ] && tree_has_non_hermes_owner "$THEFOOL_HOME/cron"; then' in stage2_text
-    assert 'if [ -d "$THEFOOL_HOME/platforms/pairing" ] && tree_has_non_hermes_owner "$THEFOOL_HOME/platforms/pairing"; then' in stage2_text
-    assert 'if [ -d "$THEFOOL_HOME/pairing" ] && tree_has_non_hermes_owner "$THEFOOL_HOME/pairing"; then' in stage2_text
+    assert 'if [ -d "$FOOL_HOME/cron" ] && tree_has_non_hermes_owner "$FOOL_HOME/cron"; then' in stage2_text
+    assert 'if [ -d "$FOOL_HOME/platforms/pairing" ] && tree_has_non_hermes_owner "$FOOL_HOME/platforms/pairing"; then' in stage2_text
+    assert 'if [ -d "$FOOL_HOME/pairing" ] && tree_has_non_hermes_owner "$FOOL_HOME/pairing"; then' in stage2_text

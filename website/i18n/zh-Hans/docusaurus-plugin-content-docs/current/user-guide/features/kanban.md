@@ -62,7 +62,7 @@ Hermes Kanban 是一个持久化任务看板，在所有 Hermes 配置文件之�
   - `scratch`（默认）—— 在 `~/.hermes/kanban/workspaces/<id>/` 下（非默认看板为 `~/.hermes/kanban/boards/<slug>/workspaces/<id>/`）创建的临时目录。**任务完成时删除** —— scratch 按设计是临时性的。通过 `kanban_complete(artifacts=[...])` 明确声明的文件会在清理前复制到持久的任务附件存储；旧版完成摘要中已存在的交付文件路径也会得到同样处理。其他 scratch 文件仍会被删除。如果声明的 scratch 交付文件不存在，任务会保持进行中，worker 可修正路径后重试。需要保留整个工作区时，请使用 `worktree:` 或 `dir:<path>`。在某次安装中首次创建 scratch 工作区时，调度器会记录警告并在任务上发出 `tip_scratch_workspace` 事件（可通过 `hermes kanban show <id>` 查看）。
   - `dir:<path>` —— 现有的共享目录（Obsidian vault、邮件运维目录、每账号文件夹）。**必须是绝对路径。** 像 `dir:../tenants/foo/` 这样的相对路径在调度时会被拒绝，因为它们会相对于调度器碰巧所在的 CWD 解析，这是模糊的，也是混淆代理（confused-deputy）逃逸向量。路径本身是受信任的 —— 这是你的机器、你的文件系统，worker 以你的 uid 运行。这是受信任本地用户的威胁模型；kanban 设计为单主机。**完成时保留。**
   - `worktree` —— 用于编码任务的 git worktree，位于 `.worktrees/<id>/` 下。使用 `worktree:<path>` 固定确切的目标路径。Worker 端的 `git worktree add` 创建它，提供 `--branch` 时使用该分支。**完成时保留。**
-- **Dispatcher（调度器）** —— 一个长期运行的循环，每 N 秒（默认 60 秒）执行一次：回收过期的认领、回收崩溃的 worker（PID 消失但 TTL 尚未过期）、推进就绪任务、原子性认领、启动已分配的配置文件。默认**在 gateway 内部运行**（`kanban.dispatch_in_gateway: true`）。每次 tick 一个调度器扫描所有看板；worker 启动时固定了 `THEFOOL_KANBAN_BOARD`，因此无法看到其他看板。在同一任务上连续启动失败 `kanban.failure_limit` 次（默认：2）后，调度器会以最后一个错误为原因自动阻塞该任务 —— 防止因配置文件不存在、工作区无法挂载等原因导致的反复抖动。
+- **Dispatcher（调度器）** —— 一个长期运行的循环，每 N 秒（默认 60 秒）执行一次：回收过期的认领、回收崩溃的 worker（PID 消失但 TTL 尚未过期）、推进就绪任务、原子性认领、启动已分配的配置文件。默认**在 gateway 内部运行**（`kanban.dispatch_in_gateway: true`）。每次 tick 一个调度器扫描所有看板；worker 启动时固定了 `FOOL_KANBAN_BOARD`，因此无法看到其他看板。在同一任务上连续启动失败 `kanban.failure_limit` 次（默认：2）后，调度器会以最后一个错误为原因自动阻塞该任务 —— 防止因配置文件不存在、工作区无法挂载等原因导致的反复抖动。
 - **Tenant（租户）** —— 看板*内*的可选字符串命名空间。一个专家团队可以通过工作区路径和内存键前缀为多个业务提供数据隔离服务（`--tenant business-a`）。租户是软过滤器；看板是硬隔离边界。
 
 ## 看板（多项目） {#boards-multi-project}
@@ -73,7 +73,7 @@ Hermes Kanban 是一个持久化任务看板，在所有 Hermes 配置文件之�
 
 - 每个看板有独立的 SQLite DB（`~/.hermes/kanban/boards/<slug>/kanban.db`）。
 - 独立的 `workspaces/` 和 `logs/` 目录。
-- 为任务启动的 Worker 只能看到**其所在看板**的任务 —— 调度器在子进程环境中设置 `THEFOOL_KANBAN_BOARD`，worker 可访问的每个 `kanban_*` 工具都会读取它。
+- 为任务启动的 Worker 只能看到**其所在看板**的任务 —— 调度器在子进程环境中设置 `FOOL_KANBAN_BOARD`，worker 可访问的每个 `kanban_*` 工具都会读取它。
 - 不允许跨看板链接任务（保持 schema 简单；如果确实需要跨项目引用，请使用自由文本提及并通过 id 手动查找）。
 
 ### 通过 CLI 管理看板
@@ -111,7 +111,7 @@ hermes kanban boards rm atm10-server --delete
 看板解析顺序（优先级从高到低）：
 
 1. CLI 调用中的显式 `--board <slug>`。
-2. `THEFOOL_KANBAN_BOARD` 环境变量（调度器在启动 worker 时设置，因此 worker 无法看到其他看板）。
+2. `FOOL_KANBAN_BOARD` 环境变量（调度器在启动 worker 时设置，因此 worker 无法看到其他看板）。
 3. `~/.hermes/kanban/current` —— 由 `hermes kanban boards switch` 持久化的 slug。
 4. `default`。
 
@@ -165,7 +165,7 @@ kanban:
                                    # 纯人工审查看板可设为 false。
 ```
 
-通过 `THEFOOL_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `hermes gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 —— `hermes kanban create` 在创建时会对此发出警告。
+通过 `FOOL_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `hermes gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 —— `hermes kanban create` 在创建时会对此发出警告。
 
 将 `hermes kanban daemon` 作为单独进程运行已**弃用**；请使用 gateway。如果你确实无法运行 gateway（无头主机策略禁止长期运行的服务等），`--force` 逃生舱口在一个发布周期内保持旧的独立守护进程可用，但同时运行 gateway 内嵌调度器和针对同一 `kanban.db` 的独立守护进程会导致认领竞争，不受支持。
 
@@ -193,7 +193,7 @@ hermes kanban block    t_abc "need input" --ids t_def t_hij
 
 ## Worker 如何与看板交互 {#how-workers-interact-with-the-board}
 
-**Worker 不会 shell 执行 `hermes kanban`。** 当调度器启动 worker 时，它在子进程环境中设置 `THEFOOL_KANBAN_TASK=t_abcd`，该环境变量在模型的 schema 中启用专用的 **kanban 工具集**。同一工具集也可供在工具集配置中启用 `kanban` 的编排器配置文件使用。这些工具通过 Python `kanban_db` 层直接读取和修改看板，与 CLI 的做法相同。运行中的 worker 像调用任何其他工具一样调用这些工具；它从不看到或需要 `hermes kanban` CLI。
+**Worker 不会 shell 执行 `hermes kanban`。** 当调度器启动 worker 时，它在子进程环境中设置 `FOOL_KANBAN_TASK=t_abcd`，该环境变量在模型的 schema 中启用专用的 **kanban 工具集**。同一工具集也可供在工具集配置中启用 `kanban` 的编排器配置文件使用。这些工具通过 Python `kanban_db` 层直接读取和修改看板，与 CLI 的做法相同。运行中的 worker 像调用任何其他工具一样调用这些工具；它从不看到或需要 `hermes kanban` CLI。
 
 | 工具 | 用途 | 必需参数 |
 |---|---|---|
@@ -213,7 +213,7 @@ hermes kanban block    t_abc "need input" --ids t_def t_hij
 
 ```
 # 模型的工具调用，按顺序：
-kanban_show()                                     # 无参数 —— 使用 THEFOOL_KANBAN_TASK
+kanban_show()                                     # 无参数 —— 使用 FOOL_KANBAN_TASK
 # （模型读取返回的 worker_context，通过终端/文件工具完成工作）
 kanban_heartbeat(note="halfway through — 4 of 8 files transformed")
 # （更多工作）
@@ -254,7 +254,7 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 2. **无 shell 引用脆弱性。** 通过 shlex + argparse 传递 `--metadata '{"files": [...]}'` 是潜在的隐患。结构化工具参数完全绕过了这个问题。
 3. **更好的错误处理。** 工具结果是模型可以推理的结构化 JSON，而不是需要解析的 stderr 字符串。
 
-**对普通会话零 schema 占用。** 普通的 `hermes chat` 会话在其 schema 中没有任何 `kanban_*` 工具，除非活动配置文件为编排器工作显式启用了 `kanban` 工具集。调度器启动的任务 worker 因为设置了 `THEFOOL_KANBAN_TASK` 而获得任务范围的工具；编排器配置文件通过配置获得更广泛的路由界面。对于从不使用 kanban 的用户，没有工具膨胀。
+**对普通会话零 schema 占用。** 普通的 `hermes chat` 会话在其 schema 中没有任何 `kanban_*` 工具，除非活动配置文件为编排器工作显式启用了 `kanban` 工具集。调度器启动的任务 worker 因为设置了 `FOOL_KANBAN_TASK` 而获得任务范围的工具；编排器配置文件通过配置获得更广泛的路由界面。对于从不使用 kanban 的用户，没有工具膨胀。
 
 自动注入的 kanban 指引教导模型何时调用哪个工具以及调用顺序。
 
@@ -267,7 +267,7 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 ```json
 {
   "changed_files": ["path/to/file.py"],
-  "verification": ["pytest tests/thefool_cli/test_kanban_db.py -q"],
+  "verification": ["pytest tests/fool_cli/test_kanban_db.py -q"],
   "dependencies": ["parent task id or external issue, if any"],
   "blocked_reason": null,
   "retry_notes": "what failed before, if this was a retry",
@@ -289,7 +289,7 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 任何处理 kanban 任务的配置文件都会**自动**获得 worker 生命周期 —— 它在启动时被注入到 worker 的系统 prompt 中（`KANBAN_GUIDANCE` 块），因此**无需安装或配置任何东西**。它通过**工具调用**（而非 CLI 命令）教导 worker 完整的生命周期：
 
 1. 启动时，调用 `kanban_show()` 读取标题 + 正文 + 父级交接 + 先前尝试 + 完整评论线程。
-2. 通过终端工具执行 `cd $THEFOOL_KANBAN_WORKSPACE`，在那里完成工作。
+2. 通过终端工具执行 `cd $FOOL_KANBAN_WORKSPACE`，在那里完成工作。
 3. 在长时间操作期间每隔几分钟调用一次 `kanban_heartbeat(note="...")`。**如果你的工作可能运行超过 1 小时，请至少每小时调用一次 `kanban_heartbeat`** —— 调度器会回收运行时间超过 `kanban.dispatch_stale_timeout_seconds`（默认 4 小时）且最近一小时内没有心跳的任务，认为 worker 在没有清理的情况下崩溃了。回收是无害的（任务返回 `ready` 重新调度，不增加失败计数器），但你会失去当前运行的进度。
 4. 以 `kanban_complete(summary="...", metadata={...})` 完成，或在卡住时以 `kanban_block(reason="...")` 完成。
 
@@ -334,7 +334,7 @@ hermes kanban create "audit auth flow" \
 
 ### 成本策略：前沿模型编排，低价模型执行
 
-Kanban 的按 profile 配置让规划者/执行者的成本分层水到渠成。将项目分解为范围清晰的卡片需要前沿模型级别的判断力；而执行一张已经带有明确目标、上下文和交接证据的卡片通常不需要——并且绝大多数 token 消耗发生在 worker 身上，因此成本真正落在 worker 模型上。让编排器/调度器 profile 运行前沿模型，让 worker profile 指向低价模型。每个 profile 在 `~/.hermes/profiles/<name>/` 下有自己的 `config.yaml`，调度器在生成 `hermes -p <assignee>` 时注入 profile 范围的 `THEFOOL_HOME`，因此每个 worker 读取自己 profile 的模型设置：
+Kanban 的按 profile 配置让规划者/执行者的成本分层水到渠成。将项目分解为范围清晰的卡片需要前沿模型级别的判断力；而执行一张已经带有明确目标、上下文和交接证据的卡片通常不需要——并且绝大多数 token 消耗发生在 worker 身上，因此成本真正落在 worker 模型上。让编排器/调度器 profile 运行前沿模型，让 worker profile 指向低价模型。每个 profile 在 `~/.hermes/profiles/<name>/` 下有自己的 `config.yaml`，调度器在生成 `hermes -p <assignee>` 时注入 profile 范围的 `FOOL_HOME`，因此每个 worker 读取自己 profile 的模型设置：
 
 ```yaml
 # ~/.hermes/config.yaml（编排器 / 调度器 profile）
@@ -599,7 +599,7 @@ hermes kanban gc [--event-retention-days N]            # 工作区 + 旧事件 +
 
 ## `/kanban` 斜杠命令 {#kanban-slash-command}
 
-每个 `hermes kanban <action>` 动词也可以作为 `/kanban <action>` 访问 —— 从交互式 `hermes chat` 会话内部**以及**从任何 gateway 平台（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost、电子邮件、SMS）。两个界面都调用完全相同的 `thefool_cli.kanban.run_slash()` 入口点，该入口点复用 `hermes kanban` argparse 树，因此参数界面、标志和输出格式在 CLI、`/kanban` 和 `hermes kanban` 之间完全相同。你不必离开聊天来驱动看板。
+每个 `hermes kanban <action>` 动词也可以作为 `/kanban <action>` 访问 —— 从交互式 `hermes chat` 会话内部**以及**从任何 gateway 平台（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost、电子邮件、SMS）。两个界面都调用完全相同的 `fool_cli.kanban.run_slash()` 入口点，该入口点复用 `hermes kanban` argparse 树，因此参数界面、标志和输出格式在 CLI、`/kanban` 和 `hermes kanban` 之间完全相同。你不必离开聊天来驱动看板。
 
 ```
 /kanban list
@@ -678,7 +678,7 @@ Gateway 平台有实际的消息长度限制。如果 `/kanban list`、`/kanban 
 ## Parent task results
 ### t_77c26979 (completed just now)
 Added exponential backoff with jitter to the retry helper.
-_metadata_: `{"changed_files": ["thefool_cli/retry.py", "tests/test_retry.py"], "decisions": ["capped backoff at 60s", "jitter = full"]}`
+_metadata_: `{"changed_files": ["fool_cli/retry.py", "tests/test_retry.py"], "decisions": ["capped backoff at 60s", "jitter = full"]}`
 ```
 
 这就是为什么对已完成卡片的后续工作应当**创建新的子卡片，而不是重开已完成的卡片**。已完成的卡片是不可变的历史——它的上下文通过父任务链接向前流动。同卡片返工（失败卡片上的重试循环）是另一种机制：*同一张*卡片的先前尝试会作为"prior attempts"出现在该卡片自己的上下文中。
@@ -710,7 +710,7 @@ EOF
 在大规模并行战役中，某些文件会成为碰撞磁石：许多 worker 各自往同一个文件里添加一点内容，没有人负责保持它精简，它于是成为持续合并冲突的发生地。缓解方式是一种注释约定，而非新原语。当 worker 发现自己的 diff 在某个文件上不断与兄弟分支冲突，或它触碰的某个文件反复出现在其他卡片最近的评论中时，不应默默继续叠加改动，而应在自己的卡片上留下带有可识别前缀的评论：
 
 ```
-hotspot: thefool_cli/kanban_db.py — 本轮对 dispatch 循环的第三次冲突性编辑
+hotspot: fool_cli/kanban_db.py — 本轮对 dispatch 循环的第三次冲突性编辑
 ```
 
 并在完成时的 `metadata` 中重复该标记。编排者（或查看看板的人类）如果看到**两条或更多 `hotspot:` 评论指向同一路径**，应在继续排入任何触碰该文件的工作**之前**，为该文件创建一张专门的重构/分解卡片 —— 拆分磁石文件比调解它未来引发的每一次冲突更便宜。对于*已经*发生的冲突，请使用上文的调解卡片模式配合 `merge-reconciler` 技能；hotspot 标记是上游修复，能避免调解者变成一条常设车道。
@@ -726,7 +726,7 @@ hermes kanban create "monthly report" \
     --workspace dir:~/tenants/business-a/data/
 ```
 
-Worker 接收 `$THEFOOL_TENANT` 并按前缀命名空间化其内存写入。看板、调度器和配置文件定义都是共享的；只有数据是有范围的。
+Worker 接收 `$FOOL_TENANT` 并按前缀命名空间化其内存写入。看板、调度器和配置文件定义都是共享的；只有数据是有范围的。
 
 ## Gateway 通知
 

@@ -57,8 +57,8 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from thefool_constants import get_hermes_home
-from thefool_cli._subprocess_compat import windows_hide_flags
+from fool_constants import get_hermes_home
+from fool_cli._subprocess_compat import windows_hide_flags
 from typing import Dict, List, Optional, Set, Tuple
 
 from utils import env_int
@@ -146,7 +146,7 @@ DEFAULT_EXCLUDES = [
 ]
 
 # Git subprocess timeout (seconds).
-_GIT_TIMEOUT: int = max(10, min(60, env_int("THEFOOL_CHECKPOINT_TIMEOUT", 30)))
+_GIT_TIMEOUT: int = max(10, min(60, env_int("FOOL_CHECKPOINT_TIMEOUT", 30)))
 
 # Max files to snapshot — skip huge directories to avoid slowdowns.
 _MAX_FILES = 50_000
@@ -674,7 +674,7 @@ def _pre_v2_shadow_repos(base: Path) -> List[Dict]:
             continue
         workdir: Optional[str] = None
         marker_unreadable = False
-        wd_marker = child / "THEFOOL_WORKDIR"
+        wd_marker = child / "FOOL_WORKDIR"
         if wd_marker.exists():
             try:
                 workdir = wd_marker.read_text(encoding="utf-8").strip()
@@ -721,7 +721,7 @@ def _dir_size_bytes(path: Path) -> int:
 
 
 # Backwards-compatibility shim — some tests import ``_init_shadow_repo`` and
-# look for ``HEAD``/``info/exclude``/``THEFOOL_WORKDIR``.  In v2 we also write
+# look for ``HEAD``/``info/exclude``/``FOOL_WORKDIR``.  In v2 we also write
 # those markers, but inside the shared store + under ``projects/<hash>.json``.
 # The shim initialises the store and registers the project so the old
 # surface keeps roughly the same shape.
@@ -737,10 +737,10 @@ def _init_shadow_repo(shadow_repo: Path, working_dir: str) -> Optional[str]:
     if err:
         return err
     _register_project(shadow_repo, working_dir)
-    # Compat marker for tests that look at THEFOOL_WORKDIR
+    # Compat marker for tests that look at FOOL_WORKDIR
     # (write in addition to the JSON metadata).
     try:
-        (shadow_repo / "THEFOOL_WORKDIR").write_text(
+        (shadow_repo / "FOOL_WORKDIR").write_text(
             str(_normalize_path(working_dir)) + "\n", encoding="utf-8"
         )
     except OSError:

@@ -2,7 +2,7 @@
 
 Tries to install missing servers using whatever package manager is
 appropriate.  All installs go to a Hermes-owned bin staging dir,
-``<THEFOOL_HOME>/lsp/bin/``, so we don't pollute the user's global
+``<FOOL_HOME>/lsp/bin/``, so we don't pollute the user's global
 toolchain.
 
 Strategies:
@@ -34,15 +34,15 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from thefool_cli._subprocess_compat import windows_hide_flags
-from thefool_constants import find_node_executable
+from fool_cli._subprocess_compat import windows_hide_flags
+from fool_constants import find_node_executable
 
 logger = logging.getLogger("agent.lsp.install")
 
 # Package-name → install-strategy hint registry.  Each entry is a
 # tuple of strategy name + package name + executable name.  When the
 # install completes, we look for the executable in
-# ``<THEFOOL_HOME>/lsp/bin/`` first, then on PATH.
+# ``<FOOL_HOME>/lsp/bin/`` first, then on PATH.
 #
 # Optional fields:
 #   - ``extra_pkgs``: list of sibling packages to install alongside
@@ -124,7 +124,7 @@ def _is_windows() -> bool:
 
 def hermes_lsp_bin_dir() -> Path:
     """Return the Hermes-owned bin staging dir for LSP servers."""
-    from thefool_constants import get_hermes_home
+    from fool_constants import get_hermes_home
 
     p = get_hermes_home() / "lsp" / "bin"
     p.mkdir(parents=True, exist_ok=True)
@@ -250,14 +250,14 @@ def _install_npm(
     peer deps that npm doesn't auto-pull (typescript-language-server
     needs ``typescript`` next to it; intelephense ships standalone).
     """
-    # Managed npm first: $THEFOOL_HOME/node is not on an arbitrary process's
+    # Managed npm first: $FOOL_HOME/node is not on an arbitrary process's
     # PATH, so a bare which() misses the Node that Hermes installed and
     # reports "npm not on PATH" on a machine that has a perfectly good one.
     npm = find_node_executable("npm")
     if npm is None:
         logger.info("[install] cannot install %s: no usable npm found", pkg)
         return None
-    staging = hermes_lsp_bin_dir().parent  # <THEFOOL_HOME>/lsp/
+    staging = hermes_lsp_bin_dir().parent  # <FOOL_HOME>/lsp/
     install_targets = [pkg] + list(extra_pkgs or [])
     try:
         logger.info(
@@ -354,7 +354,7 @@ def _install_pip(pkg: str, bin_name: str) -> Optional[str]:
     pip_target.mkdir(parents=True, exist_ok=True)
     try:
         logger.info("[install] pip install --target %s %s", pip_target, pkg)
-        from thefool_cli.tools_config import _pip_install
+        from fool_cli.tools_config import _pip_install
 
         proc = _pip_install(
             ["--target", str(pip_target), "--quiet", pkg],

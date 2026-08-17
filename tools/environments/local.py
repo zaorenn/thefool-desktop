@@ -14,9 +14,9 @@ import time
 from collections.abc import Mapping
 from pathlib import Path
 
-from thefool_constants import get_process_hermes_home
+from fool_constants import get_process_hermes_home
 from tools.environments.base import BaseEnvironment, _pipe_stdin
-from thefool_cli._subprocess_compat import windows_hide_flags
+from fool_cli._subprocess_compat import windows_hide_flags
 
 _IS_WINDOWS = platform.system() == "Windows"
 
@@ -228,7 +228,7 @@ def _build_provider_env_blocklist() -> frozenset:
     blocked: set[str] = set()
 
     try:
-        from thefool_cli.auth import PROVIDER_REGISTRY
+        from fool_cli.auth import PROVIDER_REGISTRY
         for pconfig in PROVIDER_REGISTRY.values():
             blocked.update(pconfig.api_key_env_vars)
             if pconfig.auth_type == "aws_sdk":
@@ -239,7 +239,7 @@ def _build_provider_env_blocklist() -> frozenset:
         pass
 
     try:
-        from thefool_cli.config import OPTIONAL_ENV_VARS
+        from fool_cli.config import OPTIONAL_ENV_VARS
         for name, metadata in OPTIONAL_ENV_VARS.items():
             category = metadata.get("category")
             if category in {"tool", "messaging"}:
@@ -305,7 +305,7 @@ def _build_provider_env_blocklist() -> frozenset:
         "EMAIL_SMTP_HOST",
         "EMAIL_HOME_ADDRESS",
         "EMAIL_HOME_ADDRESS_NAME",
-        "THEFOOL_DASHBOARD_SESSION_TOKEN",
+        "FOOL_DASHBOARD_SESSION_TOKEN",
         "GATEWAY_ALLOWED_USERS",
         "GH_TOKEN",
         "GITHUB_APP_ID",
@@ -411,11 +411,11 @@ def _is_hermes_internal_secret(key: str) -> bool:
 def _inject_context_hermes_home(env: dict) -> None:
     """Bridge the context-local Hermes home override into subprocess env."""
     try:
-        from thefool_constants import get_hermes_home_override
+        from fool_constants import get_hermes_home_override
 
         value = get_hermes_home_override()
         if value:
-            env["THEFOOL_HOME"] = value
+            env["FOOL_HOME"] = value
     except Exception:
         pass
 
@@ -424,7 +424,7 @@ def _inject_session_context_env(env: dict) -> None:
     """Bridge gateway session ContextVars into a subprocess environment dict.
 
     ContextVars don't propagate to child processes, so the live session vars
-    (THEFOOL_SESSION_*) are bridged onto the child env here.
+    (FOOL_SESSION_*) are bridged onto the child env here.
 
     🔴 Cross-session leak guard. The session vars also have a process-global
     os.environ mirror (written last-writer-wins as a CLI/cron fallback, never
@@ -510,7 +510,7 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
 
     _inject_context_hermes_home(sanitized)
 
-    from thefool_constants import apply_subprocess_home_env
+    from fool_constants import apply_subprocess_home_env
     apply_subprocess_home_env(sanitized)
 
     # Same cross-session leak guard as _make_run_env, for the background/PTY
@@ -580,7 +580,7 @@ _ALWAYS_STRIP_KEYS: frozenset[str] = frozenset({
     "GATEWAY_RELAY_DELIVERY_KEY",
     "HASS_TOKEN",
     "EMAIL_PASSWORD",
-    "THEFOOL_DASHBOARD_SESSION_TOKEN",
+    "FOOL_DASHBOARD_SESSION_TOKEN",
     # Remote-compute / infrastructure secrets
     "MODAL_TOKEN_ID",
     "MODAL_TOKEN_SECRET",
@@ -645,7 +645,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
     env.setdefault("PYTHONUTF8", "1")
 
     _inject_context_hermes_home(env)
-    from thefool_constants import apply_subprocess_home_env
+    from fool_constants import apply_subprocess_home_env
     apply_subprocess_home_env(env)
 
     _strip_hermes_owned_pythonpath_and_runtime_markers(env)
@@ -653,7 +653,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
     _apply_windows_msys_bash_env_defaults(env)
 
     # Cross-session leak guard, same as the terminal spawn paths: this helper
-    # copies os.environ, whose THEFOOL_SESSION_* mirror is a last-writer-wins
+    # copies os.environ, whose FOOL_SESSION_* mirror is a last-writer-wins
     # global under a concurrent multi-session host. A caller that re-binds the
     # session identity explicitly (slash_worker/ACP via --session-key argv) is
     # unaffected — bound ContextVars win here — but a caller that spawns without
@@ -665,7 +665,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
     # Non-terminal subprocess helpers (browser, lazy-deps, TUI/ACP hosts, etc.)
     # also need the delegate_task child lineage marker.  Otherwise a child
     # context that later imports Kanban DB code in the spawned process would
-    # still see the parent's THEFOOL_HOME but lose the DB mutation guard.
+    # still see the parent's FOOL_HOME but lose the DB mutation guard.
     env = _scrub_delegated_child_kanban_env(env)
 
     return env
@@ -683,7 +683,7 @@ def build_subprocess_env(
     Every spawn site in the codebase should build its env through this
     function (or :func:`hermes_subprocess_env` for the model-driving-CLI
     surface) instead of copying ``os.environ`` directly, so profile-home
-    propagation (``THEFOOL_HOME`` / subprocess ``HOME`` contract) and the
+    propagation (``FOOL_HOME`` / subprocess ``HOME`` contract) and the
     Hermes secret-scrub policy have a single owner.  History: ~11 separate
     commits each fixed one more spawn site that missed profile-HOME or
     secret-scrub propagation; this factory is the fix for the class.
@@ -697,7 +697,7 @@ def build_subprocess_env(
       :func:`_sanitize_subprocess_env`, the long-standing owner of the scrub
       list (provider blocklist + ``_is_hermes_internal_secret`` dynamic
       patterns + kanban/venv-marker/session-context guards) **and** of
-      ``THEFOOL_HOME`` / subprocess-HOME propagation.  On this path profile
+      ``FOOL_HOME`` / subprocess-HOME propagation.  On this path profile
       home propagation is inherent — ``inherit_profile_home`` is ignored
       (always applied), exactly matching today's sanitize semantics.
     * ``scrub_secrets=False`` — preserve the base env content byte-for-byte
@@ -706,17 +706,17 @@ def build_subprocess_env(
       scrubbing could change behavior.  The site is still a win: it becomes
       grep-able and future-fixable.
     * ``inherit_profile_home`` — on the non-scrub path, when True, bridge the
-      context-local Hermes home override into ``THEFOOL_HOME`` and apply the
-      subprocess HOME contract (``thefool_constants.apply_subprocess_home_env``).
+      context-local Hermes home override into ``FOOL_HOME`` and apply the
+      subprocess HOME contract (``fool_constants.apply_subprocess_home_env``).
       Pass False to keep the inherited env untouched (exact legacy
       ``os.environ.copy()`` behavior).
     * ``extra`` — applied **last** on the non-scrub path so explicit caller
-      overrides (e.g. a session-scoped ``THEFOOL_HOME``) always win.  On the
+      overrides (e.g. a session-scoped ``FOOL_HOME``) always win.  On the
       scrub path it is forwarded as ``_sanitize_subprocess_env``'s
       ``extra_env`` (same force-prefix / blocklist handling as today).
     """
     if scrub_secrets:
-        # _sanitize_subprocess_env already performs THEFOOL_HOME override
+        # _sanitize_subprocess_env already performs FOOL_HOME override
         # bridging + apply_subprocess_home_env unconditionally; delegating
         # wholesale keeps one owner and zero drift.
         return _sanitize_subprocess_env(
@@ -727,7 +727,7 @@ def build_subprocess_env(
     env: dict[str, str] = dict(base) if base is not None else os.environ.copy()
     if inherit_profile_home:
         _inject_context_hermes_home(env)
-        from thefool_constants import apply_subprocess_home_env
+        from fool_constants import apply_subprocess_home_env
         apply_subprocess_home_env(env)
     if extra:
         env.update(extra)
@@ -747,12 +747,12 @@ def _find_bash() -> str:
 
     candidates: list[str] = []
 
-    custom = os.environ.get("THEFOOL_GIT_BASH_PATH")
+    custom = os.environ.get("FOOL_GIT_BASH_PATH")
     if custom and os.path.isfile(custom):
         candidates.append(custom)
 
     # Prefer our own portable Git install — a broken or partially-uninstalled
-    # system Git (or a stale THEFOOL_GIT_BASH_PATH pointing at one) must not
+    # system Git (or a stale FOOL_GIT_BASH_PATH pointing at one) must not
     # brick the terminal.  install.ps1 drops PortableGit here when needed.
     #
     # Layouts (both checked so upgrades between MinGit and PortableGit
@@ -786,14 +786,14 @@ def _find_bash() -> str:
         candidates.append(found)
 
     # Prefer the first candidate that can actually start.  A stale
-    # THEFOOL_GIT_BASH_PATH pointing at a broken Git-for-Windows install
+    # FOOL_GIT_BASH_PATH pointing at a broken Git-for-Windows install
     # (``Directory \\drivers\\etc does not exist``) must not win over a
     # healthy portable Git under %LOCALAPPDATA%\\hermes\\git.
     for candidate in candidates:
         if _bash_starts(candidate):
             if candidate != custom and custom and os.path.isfile(custom):
                 logger.warning(
-                    "THEFOOL_GIT_BASH_PATH=%s fails to start; using %s instead",
+                    "FOOL_GIT_BASH_PATH=%s fails to start; using %s instead",
                     custom,
                     candidate,
                 )
@@ -818,7 +818,7 @@ def _find_bash() -> str:
     raise RuntimeError(
         "Git Bash not found. Hermes Agent requires Git for Windows on Windows.\n"
         "Install it from: https://git-scm.com/download/win\n"
-        "Or set THEFOOL_GIT_BASH_PATH to your bash.exe location."
+        "Or set FOOL_GIT_BASH_PATH to your bash.exe location."
     )
 
 
@@ -1163,10 +1163,10 @@ def _managed_runtime_path_entries() -> list[str]:
     itself, so on a machine where Hermes provisioned its own toolchain a
     command the agent runs resolves a system copy instead — or nothing at all:
 
-    - ``$THEFOOL_HOME/node`` (+ ``/bin``) — installed to satisfy the desktop and
+    - ``$FOOL_HOME/node`` (+ ``/bin``) — installed to satisfy the desktop and
       browser toolchain. ``tools/browser_tool.py`` already does this for its own
       subprocesses; the agent's shell deserves the same.
-    - ``$THEFOOL_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
+    - ``$FOOL_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
       and nothing has ever put that directory on PATH, so an install whose only
       uv is the managed one looks uv-less to both the agent and the model.
 
@@ -1175,7 +1175,7 @@ def _managed_runtime_path_entries() -> list[str]:
     mid-process (``heal_hermes_managed_node``, a first browser install).
     """
     try:
-        from thefool_constants import get_hermes_home, iter_hermes_node_dirs
+        from fool_constants import get_hermes_home, iter_hermes_node_dirs
 
         candidates = [*iter_hermes_node_dirs(), get_hermes_home() / "bin"]
         return [str(d) for d in candidates if d.is_dir()]
@@ -1325,7 +1325,7 @@ def _make_run_env(env: dict) -> dict:
 
     _inject_context_hermes_home(run_env)
 
-    from thefool_constants import apply_subprocess_home_env
+    from fool_constants import apply_subprocess_home_env
     apply_subprocess_home_env(run_env)
 
     # Bridge ContextVar-based session vars into the subprocess env (with the
@@ -1357,9 +1357,9 @@ def _build_hermes_repo_root_aliases(
     """Return exact repo-root spellings emitted by Hermes launchers.
 
     ``gateway_windows._preserve_hermes_home_path`` maps a physical path under
-    the resolved THEFOOL_HOME back onto the configured THEFOOL_HOME spelling.
+    the resolved FOOL_HOME back onto the configured FOOL_HOME spelling.
     Mirror that producer contract here so a junction-backed install is matched
-    without treating arbitrary descendants of THEFOOL_HOME as Hermes-owned.
+    without treating arbitrary descendants of FOOL_HOME as Hermes-owned.
     Additionally, when the repo itself is a junction under the configured root
     (repo-level junction, possibly cross-drive), the single deterministic
     candidate <root>/<repo dirname> is accepted only when strict resolve
@@ -1381,7 +1381,7 @@ def _build_hermes_repo_root_aliases(
     # lexically the same way get_default_hermes_root() does (parent of a
     # "profiles" component) and run the same exact-ownership mapping against
     # it -- this recovers the launcher's lexical root under profile re-home
-    # while still never matching arbitrary descendants of THEFOOL_HOME.
+    # while still never matching arbitrary descendants of FOOL_HOME.
     home_candidates = [configured_home]
     if configured_home.parent.name == "profiles":
         home_candidates.append(configured_home.parent.parent)
@@ -1423,7 +1423,7 @@ def _build_hermes_repo_root_aliases(
 #: The Hermes repository root - three levels up from this file
 #: (``tools/environments/local.py`` -> ``tools/environments`` -> ``tools``
 #: -> repo root).  This is the directory the Electron app prepends to
-#: PYTHONPATH so the backend can do ``import tools``, ``import thefool_cli``,
+#: PYTHONPATH so the backend can do ``import tools``, ``import fool_cli``,
 #: etc.  Subprocesses that are NOT the Hermes backend don't need it and it
 #: can shadow local packages.
 _hermes_repo_root: Path = Path(__file__).resolve().parents[2]
@@ -1431,8 +1431,8 @@ _hermes_repo_root: Path = Path(__file__).resolve().parents[2]
 #: Alternate spellings of the repo root that Hermes launchers may emit.
 #: ``Path(__file__).resolve()`` canonicalizes symlinks/junctions, but the
 #: Windows gateway launcher deliberately renders Hermes-owned paths under
-#: the configured THEFOOL_HOME spelling (which may be a junction to another
-#: drive — see ``thefool_cli/gateway_windows.py::_preserve_hermes_home_path``).
+#: the configured FOOL_HOME spelling (which may be a junction to another
+#: drive — see ``fool_cli/gateway_windows.py::_preserve_hermes_home_path``).
 #: ``Path(__file__)`` (unresolved) keeps that spelling, so a PYTHONPATH
 #: entry written by the launcher still matches even though it differs
 #: lexically from the resolved root.
@@ -1597,7 +1597,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
         # no launcher injects a direct child (``<repo>/tools`` etc.) as an
         # independent PYTHONPATH entry, and user paths that merely happen to
         # live under the repo directory must be preserved.  Both the
-        # resolved and unresolved (THEFOOL_HOME/junction) spellings count as
+        # resolved and unresolved (FOOL_HOME/junction) spellings count as
         # Hermes-owned.
         if not should_strip:
             should_strip = any(
@@ -1629,7 +1629,7 @@ def _read_terminal_shell_init_config() -> tuple[list[str], bool]:
     execution never breaks because the config file is unreadable.
     """
     try:
-        from thefool_cli.config import load_config
+        from fool_cli.config import load_config
 
         cfg = load_config() or {}
         terminal_cfg = cfg.get("terminal") or {}
@@ -1736,17 +1736,17 @@ class LocalEnvironment(BaseEnvironment):
         can't open the path, and the Windows default temp (``%TEMP%``) often
         contains spaces (``C:\\Users\\Some Name\\AppData\\Local\\Temp``) that
         break unquoted bash interpolations.  Use a dedicated cache dir under
-        ``THEFOOL_HOME`` instead — single-word path, guaranteed to exist, same
+        ``FOOL_HOME`` instead — single-word path, guaranteed to exist, same
         string resolves in both Git Bash and native Python.
         """
         if _IS_WINDOWS:
-            # Derive a Windows-safe temp dir under THEFOOL_HOME.  Using
+            # Derive a Windows-safe temp dir under FOOL_HOME.  Using
             # forward slashes makes the same string work unchanged in bash
             # command interpolations AND in Python ``open()`` — Windows
             # accepts forward slashes in filesystem paths, and we control
             # the path so we can guarantee no spaces.
             try:
-                from thefool_constants import get_hermes_home
+                from fool_constants import get_hermes_home
                 cache_dir = get_hermes_home() / "cache" / "terminal"
             except Exception:
                 cache_dir = Path(tempfile.gettempdir()) / "hermes_terminal"

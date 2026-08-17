@@ -8,7 +8,7 @@ import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from thefool_cli.profiles import _get_default_hermes_home
+from fool_cli.profiles import _get_default_hermes_home
 
 import pytest
 
@@ -277,12 +277,12 @@ class TestResolveConfigPath:
         local_cfg = hermes_home / "honcho.json"
         local_cfg.write_text('{"apiKey": "local"}')
 
-        with patch.dict(os.environ, {"THEFOOL_HOME": str(hermes_home)}):
+        with patch.dict(os.environ, {"FOOL_HOME": str(hermes_home)}):
             result = resolve_config_path()
         assert result == local_cfg
 
     def test_falls_back_to_default_profile_when_no_local(self, tmp_path, monkeypatch):
-        # Profile mode: THEFOOL_HOME points at ~/.hermes/profiles/<name>, so
+        # Profile mode: FOOL_HOME points at ~/.hermes/profiles/<name>, so
         # _get_default_hermes_home() must resolve back to ~/.hermes — that's
         # the bug the HOME-anchored helper fixes (vs. blindly using Path.home()).
         fake_home = tmp_path / "fakehome"
@@ -294,7 +294,7 @@ class TestResolveConfigPath:
         default_cfg.write_text('{"apiKey": "default-key"}')
 
         monkeypatch.setattr(Path, "home", lambda: fake_home)
-        monkeypatch.setenv("THEFOOL_HOME", str(profile_home))
+        monkeypatch.setenv("FOOL_HOME", str(profile_home))
 
         result = resolve_config_path()
 
@@ -309,7 +309,7 @@ class TestResolveActiveHost:
 
 
     def test_explicit_env_var_wins(self):
-        with patch.dict(os.environ, {"THEFOOL_HONCHO_HOST": "hermes.coder"}):
+        with patch.dict(os.environ, {"FOOL_HONCHO_HOST": "hermes.coder"}):
             assert resolve_active_host() == "hermes.coder"
 
 
@@ -319,17 +319,17 @@ class TestResolveActiveHost:
             "plugins.memory.honcho.client.resolve_config_path",
             return_value=Path("/nonexistent/test-honcho-config.json"),
         ):
-            os.environ.pop("THEFOOL_HONCHO_HOST", None)
-            # Temporarily remove thefool_cli.profiles to simulate import failure
-            saved = sys.modules.get("thefool_cli.profiles")
-            sys.modules["thefool_cli.profiles"] = None  # type: ignore
+            os.environ.pop("FOOL_HONCHO_HOST", None)
+            # Temporarily remove fool_cli.profiles to simulate import failure
+            saved = sys.modules.get("fool_cli.profiles")
+            sys.modules["fool_cli.profiles"] = None  # type: ignore
             try:
                 assert resolve_active_host() == "hermes"
             finally:
                 if saved is not None:
-                    sys.modules["thefool_cli.profiles"] = saved
+                    sys.modules["fool_cli.profiles"] = saved
                 else:
-                    sys.modules.pop("thefool_cli.profiles", None)
+                    sys.modules.pop("fool_cli.profiles", None)
 
 
 class TestProfileScopedConfig:
@@ -483,7 +483,7 @@ class TestGetHonchoClient:
     )
     def test_timeout_change_triggers_client_rebuild(self):
         """Changing timeout config must rebuild the cached client."""
-        from thefool_constants import get_hermes_home
+        from fool_constants import get_hermes_home
 
         cfg_yaml = get_hermes_home() / "config.yaml"
         cfg_yaml.write_text("honcho:\n  timeout: 30\n")
@@ -533,7 +533,7 @@ class TestGetHonchoClient:
         managed_dir.mkdir()
         managed_cfg = managed_dir / "config.yaml"
         managed_cfg.write_text("honcho:\n  timeout: 88\n")
-        monkeypatch.setenv("THEFOOL_MANAGED_DIR", str(managed_dir))
+        monkeypatch.setenv("FOOL_MANAGED_DIR", str(managed_dir))
 
         fake_honcho_1 = MagicMock(name="Honcho_v1")
         fake_honcho_2 = MagicMock(name="Honcho_v2")
@@ -685,7 +685,7 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("thefool_cli.config.load_config", return_value={}):
+             patch("fool_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
@@ -712,7 +712,7 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         }))
 
         with patch.dict(os.environ, {}, clear=True), \
-             patch("thefool_cli.profiles.get_active_profile_name", return_value="default"), \
+             patch("fool_cli.profiles.get_active_profile_name", return_value="default"), \
              patch("plugins.memory.honcho.client.resolve_config_path", return_value=config_file):
             cfg = HonchoClientConfig.from_global_config(config_path=config_file)
 
@@ -726,7 +726,7 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         mock_honcho = MagicMock(return_value=fake_honcho)
         fake_honcho_module = types.SimpleNamespace(Honcho=mock_honcho)
         with patch.dict(sys.modules, {"honcho": fake_honcho_module}), \
-             patch("thefool_cli.config.load_config", return_value={}):
+             patch("fool_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()
@@ -768,7 +768,7 @@ class TestGetHonchoClientBaseUrlDoublePrefixFix:
         )
 
         with patch("honcho.Honcho", return_value=fake_honcho) as mock_honcho, \
-             patch("thefool_cli.config.load_config", return_value={}):
+             patch("fool_cli.config.load_config", return_value={}):
             get_honcho_client(cfg)
 
         mock_honcho.assert_called_once()

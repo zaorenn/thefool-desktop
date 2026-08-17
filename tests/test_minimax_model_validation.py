@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from thefool_cli.models import validate_requested_model
+from fool_cli.models import validate_requested_model
 
 
 class TestMiniMaxModelValidation:
@@ -26,8 +26,8 @@ class TestMiniMaxModelValidation:
             "suggested_base_url": None,
             "used_fallback": False,
         }
-        with patch("thefool_cli.models.fetch_api_models", return_value=None), \
-             patch("thefool_cli.models.probe_api_models", return_value=probe_payload):
+        with patch("fool_cli.models.fetch_api_models", return_value=None), \
+             patch("fool_cli.models.probe_api_models", return_value=probe_payload):
             yield
 
     # -------------------------------------------------------------------------

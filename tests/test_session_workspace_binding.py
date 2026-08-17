@@ -1,4 +1,4 @@
-"""Session <-> workspace grouping key (thefool_state.workspace_key).
+"""Session <-> workspace grouping key (fool_state.workspace_key).
 
 The key is what `hermes sessions list --workspace` groups/filters on. It is a
 coarse workspace identity derived from fields already recorded on sessions
@@ -6,7 +6,7 @@ coarse workspace identity derived from fields already recorded on sessions
 NOT part of the key.
 """
 
-from thefool_state import workspace_key
+from fool_state import workspace_key
 
 
 def test_repo_root_is_the_key_when_known():

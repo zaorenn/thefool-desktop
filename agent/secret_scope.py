@@ -10,7 +10,7 @@ This module provides a fail-closed, context-local secret scope:
 
 - ``set_secret_scope(mapping)`` installs the active profile's secrets for the
   current task (a contextvar, so it propagates into the agent's worker thread
-  via ``copy_context()`` exactly like the THEFOOL_HOME override).
+  via ``copy_context()`` exactly like the FOOL_HOME override).
 - ``get_secret(name)`` reads from that scope. When multiplexing is **active**
   and no scope is set, it RAISES rather than silently falling back to
   ``os.environ`` — an un-migrated or newly-added call site fails loud at that
@@ -97,15 +97,15 @@ def current_secret_scope() -> Optional[Mapping[str, str]]:
 # list tight: when in doubt a value is a profile secret, not a global.
 _GLOBAL_ENV_EXACT = frozenset({
     # Hermes runtime / deployment
-    "THEFOOL_HOME", "THEFOOL_PROFILE", "THEFOOL_GATEWAY_LOCK_DIR",
-    "THEFOOL_MAX_ITERATIONS", "THEFOOL_MAX_TOKENS", "THEFOOL_API_TIMEOUT",
-    "THEFOOL_REDACT_SECRETS", "THEFOOL_NOUS_TIMEOUT_SECONDS",
+    "FOOL_HOME", "FOOL_PROFILE", "FOOL_GATEWAY_LOCK_DIR",
+    "FOOL_MAX_ITERATIONS", "FOOL_MAX_TOKENS", "FOOL_API_TIMEOUT",
+    "FOOL_REDACT_SECRETS", "FOOL_NOUS_TIMEOUT_SECONDS",
     "_HERMES_GATEWAY",
     # OS / interpreter
     "PATH", "HOME", "USER", "LANG", "LC_ALL", "TZ", "PWD", "SHELL", "TMPDIR",
     "VIRTUAL_ENV", "PYTHONPATH", "SSL_CERT_FILE",
     # Kanban paths (per-board, not per-profile-secret)
-    "THEFOOL_KANBAN_DB", "THEFOOL_KANBAN_WORKSPACES_ROOT", "THEFOOL_KANBAN_BOARD",
+    "FOOL_KANBAN_DB", "FOOL_KANBAN_WORKSPACES_ROOT", "FOOL_KANBAN_BOARD",
     # API-server LISTENER settings — deployment config (Docker compose
     # ``environment:`` block, systemd ``Environment=``), not profile secrets.
     # The scoped runner reload (#64674) must keep seeing them or container
@@ -116,8 +116,8 @@ _GLOBAL_ENV_EXACT = frozenset({
     "API_SERVER_CORS_ORIGINS",
 })
 _GLOBAL_ENV_PREFIXES = (
-    "THEFOOL_KANBAN_",
-    "THEFOOL_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
+    "FOOL_KANBAN_",
+    "FOOL_TELEGRAM_",   # tuning knobs (batch delays, fallback toggles) — NOT the token
     "TERMINAL_",          # terminal/sandbox backend settings
 )
 
@@ -231,7 +231,7 @@ def load_env_file(env_path: Path) -> Dict[str, str]:
     itself (``export`` prefix, ``#`` comments — full-line and
     dotenv-compatible inline, matching quotes with the
     writer's ``\\"``/``\\\\`` escapes reversed — the same semantics as
-    ``thefool_cli.config._parse_env_value``) but never mutates the process
+    ``fool_cli.config._parse_env_value``) but never mutates the process
     environment — that isolation is the whole point.
 
     Encoding is ``utf-8-sig`` so a leading UTF-8 BOM (Windows Notepad /
@@ -250,7 +250,7 @@ def load_env_file(env_path: Path) -> Dict[str, str]:
     # the outer quotes here would corrupt credentials containing "
     # or \ — they work interactively but fail in scoped (cron /
     # multiplex) resolution.
-    from thefool_cli.config import _parse_env_value
+    from fool_cli.config import _parse_env_value
 
     for raw in text.splitlines():
         line = raw.strip()
@@ -280,7 +280,7 @@ def build_profile_secret_scope(hermes_home: Path) -> Dict[str, str]:
     secrets = load_env_file(home / ".env")
 
     try:
-        from thefool_cli.env_loader import get_secret_source_values
+        from fool_cli.env_loader import get_secret_source_values
         external_secrets = get_secret_source_values(home)
     except Exception:
         external_secrets = {}

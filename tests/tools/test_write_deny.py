@@ -38,10 +38,10 @@ class TestWriteDenyExactPaths:
         global_env = root / ".env"
         global_env.write_text("OPENAI_API_KEY=sk-real\n")
 
-        monkeypatch.setenv("THEFOOL_HOME", str(profile_home))
+        monkeypatch.setenv("FOOL_HOME", str(profile_home))
 
-        # Sanity check: THEFOOL_HOME does point to the profile dir, not the root.
-        from thefool_constants import get_hermes_home, get_default_hermes_root
+        # Sanity check: FOOL_HOME does point to the profile dir, not the root.
+        from fool_constants import get_hermes_home, get_default_hermes_root
         assert get_hermes_home() == profile_home
         assert get_default_hermes_root() == root
 
@@ -88,7 +88,7 @@ class TestWriteAllowed:
 
 
     def test_hermes_control_files_requested_writable(self):
-        from thefool_constants import get_hermes_home
+        from fool_constants import get_hermes_home
 
         home = get_hermes_home()
         for name in ["auth.json", "config.yaml", "webhook_subscriptions.json"]:

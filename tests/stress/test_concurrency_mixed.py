@@ -31,10 +31,10 @@ WT = str(Path(__file__).resolve().parents[2])
 
 
 def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
-    os.environ["THEFOOL_HOME"] = hermes_home
+    os.environ["FOOL_HOME"] = hermes_home
     os.environ["HOME"] = hermes_home
     sys.path.insert(0, WT)
-    from thefool_cli import kanban_db as kb
+    from fool_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -143,10 +143,10 @@ def worker_loop(worker_id: int, hermes_home: str, result_file: str) -> None:
 
 def reclaimer_loop(hermes_home: str, result_file: str) -> None:
     """Background dispatcher-like loop that reclaims stale tasks."""
-    os.environ["THEFOOL_HOME"] = hermes_home
+    os.environ["FOOL_HOME"] = hermes_home
     os.environ["HOME"] = hermes_home
     sys.path.insert(0, WT)
-    from thefool_cli import kanban_db as kb
+    from fool_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -171,12 +171,12 @@ def reclaimer_loop(hermes_home: str, result_file: str) -> None:
 
 def main():
     home = tempfile.mkdtemp(prefix="hermes_mixed_stress_")
-    print(f"THEFOOL_HOME = {home}")
+    print(f"FOOL_HOME = {home}")
 
-    os.environ["THEFOOL_HOME"] = home
+    os.environ["FOOL_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
-    from thefool_cli import kanban_db as kb
+    from fool_cli import kanban_db as kb
 
     kb.init_db()
     conn = kb.connect()

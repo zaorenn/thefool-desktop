@@ -23,7 +23,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from thefool_state import SessionDB
+from fool_state import SessionDB
 from run_agent import AIAgent
 
 
@@ -55,7 +55,7 @@ def _stop_response():
 
 
 def _make_agent(monkeypatch, tmp_path: Path, *, max_attempts) -> AIAgent:
-    from thefool_cli import config as config_mod
+    from fool_cli import config as config_mod
 
     monkeypatch.setattr(
         config_mod, "load_config", lambda: _config(max_attempts)

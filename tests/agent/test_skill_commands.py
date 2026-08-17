@@ -95,7 +95,7 @@ class TestScanSkillCommands:
         from agent.skill_commands import get_skill_commands
 
         def _disabled_skills():
-            platform = os.getenv("THEFOOL_PLATFORM")
+            platform = os.getenv("FOOL_PLATFORM")
             if platform == "telegram":
                 return {"telegram-only"}
             if platform == "discord":
@@ -112,14 +112,14 @@ class TestScanSkillCommands:
             _make_skill(tmp_path, "telegram-only")
             _make_skill(tmp_path, "discord-only")
 
-            with patch.dict(os.environ, {"THEFOOL_PLATFORM": "telegram"}):
+            with patch.dict(os.environ, {"FOOL_PLATFORM": "telegram"}):
                 telegram_commands = dict(get_skill_commands())
 
             assert "/shared" in telegram_commands
             assert "/discord-only" in telegram_commands
             assert "/telegram-only" not in telegram_commands
 
-            with patch.dict(os.environ, {"THEFOOL_PLATFORM": "discord"}):
+            with patch.dict(os.environ, {"FOOL_PLATFORM": "discord"}):
                 discord_commands = dict(get_skill_commands())
 
             assert "/shared" in discord_commands
@@ -128,19 +128,19 @@ class TestScanSkillCommands:
 
             # Switching back to telegram must also rescan — not re-serve
             # the discord view that was just cached.
-            with patch.dict(os.environ, {"THEFOOL_PLATFORM": "telegram"}):
+            with patch.dict(os.environ, {"FOOL_PLATFORM": "telegram"}):
                 telegram_again = dict(get_skill_commands())
 
             assert "/telegram-only" not in telegram_again
             assert "/discord-only" in telegram_again
 
     def test_get_skill_commands_rescans_when_session_platform_changes(self, tmp_path):
-        """``THEFOOL_SESSION_PLATFORM`` from the gateway session context must
-        also trigger a rescan, not just ``THEFOOL_PLATFORM`` (#14536).
+        """``FOOL_SESSION_PLATFORM`` from the gateway session context must
+        also trigger a rescan, not just ``FOOL_PLATFORM`` (#14536).
 
         Exercises the real ContextVar path: the gateway sets the active
         adapter via ``set_session_vars(platform=...)`` and the resolver
-        reads it via ``get_session_env``. Setting ``THEFOOL_SESSION_PLATFORM``
+        reads it via ``get_session_env``. Setting ``FOOL_SESSION_PLATFORM``
         in ``os.environ`` would only test ``get_session_env``'s legacy
         env-var fallback — a regression that swapped ``get_session_env``
         for plain ``os.getenv`` would still pass while breaking concurrent
@@ -157,8 +157,8 @@ class TestScanSkillCommands:
 
         def _disabled_skills():
             platform = (
-                os.getenv("THEFOOL_PLATFORM")
-                or get_session_env("THEFOOL_SESSION_PLATFORM")
+                os.getenv("FOOL_PLATFORM")
+                or get_session_env("FOOL_SESSION_PLATFORM")
             )
             if platform == "telegram":
                 return {"telegram-only"}
@@ -203,13 +203,13 @@ class TestScanSkillCommands:
     def test_get_skill_commands_rescans_when_profile_home_changes(self, tmp_path):
         """Switching profiles must rescan even when the platform is unchanged
         (#88023): a Desktop session that switches profiles mid-session keeps
-        the same platform scope, so only ``THEFOOL_HOME`` moves. Each profile
+        the same platform scope, so only ``FOOL_HOME`` moves. Each profile
         declares its own ``skills.external_dirs``, and the previous profile's
         skill list must not leak into the new one.
         """
         import agent.skill_commands as sc_mod
         from agent.skill_commands import get_skill_commands
-        from thefool_constants import reset_hermes_home_override, set_hermes_home_override
+        from fool_constants import reset_hermes_home_override, set_hermes_home_override
 
         empty_local_dir = tmp_path / "no-local-skills"
         empty_local_dir.mkdir()
@@ -267,7 +267,7 @@ class TestScanSkillCommands:
         from agent.skill_commands import get_skill_commands
 
         def _disabled_skills():
-            if os.getenv("THEFOOL_PLATFORM") == "telegram":
+            if os.getenv("FOOL_PLATFORM") == "telegram":
                 return {"telegram-only"}
             return set()
 
@@ -280,12 +280,12 @@ class TestScanSkillCommands:
             _make_skill(tmp_path, "shared")
             _make_skill(tmp_path, "telegram-only")
 
-            monkeypatch.setenv("THEFOOL_PLATFORM", "telegram")
+            monkeypatch.setenv("FOOL_PLATFORM", "telegram")
             telegram_commands = dict(get_skill_commands())
             assert "/telegram-only" not in telegram_commands
 
             # Drop back to no platform scope — bare CLI / cron / RL rollouts.
-            monkeypatch.delenv("THEFOOL_PLATFORM", raising=False)
+            monkeypatch.delenv("FOOL_PLATFORM", raising=False)
             bare_commands = dict(get_skill_commands())
 
             assert "/telegram-only" in bare_commands
@@ -409,7 +409,7 @@ class TestBuildPreloadedSkillsPrompt:
 
     def test_skips_disabled_skill(self, tmp_path, monkeypatch):
         """A globally-disabled skill must not be force-loaded via -s /
-        THEFOOL_TUI_SKILLS preloading (mirrors the bundle gate, #59156)."""
+        FOOL_TUI_SKILLS preloading (mirrors the bundle gate, #59156)."""
         with patch("tools.skills_tool.SKILLS_DIR", tmp_path):
             _make_skill(tmp_path, "enabled-skill", body="Enabled content.")
             _make_skill(tmp_path, "disabled-skill", body="SECRET DISABLED CONTENT.")
@@ -575,7 +575,7 @@ class TestSkillDirectoryHeader:
 
 
 class TestTemplateVarSubstitution:
-    """``${THEFOOL_SKILL_DIR}`` and ``${THEFOOL_SESSION_ID}`` in SKILL.md body
+    """``${FOOL_SKILL_DIR}`` and ``${FOOL_SESSION_ID}`` in SKILL.md body
     are replaced before the agent sees the content."""
 
     def test_substitutes_skill_dir(self, tmp_path):
@@ -583,7 +583,7 @@ class TestTemplateVarSubstitution:
             skill_dir = _make_skill(
                 tmp_path,
                 "templated",
-                body="Run: node ${THEFOOL_SKILL_DIR}/scripts/foo.js",
+                body="Run: node ${FOOL_SKILL_DIR}/scripts/foo.js",
             )
             scan_skill_commands()
             msg = build_skill_invocation_message("/templated")
@@ -591,7 +591,7 @@ class TestTemplateVarSubstitution:
         assert msg is not None
         assert f"node {skill_dir}/scripts/foo.js" in msg
         # The literal template token must not leak through.
-        assert "${THEFOOL_SKILL_DIR}" not in msg.split("[Skill directory:")[0]
+        assert "${FOOL_SKILL_DIR}" not in msg.split("[Skill directory:")[0]
 
 
 
@@ -606,14 +606,14 @@ class TestTemplateVarSubstitution:
             _make_skill(
                 tmp_path,
                 "no-sub",
-                body="Run: node ${THEFOOL_SKILL_DIR}/scripts/foo.js",
+                body="Run: node ${FOOL_SKILL_DIR}/scripts/foo.js",
             )
             scan_skill_commands()
             msg = build_skill_invocation_message("/no-sub")
 
         assert msg is not None
         # Template token must survive when substitution is disabled.
-        assert "${THEFOOL_SKILL_DIR}/scripts/foo.js" in msg
+        assert "${FOOL_SKILL_DIR}/scripts/foo.js" in msg
 
 
 class TestInlineShellExpansion:

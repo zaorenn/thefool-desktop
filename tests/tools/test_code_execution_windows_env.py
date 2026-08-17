@@ -255,7 +255,7 @@ def _legacy_posix_scrubber(source_env, is_passthrough):
     _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL",
                           "PASSWD", "AUTH", "DSN", "WEBHOOK")
     _HERMES_CHILD_ALLOWED = frozenset({
-        "THEFOOL_HOME", "THEFOOL_PROFILE", "THEFOOL_CONFIG", "THEFOOL_ENV",
+        "FOOL_HOME", "FOOL_PROFILE", "FOOL_CONFIG", "FOOL_ENV",
     })
     out = {}
     for k, v in source_env.items():
@@ -303,11 +303,11 @@ class TestPosixEquivalence:
         "CONDA_PREFIX": "/opt/conda",
         # HERMES_* handling (#27303): only the operational allowlist passes;
         # every other HERMES_* is dropped (the broad prefix was removed).
-        "THEFOOL_HOME": "/home/alice/.hermes",        # allowlisted → kept
-        "THEFOOL_PROFILE": "default",                 # allowlisted → kept
-        "THEFOOL_INTERACTIVE": "1",                   # not allowlisted → dropped
-        "THEFOOL_BASE_URL": "https://api.internal",   # not allowlisted → dropped
-        "THEFOOL_KANBAN_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
+        "FOOL_HOME": "/home/alice/.hermes",        # allowlisted → kept
+        "FOOL_PROFILE": "default",                 # allowlisted → kept
+        "FOOL_INTERACTIVE": "1",                   # not allowlisted → dropped
+        "FOOL_BASE_URL": "https://api.internal",   # not allowlisted → dropped
+        "FOOL_KANBAN_DB": "postgres://u:p@h/db",   # not allowlisted → dropped
         # Secret-substring blocks
         "OPENAI_API_KEY": "sk-xxx",
         "GITHUB_TOKEN": "ghp_xxx",

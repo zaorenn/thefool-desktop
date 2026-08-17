@@ -58,9 +58,9 @@ from plugins.platforms.discord.adapter import (  # noqa: E402
 
 
 def _patch_config(monkeypatch, cfg):
-    """Stub ``thefool_cli.config.read_raw_config`` to return ``cfg``."""
-    import thefool_cli.config
-    monkeypatch.setattr(thefool_cli.config, "read_raw_config", lambda: cfg)
+    """Stub ``fool_cli.config.read_raw_config`` to return ``cfg``."""
+    import fool_cli.config
+    monkeypatch.setattr(fool_cli.config, "read_raw_config", lambda: cfg)
 
 
 def test_explicit_int_value(monkeypatch):

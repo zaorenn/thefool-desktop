@@ -12,8 +12,8 @@ from plugins.memory.query_rewrite import (
     _normalize_rewrite,
     rewrite_memory_query,
 )
-from thefool_cli.config import DEFAULT_CONFIG
-from thefool_cli.main import _AUX_TASKS
+from fool_cli.config import DEFAULT_CONFIG
+from fool_cli.main import _AUX_TASKS
 
 
 def _response(text: str):

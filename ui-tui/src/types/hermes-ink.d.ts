@@ -1,6 +1,6 @@
 import type * as React from 'react'
 
-declare module '@thefool/ink' {
+declare module '@fool/ink' {
   export type Key = {
     readonly ctrl: boolean
     readonly meta: boolean

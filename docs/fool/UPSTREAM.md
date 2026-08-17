@@ -1,7 +1,7 @@
 # Upstream'den besleme
 
-The Fool tam yeniden adlandırıldı: `hermes_cli` → `thefool_cli`, `HERMES_*` →
-`THEFOOL_*`, ve daha fazlası. Normalde bu, upstream'den beslenmenin sonu
+The Fool tam yeniden adlandırıldı: `hermes_cli` → `fool_cli`, `HERMES_*` →
+`FOOL_*`, komut `fool`, veri dizini `~/.fool`. Normalde bu, upstream'den beslenmenin sonu
 demektir — ölçtük, bir aylık upstream değişikliği **2.776 dosyada** çakışıyor.
 
 Bu belge o duvarın nasıl aşıldığını anlatır.
@@ -60,8 +60,8 @@ sonrası kalan artıkları temizlemek için kullanılabilir.
 
 **Aracın kendisi dönüşüme tabi değil.** `fool/rename.py`, `fool/audit.py` ve
 `fool/branding.py` `SELF_EXCLUDE` listesinde. İlk çalıştırmada bu koruma yoktu
-ve araç kendi tablosunu yedi — `("hermes_state", "thefool_state")` satırı
-`("thefool_state", "thefool_state")` oldu, yani boş bir işleme döndü. Araç
+ve araç kendi tablosunu yedi — `("hermes_state", "fool_state")` satırı
+`("fool_state", "fool_state")` oldu, yani boş bir işleme döndü. Araç
 çalışıyor görünmeye devam eder ama artık hiçbir şey yapmaz.
 
 **Korunan değerler var.** `NousResearch/hermes-agent` (upstream deposu — atıf ve

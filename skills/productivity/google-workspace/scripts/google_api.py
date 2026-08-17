@@ -38,9 +38,9 @@ if _SCRIPTS_DIR not in sys.path:
 
 from _hermes_home import get_hermes_home
 
-THEFOOL_HOME = get_hermes_home()
-TOKEN_PATH = THEFOOL_HOME / "google_token.json"
-CLIENT_SECRET_PATH = THEFOOL_HOME / "google_client_secret.json"
+FOOL_HOME = get_hermes_home()
+TOKEN_PATH = FOOL_HOME / "google_token.json"
+CLIENT_SECRET_PATH = FOOL_HOME / "google_client_secret.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -80,7 +80,7 @@ def _stored_token_scopes() -> list[str]:
 
 
 def _gws_binary() -> str | None:
-    override = os.getenv("THEFOOL_GWS_BIN")
+    override = os.getenv("FOOL_GWS_BIN")
     if override:
         return override
     return shutil.which("gws")

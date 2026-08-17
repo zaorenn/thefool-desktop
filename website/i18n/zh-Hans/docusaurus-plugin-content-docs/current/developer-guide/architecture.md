@@ -41,7 +41,7 @@ description: "Hermes Agent 内部结构——主要子系统、执行路径、�
 ┌───────────────────┐              ┌──────────────────────┐
 │ Session Storage   │              │ Tool Backends         │
 │ (SQLite + FTS5)   │              │ Terminal (7 backends) │
-│ thefool_state.py   │              │ Browser (5 backends)  │
+│ fool_state.py   │              │ Browser (5 backends)  │
 │ gateway/session.py│              │ Web (4 backends)      │
 └───────────────────┘              │ MCP (dynamic)         │
                                    │ File, Vision, etc.    │
@@ -56,8 +56,8 @@ hermes-agent/
 ├── cli.py                    # HermesCLI — 交互式终端 UI（大文件）
 ├── model_tools.py            # 工具发现、schema 收集、分发
 ├── toolsets.py               # 工具分组与平台预设
-├── thefool_state.py           # 带 FTS5 的 SQLite 会话/状态数据库
-├── thefool_constants.py       # THEFOOL_HOME、感知 profile 的路径
+├── fool_state.py           # 带 FTS5 的 SQLite 会话/状态数据库
+├── fool_constants.py       # FOOL_HOME、感知 profile 的路径
 ├── batch_runner.py           # 批量轨迹生成
 │
 ├── agent/                    # Agent 内部模块
@@ -75,7 +75,7 @@ hermes-agent/
 │   ├── memory_provider.py   # 记忆提供者 ABC
 │   └── trajectory.py         # 轨迹保存辅助函数
 │
-├── thefool_cli/               # CLI 子命令与设置
+├── fool_cli/               # CLI 子命令与设置
 │   ├── main.py               # 入口点——所有 `hermes` 子命令（大文件）
 │   ├── config.py             # DEFAULT_CONFIG、OPTIONAL_ENV_VARS、迁移
 │   ├── commands.py           # COMMAND_REGISTRY——斜杠命令中央定义
@@ -260,7 +260,7 @@ CLI、gateway、cron、ACP 及辅助调用共用的运行时解析器。将 `(pr
 | **可中断** | API 调用和工具执行可被用户输入或信号在执行中途取消。 |
 | **平台无关的核心** | 单一 AIAgent 类同时服务于 CLI、gateway、ACP、批处理和 API 服务器。平台差异存在于入口点，而非 agent 内部。 |
 | **松耦合** | 可选子系统（MCP、插件、记忆提供者、RL 环境）使用注册表模式和 check_fn 门控，而非硬依赖。 |
-| **Profile 隔离** | 每个 profile（`hermes -p <name>`）拥有独立的 THEFOOL_HOME、配置、记忆、会话和 gateway PID。多个 profile 可并发运行。 |
+| **Profile 隔离** | 每个 profile（`hermes -p <name>`）拥有独立的 FOOL_HOME、配置、记忆、会话和 gateway PID。多个 profile 可并发运行。 |
 
 ## 文件依赖链
 

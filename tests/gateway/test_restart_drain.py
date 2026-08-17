@@ -20,8 +20,8 @@ async def test_restart_command_while_busy_requests_drain_without_interrupt(monke
     # which changes the restart call signature.
     monkeypatch.delenv("INVOCATION_ID", raising=False)
     monkeypatch.delenv("XPC_SERVICE_NAME", raising=False)
-    monkeypatch.delenv("THEFOOL_S6_SUPERVISED_CHILD", raising=False)
-    monkeypatch.delenv("THEFOOL_GATEWAY_EXTERNAL_SUPERVISOR", raising=False)
+    monkeypatch.delenv("FOOL_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("FOOL_GATEWAY_EXTERNAL_SUPERVISOR", raising=False)
     # Hermeticity: neutralize the real container probe (see
     # test_restart_service_detection.py) — /.dockerenv on a containerized CI
     # runner would otherwise route via_service=True under this test.
@@ -58,8 +58,8 @@ async def test_restart_command_while_busy_requests_drain_without_interrupt(monke
 
 def test_load_busy_text_mode_follows_input_mode_and_honors_legacy(tmp_path, monkeypatch):
     monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.delenv("THEFOOL_GATEWAY_BUSY_TEXT_MODE", raising=False)
-    monkeypatch.delenv("THEFOOL_GATEWAY_BUSY_INPUT_MODE", raising=False)
+    monkeypatch.delenv("FOOL_GATEWAY_BUSY_TEXT_MODE", raising=False)
+    monkeypatch.delenv("FOOL_GATEWAY_BUSY_INPUT_MODE", raising=False)
 
     # No knobs set → follows busy_input_mode, which defaults to interrupt.
     assert gateway_run.GatewayRunner._load_busy_text_mode() == "interrupt"
@@ -81,11 +81,11 @@ def test_load_busy_text_mode_follows_input_mode_and_honors_legacy(tmp_path, monk
     (tmp_path / "config.yaml").write_text(
         "display:\n  busy_input_mode: interrupt\n", encoding="utf-8"
     )
-    monkeypatch.setenv("THEFOOL_GATEWAY_BUSY_TEXT_MODE", "queue")
+    monkeypatch.setenv("FOOL_GATEWAY_BUSY_TEXT_MODE", "queue")
     assert gateway_run.GatewayRunner._load_busy_text_mode() == "queue"
 
     # Bogus legacy value is ignored → falls through to busy_input_mode (interrupt).
-    monkeypatch.setenv("THEFOOL_GATEWAY_BUSY_TEXT_MODE", "bogus")
+    monkeypatch.setenv("FOOL_GATEWAY_BUSY_TEXT_MODE", "bogus")
     assert gateway_run.GatewayRunner._load_busy_text_mode() == "interrupt"
 
 
@@ -237,7 +237,7 @@ async def test_windows_detached_restart_scrubs_gateway_marker(monkeypatch, tmp_p
     monkeypatch.setenv("_HERMES_GATEWAY", "1")
     monkeypatch.setenv("VIRTUAL_ENV", str(venv_dir))
 
-    import thefool_cli._subprocess_compat as subprocess_compat
+    import fool_cli._subprocess_compat as subprocess_compat
 
     monkeypatch.setattr(
         subprocess_compat,
@@ -285,7 +285,7 @@ async def test_windows_detached_restart_watcher_keeps_console_python(monkeypatch
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
     monkeypatch.setenv("VIRTUAL_ENV", str(venv_dir))
 
-    import thefool_cli._subprocess_compat as subprocess_compat
+    import fool_cli._subprocess_compat as subprocess_compat
 
     monkeypatch.setattr(
         subprocess_compat,
@@ -349,7 +349,7 @@ async def test_drain_suppress_skips_home_channel_keeps_session_ping(tmp_path, mo
     from gateway.config import HomeChannel, Platform
     import gateway.drain_control as dc
 
-    monkeypatch.setenv("THEFOOL_HOME", str(tmp_path))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
 
     runner, adapter = make_restart_runner()
     # A home channel distinct from the active session's chat.
@@ -403,7 +403,7 @@ async def test_request_restart_skips_wait_when_only_wedged_turns(monkeypatch):
     after-turn wait counted the wedged agent as active work even though
     the inactivity watchdog had already declared it dead (Aug 2026).
     """
-    monkeypatch.delenv("THEFOOL_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("FOOL_AGENT_TIMEOUT", raising=False)
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
     # A cap long enough that the test would hang without the wedge bypass.
@@ -423,7 +423,7 @@ async def test_request_restart_skips_wait_when_only_wedged_turns(monkeypatch):
 @pytest.mark.asyncio
 async def test_request_restart_still_waits_for_live_turn_alongside_wedged(monkeypatch):
     """Mixed live + wedged: the live turn is honored, the wedged one ignored."""
-    monkeypatch.delenv("THEFOOL_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("FOOL_AGENT_TIMEOUT", raising=False)
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
     runner._launch_detached_restart_command = AsyncMock()
@@ -446,14 +446,14 @@ async def test_request_restart_still_waits_for_live_turn_alongside_wedged(monkey
 
 def test_wedged_agent_count_disabled_timeout_counts_nothing(monkeypatch):
     """gateway_timeout=0 (unbounded turns) disables wedge detection."""
-    monkeypatch.setenv("THEFOOL_AGENT_TIMEOUT", "0")
+    monkeypatch.setenv("FOOL_AGENT_TIMEOUT", "0")
     runner, _adapter = make_restart_runner()
     runner._running_agents["agent:main:telegram:dm:1"] = _wedged_agent(10**6)
     assert runner._wedged_agent_count() == 0
 
 
 def test_wedged_agent_count_ignores_sentinels_and_bad_summaries(monkeypatch):
-    monkeypatch.delenv("THEFOOL_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("FOOL_AGENT_TIMEOUT", raising=False)
     runner, _adapter = make_restart_runner()
     broken = MagicMock()
     broken.get_activity_summary = MagicMock(side_effect=RuntimeError("boom"))

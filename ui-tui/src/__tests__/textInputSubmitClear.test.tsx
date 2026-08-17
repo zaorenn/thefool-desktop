@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 
-import { renderSync } from '@thefool/ink'
+import { renderSync } from '@fool/ink'
 import React, { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 

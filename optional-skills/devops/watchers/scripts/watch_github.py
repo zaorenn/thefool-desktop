@@ -5,11 +5,11 @@ Usage (via cron with --no-agent):
 
     hermes cron create hermes-issues \\
       --schedule "*/5 * * * *" --no-agent \\
-      --script "$THEFOOL_HOME/skills/devops/watchers/scripts/watch_github.py" \\
+      --script "$FOOL_HOME/skills/devops/watchers/scripts/watch_github.py" \\
       --script-args "--name hermes-issues --repo NousResearch/hermes-agent --scope issues"
 
 Set GITHUB_TOKEN (or GH_TOKEN) in the Hermes .env file
-(``${THEFOOL_HOME:-~/.hermes}/.env``) to avoid the 60 req/hr
+(``${FOOL_HOME:-~/.hermes}/.env``) to avoid the 60 req/hr
 anonymous rate limit.
 
 Scopes: issues | pulls | releases | commits.  Or pass --search QUERY to

@@ -18,7 +18,7 @@ Usage:
 
 Environment:
   ABEVAL_ROOT    working/results root   (default: ./abeval-workspace)
-  ABEVAL_HOME    THEFOOL_HOME for runs   (default: $ABEVAL_ROOT/home)
+  ABEVAL_HOME    FOOL_HOME for runs   (default: $ABEVAL_ROOT/home)
                  Must be a configured Hermes home with credentials for the
                  models under test. See README.md for a minimal setup.
 
@@ -168,17 +168,17 @@ def run(arm: str, model: str, reps: int, pythonpath: str, only=None):
             env = dict(os.environ)
             env.update({
                 "PYTHONPATH": pythonpath,
-                "THEFOOL_HOME": str(HOME),
-                "THEFOOL_NEMO_RELAY_ATOF_ENABLED": "1",
-                "THEFOOL_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY": str(atof.parent),
-                "THEFOOL_NEMO_RELAY_ATOF_FILENAME": atof.name,
-                "THEFOOL_NEMO_RELAY_ATOF_MODE": "overwrite",
+                "FOOL_HOME": str(HOME),
+                "FOOL_NEMO_RELAY_ATOF_ENABLED": "1",
+                "FOOL_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY": str(atof.parent),
+                "FOOL_NEMO_RELAY_ATOF_FILENAME": atof.name,
+                "FOOL_NEMO_RELAY_ATOF_MODE": "overwrite",
             })
             q = TASKS[name].replace("{WORK}", str(work))
             t0 = time.time()
             try:
                 p = subprocess.run(
-                    [sys.executable, "-m", "thefool_cli.main", "chat", "--query", q,
+                    [sys.executable, "-m", "fool_cli.main", "chat", "--query", q,
                      "--quiet", "--max-turns", "30", "--accept-hooks", "--model", model],
                     cwd=work, env=env, capture_output=True, text=True,
                     encoding="utf-8", errors="replace", timeout=600)

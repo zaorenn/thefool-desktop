@@ -17,7 +17,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from thefool_cli import kanban_db as kb
+from fool_cli import kanban_db as kb
 
 
 # ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ from thefool_cli import kanban_db as kb
 def kanban_home(tmp_path, monkeypatch):
     home = tmp_path / ".hermes"
     home.mkdir()
-    monkeypatch.setenv("THEFOOL_HOME", str(home))
+    monkeypatch.setenv("FOOL_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -270,7 +270,7 @@ def test_spawn_omits_reasoning_when_unset(monkeypatch, tmp_path, conn):
 def test_worker_cli_accepts_the_reasoning_flag():
     """The dispatcher's --reasoning must be a real flag on the worker's CLI —
     a spawn arg no parser accepts fails every dispatch."""
-    from thefool_cli._parser import build_top_level_parser
+    from fool_cli._parser import build_top_level_parser
 
     parser = build_top_level_parser()[0]
     args = parser.parse_args(["--cli", "chat", "-q", "hi", "--reasoning", "high"])

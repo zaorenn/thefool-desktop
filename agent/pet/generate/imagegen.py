@@ -40,11 +40,11 @@ _PROVIDER_LABELS: dict[str, str] = {
 def _forced_provider_from_env() -> str | None:
     """Optional QA override to force a pet-gen backend.
 
-    `THEFOOL_PET_IMAGE_PROVIDER=<name>` (e.g. `openrouter`) bypasses the normal
+    `FOOL_PET_IMAGE_PROVIDER=<name>` (e.g. `openrouter`) bypasses the normal
     active/default provider resolution for pet generation only. Unknown values are
     ignored so existing users are unaffected.
     """
-    forced = os.environ.get("THEFOOL_PET_IMAGE_PROVIDER", "").strip().lower()
+    forced = os.environ.get("FOOL_PET_IMAGE_PROVIDER", "").strip().lower()
     return forced if forced in _REF_CAPABLE else None
 
 
@@ -63,7 +63,7 @@ class SpriteProvider:
 
 def _discover() -> None:
     try:
-        from thefool_cli.plugins import _ensure_plugins_discovered
+        from fool_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:  # noqa: BLE001 - discovery is best-effort

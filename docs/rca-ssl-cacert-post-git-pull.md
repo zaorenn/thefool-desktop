@@ -11,7 +11,7 @@ A partial `hermes update`, interrupted venv repair, or stale CA-bundle environme
 
 Hermes uses OpenAI/httpx and requests-based clients for provider calls, model metadata, gateway delivery, and web tools. Those clients inherit CA bundle settings from:
 
-- `THEFOOL_CA_BUNDLE`
+- `FOOL_CA_BUNDLE`
 - `SSL_CERT_FILE`
 - `REQUESTS_CA_BUNDLE`
 - `CURL_CA_BUNDLE`
@@ -29,7 +29,7 @@ When the venv is partially refreshed, or when one of those env vars points at a 
 4. Builds an `ssl.SSLContext` from each checked bundle,
 5. Raises a typed `SSLConfigurationError` with a repair hint before httpx/OpenAI can raise a raw low-level error.
 
-`thefool_cli doctor` exposes the same check under `SSL / CA Certificates`, so users can diagnose the problem without starting a model session.
+`fool_cli doctor` exposes the same check under `SSL / CA Certificates`, so users can diagnose the problem without starting a model session.
 
 ## Recovery
 
@@ -51,4 +51,4 @@ For a custom/corporate CA setup, fix the env var so it points at a real PEM bund
 
 ## Environment escape hatch
 
-Set `THEFOOL_SKIP_SSL_GUARD=1` to bypass the preflight check. This is intended only for sandboxed or managed-trust environments where the Python CA path looks unusual but downstream clients are known to work.
+Set `FOOL_SKIP_SSL_GUARD=1` to bypass the preflight check. This is intended only for sandboxed or managed-trust environments where the Python CA path looks unusual but downstream clients are known to work.

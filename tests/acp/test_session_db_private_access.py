@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-from thefool_state import SessionDB
+from fool_state import SessionDB
 from acp_adapter.session import SessionManager
 
 
@@ -28,7 +28,7 @@ def _mock_agent():
 
 
 # ---------------------------------------------------------------------------
-# thefool_state.SessionDB.update_session_meta — unit tests
+# fool_state.SessionDB.update_session_meta — unit tests
 # ---------------------------------------------------------------------------
 
 class TestUpdateSessionMeta:

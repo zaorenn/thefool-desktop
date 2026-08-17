@@ -224,19 +224,19 @@ See the [Security guide](/user-guide/security#environment-variable-passthrough) 
 The child process receives only a small, fixed set of operational `HERMES_*`
 variables by exact name:
 
-- `THEFOOL_HOME`
-- `THEFOOL_PROFILE`
-- `THEFOOL_CONFIG`
-- `THEFOOL_ENV`
+- `FOOL_HOME`
+- `FOOL_PROFILE`
+- `FOOL_CONFIG`
+- `FOOL_ENV`
 
-(plus `THEFOOL_RPC_DIR` / `THEFOOL_RPC_SOCKET` / `TZ` / `HOME`, which Hermes
+(plus `FOOL_RPC_DIR` / `FOOL_RPC_SOCKET` / `TZ` / `HOME`, which Hermes
 injects explicitly so the RPC channel works).
 
 :::note Behavior change
 Earlier versions passed **any** variable whose name began with `HERMES_`
 through to the child. That broad prefix was removed for security hardening: it
 could leak `HERMES_*`-named configuration that doesn't match a secret substring
-(for example `THEFOOL_BASE_URL`, `THEFOOL_KANBAN_DB`, or a `HERMES_*_WEBHOOK`
+(for example `FOOL_BASE_URL`, `FOOL_KANBAN_DB`, or a `HERMES_*_WEBHOOK`
 endpoint) into arbitrary sandboxed code.
 
 If an `execute_code` script — or a repo/plugin module it imports at import time
@@ -256,8 +256,8 @@ be re-allowed this way):
    ```yaml
    terminal:
      env_passthrough:
-       - THEFOOL_KANBAN_DB
-       - THEFOOL_BASE_URL
+       - FOOL_KANBAN_DB
+       - FOOL_BASE_URL
    ```
 
 2. **Per-skill, in the skill's frontmatter** — declare it so it is registered
@@ -265,7 +265,7 @@ be re-allowed this way):
 
    ```yaml
    required_environment_variables:
-     - THEFOOL_KANBAN_DB
+     - FOOL_KANBAN_DB
    ```
 
 **Diagnosing it.** When the child drops one or more non-allowlisted `HERMES_*`

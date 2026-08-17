@@ -212,12 +212,12 @@ function writeEmptyConfig(hermesHome: string): void {
  * Build the environment for the Electron app process.
  *
  * Key env vars:
- *  - THEFOOL_HOME → sandbox hermes-home (isolated config/sessions)
- *  - THEFOOL_DESKTOP_USER_DATA_DIR → sandbox electron-user-data
- *  - THEFOOL_DESKTOP_IGNORE_EXISTING=1 → don't pick up `hermes` from PATH
+ *  - FOOL_HOME → sandbox hermes-home (isolated config/sessions)
+ *  - FOOL_DESKTOP_USER_DATA_DIR → sandbox electron-user-data
+ *  - FOOL_DESKTOP_IGNORE_EXISTING=1 → don't pick up `hermes` from PATH
  *    (we want the dev checkout at REPO_ROOT)
- *  - THEFOOL_DESKTOP_HERMES_ROOT → REPO_ROOT (dev checkout resolution)
- *  - THEFOOL_DESKTOP_APP_NAME → unique-ish per test (avoids single-instance lock)
+ *  - FOOL_DESKTOP_HERMES_ROOT → REPO_ROOT (dev checkout resolution)
+ *  - FOOL_DESKTOP_APP_NAME → unique-ish per test (avoids single-instance lock)
  *  - XDG_RUNTIME_DIR → ensure Electron has a writable runtime dir on Linux
  */
 export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}): Record<string, string> {
@@ -236,15 +236,15 @@ export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}
 
   return {
     ...clean,
-    THEFOOL_HOME: sandbox.hermesHome,
-    THEFOOL_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
-    THEFOOL_DESKTOP_IGNORE_EXISTING: '1',
-    THEFOOL_DESKTOP_HERMES_ROOT: REPO_ROOT,
-    THEFOOL_DESKTOP_APP_NAME: `HermesE2E-${Date.now()}`,
+    FOOL_HOME: sandbox.hermesHome,
+    FOOL_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
+    FOOL_DESKTOP_IGNORE_EXISTING: '1',
+    FOOL_DESKTOP_HERMES_ROOT: REPO_ROOT,
+    FOOL_DESKTOP_APP_NAME: `HermesE2E-${Date.now()}`,
     // `app.close()` in teardown must exit even when a spec leaves a turn
     // mid-flight — otherwise the quit confirmation waits on a click that no
     // one is there to make, and the worker dies on a teardown timeout.
-    THEFOOL_DESKTOP_SKIP_QUIT_CONFIRM: '1',
+    FOOL_DESKTOP_SKIP_QUIT_CONFIRM: '1',
     // Clear dev-server override — we want the built dist/, not a vite server.
     // The dev-server check in main.ts looks for this env var; if it's set,
     // it loads from the vite URL instead of the local file.
@@ -310,8 +310,8 @@ export function findElectron(): string {
 /**
  * Launch the desktop app in dev mode.
  *
- * @param sandbox  - isolated THEFOOL_HOME + userData
- * @param env      - the process environment (already has THEFOOL_HOME etc.)
+ * @param sandbox  - isolated FOOL_HOME + userData
+ * @param env      - the process environment (already has FOOL_HOME etc.)
  * @returns the ElectronApplication + first Page
  */
 export async function launchDesktop(
@@ -449,7 +449,7 @@ export interface DeadBackendFixture {
 
 export interface DeadBackendOptions {
   /**
-   * When true, inject a fake boot error via THEFOOL_DESKTOP_BOOT_FAKE_ERROR
+   * When true, inject a fake boot error via FOOL_DESKTOP_BOOT_FAKE_ERROR
    * so the backend resolution itself "fails" with a controlled error message.
    * This is the only reliable way to trigger BootFailureOverlay in dev mode
    * (the real backend always resolves via SOURCE_REPO_ROOT).
@@ -487,7 +487,7 @@ providers:
   )
   writeEnvFile(sandbox.hermesHome)
 
-  const env = buildAppEnv(sandbox, options.fakeError ? { THEFOOL_DESKTOP_BOOT_FAKE_ERROR: 'Failed to connect to Hermes backend: connection refused' } : {})
+  const env = buildAppEnv(sandbox, options.fakeError ? { FOOL_DESKTOP_BOOT_FAKE_ERROR: 'Failed to connect to Hermes backend: connection refused' } : {})
   const { app, page } = await launchDesktop(env)
 
   return {
@@ -540,7 +540,7 @@ export interface PackagedAppFixture {
  * progress without spawning a real Hermes backend.
  *
  * Uses the same sandbox isolation (credential stripping, isolated
- * THEFOOL_HOME + userData, unique app name) as the dev-mode fixtures.
+ * FOOL_HOME + userData, unique app name) as the dev-mode fixtures.
  *
  * Skips if the packaged binary doesn't exist — run `npm run pack` first.
  */
@@ -557,15 +557,15 @@ export async function setupPackagedApp(): Promise<PackagedAppFixture> {
   // packaged-binary-specific overrides.
   const env = buildAppEnv(sandbox, {
     // Fake boot: simulates progress steps without spawning the real backend.
-    THEFOOL_DESKTOP_BOOT_FAKE: '1',
-    THEFOOL_DESKTOP_BOOT_FAKE_STEP_MS: '120',
+    FOOL_DESKTOP_BOOT_FAKE: '1',
+    FOOL_DESKTOP_BOOT_FAKE_STEP_MS: '120',
   })
 
   // Clear dev-server + hermes-root overrides — the packaged binary
   // should use its own bundled renderer, not the dev checkout.
-  delete (env as Record<string, string | undefined>).THEFOOL_DESKTOP_DEV_SERVER
-  delete (env as Record<string, string | undefined>).THEFOOL_DESKTOP_HERMES
-  delete (env as Record<string, string | undefined>).THEFOOL_DESKTOP_HERMES_ROOT
+  delete (env as Record<string, string | undefined>).FOOL_DESKTOP_DEV_SERVER
+  delete (env as Record<string, string | undefined>).FOOL_DESKTOP_HERMES
+  delete (env as Record<string, string | undefined>).FOOL_DESKTOP_HERMES_ROOT
 
   const app = await _electron.launch({
     executablePath: PACKAGED_BINARY_PATH,

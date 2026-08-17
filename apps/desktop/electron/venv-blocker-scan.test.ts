@@ -290,7 +290,7 @@ describe('scanVenvBlockers', () => {
     assert.equal(calls.length, 1)
     const c = calls[0]
     assert.ok(c.cmd.endsWith('python.exe'))
-    assert.deepEqual(c.args, ['-m', 'thefool_cli._scan_venv_blockers'])
+    assert.deepEqual(c.args, ['-m', 'fool_cli._scan_venv_blockers'])
     assert.equal(c.cwd, '/update/root')
     assert.equal(typeof c.timeout, 'number')
     assert.ok(c.timeout > 0)
@@ -338,7 +338,7 @@ describe('stopSafeVenvBlockers', () => {
     assert.deepEqual(calls, [
       {
         command: 'C:\\Hermes\\venv\\Scripts\\python.exe',
-        args: ['-m', 'thefool_cli._scan_venv_blockers', '--terminate-safe', '47484', '1722798000.25']
+        args: ['-m', 'fool_cli._scan_venv_blockers', '--terminate-safe', '47484', '1722798000.25']
       }
     ])
     assert.deepEqual(outcome, { stopped: [47484], failed: [] })

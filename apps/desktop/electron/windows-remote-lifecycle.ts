@@ -25,7 +25,7 @@ async function probeWindowsRemote(ssh, explicitHermesPath = '') {
   const script = [
     '$ErrorActionPreference="Stop"',
     `$explicit=${explicit}`,
-    '$hermesHome=$env:THEFOOL_HOME',
+    '$hermesHome=$env:FOOL_HOME',
     'if(-not $hermesHome){$hermesHome=Join-Path $env:LOCALAPPDATA "hermes"}',
     '$candidates=@()',
     'if($explicit){$candidates+=$explicit}',
@@ -91,7 +91,7 @@ async function detectRemotePlatform(ssh, explicitHermesPath = '') {
 }
 
 function helperCommand(runtime, operation, args = []) {
-  const argv = [runtime.python, '-m', 'thefool_cli.windows_ssh_runtime', operation, ...args]
+  const argv = [runtime.python, '-m', 'fool_cli.windows_ssh_runtime', operation, ...args]
 
   const script = [
     '$ErrorActionPreference="Stop"',

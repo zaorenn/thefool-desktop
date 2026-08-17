@@ -66,7 +66,7 @@ let
   };
 
   # Optional skills are NOT in the wheel (pythonSrc excludes them, see
-  # lib.nix) — the wrapper exposes them via THEFOOL_OPTIONAL_SKILLS, the
+  # lib.nix) — the wrapper exposes them via FOOL_OPTIONAL_SKILLS, the
   # same mechanism Homebrew packaging uses.
   bundledOptionalSkills = lib.cleanSourceWith {
     src = ../optional-skills;
@@ -75,20 +75,20 @@ let
 
   # Import bundled plugins (memory, context_engine, platforms/*).  Keeping
   # them out of the Python site-packages keeps import semantics identical
-  # to a dev checkout — the loader reads them from THEFOOL_BUNDLED_PLUGINS.
+  # to a dev checkout — the loader reads them from FOOL_BUNDLED_PLUGINS.
   bundledPlugins = lib.cleanSourceWith {
     src = ../plugins;
     filter = path: _type: !(lib.hasInfix "/__pycache__/" path);
   };
 
   # i18n locale catalogs (locales/*.yaml). Shipped into the store and pointed
-  # at by THEFOOL_BUNDLED_LOCALES so the wrapped binary always resolves human
+  # at by FOOL_BUNDLED_LOCALES so the wrapped binary always resolves human
   # strings instead of raw i18n keys (#23943 / #27632 / #35374).
   bundledLocales = lib.cleanSource ../locales;
 
   # Shipped MCP catalog (optional-mcps/<name>/manifest.yaml). Same bare-data-dir
   # case as locales: not a Python package, so it's symlinked into the store and
-  # exposed via THEFOOL_OPTIONAL_MCPS.
+  # exposed via FOOL_OPTIONAL_MCPS.
   bundledOptionalMcps = lib.cleanSourceWith {
     src = ../optional-mcps;
     filter = path: _type: !(lib.hasInfix "/__pycache__/" path);
@@ -185,22 +185,22 @@ stdenv.mkDerivation (finalAttrs: {
       (name: ''
         makeWrapper ${hermesVenv}/bin/${name} $out/bin/${name} \
           --suffix PATH : "${runtimePath}" \
-          --set THEFOOL_BUNDLED_SKILLS $out/share/hermes-agent/skills \
-          --set THEFOOL_OPTIONAL_SKILLS $out/share/hermes-agent/optional-skills \
-          --set THEFOOL_BUNDLED_PLUGINS $out/share/hermes-agent/plugins \
-          --set THEFOOL_BUNDLED_LOCALES $out/share/hermes-agent/locales \
-          --set THEFOOL_OPTIONAL_MCPS $out/share/hermes-agent/optional-mcps \
-          --set THEFOOL_WEB_DIST $out/share/hermes-agent/web_dist \
-          --set THEFOOL_TUI_DIR $out/ui-tui \
-          --set-default THEFOOL_BIN $out/bin/hermes \
-          --set THEFOOL_PYTHON ${hermesVenv}/bin/python3 \
-          --set THEFOOL_NODE ${lib.getExe hermesNpmLib.nodejs}${
+          --set FOOL_BUNDLED_SKILLS $out/share/hermes-agent/skills \
+          --set FOOL_OPTIONAL_SKILLS $out/share/hermes-agent/optional-skills \
+          --set FOOL_BUNDLED_PLUGINS $out/share/hermes-agent/plugins \
+          --set FOOL_BUNDLED_LOCALES $out/share/hermes-agent/locales \
+          --set FOOL_OPTIONAL_MCPS $out/share/hermes-agent/optional-mcps \
+          --set FOOL_WEB_DIST $out/share/hermes-agent/web_dist \
+          --set FOOL_TUI_DIR $out/ui-tui \
+          --set-default FOOL_BIN $out/bin/hermes \
+          --set FOOL_PYTHON ${hermesVenv}/bin/python3 \
+          --set FOOL_NODE ${lib.getExe hermesNpmLib.nodejs}${
             # Fold the line continuation INTO the optionalString: a bare
             # `\` on the line above an empty expansion would dangle onto a
             # blank line, ending the makeWrapper command early and running
             # the next flag as its own shell command (`--suffix: command
             # not found`). Only reproduces when rev == null (dirty trees).
-            lib.optionalString (rev != null) " \\\n          --set THEFOOL_REVISION ${rev}"
+            lib.optionalString (rev != null) " \\\n          --set FOOL_REVISION ${rev}"
           }${
             lib.optionalString (
               extraPythonPackages != [ ]
@@ -248,7 +248,7 @@ stdenv.mkDerivation (finalAttrs: {
       };
 
       devShellHook = ''
-        export THEFOOL_PYTHON=${devPython}/bin/python3
+        export FOOL_PYTHON=${devPython}/bin/python3
       '';
 
       devDeps =

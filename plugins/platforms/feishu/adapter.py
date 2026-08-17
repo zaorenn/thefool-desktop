@@ -132,7 +132,7 @@ from gateway.platforms.base import (
     cache_image_from_bytes,
 )
 from gateway.status import acquire_scoped_lock, release_scoped_lock
-from thefool_constants import get_hermes_home
+from fool_constants import get_hermes_home
 from utils import atomic_json_write, env_float, env_int
 
 from agent.secret_scope import UnscopedSecretError as _UnscopedSecretError
@@ -1621,24 +1621,24 @@ class FeishuAdapter(BasePlatformAdapter):
             bot_name=os.getenv("FEISHU_BOT_NAME", "").strip(),
             dedup_cache_size=max(
                 32,
-                env_int("THEFOOL_FEISHU_DEDUP_CACHE_SIZE", _DEFAULT_DEDUP_CACHE_SIZE),
+                env_int("FOOL_FEISHU_DEDUP_CACHE_SIZE", _DEFAULT_DEDUP_CACHE_SIZE),
             ),
             text_batch_delay_seconds=env_float(
-                "THEFOOL_FEISHU_TEXT_BATCH_DELAY_SECONDS", _DEFAULT_TEXT_BATCH_DELAY_SECONDS
+                "FOOL_FEISHU_TEXT_BATCH_DELAY_SECONDS", _DEFAULT_TEXT_BATCH_DELAY_SECONDS
             ),
             text_batch_split_delay_seconds=env_float(
-                "THEFOOL_FEISHU_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0
+                "FOOL_FEISHU_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0
             ),
             text_batch_max_messages=max(
                 1,
-                env_int("THEFOOL_FEISHU_TEXT_BATCH_MAX_MESSAGES", _DEFAULT_TEXT_BATCH_MAX_MESSAGES),
+                env_int("FOOL_FEISHU_TEXT_BATCH_MAX_MESSAGES", _DEFAULT_TEXT_BATCH_MAX_MESSAGES),
             ),
             text_batch_max_chars=max(
                 1,
-                env_int("THEFOOL_FEISHU_TEXT_BATCH_MAX_CHARS", _DEFAULT_TEXT_BATCH_MAX_CHARS),
+                env_int("FOOL_FEISHU_TEXT_BATCH_MAX_CHARS", _DEFAULT_TEXT_BATCH_MAX_CHARS),
             ),
             media_batch_delay_seconds=env_float(
-                "THEFOOL_FEISHU_MEDIA_BATCH_DELAY_SECONDS", _DEFAULT_MEDIA_BATCH_DELAY_SECONDS
+                "FOOL_FEISHU_MEDIA_BATCH_DELAY_SECONDS", _DEFAULT_MEDIA_BATCH_DELAY_SECONDS
             ),
             webhook_host=str(
                 extra.get("webhook_host") or os.getenv("FEISHU_WEBHOOK_HOST", _DEFAULT_WEBHOOK_HOST)
@@ -5258,7 +5258,7 @@ class FeishuAdapter(BasePlatformAdapter):
 #
 # Device-code flow: user scans a QR code with Feishu/Lark mobile app and the
 # platform creates a fully configured bot application automatically.
-# Called by `hermes gateway setup` via _setup_feishu() in thefool_cli/gateway.py.
+# Called by `hermes gateway setup` via _setup_feishu() in fool_cli/gateway.py.
 # =============================================================================
 
 
@@ -5599,7 +5599,7 @@ def _qr_register_inner(
 # per-platform core touchpoints (the Platform.FEISHU elif in gateway/run.py,
 # the feishu_cfg YAML→env block + _PLATFORM_CONNECTED_CHECKERS entry in
 # gateway/config.py, the _setup_feishu wizard + _PLATFORMS["feishu"] static
-# dict in thefool_cli/gateway.py, and the _send_feishu dispatch in
+# dict in fool_cli/gateway.py, and the _send_feishu dispatch in
 # tools/send_message_tool.py).
 # ──────────────────────────────────────────────────────────────────────────
 
@@ -5674,12 +5674,12 @@ async def _standalone_send(
 def interactive_setup() -> None:
     """Interactive setup for Feishu / Lark — scan-to-create or manual creds.
 
-    Replaces the central _setup_feishu in thefool_cli/gateway.py and the static
+    Replaces the central _setup_feishu in fool_cli/gateway.py and the static
     _PLATFORMS["feishu"] dict. CLI helpers are lazy-imported.
     """
-    from thefool_cli.config import get_env_value, remove_env_value, save_env_value
-    from thefool_cli.setup import prompt_choice
-    from thefool_cli.cli_output import (
+    from fool_cli.config import get_env_value, remove_env_value, save_env_value
+    from fool_cli.setup import prompt_choice
+    from fool_cli.cli_output import (
         prompt,
         prompt_yes_no,
         print_header,

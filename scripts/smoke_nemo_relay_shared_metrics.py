@@ -250,7 +250,7 @@ def _arguments() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=None,
-        help="Directory for the isolated THEFOOL_HOME and captured output",
+        help="Directory for the isolated FOOL_HOME and captured output",
     )
     return parser.parse_args()
 
@@ -608,7 +608,7 @@ def main() -> int:
     try:
         _write_config(home, server.server_port)
         env = os.environ.copy()
-        env["THEFOOL_HOME"] = str(home)
+        env["FOOL_HOME"] = str(home)
         python_paths = [str(hermes_repo)]
         if relay_python is not None:
             python_paths.append(str(relay_python))
@@ -669,7 +669,7 @@ def main() -> int:
             sys.executable,
             "-c",
             "\n".join([
-                "from thefool_cli.observability import relay_shared_metrics",
+                "from fool_cli.observability import relay_shared_metrics",
                 "from tools.skill_usage import (",
                 "    STATE_ACTIVE, STATE_ARCHIVED, STATE_STALE, bump_patch,",
                 "    bump_use, record_created, record_installed, set_state,",
@@ -720,7 +720,7 @@ def main() -> int:
     package_paths, packages = _validate_packages(
         telemetry / "outbox",
         hermes_repo
-        / "thefool_cli"
+        / "fool_cli"
         / "observability"
         / "schemas"
         / "hermes.shared_metrics.v2.schema.json",

@@ -22,9 +22,9 @@ class TestSaveConfigValueAtomic:
             "display": {"skin": "default"},
         }))
         # save_config_value resolves the target live via get_hermes_home(), so
-        # point THEFOOL_HOME at the temp dir (the _hermes_home import-time
+        # point FOOL_HOME at the temp dir (the _hermes_home import-time
         # constant is no longer consulted).
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
         monkeypatch.setattr("cli._hermes_home", hermes_home)
         return config_path
 
@@ -52,7 +52,7 @@ class TestSaveConfigValueAtomic:
     def test_model_write_runs_shared_cron_drift_warning(self, config_env, monkeypatch):
         warning = MagicMock()
         monkeypatch.setattr(
-            "thefool_cli.config.warn_unpinned_cron_jobs_after_model_config_change",
+            "fool_cli.config.warn_unpinned_cron_jobs_after_model_config_change",
             warning,
         )
 
@@ -80,19 +80,19 @@ class TestSaveConfigValueAtomic:
 
 
 class TestSaveConfigValueTargetsUserConfig:
-    """Regression: persisted runtime settings must land in THEFOOL_HOME/config.yaml
+    """Regression: persisted runtime settings must land in FOOL_HOME/config.yaml
     (which config readers actually read), never the repo's cli-config.yaml.
 
     This was the "wake-word ear reverts to disabled after restart" bug: on an
-    install whose THEFOOL_HOME/config.yaml did not exist yet, save_config_value
+    install whose FOOL_HOME/config.yaml did not exist yet, save_config_value
     fell back to the checked-in cli-config.yaml. The toggle reported success, but
-    startup read THEFOOL_HOME/config.yaml and never saw the setting."""
+    startup read FOOL_HOME/config.yaml and never saw the setting."""
 
     def test_creates_user_config_when_absent(self, tmp_path, monkeypatch):
-        # Fresh THEFOOL_HOME with NO config.yaml (managed/desktop first launch).
+        # Fresh FOOL_HOME with NO config.yaml (managed/desktop first launch).
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
 
         from cli import save_config_value
 
@@ -113,7 +113,7 @@ class TestSaveConfigValueTargetsUserConfig:
 
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()
-        monkeypatch.setenv("THEFOOL_HOME", str(hermes_home))
+        monkeypatch.setenv("FOOL_HOME", str(hermes_home))
 
         from cli import save_config_value
 

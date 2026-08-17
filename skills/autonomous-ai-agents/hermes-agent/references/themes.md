@@ -1,7 +1,7 @@
 # Themes / Skins — Author a Hermes Color Theme
 
 Author a Hermes **skin** — one YAML file that themes the CLI, the TUI, and the
-desktop GUI at once. The skin engine (`thefool_cli/skin_engine.py`) resolves the
+desktop GUI at once. The skin engine (`fool_cli/skin_engine.py`) resolves the
 active skin and the gateway pushes it to every surface, so a file dropped in
 `~/.hermes/skins/` is the theme analogue of a plugin: no code, all surfaces. This
 skill covers writing a good skin and activating it; it does not build GUI theme
@@ -17,7 +17,7 @@ editors or ship built-in presets.
 
 ## Prerequisites
 
-- Write access to the Hermes home dir — `~/.hermes` by default, or `$THEFOOL_HOME`
+- Write access to the Hermes home dir — `~/.hermes` by default, or `$FOOL_HOME`
   / the active profile's dir. Skins live in `<hermes-home>/skins/`.
 - Native tools: `write_file` (create the YAML), `read_file` / `search_files`
   (inspect existing skins), `terminal` (activate via `hermes config set`).
@@ -57,7 +57,7 @@ Note the sharing: `ui_accent` colors tool markers **and** headings/links/chevron
 so to recolor *only* tool calls (the classic "change the gold `●`") set `ui_tool`.
 `branding` (`agent_name`, `prompt_symbol`, `welcome`, `goodbye`, `help_header`),
 `spinner`, and `tool_prefix` are optional flavor; full schema in
-`thefool_cli/skin_engine.py`.
+`fool_cli/skin_engine.py`.
 
 ## Procedure
 
@@ -100,7 +100,7 @@ enumerate.
 ## Pitfalls
 
 - **Don't hardcode `~/.hermes`** when a profile is active — resolve the real home
-  from `$THEFOOL_HOME` first, falling back to `~/.hermes`.
+  from `$FOOL_HOME` first, falling back to `~/.hermes`.
 - **Keep `#rrggbb` hex.** Shorthand `#rgb`, `rgb()`, and named colors are not
   guaranteed to parse on every surface.
 - **Set `background`.** Without it the GUI has to guess a base surface from text

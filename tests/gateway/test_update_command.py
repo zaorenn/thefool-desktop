@@ -101,7 +101,7 @@ class TestHandleUpdateCommand:
              patch("importlib.util.find_spec", return_value=fake_spec):
             result = _resolve_hermes_bin()
 
-        assert result == [sys.executable, "-m", "thefool_cli.main"]
+        assert result == [sys.executable, "-m", "fool_cli.main"]
 
 
     @pytest.mark.asyncio
@@ -209,7 +209,7 @@ class TestUpdateCommandPlatformGate:
         assert Platform.DISCORD not in GatewayRunner._UPDATE_ALLOWED_PLATFORMS
 
         # Make sure the plugin registry is populated so the fallback fires.
-        from thefool_cli.plugins import PluginManager
+        from fool_cli.plugins import PluginManager
         PluginManager().discover_and_load(force=True)
         from gateway.platform_registry import platform_registry
         discord_entry = platform_registry.get("discord")
@@ -218,7 +218,7 @@ class TestUpdateCommandPlatformGate:
 
         runner = _make_runner()
         event = _make_event(platform=Platform.DISCORD)
-        monkeypatch.setenv("THEFOOL_MANAGED", "")
+        monkeypatch.setenv("FOOL_MANAGED", "")
 
         with patch("subprocess.Popen"):
             result = await runner._handle_update_command(event)
@@ -240,7 +240,7 @@ class TestUpdateCommandPlatformGate:
 
         assert Platform.HOMEASSISTANT not in GatewayRunner._UPDATE_ALLOWED_PLATFORMS
 
-        from thefool_cli.plugins import PluginManager
+        from fool_cli.plugins import PluginManager
         PluginManager().discover_and_load(force=True)
         from gateway.platform_registry import platform_registry
         ha_entry = platform_registry.get("homeassistant")
@@ -249,7 +249,7 @@ class TestUpdateCommandPlatformGate:
 
         runner = _make_runner()
         event = _make_event(platform=Platform.HOMEASSISTANT)
-        monkeypatch.setenv("THEFOOL_MANAGED", "")
+        monkeypatch.setenv("FOOL_MANAGED", "")
 
         with patch("subprocess.Popen"):
             result = await runner._handle_update_command(event)

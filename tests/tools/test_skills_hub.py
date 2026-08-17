@@ -1792,7 +1792,7 @@ class TestLoadHermesIndex:
         cache_file = self._isolate_cache(monkeypatch, tmp_path)
         cache_file.write_text(json.dumps({"skills": [{"name": "stale"}]}))
         # Force the cache to look expired so the network path runs.
-        old = time.time() - (hub.THEFOOL_INDEX_TTL + 100)
+        old = time.time() - (hub.FOOL_INDEX_TTL + 100)
         import os
 
         os.utime(cache_file, (old, old))

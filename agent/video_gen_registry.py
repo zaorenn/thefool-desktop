@@ -29,7 +29,7 @@ import threading
 from typing import Dict, List, Optional
 
 from agent.video_gen_provider import VideoGenProvider
-from thefool_constants import hermes_home_key
+from fool_constants import hermes_home_key
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ def get_active_provider() -> Optional[VideoGenProvider]:
     """
     configured: Optional[str] = None
     try:
-        from thefool_cli.config import load_config_readonly
+        from fool_cli.config import load_config_readonly
 
         cfg = load_config_readonly()
         section = cfg.get("video_gen") if isinstance(cfg, dict) else None

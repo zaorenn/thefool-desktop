@@ -24,12 +24,17 @@ import json
 import os
 import urllib.request
 
-# Base URL of the Nous account service that mints the signed upload URL.
-# Overridable via env so the feature can be pointed at staging / a local dev
-# NAS instance during testing.
-NAS_BASE = os.environ.get(
-    "HERMES_DIAGNOSTICS_BASE_URL", "https://portal.nousresearch.com"
-)
+# FOOL-SEAM: diagnostics-endpoint
+#
+# Upstream burada `/debug` komutunun urettigi tanilama paketini (sistem bilgisi
+# + LOGLAR) Nous'un portalina yukluyordu. The Fool bunu varsayilan olarak
+# YAPMAZ: kullanicinin loglari, oturum icerigi ve makine bilgisi ucuncu bir
+# tarafa gitmemeli. Bos birakildiginda yukleme yolu devre disi kalir ve
+# `/debug` yalnizca yerel paketi uretir.
+#
+# Kendi toplama ucunu kurmak istersen HERMES_DIAGNOSTICS_BASE_URL ile
+# isaretleyebilirsin; akis oldugu gibi calisir.
+NAS_BASE = os.environ.get("HERMES_DIAGNOSTICS_BASE_URL", "")
 
 # Network timeout for each request (seconds). The upload itself can be larger
 # (a gzipped log bundle), so the PUT gets a more generous window.
@@ -51,7 +56,19 @@ def request_upload_url(
     ``uploadExpiresInSeconds``).
 
     Raises on non-2xx responses or unparseable JSON.
+
+    FOOL-SEAM: diagnostics-endpoint
+    NAS_BASE bos ise (The Fool varsayilani) hicbir istek yapilmaz — loglar
+    makinede kalir.
     """
+    if not NAS_BASE:
+        raise RuntimeError(
+            "Diagnostics upload is disabled in The Fool: no collection endpoint is "
+            "configured, so logs never leave this machine. The local bundle was "
+            "still written — attach it manually if you want to share it. To enable "
+            "uploading, set HERMES_DIAGNOSTICS_BASE_URL to an endpoint you control."
+        )
+
     payload: dict = {"contentType": content_type}
     if size_bytes is not None:
         payload["sizeBytes"] = int(size_bytes)

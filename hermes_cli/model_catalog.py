@@ -62,18 +62,23 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_CATALOG_URL = (
-    "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json"
-)
-# Fallback fetch chain. The Docusaurus site is served through Vercel, which
-# occasionally returns HTTP 403 + x-vercel-mitigated: challenge for non-
-# browser clients (urllib, curl). When that happens the disk cache goes
-# stale and new model releases never reach the picker. The raw GitHub URL
-# is the same manifest published from the same repo and is not bot-gated,
-# so we fall through to it whenever the primary URL fails.
-DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = (
-    "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/static/api/model-catalog.json",
-)
+# FOOL-SEAM: model-catalog
+#
+# Upstream burada model katalogunu Nous'un sitesinden ve GitHub deposundan
+# cekiyordu. The Fool bunu YAPMAZ: her acilista Nous'a bir istek gitmesi hem
+# "tamamen yerel calisma" hedefiyle celisir hem de sessiz bir eve-telefon
+# kanalidir.
+#
+# Yerine repoda zaten var olan mekanizma kullaniliyor:
+# ``seed_cache_from_checkout()`` checkout icindeki
+# ``website/static/api/model-catalog.json`` dosyasini disk cache'ine yaziyor.
+# Katalog boylece surumle birlikte geliyor ve guncellemeler `thefool update`
+# ile (yani senin deponla) tasiniyor.
+#
+# Kendi katalog sunucunu kurmak istersen bu iki degeri doldurman yeterli;
+# fetch zinciri oldugu gibi calisir.
+DEFAULT_CATALOG_URL = ""
+DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = ()
 DEFAULT_TTL_HOURS = 1
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
@@ -160,8 +165,14 @@ def _fetch_manifest_with_fallback(
     every URL fails. Skips fallback URLs identical to the primary so an
     operator who configured the catalog URL to point at the raw GitHub
     copy doesn't double-fetch.
+
+    The Fool ships with no catalog URL configured (see FOOL-SEAM: model-catalog),
+    so the common path returns immediately without touching the network.
     """
-    data = _fetch_manifest(primary_url, timeout)
+    if not primary_url and not any(fallback_urls):
+        return None
+
+    data = _fetch_manifest(primary_url, timeout) if primary_url else None
     if data is not None:
         return data
     for url in fallback_urls:

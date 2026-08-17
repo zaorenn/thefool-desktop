@@ -162,6 +162,9 @@ EXPECTED_SEAMS = {
     "bot-display-name",
     "bot-handle",
     "default-mode",
+    "model-catalog",
+    "diagnostics-endpoint",
+    "nous-account-commands",
 }
 
 
@@ -268,3 +271,43 @@ def test_the_fool_never_uses_the_upstream_hermes_data_dir() -> None:
     home = str(hermes_constants.get_hermes_home()).lower().replace("\\", "/")
     assert not home.endswith("local/hermes")
     assert not home.endswith("/.hermes")
+
+
+# =============================================================================
+# Nous bağlarının kesildiği
+# =============================================================================
+
+
+def test_model_catalog_makes_no_network_call_by_default() -> None:
+    """Katalog sürümle birlikte geliyor; her açılışta Nous'a istek gitmiyor."""
+    from hermes_cli import model_catalog
+
+    assert model_catalog.DEFAULT_CATALOG_URL == ""
+    assert model_catalog.DEFAULT_CATALOG_FALLBACK_URLS == ()
+    # URL yoksa fetch zinciri ağa hiç dokunmadan None döner.
+    assert model_catalog._fetch_manifest_with_fallback("", 5.0, ()) is None
+
+
+def test_diagnostics_upload_is_disabled_by_default() -> None:
+    """Loglar ve sistem bilgisi üçüncü tarafa gitmemeli."""
+    import hermes_cli.diagnostics_upload as diag
+
+    assert diag.NAS_BASE == ""
+    with pytest.raises(RuntimeError, match="disabled in The Fool"):
+        diag.request_upload_url()
+
+
+def test_nous_account_commands_are_gone() -> None:
+    """Var olmayan bir planı vaat eden komut, olmayan komuttan kötüdür."""
+    from hermes_cli.commands import COMMAND_REGISTRY
+
+    names = {c.name for c in COMMAND_REGISTRY}
+    assert "subscription" not in names
+    assert "topup" not in names
+
+
+def test_no_command_promises_a_plan_we_do_not_have() -> None:
+    from hermes_cli.commands import COMMAND_REGISTRY
+
+    bogus = [c.name for c in COMMAND_REGISTRY if branding.VENDOR in c.description]
+    assert not bogus, f"'{branding.VENDOR}' vaadi taşıyan komutlar: {bogus}"

@@ -196,6 +196,13 @@
     ],
     "artifactName": "TheFool-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "serhanogurlu",
+        "repo": "thefool-desktop"
+      }
+    ],
     "directories": {
       "output": "release"
     },

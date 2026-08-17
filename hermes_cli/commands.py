@@ -373,9 +373,19 @@ COMMAND_REGISTRY: list[CommandDef] = [
                gateway_only=True, busy_policy="dispatch"),
     CommandDef("usage", "Show token usage and rate limits; `reset` redeems a banked Codex limit reset", "Info",
                args_hint="[reset [--force]]"),
-    CommandDef("subscription", "View your Nous plan and change it in the browser", "Info",
-               cli_only=True, aliases=("upgrade",)),
-    CommandDef("topup", "Show your Nous balance and manage billing on the portal", "Info"),
+    # FOOL-SEAM: nous-account-commands
+    #
+    # /subscription ve /topup kaldirildi. Bunlar Nous Portal hesabina ozel
+    # faturalama komutlariydi; The Fool boyle bir hesap iliskisi tasimiyor.
+    # Markalama gecidinden gectiklerinde "View your Fool Labs plan" gibi
+    # DOGRU OLMAYAN metinler uretiyorlardi -- var olmayan bir plani vaat eden
+    # bir komut, olmayan bir komuttan daha kotudur.
+    #
+    # Nous'u bir model saglayici olarak kullanmak isteyen kullanici bunu
+    # yapmaya devam edebilir (saglayici katmani duruyor); yalnizca hesap ve
+    # faturalama yuzeyi kaldirildi.
+    #
+    # Geri getirmek istersen: iki satiri geri ekle ve metinleri duzelt.
     CommandDef("insights", "Show usage insights and analytics", "Info",
                args_hint="[days]"),
     CommandDef("platforms", "Show gateway/messaging platform status", "Info",

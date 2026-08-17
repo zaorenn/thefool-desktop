@@ -138,8 +138,10 @@ _UPDATE_CHECK_CACHE_SECONDS = 6 * 3600
 # (e.g. nix-built hermes — no local git history to count against).
 UPDATE_AVAILABLE_NO_COUNT = -1
 
-_UPSTREAM_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/nousresearch/hermes-agent"
+# FOOL-SEAM: banner-repo
+# Sürüm/güncelleme bağlantıları The Fool deposunu gösterir.
+_UPSTREAM_REPO_URL = "https://github.com/serhanogurlu/thefool-desktop.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/serhanogurlu/thefool-desktop"
 
 
 def _canonical_github_remote(url: str | None) -> str:
@@ -565,7 +567,7 @@ def _compute_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/NousResearch/hermes-agent/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/serhanogurlu/thefool-desktop/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 

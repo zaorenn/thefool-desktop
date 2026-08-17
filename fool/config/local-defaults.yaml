@@ -1,0 +1,29 @@
+# The Fool — yerel model varsayılanları (LM Studio)
+#
+# Bu dosya `~/.thefool/config.yaml` içine birleştirilir (bkz. scripts/fool-setup.py).
+#
+# NEDEN LM STUDIO
+# ---------------
+# LM Studio OpenAI-uyumlu bir sunucu açıyor, yani Hermes'in "custom endpoint"
+# sağlayıcısı hiçbir ek kod olmadan çalışıyor. Bölge B: sıfır dikiş.
+#
+# DOĞRULANDI (2026-08-17, bu makinede):
+#   - Sunucu: http://127.0.0.1:1234/v1  → 3 model yüklü
+#   - qwen/qwen3.5-9b tool calling YAPIYOR (finish_reason: tool_calls)
+#     Bu kritik: The Fool ajan bir uygulama — dosya düzenliyor, komut
+#     çalıştırıyor, web'e bakıyor. Tool calling olmayan model yalnızca sohbet
+#     eder, iş yapamaz.
+#
+# DONANIM (bu makine): RTX 4070 Ti SUPER 16 GB VRAM, 32 GB RAM, i7-14700KF
+#   qwen3.5-9b  → VRAM'e rahat sığar, hızlı, tool calling var  ← VARSAYILAN
+#   gemma-4-e4b → daha hafif, düşük gecikme gerektiğinde
+
+model:
+  # LM Studio'da yüklü model kimliği (/v1/models ile birebir aynı olmalı).
+  default: "qwen/qwen3.5-9b"
+  provider: "custom"
+  base_url: "http://127.0.0.1:1234/v1"
+
+display:
+  # CLI + TUI + masaüstü GUI'yi aynı anda temalar.
+  skin: "the-fool"

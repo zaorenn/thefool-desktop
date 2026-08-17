@@ -1,5 +1,6 @@
 import { type CSSProperties, useState } from 'react'
 
+import { BRAND } from '@/fool/branding'
 import { capitalize, normalize } from '@/lib/text'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
@@ -144,7 +145,9 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
   return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
 }
 
-const WORDMARK = 'HERMES AGENT'
+// FOOL-SEAM: wordmark
+// Açılış ekranındaki büyük logotype. Kaybolursa "HERMES AGENT" geri gelir.
+const WORDMARK = BRAND.wordmark
 
 function resolveCopy(personality?: string, seed?: number): IntroCopy {
   const personalityKey = normalizeKey(personality)

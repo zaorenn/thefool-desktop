@@ -1590,14 +1590,17 @@ def _discard_stashed_changes(
     print("→ Discarded local source changes (updates.non_interactive_local_changes=discard).")
     return True
 
+# FOOL-SEAM: update-origin
+# Güncellemeler The Fool deposundan gelir, Nous'tan değil. Bu dikiş kaybolursa
+# kullanıcılar sessizce upstream Hermes'e güncellenir ve markalaşma silinir.
 OFFICIAL_REPO_URLS = {
-    "https://github.com/NousResearch/hermes-agent.git",
-    "git@github.com:NousResearch/hermes-agent.git",
-    "https://github.com/NousResearch/hermes-agent",
-    "git@github.com:NousResearch/hermes-agent",
+    "https://github.com/serhanogurlu/thefool-desktop.git",
+    "git@github.com:serhanogurlu/thefool-desktop.git",
+    "https://github.com/serhanogurlu/thefool-desktop",
+    "git@github.com:serhanogurlu/thefool-desktop",
 }
 
-OFFICIAL_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/serhanogurlu/thefool-desktop.git"
 
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 

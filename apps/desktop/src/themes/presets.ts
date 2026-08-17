@@ -3,6 +3,8 @@
  * Add new themes here — no code changes needed elsewhere.
  */
 
+import { theFoolTheme } from '../fool/themes/the-fool'
+
 import type { DesktopTheme, DesktopThemeTypography } from './types'
 
 // Color-emoji fonts to append to every stack as a last resort. None of the UI
@@ -277,6 +279,10 @@ export const slateTheme: DesktopTheme = {
 }
 
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
+  // FOOL-SEAM: theme-preset
+  // The Fool crimson kimliği listenin başında ve varsayılan.
+  // Kaybolursa: tema seçicide The Fool yok olur, varsayılan 'nous'a döner.
+  'the-fool': theFoolTheme,
   nous: nousTheme,
   midnight: midnightTheme,
   ember: emberTheme,
@@ -288,4 +294,4 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'nous'
+export const DEFAULT_SKIN_NAME = 'the-fool'

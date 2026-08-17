@@ -30,12 +30,12 @@ const getServers = (config: { mcp_servers?: unknown } | null): McpServers => {
 }
 
 /**
- * Explicit-confirm gate for `hermes://mcp/install` deep links. The payload is
+ * Explicit-confirm gate for `fool://mcp/install` deep links. The payload is
  * arbitrary attacker-controllable input (any web page can open the link), so
  * this dialog shows the server name and the FULL pretty-printed config —
  * exactly what would be written — and nothing touches config until the user
  * confirms. stdio (`command`) entries carry an extra caution banner because
- * confirming lets Hermes spawn that local process. An existing server name is
+ * confirming lets The Fool spawn that local process. An existing server name is
  * never silently overwritten: confirm stays blocked until the user picks a
  * fresh name or cancels.
  */

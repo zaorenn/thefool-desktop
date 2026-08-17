@@ -121,7 +121,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'hermes-config.json'
+      a.download = 'fool-config.json'
       a.click()
       URL.revokeObjectURL(url)
       triggerHaptic('success')

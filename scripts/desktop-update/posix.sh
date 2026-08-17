@@ -1,7 +1,7 @@
 #!/bin/bash
 # posix.sh -- repo-owned macOS/Linux Desktop update hand-off.
 #
-# The whole job: wait for the Desktop to exit, run `hermes update`, tell the
+# The whole job: wait for the Desktop to exit, run `fool update`, tell the
 # shim how it went, reopen the app. The Desktop spawns this detached and
 # quits; because it lives in the checkout, every update refreshes the code
 # that drives the next one. Replaces the in-app updater
@@ -59,11 +59,11 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FOOL_HOME="${INSTALL_ROOT:+$(dirname "$INSTALL_ROOT")}"
 FOOL_HOME="${FOOL_HOME:-${TMPDIR:-/tmp}}"
-MARKER="$FOOL_HOME/.hermes-update-in-progress"
+MARKER="$FOOL_HOME/.fool-update-in-progress"
 LOG_DIR="$FOOL_HOME/logs"; mkdir -p "$LOG_DIR" 2>/dev/null || true
 LOG="$LOG_DIR/desktop-update-handoff.log"
-RESULT="$FOOL_HOME/.hermes-update-result.json"
-STATUS="${TMPDIR:-/tmp}/hermes-update-status.$$"
+RESULT="$FOOL_HOME/.fool-update-result.json"
+STATUS="${TMPDIR:-/tmp}/fool-update-status.$$"
 
 UI_SERVER_PID="" UI_BROWSER_PID="" FINAL_CODE=1
 FINAL_MSG="update did not complete"
@@ -123,20 +123,20 @@ notify_fallback() { # status message — renderer-free recovery surface.
   # boot surfaces it in a dialog (handoff-result.ts + main.ts).
   case "$1" in manual|error) ;; *) return 0 ;; esac
   if [ "$(uname)" = "Darwin" ]; then
-    /usr/bin/osascript -e "display notification \"$(printf '%s' "$2" | sed 's/"/\\"/g')\" with title \"Hermes update\"" 2>/dev/null && return 0
+    /usr/bin/osascript -e "display notification \"$(printf '%s' "$2" | sed 's/"/\\"/g')\" with title \"The Fool update\"" 2>/dev/null && return 0
   else
     if command -v notify-send >/dev/null 2>&1; then
-      notify-send -u critical "Hermes update" "$2" 2>/dev/null && return 0
+      notify-send -u critical "The Fool update" "$2" 2>/dev/null && return 0
     fi
     local p
     if command -v zenity >/dev/null 2>&1; then
-      zenity --warning --title="Hermes update" --text="$2" 2>/dev/null &
+      zenity --warning --title="The Fool update" --text="$2" 2>/dev/null &
       p=$!; sleep 1
       kill -0 "$p" 2>/dev/null && return 0
       wait "$p" 2>/dev/null
     fi
     if command -v kdialog >/dev/null 2>&1; then
-      kdialog --title "Hermes update" --sorry "$2" 2>/dev/null &
+      kdialog --title "The Fool update" --sorry "$2" 2>/dev/null &
       p=$!; sleep 1
       kill -0 "$p" 2>/dev/null && return 0
       wait "$p" 2>/dev/null
@@ -186,7 +186,7 @@ start_ui() {
   # HTTP 200).  The Python wrapper immediately execs the real process, so $!
   # remains the PID that stop_ui can terminate.
   # TERM/HUP stay IGNORED in the server (SIG_IGN survives execv): a stray
-  # teardown TERM killed the shim ~1s into `hermes update` (2026-08-14 16:44,
+  # teardown TERM killed the shim ~1s into `fool update` (2026-08-14 16:44,
   # window showed ERR_CONNECTION_REFUSED for the whole run; upstream #66753).
   # stop_ui ends the server with SIGKILL instead — it is stateless HTTP.
   "$py" -c 'import os, signal, sys; os.setsid(); signal.signal(signal.SIGTERM, signal.SIG_IGN); signal.signal(signal.SIGHUP, signal.SIG_IGN); os.execv(sys.argv[1], sys.argv[1:])' \
@@ -201,7 +201,7 @@ start_ui() {
 
   # Throwaway profile: new window/process we own; user's browser untouched.
   "$py" -c 'import os, signal, sys; os.setsid(); signal.signal(signal.SIGTERM, signal.SIG_DFL); os.execv(sys.argv[1], sys.argv[1:])' \
-    "$browser" --app="http://127.0.0.1:$port/" --user-data-dir="${TMPDIR:-/tmp}/hermes-update-ui-$$" \
+    "$browser" --app="http://127.0.0.1:$port/" --user-data-dir="${TMPDIR:-/tmp}/fool-update-ui-$$" \
     --no-first-run --no-default-browser-check --window-size=280,320 >/dev/null 2>&1 &
   UI_BROWSER_PID=$!
   log "shim: app window on 127.0.0.1:$port"
@@ -250,13 +250,13 @@ linux_gate() {
     [ "$arg" = "--no-sandbox" ] && { GATE=relaunch; return; }
   done
 
-  GATE=manual GATE_MSG="Update complete, but the rebuilt app can't relaunch itself (its sandbox helper needs root ownership). Reopen Hermes to finish."
+  GATE=manual GATE_MSG="Update complete, but the rebuilt app can't relaunch itself (its sandbox helper needs root ownership). Reopen The Fool to finish."
 }
 
 mac_swap() {
   local rebuilt="" c
-  for c in "$INSTALL_ROOT/apps/desktop/release/mac-arm64/Hermes.app" \
-           "$INSTALL_ROOT/apps/desktop/release/mac/Hermes.app"; do
+  for c in "$INSTALL_ROOT/apps/desktop/release/mac-arm64/The Fool.app" \
+           "$INSTALL_ROOT/apps/desktop/release/mac/The Fool.app"; do
     [ -d "$c" ] && { rebuilt="$c"; break; }
   done
 
@@ -279,7 +279,7 @@ mac_swap() {
         DONE_NOTE="Update complete, but the new app could not be installed; the previous version was restored. Run the update again."
         log "WARNING: bundle install failed; rolled back to the previous app"
       else
-        FINAL_CODE=7 FINAL_MSG="The update finished but installing the new app failed and the previous app could not be restored. Reinstall Hermes (the rebuilt app is at $rebuilt)."
+        FINAL_CODE=7 FINAL_MSG="The update finished but installing the new app failed and the previous app could not be restored. Reinstall The Fool (the rebuilt app is at $rebuilt)."
         log "ERROR: bundle install failed AND rollback failed"
       fi
     else
@@ -374,7 +374,7 @@ finish() {
       if ! launch_app; then
         # Even the kept bundle didn't come back: the durable message must
         # carry BOTH facts (update ok, previous app not reopened).
-        FINAL_MSG="$DONE_NOTE Hermes also could not reopen itself - open it manually."
+        FINAL_MSG="$DONE_NOTE The Fool also could not reopen itself - open it manually."
         write_result
       fi
     fi
@@ -384,7 +384,7 @@ finish() {
   else
     # Launch was due and did not land. Downgrade: truthful result for the
     # next boot, manual state held on screen now.
-    FINAL_MSG="Update complete. Reopen Hermes to finish (it could not restart itself)."
+    FINAL_MSG="Update complete. Reopen The Fool to finish (it could not restart itself)."
     MANUAL=1
     write_result
     publish "manual" "$FINAL_MSG"; stop_ui leave-window
@@ -417,13 +417,13 @@ fi
 # Electron's macOS quit teardown sends SIGTERM to its still-parented updater
 # child on this machine. `detached + unref` gives the child a process group but
 # does not re-parent it before `before-quit` runs, so the hand-off consistently
-# died two seconds after starting `hermes update`. Re-exec through a one-shot
+# died two seconds after starting `fool update`. Re-exec through a one-shot
 # setsid child and let this direct Electron child exit first. The real
 # orchestrator is then owned by launchd (PPID 1) and is outside Electron's quit
 # teardown, while retaining the same marker/result protocol.
 if [ "$HANDOFF_DAEMONIZED" -ne 1 ]; then
   # This launcher is disposable. In particular it must not run finish() on
-  # EXIT: that would publish a false failure and relaunch Hermes while the
+  # EXIT: that would publish a false failure and relaunch The Fool while the
   # re-parented orchestrator is only just starting.
   trap - EXIT HUP INT QUIT TERM
   # --daemonized must precede ORIGINAL_ARGS, not follow it: ORIGINAL_ARGS may
@@ -443,7 +443,7 @@ fi
 
 # Electron terminates the entire detached updater process group during quit,
 # including the loopback status server.  Arm TERM immunity before `start_ui`
-# so the shim server and the later `hermes update` subprocess both inherit
+# so the shim server and the later `fool update` subprocess both inherit
 # SIG_IGN.  The orchestrator restores its normal TERM handler after the update
 # command has returned; the already-running server keeps the inherited setting
 # until normal cleanup closes it.
@@ -452,14 +452,14 @@ log "hand-off start: root=$INSTALL_ROOT branch=$BRANCH desktopPid=$DESKTOP_PID p
 rm -f "$RESULT" 2>/dev/null || true
 
 # Marker claim: same cross-process lock contract as windows.ps1 /
-# update_lock.py (the `hermes update` child adopts it via process ancestry).
+# update_lock.py (the `fool update` child adopts it via process ancestry).
 printf '%s\n%s\n' "$$" "$(date +%s)" > "$MARKER" 2>/dev/null || log "WARNING: could not write update marker"
 
 # Wait out the Desktop (FAIL CLOSED: updating under live backends bricks).
 if [ "$DESKTOP_PID" -gt 0 ] 2>/dev/null; then
   for _ in $(seq 1 100); do kill -0 "$DESKTOP_PID" 2>/dev/null || break; sleep 0.3; done
   if kill -0 "$DESKTOP_PID" 2>/dev/null; then
-    FINAL_CODE=4 FINAL_MSG="Update aborted: the Hermes window (pid $DESKTOP_PID) did not exit within 30s. Nothing was changed. Close Hermes fully and try again."
+    FINAL_CODE=4 FINAL_MSG="Update aborted: the Fool window (pid $DESKTOP_PID) did not exit within 30s. Nothing was changed. Close The Fool fully and try again."
     log "$FINAL_MSG"; exit "$FINAL_CODE"
   fi
 fi
@@ -471,10 +471,10 @@ fi
 sleep 1
 start_ui
 
-FOOL_BIN="$INSTALL_ROOT/venv/bin/hermes"
-[ -x "$FOOL_BIN" ] || { FINAL_CODE=3 FINAL_MSG="Update aborted: $FOOL_BIN is missing. The install needs repair (run the Hermes installer or hermes doctor)."; log "$FINAL_MSG"; exit 3; }
+FOOL_BIN="$INSTALL_ROOT/venv/bin/fool"
+[ -x "$FOOL_BIN" ] || { FINAL_CODE=3 FINAL_MSG="Update aborted: $FOOL_BIN is missing. The install needs repair (run the Fool installer or fool doctor)."; log "$FINAL_MSG"; exit 3; }
 
-# Run FROM the install root: `hermes update` resolves the tree it mutates
+# Run FROM the install root: `fool update` resolves the tree it mutates
 # from the working directory, and we inherit the Desktop's cwd (which can be
 # an unrelated repo — updating THAT instead of the install is the failure
 # the sandbox repro caught). FAIL CLOSED: set -u without set -e means a
@@ -485,14 +485,14 @@ cd "$INSTALL_ROOT" || {
   log "$FINAL_MSG"; exit 3
 }
 export PYTHONUNBUFFERED=1
-log "running: hermes update --yes --gateway --branch $BRANCH"
+log "running: fool update --yes --gateway --branch $BRANCH"
 OUT="$("$FOOL_BIN" update --yes --gateway --branch "$BRANCH" 2>&1)"; CODE=$?
 printf '%s\n' "$OUT" >> "$LOG" 2>/dev/null
-log "hermes update exit code: $CODE"
+log "fool update exit code: $CODE"
 
 if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then
   # Retry once: update-boundary class (fresh code on disk, stale in memory).
-  # Exit 2 ("close all Hermes windows") is not retryable.
+  # Exit 2 ("close all The Fool windows") is not retryable.
   log "retrying once (freshly pulled fix loads on the second run)"
   OUT="$("$FOOL_BIN" update --yes --gateway --branch "$BRANCH" 2>&1)"; CODE=$?
   printf '%s\n' "$OUT" >> "$LOG" 2>/dev/null
@@ -500,17 +500,17 @@ if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then
 fi
 trap 'on_signal TERM' TERM
 
-# Truthful completion: `hermes update` calls a GUI build failure non-fatal
+# Truthful completion: `fool update` calls a GUI build failure non-fatal
 # (exit 0). For a Desktop-driven update that would relaunch the OLD build
 # and call it success -- retry the build once, propagate honestly.
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "Desktop build failed"; then
-  log "desktop build failed inside hermes update; retrying build"
+  log "desktop build failed inside fool update; retrying build"
   "$FOOL_BIN" desktop --force-build --build-only >> "$LOG" 2>&1 || {
-    FINAL_CODE=6 FINAL_MSG="Code and dependencies updated, but the Desktop app rebuild failed - you are running the previous build. Run hermes desktop --force-build from a terminal to retry."
+    FINAL_CODE=6 FINAL_MSG="Code and dependencies updated, but the Desktop app rebuild failed - you are running the previous build. Run fool desktop --force-build from a terminal to retry."
     exit 6
   }
 fi
 
 if [ "$CODE" -eq 0 ]; then FINAL_CODE=0 FINAL_MSG="Update complete."
-else FINAL_CODE="$CODE" FINAL_MSG="Update failed (exit $CODE). Run hermes debug share in a terminal to send a report."; fi
+else FINAL_CODE="$CODE" FINAL_MSG="Update failed (exit $CODE). Run fool debug share in a terminal to send a report."; fi
 exit "$FINAL_CODE"

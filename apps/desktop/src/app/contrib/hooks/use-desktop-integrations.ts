@@ -193,8 +193,8 @@ export function useDesktopIntegrations({
     return () => unsubscribe?.()
   }, [])
 
-  // hermes:// deep links -> a reviewable /blueprint command in the composer,
-  // or (hermes://mcp/install) a pending MCP install awaiting explicit
+  // fool:// deep links -> a reviewable /blueprint command in the composer,
+  // or (fool://mcp/install) a pending MCP install awaiting explicit
   // confirmation in McpInstallDeepLinkDialog. Never auto-installs.
   useEffect(() => {
     const unsubscribe = window.hermesDesktop?.onDeepLink?.(payload => {

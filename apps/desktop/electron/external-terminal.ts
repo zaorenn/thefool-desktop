@@ -1,12 +1,12 @@
-// Launching the Hermes TUI in the user's OWN terminal emulator.
+// Launching the Fool TUI in the user's OWN terminal emulator.
 //
 // This is deliberately NOT the in-app terminal pane: the point of the verb is
 // to hand a session to the terminal the user already lives in, running
-// `hermes --tui --resume <id>` there. Two problems have to be solved for that
+// `fool --tui --resume <id>` there. Two problems have to be solved for that
 // to work anywhere:
 //
-//  1. WHAT to run. The desktop's Hermes runtime is often a venv Python invoked
-//     as `python -m fool_cli.main`, not a `hermes` on PATH — so the command
+//  1. WHAT to run. The desktop's The Fool runtime is often a venv Python invoked
+//     as `python -m fool_cli.main`, not a `fool` on PATH — so the command
 //     and its PYTHONPATH have to be carried over verbatim. We write them into a
 //     small launcher script instead of trying to quote a nested command through
 //     a terminal emulator's `-e` argument, which every emulator parses
@@ -47,7 +47,7 @@ export function windowsQuote(value: string): string {
  *
  * PATH is deliberately dropped: the script runs inside a login shell that
  * already has the user's own PATH, and the desktop's PATH (assembled for a
- * headless child) is the wrong answer for an interactive terminal. The Hermes
+ * headless child) is the wrong answer for an interactive terminal. The Fool
  * command is invoked by absolute path, so nothing here depends on PATH.
  */
 export function terminalScriptEnv(

@@ -278,7 +278,7 @@ describe('SkillsView toolset management', () => {
     await act(async () => {
       window.dispatchEvent(
         new MessageEvent('message', {
-          data: { type: 'hermes-skill-pick', name: 'web-research', identifier: 'web-research' },
+          data: { type: 'fool-skill-pick', name: 'web-research', identifier: 'web-research' },
           origin: 'https://hermes-agent.nousresearch.com'
         })
       )

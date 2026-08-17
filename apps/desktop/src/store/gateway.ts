@@ -73,7 +73,7 @@ interface GatewayRegistryState {
   $gateway: ReturnType<typeof atom<HermesGateway | null>>
 }
 
-const STATE_KEY = Symbol.for('hermes.desktop.gatewayRegistryState')
+const STATE_KEY = Symbol.for('fool.desktop.gatewayRegistryState')
 
 function createRegistryState(): GatewayRegistryState {
   return {
@@ -213,7 +213,7 @@ function applyActive(profile: string, activationEpoch: number): boolean {
   const gateway = activeGateway()
   g.$gateway.set(gateway)
   setGatewayState(gateway?.connectionState ?? 'closed')
-  // Push the active scope's registry connection into the hermes module (null
+  // Push the active scope's registry connection into the fool module (null
   // for the local pool) so connection-building WS calls (pluginSocket) resolve
   // through the same source of truth every activation path maintains here —
   // registry-agent activations included, not just profile switches.
@@ -502,7 +502,7 @@ export async function requestGatewayForProfile<T>(
 
   try {
     if (!route.gateway) {
-      throw new Error(`Hermes gateway unavailable for profile "${route.key}"`)
+      throw new Error(`The Fool gateway unavailable for profile "${route.key}"`)
     }
 
     const routedParams = route.scopeProfile ? { ...params, profile: route.key } : params
@@ -533,7 +533,7 @@ export async function requestGatewayForAgent<T>(
   }
 
   if (!window.hermesDesktop?.getConnectionFor) {
-    throw new Error('This Desktop build cannot dial registry connections. Update Hermes Desktop.')
+    throw new Error('This Desktop build cannot dial registry connections. Update The Fool Desktop.')
   }
 
   const entry = g.secondaries.get(scope) ?? createSecondary(key, connectionId)
@@ -594,7 +594,7 @@ export async function openGatewayForAgent(connectionId: null | string, profile: 
   }
 
   if (!window.hermesDesktop?.getConnectionFor) {
-    throw new Error('This Desktop build cannot dial registry connections. Update Hermes Desktop.')
+    throw new Error('This Desktop build cannot dial registry connections. Update The Fool Desktop.')
   }
 
   const entry = g.secondaries.get(scope) ?? createSecondary(profile, connectionId)
@@ -616,7 +616,7 @@ export async function ensureGatewayForAgent(connectionId: null | string, profile
   }
 
   if (!window.hermesDesktop?.getConnectionFor) {
-    throw new Error('This Desktop build cannot dial registry connections. Update Hermes Desktop.')
+    throw new Error('This Desktop build cannot dial registry connections. Update The Fool Desktop.')
   }
 
   const activationEpoch = beginGatewayActivation()

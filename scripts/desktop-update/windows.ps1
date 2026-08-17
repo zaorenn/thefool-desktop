@@ -2,14 +2,14 @@
 #
 # WHY THIS EXISTS (the frozen-binary problem): the Desktop's Update button
 # used to hand off exclusively to the staged Tauri binary
-# (%FOOL_HOME%\hermes-setup.exe). That binary has no self-update path --
+# (%FOOL_HOME%\fool-setup.exe). That binary has no self-update path --
 # copy_self_to_hermes_home deliberately no-ops during --update -- so every
 # updater-side fix (cache refresh #67369, marker self-adopt #74782, straggler
 # handling) only reaches users when a new installer is built, signed, and
 # published. In practice binaries go months stale and users hit long-fixed
 # bugs on every update (the 2026-08-09 incident chain).
 #
-# This script lives in the repo checkout, so EVERY `hermes update` refreshes
+# This script lives in the repo checkout, so EVERY `fool update` refreshes
 # the very code that drives the next update. The Desktop spawns it through a
 # `cmd start` wrapper (see wrapHandoffForDetachedConsole in
 # apps/desktop/electron/updater-process.ts -- a bare detached+hidden
@@ -22,21 +22,21 @@
 #     -InstallRoot <path>   repo checkout (FOOL_HOME\hermes-agent)
 #     -Branch <ref>         branch to update against
 #     -DesktopPid <pid>     the Electron main process to wait out
-#     [-RelaunchExe <path>] Hermes.exe to start when done (omit = no relaunch)
+#     [-RelaunchExe <path>] The Fool.exe to start when done (omit = no relaunch)
 #     [-NoUi]               headless (tests); default shows a progress window
-#     [-NoMarkerCleanup]    leave .hermes-update-in-progress in place (tests)
+#     [-NoMarkerCleanup]    leave .fool-update-in-progress in place (tests)
 #
 # SAFETY POSTURE: both preflight gates FAIL CLOSED. A Desktop that never
 # exits, or a venv shim that never unlocks, aborts the hand-off without
 # mutating the install -- a skipped update is recoverable, a half-updated
 # venv is not. Every exit path (success, abort, crash) writes
-# .hermes-update-result.json for the relaunched Desktop to surface, and
+# .fool-update-result.json for the relaunched Desktop to surface, and
 # relaunches the Desktop so the user is never left stranded.
 #
-# Marker: we claim FOOL_HOME\.hermes-update-in-progress with OUR pid as
+# Marker: we claim FOOL_HOME\.fool-update-in-progress with OUR pid as
 # step 0 (the wrapper cmd.exe pid the Desktop saw is useless -- it exits
 # immediately). fool_cli/update_lock.py's ancestry rule lets our
-# `hermes update` child adopt the claim; electron/update-marker.ts parks a
+# `fool update` child adopt the claim; electron/update-marker.ts parks a
 # relaunched Desktop on it. Cleanup only removes the marker while WE still
 # own it (a handoff partner that rewrote it keeps its claim).
 
@@ -61,7 +61,7 @@ $ErrorActionPreference = "Continue"
 # WinForms window comes up backgrounded unless we explicitly claim focus --
 # and after the update we must hand focus TO the relaunched Desktop (a
 # WMI-spawned process starts unfocused). AllowSetForegroundWindow lets us
-# pass our foreground right on to the new Hermes.exe pid.
+# pass our foreground right on to the new Fool.exe pid.
 try {
     Add-Type -Namespace HermesHandoff -Name Win32 -MemberDefinition @'
 [DllImport("user32.dll")] public static extern bool SetForegroundWindow(System.IntPtr hWnd);
@@ -78,10 +78,10 @@ try {
 } catch {}
 $TempDir = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
 $HermesHome = if ($InstallRoot) { Split-Path -Parent $InstallRoot } else { $TempDir }
-$MarkerPath = Join-Path $HermesHome ".hermes-update-in-progress"
+$MarkerPath = Join-Path $HermesHome ".fool-update-in-progress"
 $LogDir = Join-Path $HermesHome "logs"
 $LogPath = Join-Path $LogDir "desktop-update-handoff.log"
-$ResultPath = Join-Path $HermesHome ".hermes-update-result.json"
+$ResultPath = Join-Path $HermesHome ".fool-update-result.json"
 $script:Ui = $null
 
 function Write-HandoffLog([string]$Message) {
@@ -236,7 +236,7 @@ function Show-ProgressWindow {
                 # we own (a default-profile launch delegates to an existing
                 # Edge and returns instantly, leaving nothing to close), and
                 # avoids touching the user's real browser profile.
-                $edgeProfile = Join-Path $TempDir ("hermes-update-ui-{0}" -f $PID)
+                $edgeProfile = Join-Path $TempDir ("fool-update-ui-{0}" -f $PID)
                 $edgeArgs = @(
                     "--app=http://127.0.0.1:$($server.Port)/",
                     "--user-data-dir=$edgeProfile",
@@ -318,7 +318,7 @@ function Show-ProgressWindow {
 
 function Show-ErrorFinale([string]$Message) {
     # Terse by design: a title + the debug-share pointer. No error text, no
-    # log tail -- `hermes debug share` uploads the real evidence and the
+    # log tail -- `fool debug share` uploads the real evidence and the
     # relaunched Desktop surfaces the result message.
     if ($script:UiServer) {
         # The shim renders the error state itself; leave the window up for
@@ -363,7 +363,7 @@ function Show-ManualFinale([string]$Message) {
     # shape as the error finale, success glyph semantics: the shim renders
     # `manual` itself; the WinForms card swaps its copy. Held so the user
     # actually sees the instruction — this window is the only surface until
-    # they reopen Hermes themselves.
+    # they reopen The Fool themselves.
     if ($script:UiServer) {
         Publish-UiEvent "manual" $Message
         Stop-UiServer -LeaveWindow
@@ -449,7 +449,7 @@ function Start-DesktopRelaunch {
     # — the sibling truth contract to posix.sh's launch acceptance.
     if (-not $RelaunchExe) { return $false }
     # electron-builder replaces win-unpacked in place. After a successful
-    # update it can remove the old Hermes.exe before writing the replacement,
+    # update it can remove the old Fool.exe before writing the replacement,
     # so a one-shot existence check races the rebuild and strands the user.
     $relaunchDeadline = (Get-Date).AddSeconds(120)
     while (-not (Test-Path -LiteralPath $RelaunchExe)) {
@@ -461,7 +461,7 @@ function Start-DesktopRelaunch {
         if ($script:Ui) { [System.Windows.Forms.Application]::DoEvents() }
     }
     Write-HandoffLog "relaunching desktop: $RelaunchExe"
-    # DO NOT spawn Hermes.exe as our child: Electron/Chromium calls
+    # DO NOT spawn The Fool.exe as our child: Electron/Chromium calls
     # AttachConsole(ATTACH_PARENT_PROCESS) at boot, so a Desktop launched
     # directly from this console PowerShell latches onto OUR console --
     # the console window then outlives the script (it can't close while
@@ -540,7 +540,7 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
     # DoEvents loop keeps the marquee animating through long silent
     # stretches (pip installs) -- the old EndOfStream pump blocked on quiet
     # children and froze it. Full output still lands in the hand-off log
-    # afterwards, where `hermes debug share` picks it up.
+    # afterwards, where `fool debug share` picks it up.
     # System.Diagnostics.Process directly: Start-Process's .ExitCode is
     # unreliably $null under PS 5.1 even with the Handle-touch workaround.
     $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -551,7 +551,7 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
     $psi.UseShellExecute = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
-    # hermes update prints UTF-8 (checkmarks, arrows, box glyphs). PS 5.1
+    # fool update prints UTF-8 (checkmarks, arrows, box glyphs). PS 5.1
     # defaults these readers to the OEM codepage, which mangles every
     # multi-byte glyph into mojibake in the log.
     $psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
@@ -645,7 +645,7 @@ try {
             # A live Desktop means a live backend re-locking the venv at any
             # moment. Updating under it is how installs brick. Abort.
             $finalCode = 4
-            $finalMsg = "Update aborted: the Hermes window (pid $DesktopPid) did not exit within 30s. Nothing was changed. Close Hermes fully and try again."
+            $finalMsg = "Update aborted: the Fool window (pid $DesktopPid) did not exit within 30s. Nothing was changed. Close The Fool fully and try again."
             Write-HandoffLog $finalMsg
             exit $finalCode
         }
@@ -653,7 +653,7 @@ try {
     }
 
     # -- 2. Wait for the venv shim to unlock (FAIL CLOSED) ------------------
-    $shim = Join-Path $InstallRoot "venv\Scripts\hermes.exe"
+    $shim = Join-Path $InstallRoot "venv\Scripts\fool.exe"
     if (Test-Path -LiteralPath $shim) {
         $unlocked = $false
         $deadline = (Get-Date).AddSeconds(20)
@@ -672,7 +672,7 @@ try {
             # Something still maps the venv. --force-ing past it guarantees a
             # half-updated venv (the exact 2026-08-09 Access-denied brick).
             $finalCode = 5
-            $finalMsg = "Update aborted: another process is still holding the Hermes install open (venv\Scripts\hermes.exe locked after 20s). Nothing was changed. Close other Hermes windows/terminals and try again."
+            $finalMsg = "Update aborted: another process is still holding the Fool install open (venv\Scripts\fool.exe locked after 20s). Nothing was changed. Close other The Fool windows/terminals and try again."
             Write-HandoffLog $finalMsg
             exit $finalCode
         }
@@ -680,18 +680,18 @@ try {
     }
 
     # -- 3. Run the update from the CURRENT checkout ------------------------
-    # --force skips only the hermes.exe shim guard, which step 2 just PROVED
+    # --force skips only the fool.exe shim guard, which step 2 just PROVED
     # is unlocked; the venv-python holder guard (orphan reap included) stays
     # active. Our marker claim is adopted by the child via update_lock.py's
     # process-ancestry rule.
     #
-    # DRIVE THE UPDATE THROUGH venv\Scripts\python.exe, NOT venv\Scripts\hermes.exe.
+    # DRIVE THE UPDATE THROUGH venv\Scripts\python.exe, NOT venv\Scripts\fool.exe.
     # `uv pip install -e .` has to replace the console-script shims, so
-    # _quarantine_running_hermes_exe must first rename the running hermes.exe
+    # _quarantine_running_hermes_exe must first rename the running fool.exe
     # out of the way. On Windows that rename fails whenever ANY child process
-    # spawned from that hermes.exe is still alive: a child inherits a handle on
+    # spawned from that fool.exe is still alive: a child inherits a handle on
     # the parent image, and the resulting sharing violation is indistinguishable
-    # from a user leaving a second Hermes window open. It is the inherited
+    # from a user leaving a second Fool window open. It is the inherited
     # handle, not the trampoline itself, that pins the file -- killing the child
     # makes the same rename succeed immediately, and the shim flavour (uv
     # trampoline vs distlib launcher) makes no difference.
@@ -709,7 +709,7 @@ try {
     # returns ERROR_ACCESS_DENIED and `uv pip install -e .` exits 2. The ZIP
     # fallback repeats the identical sequence, so the desktop build stage is
     # never reached and apps/desktop/release is left missing -- an install whose
-    # Start Menu shortcut points at a Hermes.exe that no longer exists.
+    # Start Menu shortcut points at a Fool.exe that no longer exists.
     #
     # Running the same code as `python.exe -m fool_cli.main update` puts the
     # inherited handles on python.exe, which uv never has to replace.
@@ -719,31 +719,31 @@ try {
     $pythonExe = Join-Path $InstallRoot "venv\Scripts\python.exe"
     if (-not (Test-Path -LiteralPath $pythonExe)) {
         $finalCode = 3
-        $finalMsg = "Update aborted: $pythonExe is missing. The install needs repair (run the Hermes installer or `hermes doctor`)."
+        $finalMsg = "Update aborted: $pythonExe is missing. The install needs repair (run the Fool installer or `fool doctor`)."
         Write-HandoffLog $finalMsg
         exit $finalCode
     }
     $updateArgs = @("-m", "fool_cli.main", "update", "--yes", "--gateway", "--force", "--branch", $Branch)
     Write-HandoffLog ("running: python " + ($updateArgs -join " "))
     $res = Invoke-HermesStep $pythonExe $updateArgs "update"
-    Write-HandoffLog "hermes update exit code: $($res.Code)"
+    Write-HandoffLog "fool update exit code: $($res.Code)"
 
     if ($res.Code -ne 0 -and $res.Code -ne 2) {
         # One retry for the update-boundary class (fresh code on disk, stale
-        # code in memory). Exit 2 ("close all Hermes windows") is not retryable.
+        # code in memory). Exit 2 ("close all The Fool windows") is not retryable.
         Write-HandoffLog "first attempt failed; retrying once (freshly pulled fix loads on the second run)"
         $res = Invoke-HermesStep $pythonExe $updateArgs "update"
         Write-HandoffLog "retry exit code: $($res.Code)"
     }
 
     # -- 4. Truthful completion: don't trust exit 0 -------------------------
-    # `hermes update` treats a Desktop GUI build failure as NON-fatal (prints
+    # `fool update` treats a Desktop GUI build failure as NON-fatal (prints
     # a one-line warning, exits 0). For a Desktop-DRIVEN update that warning
     # is fatal: we would relaunch the old exe and call it success. Detect it,
     # retry the build once, and propagate honestly.
     $desktopBuildFailed = $false
     if ($res.Code -eq 0 -and $res.Output -match "Desktop build failed") {
-        Write-HandoffLog "hermes update reported a desktop build failure (non-fatal there, fatal here); retrying build"
+        Write-HandoffLog "fool update reported a desktop build failure (non-fatal there, fatal here); retrying build"
         $rebuild = Invoke-HermesStep $pythonExe @("-m", "fool_cli.main", "desktop", "--force-build", "--build-only") "rebuild"
         Write-HandoffLog "desktop rebuild exit code: $($rebuild.Code)"
         if ($rebuild.Code -ne 0) { $desktopBuildFailed = $true }
@@ -754,10 +754,10 @@ try {
         $finalMsg = "Update complete."
     } elseif ($desktopBuildFailed) {
         $finalCode = 6
-        $finalMsg = "Code and dependencies updated, but the Desktop app REBUILD FAILED - you are running the previous build. Run `hermes desktop --force-build` from a terminal to retry."
+        $finalMsg = "Code and dependencies updated, but the Desktop app REBUILD FAILED - you are running the previous build. Run `fool desktop --force-build` from a terminal to retry."
     } else {
         $finalCode = $res.Code
-        $finalMsg = "Update failed (exit $($res.Code)). Run `hermes debug share` in a terminal to send a report."
+        $finalMsg = "Update failed (exit $($res.Code)). Run `fool debug share` in a terminal to send a report."
     }
     exit $finalCode
 } finally {
@@ -765,7 +765,7 @@ try {
     #   1. durable result + marker removal (the relaunched Desktop consumes
     #      the result on boot and must not park on our marker);
     #   2. attempt the relaunch and require ACCEPTANCE;
-    #   3. only then the terminal UI state — done means "Hermes is back",
+    #   3. only then the terminal UI state — done means "The Fool is back",
     #      manual means "it is not, reopen it", error is error (and still
     #      tries to bring the app back after showing itself).
     Write-Result ($finalCode -eq 0) $finalCode $finalMsg
@@ -779,7 +779,7 @@ try {
         if (-not $cameBack -and $RelaunchExe) {
             # Launch was due and did not verifiably land: truthful result
             # for the next boot, manual state held on screen now.
-            $finalMsg = "Update complete. Reopen Hermes to finish (it could not restart itself)."
+            $finalMsg = "Update complete. Reopen The Fool to finish (it could not restart itself)."
             Write-Result $true 0 $finalMsg $true
             Show-ManualFinale $finalMsg
         }

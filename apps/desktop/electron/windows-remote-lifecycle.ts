@@ -26,19 +26,19 @@ async function probeWindowsRemote(ssh, explicitHermesPath = '') {
     '$ErrorActionPreference="Stop"',
     `$explicit=${explicit}`,
     '$hermesHome=$env:FOOL_HOME',
-    'if(-not $hermesHome){$hermesHome=Join-Path $env:LOCALAPPDATA "hermes"}',
+    'if(-not $hermesHome){$hermesHome=Join-Path $env:LOCALAPPDATA "fool"}',
     '$candidates=@()',
     'if($explicit){$candidates+=$explicit}',
-    '$cmd=Get-Command hermes.exe -ErrorAction SilentlyContinue',
+    '$cmd=Get-Command fool.exe -ErrorAction SilentlyContinue',
     'if($cmd){$candidates+=$cmd.Source}',
-    '$candidates+=(Join-Path $hermesHome "hermes-agent\\venv\\Scripts\\hermes.exe")',
-    '$candidates+=(Join-Path $HOME "hermes-agent\\.venv\\Scripts\\hermes.exe")',
-    '$hermes=$candidates|Where-Object{Test-Path -LiteralPath $_ -PathType Leaf}|Select-Object -First 1',
-    'if(-not $hermes){throw "Hermes is not installed on the remote Windows host."}',
-    'if($explicit -and $hermes -ne $explicit){throw "The configured Hermes path is not an executable file."}',
-    '$python=Join-Path (Split-Path $hermes) "python.exe"',
-    'if(-not (Test-Path -LiteralPath $python -PathType Leaf)){throw "The remote Hermes Python runtime was not found."}',
-    '[ordered]@{os="Windows";arch=$env:PROCESSOR_ARCHITECTURE;hermesHome=$hermesHome;hermesPath=$hermes;python=$python}|ConvertTo-Json -Compress'
+    '$candidates+=(Join-Path $hermesHome "hermes-agent\\venv\\Scripts\\fool.exe")',
+    '$candidates+=(Join-Path $HOME "hermes-agent\\.venv\\Scripts\\fool.exe")',
+    '$fool=$candidates|Where-Object{Test-Path -LiteralPath $_ -PathType Leaf}|Select-Object -First 1',
+    'if(-not $fool){throw "The Fool is not installed on the remote Windows host."}',
+    'if($explicit -and $fool -ne $explicit){throw "The configured Fool path is not an executable file."}',
+    '$python=Join-Path (Split-Path $fool) "python.exe"',
+    'if(-not (Test-Path -LiteralPath $python -PathType Leaf)){throw "The remote Fool Python runtime was not found."}',
+    '[ordered]@{os="Windows";arch=$env:PROCESSOR_ARCHITECTURE;hermesHome=$hermesHome;hermesPath=$fool;python=$python}|ConvertTo-Json -Compress'
   ].join(';')
 
   return JSON.parse((await ssh.exec(powerShellCommand(script))).trim())
@@ -291,7 +291,7 @@ async function connectWindowsRemote(deps) {
   const inspection = await helper(ssh, runtime, 'inspect', [runtime.hermesPath])
 
   if (!inspection.supported) {
-    const error: any = new Error('Update Hermes on the remote Windows host before connecting with Desktop SSH.')
+    const error: any = new Error('Update The Fool on the remote Windows host before connecting with Desktop SSH.')
     error.kind = 'update-required'
     throw error
   }
@@ -299,7 +299,7 @@ async function connectWindowsRemote(deps) {
   runtime.hermesPath = inspection.path
   const hermesVersion = inspection.version || ''
   rememberLog(`[ssh-lifecycle] remote platform Windows/${runtime.arch}`)
-  rememberLog(`[ssh-lifecycle] located hermes at ${runtime.hermesPath}`)
+  rememberLog(`[ssh-lifecycle] located fool at ${runtime.hermesPath}`)
 
   const lock = await helper(ssh, runtime, 'read-lock', [ownershipId])
 
@@ -442,7 +442,7 @@ function buildWindowsInteractiveCommand(remoteCwd = '') {
     )
   }
 
-  script.push('$host.UI.RawUI.WindowTitle="Hermes SSH"', 'powershell.exe -NoLogo')
+  script.push('$host.UI.RawUI.WindowTitle="The Fool SSH"', 'powershell.exe -NoLogo')
 
   return powerShellCommand(script.join(';'))
 }

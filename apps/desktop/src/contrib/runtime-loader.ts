@@ -11,8 +11,8 @@
  * broken plugin can never take the app down.
  *
  * Sources today: the in-repo runtime example (`?raw`, proves the pipeline)
- * and the two on-disk doors — `<hermes home>/desktop-plugins/<name>/plugin.js`
- * and the unified agent-plugin half `<hermes home>/plugins/<name>/desktop/
+ * and the two on-disk doors — `<fool home>/desktop-plugins/<name>/plugin.js`
+ * and the unified agent-plugin half `<fool home>/plugins/<name>/desktop/
  * plugin.js` — the doors the agent writes through.
  *
  * SECURITY — this is NOT a capability boundary. A loaded plugin is evaluated
@@ -37,7 +37,7 @@ import { $pluginRecords, dropPlugin, pluginActive, type PluginKind, publishPlugi
 interface LoadOptions {
   /** Root-level default-enable CAP: `false` ships the plugin opt-in (inventory
    *  row, off until the user toggles) even if the plugin says otherwise. The
-   *  unified agent-plugin root sets this so `~/.hermes/plugins` keeps its
+   *  unified agent-plugin root sets this so `~/.fool/plugins` keeps its
    *  installed-but-inert posture (GHSA-mcfc-hp25-cjv7) on the desktop side too. */
   defaultEnabled?: boolean
   /** Absolute plugin.js path (disk plugins) — recorded for reveal/inventory. */
@@ -199,9 +199,9 @@ export async function loadRuntimePlugin(
 
 // ---------------------------------------------------------------------------
 // The on-disk plugin door — TWO roots, one pipeline:
-//  - `<hermes home>/desktop-plugins/<name>/plugin.js` — the standalone door
+//  - `<fool home>/desktop-plugins/<name>/plugin.js` — the standalone door
 //    (agent- or user-written desktop-only plugins);
-//  - `<hermes home>/plugins/<name>/desktop/plugin.js` — the desktop HALF of a
+//  - `<fool home>/plugins/<name>/desktop/plugin.js` — the desktop HALF of a
 //    unified agent-plugin package: the same installed folder that carries the
 //    Python plugin (plugin.yaml / plugin.json) ships its desktop UI beside it,
 //    so one feature is ONE install instead of two co-dependent plugins.
@@ -246,7 +246,7 @@ async function diskRoots(): Promise<DiskRoot[]> {
   const unified = await desktop.agentPluginsRoot?.()
 
   if (unified) {
-    // Opt-in by default: `~/.hermes/plugins` is installed-but-inert until the
+    // Opt-in by default: `~/.fool/plugins` is installed-but-inert until the
     // user allowlists the Python half (plugins.enabled), so the desktop half
     // matches that posture — inventoried in Settings → Plugins, off until
     // toggled. The standalone desktop-plugins door keeps its default-on trust.

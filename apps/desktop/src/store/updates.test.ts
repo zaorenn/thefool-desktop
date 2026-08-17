@@ -206,7 +206,7 @@ describe('checkBackendUpdates', () => {
       behind: 2,
       update_available: true,
       can_apply: true,
-      update_command: 'hermes update',
+      update_command: 'fool update',
       message: null,
       commits: [{ sha: 'abc1234', summary: 'feat: x', author: 'a', at: 1 }]
     })
@@ -265,7 +265,7 @@ describe('checkBackendUpdates', () => {
   })
 })
 
-// The ⌘K "Update Hermes" row. It used to call applyBackendUpdate() flat, which
+// The ⌘K "Update The Fool" row. It used to call applyBackendUpdate() flat, which
 // in local mode aimed at the backend checkout instead of the client and, with
 // no overlay open, showed nothing at all.
 describe('requestActiveUpdate', () => {
@@ -437,12 +437,12 @@ describe('applyUpdates terminal state', () => {
   })
 
   it('keeps the manual command state for CLI installs with no staged updater', async () => {
-    applyMock.mockResolvedValue({ ok: true, manual: true, command: 'hermes update' })
+    applyMock.mockResolvedValue({ ok: true, manual: true, command: 'fool update' })
 
     await applyUpdates()
 
     expect($updateApply.get().stage).toBe('manual')
-    expect($updateApply.get().command).toBe('hermes update')
+    expect($updateApply.get().command).toBe('fool update')
     expect($updateOverlayOpen.get()).toBe(true)
     expect(notifySpy).not.toHaveBeenCalled()
   })
@@ -479,7 +479,7 @@ describe('applyUpdates terminal state', () => {
       guiUpdated: false,
       manualRestart: true,
       sandboxBlocked: true,
-      message: 'Backend updated. Quit and reopen Hermes to finish.'
+      message: 'Backend updated. Quit and reopen The Fool to finish.'
     })
 
     const result = await applyUpdates()
@@ -521,7 +521,7 @@ describe('applyBackendUpdate recovery', () => {
     updateHermesSpy.mockResolvedValue({ action_id: actionId, ok: true, name: 'update', pid: 1 })
     getActionStatusSpy.mockRejectedValueOnce(new Error('ECONNREFUSED')).mockResolvedValueOnce({
       exit_code: null,
-      lines: [`=== hermes-update completed ${actionId} ===`],
+      lines: [`=== fool-update completed ${actionId} ===`],
       name: 'update',
       pid: null,
       running: false
@@ -550,7 +550,7 @@ describe('applyBackendUpdate recovery', () => {
       .mockRejectedValueOnce(new Error('ECONNREFUSED'))
       .mockResolvedValueOnce({
         exit_code: null,
-        lines: [`=== hermes-update completed ${actionId} ===`],
+        lines: [`=== fool-update completed ${actionId} ===`],
         name: 'update',
         pid: null,
         running: false
@@ -571,13 +571,13 @@ describe('applyBackendUpdate recovery', () => {
 
   it('keeps waiting past the old 45-second cutoff while the update action is running', async () => {
     const actionId = 'f'.repeat(32)
-    updateHermesSpy.mockResolvedValue({ action_id: actionId, ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ action_id: actionId, ok: true, name: 'fool-update', pid: 1 })
 
     for (let attempt = 0; attempt < 31; attempt += 1) {
       getActionStatusSpy.mockResolvedValueOnce({
         exit_code: null,
-        lines: ['=== hermes-update started now ===', `step ${attempt}`],
-        name: 'hermes-update',
+        lines: ['=== fool-update started now ===', `step ${attempt}`],
+        name: 'fool-update',
         pid: 1,
         running: true
       })
@@ -585,8 +585,8 @@ describe('applyBackendUpdate recovery', () => {
 
     getActionStatusSpy.mockRejectedValueOnce(new Error('ECONNREFUSED')).mockResolvedValueOnce({
       exit_code: null,
-      lines: [`=== hermes-update completed ${actionId} ===`],
-      name: 'hermes-update',
+      lines: [`=== fool-update completed ${actionId} ===`],
+      name: 'fool-update',
       pid: null,
       running: false
     })
@@ -602,11 +602,11 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('treats a successful no-op as complete without waiting for a restart', async () => {
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: 0,
-      lines: ['stale output from another run', '=== hermes-update started now ===', '✓ Already up to date!'],
-      name: 'hermes-update',
+      lines: ['stale output from another run', '=== fool-update started now ===', '✓ Already up to date!'],
+      name: 'fool-update',
       pid: 1,
       running: false
     })
@@ -620,11 +620,11 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('treats a successful dependency repair as complete without waiting for a restart', async () => {
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: 0,
-      lines: ['=== hermes-update started now ===', '✓ Dependencies repaired!', '✓ Update complete!'],
-      name: 'hermes-update',
+      lines: ['=== fool-update started now ===', '✓ Dependencies repaired!', '✓ Update complete!'],
+      name: 'fool-update',
       pid: 1,
       running: false
     })
@@ -636,11 +636,11 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('trusts the current action exit code without parsing its output', async () => {
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: 0,
       lines: ['✓ Already up to date!'],
-      name: 'hermes-update',
+      name: 'fool-update',
       pid: 1,
       running: false
     })
@@ -652,20 +652,20 @@ describe('applyBackendUpdate recovery', () => {
 
   it('waits for current-action completion proof after the backend restarts', async () => {
     const actionId = 'a'.repeat(32)
-    updateHermesSpy.mockResolvedValue({ action_id: actionId, ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ action_id: actionId, ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy
       .mockRejectedValueOnce(new Error('ECONNREFUSED'))
       .mockResolvedValueOnce({
         exit_code: null,
-        lines: ['Update complete!', `=== hermes-update completed ${'c'.repeat(32)} ===`],
-        name: 'hermes-update',
+        lines: ['Update complete!', `=== fool-update completed ${'c'.repeat(32)} ===`],
+        name: 'fool-update',
         pid: null,
         running: false
       })
       .mockResolvedValueOnce({
         exit_code: null,
-        lines: ['Update complete!', `=== hermes-update completed ${actionId} ===`],
-        name: 'hermes-update',
+        lines: ['Update complete!', `=== fool-update completed ${actionId} ===`],
+        name: 'fool-update',
         pid: null,
         running: false
       })
@@ -678,11 +678,11 @@ describe('applyBackendUpdate recovery', () => {
 
   it('accepts its terminal receipt when a verbose update pushes the start marker out of the log tail', async () => {
     const actionId = 'b'.repeat(32)
-    updateHermesSpy.mockResolvedValue({ action_id: actionId, ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ action_id: actionId, ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockRejectedValueOnce(new Error('ECONNREFUSED')).mockResolvedValueOnce({
       exit_code: null,
-      lines: ['final build output', 'Update complete!', `=== hermes-update completed ${actionId} ===`],
-      name: 'hermes-update',
+      lines: ['final build output', 'Update complete!', `=== fool-update completed ${actionId} ===`],
+      name: 'fool-update',
       pid: null,
       running: false
     })
@@ -691,7 +691,7 @@ describe('applyBackendUpdate recovery', () => {
     await vi.advanceTimersByTimeAsync(5000)
 
     await expect(promise).resolves.toMatchObject({ ok: true })
-    expect(getActionStatusSpy).toHaveBeenCalledWith('hermes-update', 2000)
+    expect(getActionStatusSpy).toHaveBeenCalledWith('fool-update', 2000)
   })
 
   it('proves a pre-action-ID backend reached its requested commit after restart', async () => {
@@ -703,11 +703,11 @@ describe('applyBackendUpdate recovery', () => {
       targetSha: 'backend:0.18.2',
       updateAvailable: true
     })
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockRejectedValueOnce(new Error('ECONNREFUSED')).mockResolvedValue({
       exit_code: null,
       lines: ['verbose output', 'Update complete!'],
-      name: 'hermes-update',
+      name: 'fool-update',
       pid: null,
       running: false
     })
@@ -720,7 +720,7 @@ describe('applyBackendUpdate recovery', () => {
         install_method: 'git',
         message: 'offline',
         update_available: false,
-        update_command: 'hermes update'
+        update_command: 'fool update'
       })
       .mockResolvedValueOnce({
         behind: 1,
@@ -730,7 +730,7 @@ describe('applyBackendUpdate recovery', () => {
         install_method: 'git',
         message: null,
         update_available: true,
-        update_command: 'hermes update'
+        update_command: 'fool update'
       })
 
     const promise = applyBackendUpdate()
@@ -749,11 +749,11 @@ describe('applyBackendUpdate recovery', () => {
       targetSha: 'backend:0.18.2',
       updateAvailable: true
     })
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: null,
       lines: ['verbose output without a retained start marker'],
-      name: 'hermes-update',
+      name: 'fool-update',
       pid: null,
       running: false
     })
@@ -765,7 +765,7 @@ describe('applyBackendUpdate recovery', () => {
       install_method: 'pip',
       message: null,
       update_available: true,
-      update_command: 'hermes update'
+      update_command: 'fool update'
     })
 
     const promise = applyBackendUpdate()
@@ -776,20 +776,20 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('resumes action polling after a transient status failure', async () => {
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy
       .mockRejectedValueOnce(new Error('ECONNRESET'))
       .mockResolvedValueOnce({
         exit_code: null,
-        lines: ['=== hermes-update started now ===', 'still running'],
-        name: 'hermes-update',
+        lines: ['=== fool-update started now ===', 'still running'],
+        name: 'fool-update',
         pid: 1,
         running: true
       })
       .mockResolvedValueOnce({
         exit_code: 0,
-        lines: ['=== hermes-update started now ===', 'Update complete!'],
-        name: 'hermes-update',
+        lines: ['=== fool-update started now ===', 'Update complete!'],
+        name: 'fool-update',
         pid: 1,
         running: false
       })
@@ -801,12 +801,12 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('restores the fixed action deadline after reconnecting', async () => {
-    updateHermesSpy.mockResolvedValue({ action_id: 'a'.repeat(32), ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ action_id: 'a'.repeat(32), ok: true, name: 'fool-update', pid: 1 })
 
     const running = {
       exit_code: null,
       lines: ['still running'],
-      name: 'hermes-update',
+      name: 'fool-update',
       pid: 1,
       running: true
     }
@@ -825,11 +825,11 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('shares one in-flight update between concurrent apply requests', async () => {
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: 0,
-      lines: ['=== hermes-update started now ===', '✓ Already up to date!'],
-      name: 'hermes-update',
+      lines: ['=== fool-update started now ===', '✓ Already up to date!'],
+      name: 'fool-update',
       pid: 1,
       running: false
     })
@@ -844,11 +844,11 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('fails closed when the update action never reaches a terminal state', async () => {
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: null,
-      lines: ['=== hermes-update started now ===', 'still running'],
-      name: 'hermes-update',
+      lines: ['=== fool-update started now ===', 'still running'],
+      name: 'fool-update',
       pid: 1,
       running: true
     })
@@ -860,11 +860,11 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it('fails immediately when the update action exits nonzero', async () => {
-    updateHermesSpy.mockResolvedValue({ ok: true, name: 'hermes-update', pid: 1 })
+    updateHermesSpy.mockResolvedValue({ ok: true, name: 'fool-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: 1,
-      lines: ['=== hermes-update started now ===', 'update failed'],
-      name: 'hermes-update',
+      lines: ['=== fool-update started now ===', 'update failed'],
+      name: 'fool-update',
       pid: 1,
       running: false
     })

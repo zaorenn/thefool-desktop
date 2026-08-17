@@ -28,7 +28,7 @@ export type { PluginNativeNotificationInput } from '@/store/native-notifications
 export type PluginContribution = Omit<Contribution, 'source' | 'id'> & { id: string }
 
 /** Namespaced JSON persistence (the VS Code `globalState` analog). Keys live
- *  under `hermes.plugin.<id>.` — plugins can't read or clobber each other. */
+ *  under `fool.plugin.<id>.` — plugins can't read or clobber each other. */
 export interface PluginStorage {
   get<T>(key: string, fallback: T): T
   set(key: string, value: unknown): void
@@ -43,7 +43,7 @@ export interface PluginStorage {
 export interface PluginOs {
   /** Native OS notification (Electron), attributed to this plugin. Gated by
    *  Settings ▸ Notifications ▸ "Plugin notifications" and fires only while
-   *  the user is away from Hermes — use `host.notify` for the in-app toast.
+   *  the user is away from The Fool — use `host.notify` for the in-app toast.
    *  Throttled per plugin; reserve it for genuinely notable events. */
   notify: (input: PluginNativeNotificationInput) => void
   /** Open a URL with the OS default handler (browser, mail client, custom
@@ -104,7 +104,7 @@ export interface HermesPlugin {
 }
 
 function createPluginStorage(pluginId: string): PluginStorage {
-  const scoped = (key: string) => `hermes.plugin.${pluginId}.${key}`
+  const scoped = (key: string) => `fool.plugin.${pluginId}.${key}`
 
   return {
     get(key, fallback) {

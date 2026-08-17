@@ -26,7 +26,7 @@ function honchoSchema(): MemoryProviderConfig {
   return {
     name: 'honcho',
     label: 'Honcho',
-    docs_url: 'https://docs.honcho.dev/v3/guides/integrations/hermes',
+    docs_url: 'https://docs.honcho.dev/v3/guides/integrations/fool',
     fields: [
       {
         key: 'apiKey',
@@ -74,7 +74,7 @@ function honchoSchema(): MemoryProviderConfig {
         kind: 'text',
         value: 'myws',
         description: 'Honcho workspace ID.',
-        placeholder: 'hermes',
+        placeholder: 'fool',
         is_set: true,
         inline: true,
         group: 'Connection',
@@ -187,7 +187,7 @@ describe('ProviderConfigPanel', () => {
   })
 
   it('shows an inline error with retry when the load fails, then recovers', async () => {
-    getMemoryProviderConfig.mockRejectedValueOnce(new Error('Timed out connecting to Hermes backend'))
+    getMemoryProviderConfig.mockRejectedValueOnce(new Error('Timed out connecting to The Fool backend'))
 
     await renderPanel()
 

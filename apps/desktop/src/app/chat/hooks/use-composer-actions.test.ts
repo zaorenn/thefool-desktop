@@ -54,7 +54,7 @@ describe('partitionDroppedFiles', () => {
     // extractDroppedFiles emits a dropped directory as a path-only entry so it
     // stays a @folder: ref instead of hitting file.attach, which can't stage a
     // directory ("file not found on gateway and no data_url provided").
-    const folder = inAppRef('/Users/jeff/projects/hermes', { isDirectory: true })
+    const folder = inAppRef('/Users/jeff/projects/fool', { isDirectory: true })
 
     const { inAppRefs, osDrops } = partitionDroppedFiles([folder])
 
@@ -125,7 +125,7 @@ describe('extractDroppedFiles', () => {
   }
 
   it('emits a dropped directory as a path-only entry with isDirectory (no File to upload)', () => {
-    const transfer = stubTransfer([{ path: '/Users/jeff/projects/hermes', isDirectory: true }]) as DataTransfer & {
+    const transfer = stubTransfer([{ path: '/Users/jeff/projects/fool', isDirectory: true }]) as DataTransfer & {
       _pathByFile: Map<File, string>
     }
 
@@ -135,7 +135,7 @@ describe('extractDroppedFiles', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0]?.isDirectory).toBe(true)
-    expect(result[0]?.path).toBe('/Users/jeff/projects/hermes')
+    expect(result[0]?.path).toBe('/Users/jeff/projects/fool')
     // A directory carries no bytes — it must NOT ride the File/upload pipeline.
     expect(result[0]?.file).toBeUndefined()
     // And it partitions as an in-app ref (→ @folder:), never an OS upload drop.
@@ -259,7 +259,7 @@ describe('useComposerActions native image drops', () => {
     const transientPath =
       '/var/folders/x7/example/T/TemporaryItems/NSIRD_screencaptureui_4roSuW/Screen Shot 2026-08-11.png'
 
-    const durablePath = '/Users/test/Library/Application Support/Hermes/composer-images/composer_saved.png'
+    const durablePath = '/Users/test/Library/Application Support/The Fool/composer-images/composer_saved.png'
     const previewUrl = 'data:image/png;base64,c2NyZWVuc2hvdA=='
 
     const screenshot = new File([new Uint8Array([1, 2, 3])], 'Screen Shot 2026-08-11.png', {
@@ -522,7 +522,7 @@ describe('attachImagePath thumbnail separation', () => {
       ...original,
       attachedSessionId: 'session-1',
       label: 'photo.png',
-      path: '/root/.hermes/attachments/photo.png',
+      path: '/root/.fool/attachments/photo.png',
       uploadState: undefined
     })
 
@@ -534,7 +534,7 @@ describe('attachImagePath thumbnail separation', () => {
 
     expect($composerAttachments.get()[0]).toMatchObject({
       attachedSessionId: 'session-1',
-      path: '/root/.hermes/attachments/photo.png',
+      path: '/root/.fool/attachments/photo.png',
       thumbnailUrl: expect.stringMatching(/^data:image\/png;base64,/)
     })
   })

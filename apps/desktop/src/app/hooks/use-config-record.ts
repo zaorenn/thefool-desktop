@@ -10,9 +10,9 @@ import type { HermesConfigRecord } from '@/types/hermes'
 // so a save in one shows in the others, and revisiting a tab paints the cache
 // instead of blanking on a fresh fetch.
 //
-// Distinct from session/hooks/use-hermes-config.ts, which is side-effecting —
+// Distinct from session/hooks/use-fool-config.ts, which is side-effecting —
 // it pushes personality/cwd/voice/… into the session stores for live chat.
-export const FOOL_CONFIG_KEY = ['hermes-config-record'] as const
+export const FOOL_CONFIG_KEY = ['fool-config-record'] as const
 
 // Per-profile cache key. The base key (no profile suffix) is the app-wide
 // active profile, unchanged for every caller that passes nothing. An explicit

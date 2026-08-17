@@ -13,8 +13,8 @@ describe('invalidateProfileScopedQueries', () => {
 
   it('invalidates profile-scoped caches and leaves account/global caches intact', () => {
     const profileScoped = [
-      ['hermes-config-record'],
-      ['hermes-config-schema'],
+      ['fool-config-record'],
+      ['fool-config-schema'],
       ['skills-list'],
       ['toolsets-list'],
       ['model-options', 'global'],

@@ -66,7 +66,7 @@ function emptyEditor(kind: DesktopConnectionKind): EditorState {
 
 /**
  * Settings → Connections: manage the registry of named agent sources (local
- * runtime + any number of remote gateways / Hermes Cloud instances / SSH
+ * runtime + any number of remote gateways / The Fool Cloud instances / SSH
  * hosts). Storage-level management only — the active/primary switchover UX
  * stays in Settings → Gateway until the routing generalization lands.
  */
@@ -248,7 +248,7 @@ export function ConnectionsSettings() {
     [bridge, s.testFailed, s.testOk]
   )
 
-  // Fan out `hermes update` to every eligible source; per-connection results
+  // Fan out `fool update` to every eligible source; per-connection results
   // land as individual toasts so one dead box doesn't hide the others.
   const updateAll = useCallback(async () => {
     if (!bridge?.updateAll) {
@@ -373,7 +373,7 @@ export function ConnectionsSettings() {
         <div className="mt-4 space-y-3 rounded-lg border border-border/60 p-4">
           <div className="grid grid-cols-2 gap-2 @2xl:grid-cols-4">
             {/* Cloud creation is deliberately absent: a dialable cloud entry
-                comes from the Hermes Cloud sign-in/discovery flow (Settings →
+                comes from the Fool Cloud sign-in/discovery flow (Settings →
                 Gateway), not a hand-typed URL. Migrated/discovered cloud
                 entries remain editable (kind buttons are disabled on edit). */}
             {(editor.kind === 'cloud' ? (['cloud'] as const) : (['remote', 'ssh'] as const)).map(kind => (

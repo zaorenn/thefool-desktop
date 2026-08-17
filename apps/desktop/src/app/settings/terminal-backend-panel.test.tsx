@@ -42,7 +42,7 @@ function backends(overrides: Partial<TerminalBackendsResponse> = {}): TerminalBa
         description: 'Run commands on a remote host over SSH.',
         active: false,
         status: 'ready',
-        detail: 'hermes@devbox'
+        detail: 'fool@devbox'
       }
     ],
     ...overrides

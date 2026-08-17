@@ -77,7 +77,7 @@ const UPDATE_TOAST_ID = 'desktop-update-available'
 // a day, so a "don't show this exact sha again" guard re-popped the toast on
 // every new commit. We instead suppress the toast for a cooldown window that
 // (re)starts whenever the user closes it.
-const UPDATE_TOAST_SNOOZE_KEY = 'hermes:update-toast-snooze-until'
+const UPDATE_TOAST_SNOOZE_KEY = 'fool:update-toast-snooze-until'
 const UPDATE_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 function snoozeUpdateToast(): void {
@@ -106,7 +106,7 @@ const SKEW_TOAST_ID = 'backend-contract-skew'
 // right after they closed it. Mirror the update toast: persist a cooldown when
 // the user dismisses it. It still reminds again after the window if the backend
 // is still behind, and clears immediately once the backend catches up.
-const SKEW_TOAST_SNOOZE_KEY = 'hermes:backend-skew-toast-snooze-until'
+const SKEW_TOAST_SNOOZE_KEY = 'fool:backend-skew-toast-snooze-until'
 const SKEW_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 function snoozeSkewToast(): void {
@@ -124,7 +124,7 @@ const INSTALL_METHOD_TOAST_ID = 'install-method-not-supported'
 // re-derived from every session.info (session.create/resume/activate all
 // route through applyRuntimeInfo), so without a snooze it would re-pop on
 // every session switch even right after the user dismissed it.
-const INSTALL_METHOD_TOAST_SNOOZE_KEY = 'hermes:install-method-toast-snooze-until'
+const INSTALL_METHOD_TOAST_SNOOZE_KEY = 'fool:install-method-toast-snooze-until'
 const INSTALL_METHOD_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 function snoozeInstallMethodToast(): void {
@@ -408,15 +408,15 @@ export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promis
     const result = await bridge.apply(opts)
 
     // CLI install with no staged updater: not an error — the user just runs
-    // `hermes update` themselves. Land on a dedicated manual state so the
+    // `fool update` themselves. Land on a dedicated manual state so the
     // overlay shows the command + copy button instead of a dead retry loop.
     if (result?.manual) {
       $updateApply.set({
         ...IDLE,
         applying: false,
         stage: 'manual',
-        message: result.command ?? 'hermes update',
-        command: result.command ?? 'hermes update'
+        message: result.command ?? 'fool update',
+        command: result.command ?? 'fool update'
       })
 
       return result
@@ -547,7 +547,7 @@ function completedAfterRestart(
   status: Awaited<ReturnType<typeof getActionStatus>>,
   actionId: string | undefined
 ): boolean {
-  return !!actionId && status.lines.some(line => line === `=== hermes-update completed ${actionId} ===`)
+  return !!actionId && status.lines.some(line => line === `=== fool-update completed ${actionId} ===`)
 }
 
 function legacyBackendReachedTarget(
@@ -589,7 +589,7 @@ async function runBackendUpdate(): Promise<DesktopUpdateApplyResult> {
 
     if (!started.ok) {
       const message = (started as { message?: string }).message || translateNow('updates.applyStatus.notAvailable')
-      const command = (started as { update_command?: string }).update_command || 'hermes update'
+      const command = (started as { update_command?: string }).update_command || 'fool update'
       $backendUpdateApply.set({ ...IDLE, applying: false, stage: 'manual', message, command })
 
       return { ok: false, error: 'manual', manual: true, message, command }

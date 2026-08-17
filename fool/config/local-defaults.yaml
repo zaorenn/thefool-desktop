@@ -1,30 +1,52 @@
 # The Fool — yerel model varsayılanları (LM Studio)
 #
-# Bu dosya `~/.thefool/config.yaml` içine birleştirilir (bkz. scripts/fool-setup.py).
+# Bu dosya `~/.thefool/config.yaml` içine birleştirilir.
 #
 # NEDEN LM STUDIO
 # ---------------
-# LM Studio OpenAI-uyumlu bir sunucu açıyor, yani Hermes'in "custom endpoint"
-# sağlayıcısı hiçbir ek kod olmadan çalışıyor. Bölge B: sıfır dikiş.
+# LM Studio OpenAI-uyumlu bir sunucu açıyor ve Hermes'te BİRİNCİ SINIF
+# sağlayıcı olarak destekleniyor (`provider: "lmstudio"`, varsayılan uç
+# http://127.0.0.1:1234/v1). Yani sıfır dikişle çalışıyor.
 #
 # DOĞRULANDI (2026-08-17, bu makinede):
-#   - Sunucu: http://127.0.0.1:1234/v1  → 3 model yüklü
-#   - qwen/qwen3.5-9b tool calling YAPIYOR (finish_reason: tool_calls)
-#     Bu kritik: The Fool ajan bir uygulama — dosya düzenliyor, komut
-#     çalıştırıyor, web'e bakıyor. Tool calling olmayan model yalnızca sohbet
-#     eder, iş yapamaz.
+#   qwen/qwen3.5-9b tool calling YAPIYOR (finish_reason: tool_calls).
+#   Bu kritik: The Fool ajan bir uygulama — dosya düzenliyor, komut
+#   çalıştırıyor. Tool calling olmayan model yalnızca sohbet eder.
 #
-# DONANIM (bu makine): RTX 4070 Ti SUPER 16 GB VRAM, 32 GB RAM, i7-14700KF
+# DONANIM (bu makine): RTX 4070 Ti SUPER 16 GB VRAM, 32 GB RAM
 #   qwen3.5-9b  → VRAM'e rahat sığar, hızlı, tool calling var  ← VARSAYILAN
-#   gemma-4-e4b → daha hafif, düşük gecikme gerektiğinde
+#   gemma-4-e4b → daha hafif alternatif
 
 model:
-  # LM Studio'da yüklü model kimliği (/v1/models ile birebir aynı olmalı).
   default: "qwen/qwen3.5-9b"
-  # LM Studio birinci sınıf sağlayıcı: base_url gerekmiyor, varsayılanı
-  # zaten http://127.0.0.1:1234/v1. Auth'lu ve auth'suz modda çalışır.
   provider: "lmstudio"
+
+# YARDIMCI (auxiliary) GÖREVLER
+# -----------------------------
+# Başlık üretimi, bağlam sıkıştırma, oturum arama gibi yan görevler
+# varsayılan olarak "auto" ile uzak sağlayıcıları deniyor. Kimlik bilgisi
+# olmayan yerel bir kurulumda bu şu logu üretiyordu:
+#
+#   Auxiliary: marking openrouter unhealthy (payment / credit error)
+#   Auxiliary: marking nous unhealthy (payment / credit error)
+#   Auxiliary title_generation: connection error ... all fallbacks exhausted
+#
+# Hepsini yerele sabitliyoruz: gereksiz ağ denemesi yok, sessiz hata yok.
+auxiliary:
+  title_generation:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
+  compression:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
+  session_search:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
+  web_extract:
+    provider: "lmstudio"
+    model: "qwen/qwen3.5-9b"
 
 display:
   # CLI + TUI + masaüstü GUI'yi aynı anda temalar.
   skin: "the-fool"
+  tool_progress: all

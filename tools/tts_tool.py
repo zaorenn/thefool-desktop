@@ -2978,7 +2978,14 @@ def _generate_piper_tts(text: str, output_path: str, tts_config: Dict[str, Any])
     voice_name = piper_config.get("voice") or DEFAULT_PIPER_VOICE
     download_dir = Path(piper_config.get("voices_dir") or _get_piper_voices_dir()).expanduser()
     download_dir.mkdir(parents=True, exist_ok=True)
-    use_cuda = bool(piper_config.get("use_cuda", False))
+    # FOOL-SEAM: tts-device
+    # Birleşik cihaz seçimi: `device: auto|cuda|cpu`. Upstream yalnızca
+    # `use_cuda: bool` biliyordu ve CUDA yoksa ne olacağı tanımsızdı.
+    # resolve() eski anahtarı da okur, `auto` varsayılanı donanıma göre seçer
+    # ve `cuda` istenip bulunamadığında SESSIZCE düşmek yerine uyarır.
+    from fool.tts_device import resolve as _fool_resolve_device
+
+    use_cuda = _fool_resolve_device(piper_config, provider="piper") == "cuda"
 
     model_path = _resolve_piper_voice_path(voice_name, download_dir)
 

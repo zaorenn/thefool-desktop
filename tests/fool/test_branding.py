@@ -182,6 +182,9 @@ EXPECTED_SEAMS = {
     "locale-brand",
     "web-i18n-brand",
     "shared-branding",
+    "tts-device",
+    "local-tts-deps",
+    "context-file-names",
 }
 
 
@@ -505,3 +508,55 @@ def test_home_resolution_honours_legacy_env(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.delenv("FOOL_HOME", raising=False)
     monkeypatch.setenv("FOOL_HOME", r"C:\eski\fool-home")
     assert str(fool_constants._hermes_home_from_env()) == r"C:\eski\fool-home"
+
+
+# =============================================================================
+# TTS: cihaz seçimi
+# =============================================================================
+
+
+def test_tts_device_explicit_cpu_is_honoured() -> None:
+    from fool import tts_device
+
+    assert tts_device.resolve({"device": "cpu"}) == "cpu"
+
+
+def test_tts_device_reads_legacy_use_cuda_flag() -> None:
+    """Piper'ın eski `use_cuda` anahtarı okunmaya devam etmeli.
+
+    Mevcut yapılandırmalar sessizce yok sayılırsa kullanıcı GPU'yu açtığını
+    sanıp CPU'da çalışmaya devam eder.
+    """
+    from fool import tts_device
+
+    assert tts_device.resolve({"use_cuda": False}) == "cpu"
+
+
+def test_tts_device_falls_back_to_cpu_when_cuda_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`cuda` istenip bulunamadığında çalışmaya devam etmeli — ama sessizce değil."""
+    from fool import tts_device
+
+    monkeypatch.setattr(tts_device, "cuda_available", lambda: False)
+    assert tts_device.resolve({"device": "cuda"}) == "cpu"
+
+
+def test_tts_device_auto_picks_cuda_when_present(monkeypatch: pytest.MonkeyPatch) -> None:
+    from fool import tts_device
+
+    monkeypatch.setattr(tts_device, "cuda_available", lambda: True)
+    assert tts_device.resolve({}) == "cuda"
+    assert tts_device.resolve({"device": "auto"}) == "cuda"
+
+
+def test_local_tts_engines_are_registered_for_lazy_install() -> None:
+    """FOOL-SEAM: local-tts-deps — Piper yerleşik ama kayıtsızdı.
+
+    Kayıt olmayınca seçildiğinde "pip install piper-tts" diyen bir hata
+    veriyordu; kullanıcının gördüğü hata tam buydu.
+    """
+    from tools.lazy_deps import LAZY_DEPS
+
+    for feature in ("tts.piper", "tts.chatterbox", "tts.kokoro"):
+        assert feature in LAZY_DEPS, f"{feature} tembel kurulum kaydinda yok"

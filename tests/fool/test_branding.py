@@ -185,6 +185,7 @@ EXPECTED_SEAMS = {
     "tts-device",
     "local-tts-deps",
     "context-file-names",
+    "first-run-autodetect",
 }
 
 
@@ -560,3 +561,55 @@ def test_local_tts_engines_are_registered_for_lazy_install() -> None:
 
     for feature in ("tts.piper", "tts.chatterbox", "tts.kokoro"):
         assert feature in LAZY_DEPS, f"{feature} tembel kurulum kaydinda yok"
+
+
+# =============================================================================
+# İlk açılışta yerel sunucu keşfi
+# =============================================================================
+
+
+def test_autodetect_skips_embedding_models() -> None:
+    """Gömme modeli sohbet edemez — seçilirse kullanıcı hiç cevap alamaz."""
+    from fool import autodetect
+
+    models = ["text-embedding-nomic-embed-text-v1.5", "qwen/qwen3.5-9b"]
+    assert autodetect.choose_model(models) == "qwen/qwen3.5-9b"
+
+
+def test_autodetect_prefers_tool_capable_family() -> None:
+    """The Fool ajan bir uygulama: araç çağıramayan model iş yapamaz."""
+    from fool import autodetect
+
+    models = ["some-unknown-model", "qwen/qwen3.5-9b"]
+    assert autodetect.choose_model(models) == "qwen/qwen3.5-9b"
+
+
+def test_autodetect_returns_none_when_only_embeddings() -> None:
+    from fool import autodetect
+
+    assert autodetect.choose_model(["bge-large-en", "text-embedding-3"]) is None
+
+
+def test_autodetect_lmstudio_needs_no_base_url() -> None:
+    """LM Studio birinci sınıf sağlayıcı — varsayılan ucu zaten biliyor."""
+    from fool import autodetect
+
+    runner = autodetect.RUNNERS[0]
+    assert runner.key == "lmstudio"
+    patch = autodetect.config_patch(
+        autodetect.Detection(runner=runner, models=["m"], chosen_model="m")
+    )
+    assert patch["model"]["provider"] == "lmstudio"
+    assert "base_url" not in patch["model"]
+
+
+def test_autodetect_generic_runner_gets_base_url() -> None:
+    """Ollama/llama.cpp gibi genel uçlar `custom` olarak base_url ile bağlanır."""
+    from fool import autodetect
+
+    ollama = next(r for r in autodetect.RUNNERS if r.key == "ollama")
+    patch = autodetect.config_patch(
+        autodetect.Detection(runner=ollama, models=["x"], chosen_model="x")
+    )
+    assert patch["model"]["provider"] == "custom"
+    assert patch["model"]["base_url"] == ollama.base_url

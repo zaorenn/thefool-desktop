@@ -3158,7 +3158,7 @@ def _model_flow_anthropic(config, current_model=""):
         # Update config with provider — clear base_url since
         # resolve_runtime_provider() always hardcodes Anthropic's URL.
         # Leaving a stale base_url in config can contaminate other
-        # providers if the user switches without running 'hermes model'.
+        # providers if the user switches without running 'fool model'.
         cfg = load_config()
         model = cfg.get("model")
         if not isinstance(model, dict):

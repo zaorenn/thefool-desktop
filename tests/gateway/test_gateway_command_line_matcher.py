@@ -25,13 +25,13 @@ ACCEPT = [
     "python -m fool_cli/main.py gateway run",
     "python gateway/run.py",
     "hermes-gateway.exe",
-    "hermes gateway",          # bare `fool gateway` defaults to run
-    "hermes gateway run",
+    "fool gateway",          # bare `fool gateway` defaults to run
+    "fool gateway run",
     # profile selector AFTER the `gateway` token (argv is profile-position
     # agnostic — _apply_profile_override strips --profile/-p anywhere)
-    "hermes gateway --profile work run",
+    "fool gateway --profile work run",
     "python -m fool_cli.main gateway -p work run",
-    "hermes gateway --profile=work run",
+    "fool gateway --profile=work run",
     # a profile literally NAMED "gateway"
     "hermes -p gateway gateway run",
     "python -m fool_cli.main --profile gateway gateway run",

@@ -203,7 +203,7 @@ class TestConfigGetUnset:
 # ---------------------------------------------------------------------------
 
 class TestListNavigation:
-    """hermes config set must preserve YAML list fields when using numeric
+    """fool config set must preserve YAML list fields when using numeric
     indices.  Before #17876, _set_nested would silently replace the entire
     list with a dict, destroying every sibling entry.
     """
@@ -560,7 +560,7 @@ class TestDisplaySkinTouch:
 
     The gateway's skin watcher broadcasts ``skin.changed`` on a signature move
     of (active name, skin-file mtime). Re-affirming the already-configured skin
-    (`hermes config set display.skin X` while it is already X — the recovery
+    (`fool config set display.skin X` while it is already X — the recovery
     path when a surface missed the original activation) moves NEITHER part, so
     without the touch the explicit apply is invisible to every live surface.
     """
@@ -602,7 +602,7 @@ class TestDisplaySkinTouch:
 # ---------------------------------------------------------------------------
 
 class TestMappingGuard:
-    """``hermes config set <section> <scalar>`` must not silently destroy an
+    """``fool config set <section> <scalar>`` must not silently destroy an
     existing mapping.  Bare ``model`` is a documented shorthand — redirect to
     ``model.default``.  All other mapping sections are refused without --force.
     """
@@ -612,7 +612,7 @@ class TestMappingGuard:
         (tmp_path / "config.yaml").write_text(_yaml.dump(data))
 
     def test_bare_model_shorthand_preserves_siblings(self, _isolated_hermes_home):
-        """hermes config set model <id> → model.default, siblings survive."""
+        """fool config set model <id> → model.default, siblings survive."""
         self._write_config(_isolated_hermes_home, {
             "model": {
                 "default": "gpt-4o",
@@ -636,7 +636,7 @@ class TestMappingGuard:
         assert "gpt-5.6-sol" in _read_config(_isolated_hermes_home)
 
     def test_non_model_mapping_is_refused(self, _isolated_hermes_home):
-        """hermes config set terminal bash → refuse, terminal has sub-keys."""
+        """fool config set terminal bash → refuse, terminal has sub-keys."""
         self._write_config(_isolated_hermes_home, {
             "terminal": {
                 "backend": "docker",
@@ -649,7 +649,7 @@ class TestMappingGuard:
         assert exc.value.code == 1
 
     def test_non_model_mapping_force_overwrites(self, _isolated_hermes_home):
-        """hermes config set --force terminal bash → proceed, section wiped."""
+        """fool config set --force terminal bash → proceed, section wiped."""
         self._write_config(_isolated_hermes_home, {
             "terminal": {
                 "backend": "docker",
@@ -676,7 +676,7 @@ class TestMappingGuard:
         assert parsed["model"]["provider"] == "openai-api"
 
     def test_model_force_overwrites_entire_section(self, _isolated_hermes_home):
-        """hermes config set --force model <id> → overwrite entire section."""
+        """fool config set --force model <id> → overwrite entire section."""
         self._write_config(_isolated_hermes_home, {
             "model": {
                 "default": "gpt-4o",

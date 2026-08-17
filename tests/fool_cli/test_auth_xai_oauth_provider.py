@@ -420,7 +420,7 @@ def test_format_auth_error_tier_denied_does_not_suggest_relogin():
     )
     rendered = format_auth_error(err)
     assert "re-authenticate" not in rendered.lower()
-    assert "hermes model" not in rendered.lower()
+    assert "fool model" not in rendered.lower()
     assert "XAI_API_KEY" in rendered
 
 
@@ -628,7 +628,7 @@ def test_login_xai_oauth_relogin_clears_suppression_and_reseeds(tmp_path, monkey
 
     Pre-fix: ``auth_remove_command`` set ``["device_code"]`` suppression but
     only ``auth_add_command`` cleared it — the ``fool model`` re-login path did
-    not. So after remove -> re-login the seed kept skipping and ``hermes auth
+    not. So after remove -> re-login the seed kept skipping and ``fool auth
     list`` showed no xAI entry even though the agent still worked via the
     singleton fallback. The fix calls ``unsuppress_credential_source`` on
     explicit interactive login success.

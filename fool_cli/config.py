@@ -6,12 +6,12 @@ Config files are stored in ~/.hermes/ for easy access:
 - ~/.hermes/.env         - API keys and secrets
 
 This module provides:
-- hermes config          - Show current configuration
-- hermes config edit     - Open config in editor
-- hermes config get      - Print a resolved configuration value
-- hermes config set      - Set a specific value
-- hermes config unset    - Remove a user configuration value
-- hermes config wizard   - Re-run setup wizard
+- fool config          - Show current configuration
+- fool config edit     - Open config in editor
+- fool config get      - Print a resolved configuration value
+- fool config set      - Set a specific value
+- fool config unset    - Remove a user configuration value
+- fool config wizard   - Re-run setup wizard
 """
 
 import copy
@@ -150,7 +150,7 @@ def _warn_config_parse_failure(
         msg += f" A copy of the corrupted file was saved to {backup_path}."
     logger.warning(msg)
     try:
-        sys.stderr.write(f"⚠️  hermes config: {msg}\n")
+        sys.stderr.write(f"⚠️  fool config: {msg}\n")
         sys.stderr.flush()
     except Exception:
         pass
@@ -307,7 +307,7 @@ _EXTRA_ENV_KEYS = frozenset({
     "MATRIX_RECOVERY_KEY",
     # Langfuse observability plugin — optional tuning keys + standard SDK vars.
     # Activation is via plugins.enabled (opt-in through `hermes plugins enable
-    # observability/langfuse` or `hermes tools → Langfuse`); credentials gate
+    # observability/langfuse` or `fool tools → Langfuse`); credentials gate
     # the plugin at runtime.
     "FOOL_LANGFUSE_ENV",
     "FOOL_LANGFUSE_RELEASE",
@@ -548,7 +548,7 @@ def recommended_update_command_for_method(method: str) -> str:
         return _NIX_UPDATE_MSG
     if method == "docker":
         return "docker pull nousresearch/hermes-agent:latest"
-    return "hermes update"
+    return "fool update"
 
 
 def recommended_update_command() -> str:
@@ -944,6 +944,18 @@ def _fool_seed_local_model(home: Path) -> None:
         patch = config_patch(detection)
         patch.setdefault("display", {})["skin"] = "the-fool"
 
+        # FOOL-SEAM: browser-default
+        #
+        # Upstream'de `browser.backend` varsayilani Browser Use (bulut, API
+        # anahtari ister). Anahtar yoksa calismaz VE bu mod acikken YERLESIK
+        # browser_* araclari da devre disi kalir. Sonuc: ajanin elinde hic
+        # tarayici kalmaz, her seyi computer use ile yapmaya calisir --
+        # ekran goruntusu alip piksel koordinatina tiklamak. YouTube'da bir
+        # sarkiyi oynatmak bile beceremez.
+        #
+        # Yerel-once bir uruntde bu varsayilan yanlis: yerlesik yigin.
+        patch.setdefault("browser", {})["backend"] = "off"
+
         with config_path.open("w", encoding="utf-8") as handle:
             handle.write(
                 "# The Fool — ilk acilista otomatik olusturuldu.\n"
@@ -960,6 +972,50 @@ def _fool_seed_local_model(home: Path) -> None:
         )
     except Exception as exc:  # pragma: no cover — kurulum asla cokmemeli
         logger.debug("[The Fool] yerel sunucu otomatik yapilandirmasi atlandi: %s", exc)
+
+    _fool_seed_browser_binary(home)
+
+
+def _fool_seed_browser_binary(home: Path) -> None:
+    """FOOL-SEAM: browser-default
+
+    ``agent-browser`` bir Chromium ikilisine ihtiyaç duyuyor. Bulunmazsa
+    yerleşik tarayıcı araçları kapalı kalır ve ajan yine computer use'a
+    düşer — yani ``browser.backend: off`` tek başına yetmez.
+
+    Çoğu Windows makinesinde Edge zaten kurulu ve Chromium tabanlı; onu
+    kullanmak kullanıcıya ikinci bir 200 MB indirme yaptırmaktan iyidir.
+
+    ``.env``e yazılır çünkü backend alt süreç olarak başlatılıyor ve süreç
+    ortamı oradan besleniyor. Kullanıcı değeri elle ayarlamışsa dokunulmaz.
+    """
+    try:
+        from fool.browser_detect import ENV_VAR, detect
+
+        if os.environ.get(ENV_VAR, "").strip():
+            return
+
+        env_path = home / ".env"
+        existing = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+        if ENV_VAR in existing:
+            return
+
+        browser = detect()
+        if not browser:
+            return
+
+        with env_path.open("a", encoding="utf-8") as handle:
+            if existing and not existing.endswith("\n"):
+                handle.write("\n")
+            handle.write(
+                "\n# The Fool: yerlesik tarayici yigini icin Chromium ikilisi.\n"
+                "# Otomatik bulundu; degistirmek icin bu satiri duzenle.\n"
+                f"{ENV_VAR}={browser}\n"
+            )
+        os.environ.setdefault(ENV_VAR, browser)
+        logger.info("[The Fool] tarayici ikilisi bulundu: %s", browser)
+    except Exception as exc:  # pragma: no cover
+        logger.debug("[The Fool] tarayici otomatik yapilandirmasi atlandi: %s", exc)
 
 
 def _ensure_hermes_home_managed(home: Path):
@@ -2052,7 +2108,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
         try:
             config = load_config()
         except Exception:
-            return [ConfigIssue("error", "Could not load config.yaml", "Run 'hermes setup' to create a valid config")]
+            return [ConfigIssue("error", "Could not load config.yaml", "Run 'fool setup' to create a valid config")]
 
     issues: List[ConfigIssue] = []
 
@@ -2221,7 +2277,7 @@ def print_config_warnings(config: Optional[Dict[str, Any]] = None) -> None:
     for ci in issues:
         marker = "\033[31m✗\033[0m" if ci.severity == "error" else "\033[33m⚠\033[0m"
         lines.append(f"  {marker} {ci.message}")
-    lines.append("  \033[2mRun 'hermes doctor' for fix suggestions.\033[0m")
+    lines.append("  \033[2mRun 'fool doctor' for fix suggestions.\033[0m")
     sys.stderr.write("\n".join(lines) + "\n\n")
 
 
@@ -2282,7 +2338,7 @@ def _persist_migration(config: Dict[str, Any]) -> None:
     them at read time, so writing them adds nothing and actively shadows future
     default changes (see ``save_config``'s docstring). Materialising defaults on
     every version bump is what rewrote hand-curated configs into full
-    DEFAULT_CONFIG dumps (the "hermes update / hermes -p blows up my config"
+    DEFAULT_CONFIG dumps (the "fool update / hermes -p blows up my config"
     reports).
 
     Every migration step MUST route its write through this helper instead of
@@ -2355,7 +2411,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
         results["warnings"].append(msg)
         # stderr so it is visible even on quiet startup paths, matching the
         # corrupt-config warning posture in _warn_config_parse_failure().
-        sys.stderr.write(f"⚠ hermes config: {msg}\n")
+        sys.stderr.write(f"⚠ fool config: {msg}\n")
         if not quiet:
             print(f"  ⚠ {msg}")
     else:
@@ -2500,7 +2556,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                         print(f"  ✓ Saved {name}")
                     print()
             else:
-                print("  Set later with: hermes config set <key> <value>")
+                print("  Set later with: fool config set <key> <value>")
     
     # Check for missing config fields.
     #
@@ -2559,7 +2615,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 print()
             _persist_migration(config)
         else:
-            print("  Set later with: hermes config set <key> <value>")
+            print("  Set later with: fool config set <key> <value>")
 
     return results
 
@@ -3724,8 +3780,8 @@ _FALLBACK_COMMENT = """
 #
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
+#   openai-codex (OAuth — fool auth) — OpenAI Codex
+#   nous         (OAuth — fool auth) — Nous Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -3756,8 +3812,8 @@ _COMMENTED_SECTIONS = """
 #
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
+#   openai-codex (OAuth — fool auth) — OpenAI Codex
+#   nous         (OAuth — fool auth) — Nous Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -4595,7 +4651,7 @@ def show_config():
         if _env_ghost is not None and str(_env_ghost).strip() != str(_cfg_max_turns).strip():
             print(color(
                 f"                ⚠ .env has stale FOOL_MAX_ITERATIONS={_env_ghost} "
-                f"(run 'hermes doctor --fix' to remove)",
+                f"(run 'fool doctor --fix' to remove)",
                 Colors.YELLOW,
             ))
     except Exception:
@@ -4734,9 +4790,9 @@ def show_config():
 
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  hermes config edit     # Edit config file", Colors.DIM))
-    print(color("  hermes config set <key> <value>", Colors.DIM))
-    print(color("  hermes setup           # Run setup wizard", Colors.DIM))
+    print(color("  fool config edit     # Edit config file", Colors.DIM))
+    print(color("  fool config set <key> <value>", Colors.DIM))
+    print(color("  fool setup           # Run setup wizard", Colors.DIM))
     print()
 
 
@@ -5103,7 +5159,7 @@ _SCHEMA_DEFINED_DICT_KEYS = frozenset({
     # Plugin settings — enable/disable lists plus index_url override
     # (fool_cli/plugins_cmd.py, fool_cli/plugin_index.py). Absent from
     # DEFAULT_CONFIG (written only when used), so listed here for
-    # `hermes config set plugins.index_url ...` validation.
+    # `fool config set plugins.index_url ...` validation.
     "plugins",
 })
 
@@ -5350,7 +5406,7 @@ def set_config_value(key: str, value: str, force: bool = False):
                 f"✗ Cannot parse {config_path}: {exc}\n"
                 f"  The file contains a YAML syntax error. Fix the error\n"
                 f"  in your config file first, then retry.\n"
-                f"  (hermes config edit will open it in your editor.)",
+                f"  (fool config edit will open it in your editor.)",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -5375,9 +5431,9 @@ def set_config_value(key: str, value: str, force: bool = False):
             coerced_value = float(value)
         elif _looks_structured_value(value):
             # List/mapping literals -- e.g.
-            #   hermes config set platform_toolsets.line '["file","web"]'
+            #   fool config set platform_toolsets.line '["file","web"]'
             # or a multi-line YAML block:
-            #   hermes config set custom_providers '- name: foo
+            #   fool config set custom_providers '- name: foo
             #     base_url: https://...'
             # Without this, such values were stored as a raw STRING, and every
             # reader that gates on isinstance(..., list) (``_get_platform_tools``,
@@ -5408,7 +5464,7 @@ def set_config_value(key: str, value: str, force: bool = False):
 
     value = coerced_value
     # Normalize a scalar ``model`` key before writing sub-keys so that
-    # ``hermes config set model.provider openai`` doesn't silently
+    # ``fool config set model.provider openai`` doesn't silently
     # destroy the model id when ``model`` is a bare string shorthand
     # (e.g. ``model: gpt-4o``).  Without this _set_nested replaces the
     # scalar with an empty dict, dropping the model id permanently.
@@ -5419,7 +5475,7 @@ def set_config_value(key: str, value: str, force: bool = False):
             user_config["model"] = {"default": _model_val}
     # Guard against #74995: a single-segment key that names an existing
     # mapping would silently overwrite the entire section with a scalar
-    # (e.g. ``hermes config set model gpt-5.6-sol`` when model already
+    # (e.g. ``fool config set model gpt-5.6-sol`` when model already
     # contains default/provider/context_length).  Bare ``model`` is a
     # documented shorthand — redirect to ``model.default`` and preserve
     # siblings.  All other mapping sections are rejected unless --force.
@@ -5462,7 +5518,7 @@ def set_config_value(key: str, value: str, force: bool = False):
                     file=sys.stderr,
                 )
                 print(
-                    f"    hermes config set {key}.<sub-key> <value>",
+                    f"    fool config set {key}.<sub-key> <value>",
                     file=sys.stderr,
                 )
                 print(
@@ -5470,13 +5526,13 @@ def set_config_value(key: str, value: str, force: bool = False):
                     file=sys.stderr,
                 )
                 print(
-                    f"    hermes config set --force {key} {value!r}",
+                    f"    fool config set --force {key} {value!r}",
                     file=sys.stderr,
                 )
                 sys.exit(1)
     _set_nested(user_config, key, value)
     # Normalize the api_base → base_url alias at set-time too (issue #8919),
-    # so a fresh `hermes config set model.api_base ...` lands on the canonical
+    # so a fresh `fool config set model.api_base ...` lands on the canonical
     # key the runtime resolver actually reads, instead of being silently
     # ignored. Mirrors the load-time migration in _normalize_root_model_keys.
     _alias_norm = key.strip().lower()
@@ -5509,7 +5565,7 @@ def set_config_value(key: str, value: str, force: bool = False):
             pass  # best-effort: the config write above already succeeded
 
     # Mask the echoed value when the (possibly nested) key is credential-shaped
-    # — e.g. `hermes config set model.api_key cfut_...` routes to config.yaml
+    # — e.g. `fool config set model.api_key cfut_...` routes to config.yaml
     # (lowercase, so it misses the .env api_keys list above) and would otherwise
     # print the raw secret to the terminal.
     _leaf_key = key.rsplit(".", 1)[-1].lower()
@@ -5575,7 +5631,7 @@ def unset_config_value(key: str):
 
     if _is_env_config_key(key):
         # Unified lifecycle: prune env-seeded credential_pool entries and
-        # model-cache rows too, so `hermes config unset <KEY>` fully removes
+        # model-cache rows too, so `fool config unset <KEY>` fully removes
         # the provider instead of leaving it resurrectable (#51071 family).
         from fool_cli.credential_lifecycle import remove_provider_env_credential
 
@@ -5597,7 +5653,7 @@ def unset_config_value(key: str):
                 f"✗ Cannot parse {config_path}: {exc}\n"
                 f"  The file contains a YAML syntax error. Fix the error\n"
                 f"  in your config file first, then retry.\n"
-                f"  (hermes config edit will open it in your editor.)",
+                f"  (fool config edit will open it in your editor.)",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -5636,12 +5692,12 @@ def config_command(args):
     elif subcmd == "get":
         key = getattr(args, 'key', None)
         if not key:
-            print("Usage: hermes config get <key> [--json]")
+            print("Usage: fool config get <key> [--json]")
             print()
             print("Examples:")
-            print("  hermes config get model")
-            print("  hermes config get terminal.backend")
-            print("  hermes config get skills.config --json")
+            print("  fool config get model")
+            print("  fool config get terminal.backend")
+            print("  fool config get skills.config --json")
             sys.exit(1)
         get_config_value(key, as_json=getattr(args, 'json', False))
 
@@ -5650,12 +5706,12 @@ def config_command(args):
         value = getattr(args, 'value', None)
         force = bool(getattr(args, 'force', False))
         if not key or value is None:
-            print("Usage: hermes config set [--force] <key> <value>")
+            print("Usage: fool config set [--force] <key> <value>")
             print()
             print("Examples:")
-            print("  hermes config set model anthropic/claude-sonnet-4")
-            print("  hermes config set terminal.backend docker")
-            print("  hermes config set OPENROUTER_API_KEY sk-or-...")
+            print("  fool config set model anthropic/claude-sonnet-4")
+            print("  fool config set terminal.backend docker")
+            print("  fool config set OPENROUTER_API_KEY sk-or-...")
             print()
             print("  --force: skip the unknown-key notice for unrecognized keys,")
             print("           and allow a scalar to replace a whole mapping section")
@@ -5665,12 +5721,12 @@ def config_command(args):
     elif subcmd == "unset":
         key = getattr(args, 'key', None)
         if not key:
-            print("Usage: hermes config unset <key>")
+            print("Usage: fool config unset <key>")
             print()
             print("Examples:")
-            print("  hermes config unset model")
-            print("  hermes config unset terminal.backend")
-            print("  hermes config unset OPENROUTER_API_KEY")
+            print("  fool config unset model")
+            print("  fool config unset terminal.backend")
+            print("  fool config unset OPENROUTER_API_KEY")
             sys.exit(1)
         unset_config_value(key)
     
@@ -5770,7 +5826,7 @@ def config_command(args):
         if missing_config:
             print()
             print(color(f"  {len(missing_config)} new config option(s) available", Colors.YELLOW))
-            print("    Run 'hermes config migrate' to add them")
+            print("    Run 'fool config migrate' to add them")
         
         print()
     
@@ -5778,15 +5834,15 @@ def config_command(args):
         print(f"Unknown config command: {subcmd}")
         print()
         print("Available commands:")
-        print("  hermes config           Show current configuration")
-        print("  hermes config edit      Open config in editor")
-        print("  hermes config get <key>          Print a resolved config value")
-        print("  hermes config set <key> <value>   Set a config value")
-        print("  hermes config unset <key>        Remove a config value")
-        print("  hermes config check     Check for missing/outdated config")
-        print("  hermes config migrate   Update config with new options")
-        print("  hermes config path      Show config file path")
-        print("  hermes config env-path  Show .env file path")
+        print("  fool config           Show current configuration")
+        print("  fool config edit      Open config in editor")
+        print("  fool config get <key>          Print a resolved config value")
+        print("  fool config set <key> <value>   Set a config value")
+        print("  fool config unset <key>        Remove a config value")
+        print("  fool config check     Check for missing/outdated config")
+        print("  fool config migrate   Update config with new options")
+        print("  fool config path      Show config file path")
+        print("  fool config env-path  Show .env file path")
         sys.exit(1)
 
 

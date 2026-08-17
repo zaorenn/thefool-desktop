@@ -29,7 +29,7 @@ def hooks_command(args) -> None:
 
     if not sub:
         print("Usage: hermes hooks {list|test|revoke|doctor}")
-        print("Run 'hermes hooks --help' for details.")
+        print("Run 'fool hooks --help' for details.")
         return
 
     if sub in {"list", "ls"}:

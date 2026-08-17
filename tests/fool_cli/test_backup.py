@@ -349,7 +349,7 @@ class TestImport:
 
         out = capsys.readouterr().out
         assert "Done. Your Hermes configuration has been restored." in out
-        assert "hermes gateway install" in out
+        assert "fool gateway install" in out
 
 
 
@@ -1218,7 +1218,7 @@ class TestQuickSnapshot:
 
 
 # ---------------------------------------------------------------------------
-# Pre-update backup (hermes update safety net)
+# Pre-update backup (fool update safety net)
 # ---------------------------------------------------------------------------
 
     # -- security: path traversal regression coverage -----------------------

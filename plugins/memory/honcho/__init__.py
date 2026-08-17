@@ -919,7 +919,7 @@ class HonchoMemoryProvider(MemoryProvider):
             "has expired and automatic token refresh failed, so memory sync and "
             f"recall are paused. Reason: {msg}\n"
             "Tell the user (once) that Honcho memory is paused and that running "
-            "'hermes honcho setup' to re-authenticate will restore it."
+            "'fool honcho setup' to re-authenticate will restore it."
         )
 
     def _consume_pending_dialectic(self) -> str:

@@ -31,7 +31,7 @@ _ALLOWED_PATHS: FrozenSet[str] = frozenset(
 class XAIGrokAdapter(UpstreamAdapter):
     """Proxy upstream for xAI Grok via Hermes-managed OAuth credentials."""
 
-    auth_hint = "hermes auth add xai-oauth --type oauth"
+    auth_hint = "fool auth add xai-oauth --type oauth"
 
     def __init__(self) -> None:
         self._lock = threading.Lock()

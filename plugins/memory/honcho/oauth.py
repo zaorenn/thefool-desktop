@@ -418,7 +418,7 @@ def _rotate_and_persist(
             _mark_grant_dead(key, cred)
             logger.error(
                 "Honcho OAuth grant for host %s is no longer valid (%s); "
-                "run 'hermes honcho setup' to re-authenticate", host, exc,
+                "run 'fool honcho setup' to re-authenticate", host, exc,
             )
         else:
             _refresh_failure_at[key] = time.monotonic()

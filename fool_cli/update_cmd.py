@@ -5503,7 +5503,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     print(f"  ⚠️  {_warn}")
             except Exception as _mig_err:
                 print(f"  ⚠️  Config format update failed: {_mig_err}")
-                print("     Run 'hermes config migrate' to retry.")
+                print("     Run 'fool config migrate' to retry.")
         elif needs_migration:
             print()
             # Show WHAT changed, not just a count, so the user can make an
@@ -5571,7 +5571,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     # here and crashes the update at this prompt.
                     print(
                         "  ⚠ Could not read input (encoding issue). Skipping. "
-                        "Run 'hermes config migrate' manually to configure."
+                        "Run 'fool config migrate' manually to configure."
                     )
                     response = "n"
 
@@ -5594,7 +5594,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     print("  ℹ API keys require manual entry: hermes config migrate")
             else:
                 print()
-                print("Skipped. Run 'hermes config migrate' later to configure.")
+                print("Skipped. Run 'fool config migrate' later to configure.")
         else:
             print("  ✓ Configuration is up to date")
 

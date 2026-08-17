@@ -186,6 +186,8 @@ EXPECTED_SEAMS = {
     "local-tts-deps",
     "context-file-names",
     "first-run-autodetect",
+    "ready-token",
+    "cli-launchers",
 }
 
 
@@ -613,3 +615,42 @@ def test_autodetect_generic_runner_gets_base_url() -> None:
     )
     assert patch["model"]["provider"] == "custom"
     assert patch["model"]["base_url"] == ollama.base_url
+
+
+# =============================================================================
+# Süreçler arası sözleşmeler — sessiz kırılmalar
+# =============================================================================
+
+
+def test_backend_ready_token_matches_on_both_sides() -> None:
+    """FOOL-SEAM: ready-token — eşleşmezse masaüstü backend'i hiç göremez.
+
+    Backend portunu duyurur, Electron duymaz, 90 saniye sonra
+    "Timed out waiting for backend port announcement" der. Hata mesajı
+    backend'i suçlu gösterir; oysa backend sorunsuz çalışıyordur.
+
+    Toplu marka dönüşümü tam olarak bunu atlamıştı: regex içindeki
+    ``HERMES_`` bir env değişkeni değil, desenin parçası.
+    """
+    py = (REPO_ROOT / "fool_cli/web_server.py").read_text(encoding="utf-8")
+    ts = (REPO_ROOT / "apps/desktop/electron/backend-ready.ts").read_text(encoding="utf-8")
+
+    assert '"FOOL_BACKEND_READY"' in py, "backend farkli bir token yaziyor"
+    assert "FOOL_(?:BACKEND|DASHBOARD)_READY" in ts, "masaustu farkli bir token ariyor"
+    assert "HERMES_(?:BACKEND" not in ts, "eski token regex'i geri gelmis"
+
+
+def test_installer_publishes_the_fool_cli_launchers() -> None:
+    """FOOL-SEAM: cli-launchers — yanlış ad = terminalde hiçbir şey.
+
+    venv ``fool.exe`` üretiyor. Kurulum betiği ``hermes.exe`` kopyalamaya
+    çalışırsa sessizce hiçbir şey kopyalanmaz: kurulum "başarılı" görünür
+    ama ``fool`` komutu PATH'e hiç girmez.
+    """
+    ps1 = (REPO_ROOT / "scripts/install.ps1").read_text(encoding="utf-8", errors="replace")
+    assert '"fool.exe", "fool-acp.exe"' in ps1
+    assert '@("hermes.exe"' not in ps1
+
+    sh = (REPO_ROOT / "scripts/install.sh").read_text(encoding="utf-8", errors="replace")
+    assert '"$command_link_dir/fool"' in sh
+    assert '"$command_link_dir/hermes"' not in sh

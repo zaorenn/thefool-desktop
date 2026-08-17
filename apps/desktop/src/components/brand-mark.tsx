@@ -3,10 +3,13 @@ import { cn } from '@/lib/utils'
 const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
 
 // FOOL-SEAM: brand-mark
-// Marka rozeti: The Fool işareti. Upstream burada `nous-girl.jpg`'i beyaz bir
-// karo üzerinde gösteriyordu; işaret artık kendi zeminini taşıyan bir SVG
-// (public/fool-mark.svg) olduğu için beyaz karo kaldırıldı — aksi halde
-// crimson işaretin çevresinde beyaz bir çerçeve kalıyordu.
+// Marka rozeti: The Fool jester işareti (kullanıcının kendi marka varlığı).
+// Upstream burada `nous-girl.jpg` gösteriyordu.
+//
+// Şeffaf zeminli PNG olduğu için upstream'in beyaz karosu kaldırıldı —
+// jester zaten kendi silüetiyle duruyor ve beyaz karo koyu temada kutu
+// gibi görünüyordu.
+//
 // Hakkında ekranında ve güncelleme panelinde görünür.
 export function BrandMark({ className, ...props }: React.ComponentProps<'span'>) {
   return (
@@ -17,7 +20,7 @@ export function BrandMark({ className, ...props }: React.ComponentProps<'span'>)
       )}
       {...props}
     >
-      <img alt="" className="size-full object-contain" src={assetPath('fool-mark.svg')} />
+      <img alt="" className="size-full object-contain" src={assetPath('fool-mark.png')} />
     </span>
   )
 }

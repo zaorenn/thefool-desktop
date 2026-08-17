@@ -21,7 +21,7 @@ hermes [global-options] <command> [subcommand/options]
 | Option | Description |
 |--------|-------------|
 | `--version`, `-V` | Show version and exit. |
-| `--profile <name>`, `-p <name>` | Select which Hermes profile to use for this invocation. Overrides the sticky default set by `hermes profile use`. |
+| `--profile <name>`, `-p <name>` | Select which Hermes profile to use for this invocation. Overrides the sticky default set by `fool profile use`. |
 | `--resume <session>`, `-r <session>` | Resume a previous session by ID or title. The keyword `latest` resumes the most recent session (workspace-scoped, same lookup as `-c`). |
 | `--continue [name]`, `-c [name]` | Resume the most recent session, or the most recent session matching a title. |
 | `--in <dir>` | Change into `<dir>` before starting or resuming. Scopes `--resume latest` / `-c` lookups to that directory's workspace and keeps the session there (skips the recorded-cwd restore). |
@@ -38,72 +38,72 @@ hermes [global-options] <command> [subcommand/options]
 
 | Command | Purpose |
 |---------|---------|
-| `hermes chat` | Interactive or one-shot chat with the agent. |
-| `hermes model` | Interactively choose the default provider and model. |
+| `fool chat` | Interactive or one-shot chat with the agent. |
+| `fool model` | Interactively choose the default provider and model. |
 | `hermes moa` | Configure named Mixture of Agents presets selectable from the model picker. |
 | `hermes fallback` | Manage fallback providers tried when the primary model errors. |
-| `hermes gateway` | Run or manage the messaging gateway service. |
+| `fool gateway` | Run or manage the messaging gateway service. |
 | `hermes proxy` | Local OpenAI-compatible proxy that attaches OAuth provider credentials. See [Subscription Proxy](../user-guide/features/subscription-proxy.md). |
 | `hermes egress` | Outbound credential-injection firewall for remote terminal sandboxes (iron-proxy). Disabled by default. See [Egress proxy](../user-guide/egress/iron-proxy.md). |
 | `hermes lsp` | Manage Language Server Protocol integration (semantic diagnostics for write_file/patch). |
-| `hermes setup` | Interactive setup wizard for all or part of the configuration. |
+| `fool setup` | Interactive setup wizard for all or part of the configuration. |
 | `hermes whatsapp` | Configure and pair the WhatsApp bridge. |
 | `hermes whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct from `hermes whatsapp` (Baileys personal-account bridge). |
 | `hermes slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
-| `hermes auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
-| `hermes login` / `logout` | **Deprecated** — use `hermes auth` instead. |
+| `fool auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
+| `hermes login` / `logout` | **Deprecated** — use `fool auth` instead. |
 | `hermes send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
 | `hermes secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.hermes/.env`. |
 | `hermes migrate` | Diagnose and (optionally) rewrite `config.yaml` to replace references to retired models or deprecated settings (e.g. `migrate xai`). |
-| `hermes status` | Show agent, auth, and platform status. |
-| `hermes cron` | Inspect and tick the cron scheduler. |
+| `fool status` | Show agent, auth, and platform status. |
+| `fool cron` | Inspect and tick the cron scheduler. |
 | `hermes kanban` | Multi-profile collaboration board (tasks, links, dispatcher). |
 | `hermes project` | Manage named, multi-folder workspaces (projects). Anchors desktop session grouping and, when bound to a kanban board, gives tasks a deterministic worktree + branch convention. State is per-profile. |
 | `hermes webhook` | Manage dynamic webhook subscriptions for event-driven activation. |
 | `hermes hooks` | Inspect, approve, or remove shell-script hooks declared in `config.yaml`. |
-| `hermes doctor` | Diagnose config and dependency issues. |
+| `fool doctor` | Diagnose config and dependency issues. |
 | `hermes security audit` | On-demand supply-chain audit (OSV.dev) for the venv, plugin requirements, and pinned MCP servers. |
 | `hermes approvals` | Approval-prompt tools — mine approval history into allowlist proposals. |
 | `hermes dump` | Copy-pasteable setup summary for support/debugging. |
 | `hermes prompt-size` | Show a byte breakdown of the system prompt + tool schemas (skills index, memory, profile). Runs offline. |
-| `hermes debug` | Debug tools — upload logs and system info for support. |
-| `hermes backup` | Back up Hermes home directory to a zip file. |
+| `fool debug` | Debug tools — upload logs and system info for support. |
+| `fool backup` | Back up Hermes home directory to a zip file. |
 | `hermes checkpoints` | Inspect / prune / clear `~/.hermes/checkpoints/` (the shadow store used by `/rollback`). Run with no args for a status overview. |
 | `hermes import` | Restore a Hermes backup from a zip file. |
-| `hermes logs` | View, tail, and filter agent/gateway/error log files. |
-| `hermes config` | Show, edit, migrate, and query configuration files. |
-| `hermes skin` | List, switch, and tweak display skins. |
-| `hermes console` | Open the safe Hermes command console. |
-| `hermes pairing` | Approve or revoke messaging pairing codes. |
-| `hermes skills` | Browse, install, publish, audit, and configure skills. |
-| `hermes bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
-| `hermes curator` | Background skill maintenance — status, run, pause, pin. See [Curator](../user-guide/features/curator.md). |
-| `hermes journey` (aliases `learning`, `memory-graph`) | Timeline of learned skills + memories over time. |
-| `hermes memory` | Configure external memory provider. Plugin-specific subcommands (e.g. `hermes honcho`) register automatically when their provider is active. |
-| `hermes acp` | Run Hermes as an ACP server for editor integration. |
-| `hermes mcp` | Manage MCP server configurations and run Hermes as an MCP server. |
-| `hermes plugins` | Manage Hermes Agent plugins (install, enable, disable, remove). |
+| `fool logs` | View, tail, and filter agent/gateway/error log files. |
+| `fool config` | Show, edit, migrate, and query configuration files. |
+| `fool skin` | List, switch, and tweak display skins. |
+| `fool console` | Open the safe Hermes command console. |
+| `fool pairing` | Approve or revoke messaging pairing codes. |
+| `fool skills` | Browse, install, publish, audit, and configure skills. |
+| `fool bundles` | Group several skills under a single `/<name>` slash command. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles). |
+| `fool curator` | Background skill maintenance — status, run, pause, pin. See [Curator](../user-guide/features/curator.md). |
+| `fool journey` (aliases `learning`, `memory-graph`) | Timeline of learned skills + memories over time. |
+| `fool memory` | Configure external memory provider. Plugin-specific subcommands (e.g. `hermes honcho`) register automatically when their provider is active. |
+| `fool acp` | Run Hermes as an ACP server for editor integration. |
+| `fool mcp` | Manage MCP server configurations and run Hermes as an MCP server. |
+| `fool plugins` | Manage Hermes Agent plugins (install, enable, disable, remove). |
 | `hermes portal` | Nous Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
-| `hermes tools` | Configure enabled tools per platform. |
-| `hermes computer-use` | Install or check the Computer Use (cua-driver) backend (macOS/Windows/Linux). |
+| `fool tools` | Configure enabled tools per platform. |
+| `fool computer-use` | Install or check the Computer Use (cua-driver) backend (macOS/Windows/Linux). |
 | `hermes pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
-| `hermes sessions` | Browse, export, prune, rename, and delete sessions. |
-| `hermes insights` | Show token/cost/activity analytics. |
+| `fool sessions` | Browse, export, prune, rename, and delete sessions. |
+| `fool insights` | Show token/cost/activity analytics. |
 | `hermes claw` | OpenClaw migration helpers. |
 | `hermes import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
-| `hermes dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
-| `hermes serve` | Start the Hermes backend server (headless; powers the desktop app and remote backends). |
+| `fool dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
+| `fool serve` | Start the Hermes backend server (headless; powers the desktop app and remote backends). |
 | `hermes desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
-| `hermes profile` | Manage profiles — multiple isolated Hermes instances. |
+| `fool profile` | Manage profiles — multiple isolated Hermes instances. |
 | `hermes completion` | Print shell completion scripts (bash/zsh/fish). |
-| `hermes version` | Show version information. |
-| `hermes update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `FOOL_HOME` snapshot. |
-| `hermes uninstall` | Remove Hermes from the system. |
+| `fool version` | Show version information. |
+| `fool update` | Pull latest code and reinstall dependencies. `--check` previews without installing; `--backup` takes a pre-pull `FOOL_HOME` snapshot. |
+| `fool uninstall` | Remove Hermes from the system. |
 
-## `hermes chat`
+## `fool chat`
 
 ```bash
-hermes chat [options]
+fool chat [options]
 ```
 
 Common options:
@@ -133,13 +133,13 @@ Examples:
 
 ```bash
 hermes
-hermes chat -q "Summarize the latest PRs"
-hermes chat --provider openrouter --model anthropic/claude-sonnet-4.6
-hermes chat --toolsets web,terminal,skills
-hermes chat --quiet -q "Return only JSON"
-hermes chat --worktree -q "Review this repo and open a PR"
-hermes chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
-hermes chat --safe-mode -q "Is this bug mine or Hermes'?"
+fool chat -q "Summarize the latest PRs"
+fool chat --provider openrouter --model anthropic/claude-sonnet-4.6
+fool chat --toolsets web,terminal,skills
+fool chat --quiet -q "Return only JSON"
+fool chat --worktree -q "Review this repo and open a PR"
+fool chat --ignore-user-config --ignore-rules -q "Repro without my personal setup"
+fool chat --safe-mode -q "Is this bug mine or Hermes'?"
 ```
 
 ### `hermes -z <prompt>` — scripted one-shot
@@ -168,7 +168,7 @@ hermes -z "…" --provider openrouter --model openai/gpt-5.5
 FOOL_INFERENCE_MODEL=anthropic/claude-sonnet-4.6 hermes -z "…"
 ```
 
-Same agent, same tools, same skills — just strips every interactive / cosmetic layer. If you need tool output in the transcript too, use `hermes chat -q` instead; `-z` is explicitly for "I only want the final answer".
+Same agent, same tools, same skills — just strips every interactive / cosmetic layer. If you need tool output in the transcript too, use `fool chat -q` instead; `-z` is explicitly for "I only want the final answer".
 
 #### `--usage-file` — JSON usage report for pipelines
 
@@ -179,12 +179,12 @@ hermes -z "summarize this repo" --usage-file /tmp/usage.json
 jq .estimated_cost_usd /tmp/usage.json
 ```
 
-## `hermes model`
+## `fool model`
 
 Interactive provider + model selector. **This is the command for adding new providers, setting up API keys, and running OAuth flows.** Run it from your terminal — not from inside an active Hermes chat session.
 
 ```bash
-hermes model
+fool model
 ```
 
 Use this when you want to:
@@ -195,12 +195,12 @@ Use this when you want to:
 - configure a custom/self-hosted endpoint
 - save the new default into config
 
-:::warning hermes model vs /model — know the difference
-**`hermes model`** (run from your terminal, outside any Hermes session) is the **full provider setup wizard**. It can add new providers, run OAuth flows, prompt for API keys, and configure endpoints.
+:::warning fool model vs /model — know the difference
+**`fool model`** (run from your terminal, outside any Hermes session) is the **full provider setup wizard**. It can add new providers, run OAuth flows, prompt for API keys, and configure endpoints.
 
 **`/model`** (typed inside an active Hermes chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys.
 
-**If you need to add a new provider:** Exit your Hermes session first (`Ctrl+C` or `/quit`), then run `hermes model` from your terminal prompt.
+**If you need to add a new provider:** Exit your Hermes session first (`Ctrl+C` or `/quit`), then run `fool model` from your terminal prompt.
 :::
 
 ### `/model` slash command (mid-session)
@@ -224,15 +224,15 @@ By default, `/model` changes apply **to the current session only**. Add `--globa
 ```
 
 :::info What if I only see OpenRouter models?
-If you've only configured OpenRouter, `/model` will only show OpenRouter models. To add another provider (Anthropic, DeepSeek, Copilot, etc.), exit your session and run `hermes model` from the terminal.
+If you've only configured OpenRouter, `/model` will only show OpenRouter models. To add another provider (Anthropic, DeepSeek, Copilot, etc.), exit your session and run `fool model` from the terminal.
 :::
 
 On a `--global` switch, provider and base URL changes are persisted to `config.yaml` alongside the model. When switching away from a custom endpoint, the stale base URL is cleared to prevent it leaking into other providers.
 
-## `hermes gateway`
+## `fool gateway`
 
 ```bash
-hermes gateway <subcommand>
+fool gateway <subcommand>
 ```
 
 Subcommands:
@@ -255,7 +255,7 @@ Options:
 
 | Option | Description |
 |--------|-------------|
-| `--all` | On `start` / `restart` / `stop`: act on **every profile's** gateway, not just the active `FOOL_HOME`. Useful if you run multiple profiles side-by-side and want to restart them all after `hermes update`. |
+| `--all` | On `start` / `restart` / `stop`: act on **every profile's** gateway, not just the active `FOOL_HOME`. Useful if you run multiple profiles side-by-side and want to restart them all after `fool update`. |
 | `--no-supervise` | On `run`: inside the s6-overlay Docker image, opt out of auto-supervision and use pre-s6 foreground semantics — gateway runs as the container's main process with no auto-restart. No-op outside the s6 image. Equivalent to setting `FOOL_GATEWAY_NO_SUPERVISE=1`. |
 | `--external-supervisor` | On `run`: declare that a wrapper-provided process manager owns the foreground gateway. Use this when `sudo`, `env -i`, or another wrapper strips launchd/systemd's native environment marker. In-chat restarts and updates exit back to that manager instead of spawning a detached replacement. |
 
@@ -267,10 +267,10 @@ relaunch the gateway after that nonzero exit. For systemd, use
 unsuccessful exits. Without that policy, a requested restart leaves the gateway
 stopped.
 
-`hermes gateway enroll` accepts `--token`, `--connector-url`, `--gateway-id`, and `--wake-url`. It exchanges the enrollment token with the connector and writes the resulting `GATEWAY_RELAY_ID`, `GATEWAY_RELAY_SECRET`, `GATEWAY_RELAY_DELIVERY_KEY`, optional `GATEWAY_RELAY_URL`, and (when `--wake-url` is given) `GATEWAY_RELAY_WAKE_URL` values to the active profile's `.env`.
+`fool gateway enroll` accepts `--token`, `--connector-url`, `--gateway-id`, and `--wake-url`. It exchanges the enrollment token with the connector and writes the resulting `GATEWAY_RELAY_ID`, `GATEWAY_RELAY_SECRET`, `GATEWAY_RELAY_DELIVERY_KEY`, optional `GATEWAY_RELAY_URL`, and (when `--wake-url` is given) `GATEWAY_RELAY_WAKE_URL` values to the active profile's `.env`.
 
 :::tip WSL users
-Use `hermes gateway run` instead of `hermes gateway start` — WSL's systemd support is unreliable. Wrap it in tmux for persistence: `tmux new -s hermes 'hermes gateway run'`. See [WSL FAQ](/reference/faq#wsl-gateway-keeps-disconnecting-or-hermes-gateway-start-fails) for details.
+Use `fool gateway run` instead of `fool gateway start` — WSL's systemd support is unreliable. Wrap it in tmux for persistence: `tmux new -s hermes 'fool gateway run'`. See [WSL FAQ](/reference/faq#wsl-gateway-keeps-disconnecting-or-hermes-gateway-start-fails) for details.
 :::
 
 ## `hermes lsp`
@@ -300,13 +300,13 @@ Subcommands:
 See [LSP — Semantic Diagnostics](/user-guide/features/lsp) for
 the full guide, supported languages, and configuration knobs.
 
-## `hermes setup`
+## `fool setup`
 
 ```bash
-hermes setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
+fool setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
 ```
 
-**Easiest path:** `hermes setup --portal` — OAuth into Nous Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
+**Easiest path:** `fool setup --portal` — OAuth into Nous Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
 
 **First run:** launches the first-time wizard.
 
@@ -329,7 +329,7 @@ Options:
 | `--quick` | On returning-user runs: only prompt for items that are missing or unset. Skip items you already have configured. |
 | `--non-interactive` | Use defaults / environment values without prompts. |
 | `--reset` | Reset configuration to defaults before setup. |
-| `--reconfigure` | Backwards-compat alias — bare `hermes setup` on an existing install now does this by default. |
+| `--reconfigure` | Backwards-compat alias — bare `fool setup` on an existing install now does this by default. |
 | `--portal` | One-shot Nous Portal setup: log in via OAuth, set Nous as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
 
 ## `hermes portal`
@@ -346,7 +346,7 @@ Inspect Nous Portal auth, Tool Gateway routing, and reach the subscription page.
 | `open` | Open `portal.nousresearch.com/manage-subscription` in your default browser. |
 | `tools` | List every Tool Gateway partner (Firecrawl, FAL, OpenAI TTS, Browser Use, Modal) and which are routed via Nous. |
 
-For configuration of the gateway itself, see [Tool Gateway](../user-guide/features/tool-gateway.md). For the one-shot setup path, see `hermes setup --portal` above.
+For configuration of the gateway itself, see [Tool Gateway](../user-guide/features/tool-gateway.md). For the one-shot setup path, see `fool setup --portal` above.
 
 ## `hermes whatsapp`
 
@@ -382,7 +382,7 @@ reinstall if scopes or slash commands changed.
 | `--long-description-file PATH` | unset | Read the long description from a UTF-8 text file, preserving its contents exactly. Mutually exclusive with `--long-description` and incompatible with `--slashes-only`. |
 | `--slashes-only` | off | Emit only `features.slash_commands` for merging into a manually-maintained manifest. |
 
-Run `hermes slack manifest --write` again after `hermes update` to pick
+Run `hermes slack manifest --write` again after `fool update` to pick
 up any new commands.
 
 
@@ -522,32 +522,32 @@ On-demand vulnerability scan against [OSV.dev](https://osv.dev). Covers the Herm
 ## `hermes login` / `hermes logout` *(Deprecated)*
 
 :::caution
-`hermes login` has been removed. Use `hermes auth` to manage OAuth credentials, `hermes model` to select a provider, or `hermes setup` for full interactive setup.
+`hermes login` has been removed. Use `fool auth` to manage OAuth credentials, `fool model` to select a provider, or `fool setup` for full interactive setup.
 :::
 
-## `hermes auth`
+## `fool auth`
 
 Manage credential pools for same-provider key rotation. See [Credential Pools](/user-guide/features/credential-pools) for full documentation.
 
 ```bash
-hermes auth                                              # Interactive wizard
-hermes auth list                                         # Show all pools
-hermes auth list openrouter                              # Show specific provider
-hermes auth add openrouter --api-key sk-or-v1-xxx        # Add API key
-hermes auth add anthropic --type oauth                   # Add OAuth credential
-hermes auth remove openrouter 2                          # Remove by index
-hermes auth reset openrouter                             # Clear cooldowns
-hermes auth status anthropic                             # Show auth status for a provider
-hermes auth logout anthropic                             # Log out and clear stored auth state
-hermes auth spotify                                      # Authenticate Hermes with Spotify via PKCE
+fool auth                                              # Interactive wizard
+fool auth list                                         # Show all pools
+fool auth list openrouter                              # Show specific provider
+fool auth add openrouter --api-key sk-or-v1-xxx        # Add API key
+fool auth add anthropic --type oauth                   # Add OAuth credential
+fool auth remove openrouter 2                          # Remove by index
+fool auth reset openrouter                             # Clear cooldowns
+fool auth status anthropic                             # Show auth status for a provider
+fool auth logout anthropic                             # Log out and clear stored auth state
+fool auth spotify                                      # Authenticate Hermes with Spotify via PKCE
 ```
 
 Subcommands: `add`, `list`, `remove`, `reset`, `status`, `logout`, `spotify`. When called with no subcommand, launches the interactive management wizard.
 
-## `hermes status`
+## `fool status`
 
 ```bash
-hermes status [--all] [--deep]
+fool status [--all] [--deep]
 ```
 
 | Option | Description |
@@ -555,10 +555,10 @@ hermes status [--all] [--deep]
 | `--all` | Show all details in a shareable redacted format. |
 | `--deep` | Run deeper checks that may take longer. |
 
-## `hermes cron`
+## `fool cron`
 
 ```bash
-hermes cron <list|create|edit|pause|resume|run|remove|status|tick>
+fool cron <list|create|edit|pause|resume|run|remove|status|tick>
 ```
 
 | Subcommand | Description |
@@ -685,7 +685,7 @@ hermes egress config                   # print the path to proxy.yaml for inspec
 # First-time setup
 export OPENROUTER_API_KEY=…
 hermes egress setup && hermes egress start
-hermes config set terminal.backend docker   # if not already
+fool config set terminal.backend docker   # if not already
 
 # Switching credential source after the fact
 hermes egress setup --from-bitwarden       # env → bitwarden
@@ -770,10 +770,10 @@ hermes webhook subscribe <name> [options]
 
 Subscriptions persist to `~/.hermes/webhook_subscriptions.json` and are hot-reloaded by the webhook adapter without a gateway restart.
 
-## `hermes doctor`
+## `fool doctor`
 
 ```bash
-hermes doctor [--fix]
+fool doctor [--fix]
 ```
 
 | Option | Description |
@@ -853,13 +853,13 @@ config_overrides:
 - Quick sanity check when something isn't working
 
 :::tip
-`hermes dump` is specifically designed for sharing. For interactive diagnostics, use `hermes doctor`. For a visual overview, use `hermes status`.
+`hermes dump` is specifically designed for sharing. For interactive diagnostics, use `fool doctor`. For a visual overview, use `fool status`.
 :::
 
-## `hermes debug`
+## `fool debug`
 
 ```bash
-hermes debug share [options]
+fool debug share [options]
 ```
 
 Upload a debug report (system info + recent logs) to a paste service and get a shareable URL. Useful for quick support requests — includes everything a helper needs to diagnose your issue.
@@ -879,17 +879,17 @@ Default uploads use public paste services tried in order: paste.rs, dpaste.com. 
 ### Examples
 
 ```bash
-hermes debug share              # Upload debug report, print URL
-hermes debug share --lines 500  # Include more log lines
-hermes debug share --expire 30  # Keep paste for 30 days
-hermes debug share --nous       # Upload a private diagnostics bundle for Nous support
-hermes debug share --local      # Print report to terminal (no upload)
+fool debug share              # Upload debug report, print URL
+fool debug share --lines 500  # Include more log lines
+fool debug share --expire 30  # Keep paste for 30 days
+fool debug share --nous       # Upload a private diagnostics bundle for Nous support
+fool debug share --local      # Print report to terminal (no upload)
 ```
 
-## `hermes backup`
+## `fool backup`
 
 ```bash
-hermes backup [options]
+fool backup [options]
 ```
 
 Create a zip archive of your Hermes configuration, skills, sessions, and data. The backup excludes the hermes-agent codebase itself.
@@ -911,10 +911,10 @@ The backup uses SQLite's `backup()` API for safe copying, so it works correctly 
 ### Examples
 
 ```bash
-hermes backup                           # Full backup to ~/hermes-backup-*.zip
-hermes backup -o /tmp/hermes.zip        # Full backup to specific path
-hermes backup --quick                   # Quick state-only snapshot
-hermes backup --quick --label "pre-upgrade"  # Quick snapshot with label
+fool backup                           # Full backup to ~/hermes-backup-*.zip
+fool backup -o /tmp/hermes.zip        # Full backup to specific path
+fool backup --quick                   # Quick state-only snapshot
+fool backup --quick --label "pre-upgrade"  # Quick snapshot with label
 ```
 
 ## `hermes checkpoints`
@@ -977,10 +977,10 @@ hermes import ~/hermes-backup-20260423.zip           # Prompts before overwritin
 hermes import ~/hermes-backup-20260423.zip --force   # Overwrite without prompting
 ```
 
-## `hermes logs`
+## `fool logs`
 
 ```bash
-hermes logs [log_name] [options]
+fool logs [log_name] [options]
 ```
 
 View, tail, and filter Hermes log files. All logs are stored in `~/.hermes/logs/` (or `<profile>/logs/` for non-default profiles).
@@ -1011,25 +1011,25 @@ View, tail, and filter Hermes log files. All logs are stored in `~/.hermes/logs/
 
 ```bash
 # View the last 50 lines of agent.log (default)
-hermes logs
+fool logs
 
 # Follow agent.log in real time
-hermes logs -f
+fool logs -f
 
 # View the last 100 lines of gateway.log
-hermes logs gateway -n 100
+fool logs gateway -n 100
 
 # Show only warnings and errors from the last hour
-hermes logs --level WARNING --since 1h
+fool logs --level WARNING --since 1h
 
 # Filter by a specific session
-hermes logs --session abc123
+fool logs --session abc123
 
 # Follow errors.log, starting from 30 minutes ago
-hermes logs errors --since 30m -f
+fool logs errors --since 30m -f
 
 # List all log files with their sizes
-hermes logs list
+fool logs list
 ```
 
 ### Filtering
@@ -1038,14 +1038,14 @@ Filters can be combined. When multiple filters are active, a log line must pass 
 
 ```bash
 # WARNING+ lines from the last 2 hours containing session "tg-12345"
-hermes logs --level WARNING --since 2h --session tg-12345
+fool logs --level WARNING --since 2h --session tg-12345
 ```
 
 Lines without a parseable timestamp are included when `--since` is active (they may be continuation lines from a multi-line log entry). Lines without a detectable level are included when `--level` is active.
 
 ### Log rotation
 
-Hermes uses Python's `RotatingFileHandler`. Old logs are rotated automatically — look for `agent.log.1`, `agent.log.2`, etc. The `hermes logs list` subcommand shows all log files including rotated ones.
+Hermes uses Python's `RotatingFileHandler`. Old logs are rotated automatically — look for `agent.log.1`, `agent.log.2`, etc. The `fool logs list` subcommand shows all log files including rotated ones.
 
 
 ## `hermes prompt-size`
@@ -1086,15 +1086,15 @@ hermes prompt-size --json
 
 :::tip
 The skills index and tool schemas scale with how many skills and tools you have
-enabled. To shrink the prompt, disable unused toolsets (`hermes tools`) or
-uninstall skills you don't need (`hermes skills`). Context files (AGENTS.md,
+enabled. To shrink the prompt, disable unused toolsets (`fool tools`) or
+uninstall skills you don't need (`fool skills`). Context files (AGENTS.md,
 .cursorrules) in your current directory also count toward the total.
 :::
 
-## `hermes config`
+## `fool config`
 
 ```bash
-hermes config <subcommand>
+fool config <subcommand>
 ```
 
 Subcommands:
@@ -1103,7 +1103,7 @@ Subcommands:
 |------------|-------------|
 | `show` | Show current config values. |
 | `edit` | Open `config.yaml` in your editor. |
-| `get <key> [--json]` | Print a single config value by dotted key (e.g. `hermes config get model.default`). `--json` emits machine-readable output. |
+| `get <key> [--json]` | Print a single config value by dotted key (e.g. `fool config get model.default`). `--json` emits machine-readable output. |
 | `set <key> <value>` | Set a config value. |
 | `unset <key>` | Remove a config key, reverting it to the built-in default. |
 | `path` | Print the config file path. |
@@ -1111,10 +1111,10 @@ Subcommands:
 | `check` | Check for missing or stale config. |
 | `migrate` | Add newly introduced options interactively. |
 
-## `hermes pairing`
+## `fool pairing`
 
 ```bash
-hermes pairing <list|approve|revoke|clear-pending>
+fool pairing <list|approve|revoke|clear-pending>
 ```
 
 | Subcommand | Description |
@@ -1124,10 +1124,10 @@ hermes pairing <list|approve|revoke|clear-pending>
 | `revoke <platform> <user-id>` | Revoke a user's access. |
 | `clear-pending` | Clear pending pairing codes. |
 
-## `hermes skills`
+## `fool skills`
 
 ```bash
-hermes skills <subcommand>
+fool skills <subcommand>
 ```
 
 Subcommands:
@@ -1144,8 +1144,8 @@ Subcommands:
 | `audit` | Re-scan installed hub skills. |
 | `uninstall` | Remove a hub-installed skill. |
 | `reset` | Un-stick a bundled skill flagged as `user_modified` by clearing its manifest entry. With `--restore`, also replaces the user copy with the bundled version. |
-| `opt-out` | Stop bundled skills from being seeded into the active profile. Writes a `.no-bundled-skills` marker so the installer, `hermes update`, and any sync skip bundled-skill seeding. Safe by default — nothing on disk is touched. With `--remove`, also deletes already-present bundled skills that are **unmodified** (user-edited, hub-installed, and hand-written skills are never removed; previews and confirms first, `--yes` to skip). |
-| `opt-in` | Undo `opt-out` by removing the `.no-bundled-skills` marker so bundled skills are seeded again on the next `hermes update`. With `--sync`, re-seed immediately. |
+| `opt-out` | Stop bundled skills from being seeded into the active profile. Writes a `.no-bundled-skills` marker so the installer, `fool update`, and any sync skip bundled-skill seeding. Safe by default — nothing on disk is touched. With `--remove`, also deletes already-present bundled skills that are **unmodified** (user-edited, hub-installed, and hand-written skills are never removed; previews and confirms first, `--yes` to skip). |
+| `opt-in` | Undo `opt-out` by removing the `.no-bundled-skills` marker so bundled skills are seeded again on the next `fool update`. With `--sync`, re-seed immediately. |
 | `publish` | Publish a skill to a registry. |
 | `snapshot` | Export/import skill configurations. |
 | `tap` | Manage custom skill sources. |
@@ -1154,24 +1154,24 @@ Subcommands:
 Common examples:
 
 ```bash
-hermes skills browse
-hermes skills browse --source official
-hermes skills search react --source skills-sh
-hermes skills search https://mintlify.com/docs --source well-known
-hermes skills inspect official/security/1password
-hermes skills inspect skills-sh/vercel-labs/json-render/json-render-react
-hermes skills install official/migration/openclaw-migration
-hermes skills install skills-sh/anthropics/skills/pdf --force
-hermes skills install https://sharethis.chat/SKILL.md                     # Direct URL (+ referenced support files)
-hermes skills install https://example.com/SKILL.md --name my-skill        # Override name when frontmatter has none
-hermes skills check
-hermes skills update
-hermes skills config
-hermes skills reset google-workspace
-hermes skills reset google-workspace --restore --yes
-hermes skills opt-out                  # stop future bundled-skill seeding (nothing deleted)
-hermes skills opt-out --remove --yes   # also delete UNMODIFIED bundled skills
-hermes skills opt-in --sync            # undo: remove marker and re-seed now
+fool skills browse
+fool skills browse --source official
+fool skills search react --source skills-sh
+fool skills search https://mintlify.com/docs --source well-known
+fool skills inspect official/security/1password
+fool skills inspect skills-sh/vercel-labs/json-render/json-render-react
+fool skills install official/migration/openclaw-migration
+fool skills install skills-sh/anthropics/skills/pdf --force
+fool skills install https://sharethis.chat/SKILL.md                     # Direct URL (+ referenced support files)
+fool skills install https://example.com/SKILL.md --name my-skill        # Override name when frontmatter has none
+fool skills check
+fool skills update
+fool skills config
+fool skills reset google-workspace
+fool skills reset google-workspace --restore --yes
+fool skills opt-out                  # stop future bundled-skill seeding (nothing deleted)
+fool skills opt-out --remove --yes   # also delete UNMODIFIED bundled skills
+fool skills opt-in --sync            # undo: remove marker and re-seed now
 ```
 
 Notes:
@@ -1182,10 +1182,10 @@ Notes:
 - `--source browse-sh` searches [browse.sh](https://browse.sh)'s catalog of 200+ site-specific browser-automation skills. Identifiers look like `browse-sh/airbnb.com/search-listings-ddgioa`.
 - Passing an `http(s)://…/*.md` URL installs `SKILL.md` plus explicitly referenced files under `references/`, `templates/`, `scripts/`, `assets/`, and `examples/`. When frontmatter has no `name:` and the URL slug isn't a valid identifier, an interactive terminal prompts for a name; non-interactive surfaces (`/skills install` inside the TUI, gateway platforms) require `--name <x>` instead.
 
-## `hermes bundles`
+## `fool bundles`
 
 ```bash
-hermes bundles <subcommand>
+fool bundles <subcommand>
 ```
 
 Skill bundles group several skills under one `/<bundle-name>` slash command. Invoking the bundle loads every referenced skill into a single combined user message. Storage: `~/.hermes/skill-bundles/<slug>.yaml`. See [Skill Bundles](../user-guide/features/skills.md#skill-bundles) for the YAML schema and behavior.
@@ -1203,23 +1203,23 @@ Subcommands:
 Examples:
 
 ```bash
-hermes bundles create backend-dev \
+fool bundles create backend-dev \
   --skill github-code-review \
   --skill test-driven-development \
   --skill github-pr-workflow \
   -d "Backend feature work"
 
-hermes bundles list
-hermes bundles show backend-dev
-hermes bundles delete backend-dev
+fool bundles list
+fool bundles show backend-dev
+fool bundles delete backend-dev
 ```
 
 In a chat session, `/bundles` lists installed bundles and `/<bundle-name>` loads one.
 
-## `hermes curator`
+## `fool curator`
 
 ```bash
-hermes curator <subcommand>
+fool curator <subcommand>
 ```
 
 The curator is an auxiliary-model background task that periodically reviews agent-created skills, prunes stale ones, consolidates overlaps, and archives obsolete skills. Bundled and hub-installed skills are never touched. Archives are recoverable; auto-deletion never happens.
@@ -1244,7 +1244,7 @@ The curator is an auxiliary-model background task that periodically reviews agen
 | `prune` | Manually prune skills the curator would normally clean up |
 | `list-archived` | List archived skills (recoverable via `restore`) |
 
-On a fresh install the first scheduled pass is deferred by one full `interval_hours` (7 days by default) — the gateway will not curate immediately on the first tick after `hermes update`. Use `hermes curator run --dry-run` to preview before that happens.
+On a fresh install the first scheduled pass is deferred by one full `interval_hours` (7 days by default) — the gateway will not curate immediately on the first tick after `fool update`. Use `fool curator run --dry-run` to preview before that happens.
 
 See [Curator](../user-guide/features/curator.md) for behavior and config.
 
@@ -1271,7 +1271,7 @@ Manage the fallback provider chain. Fallback providers are tried in order when t
 | Subcommand | Description |
 |------------|-------------|
 | `list` (alias: `ls`) | Show the current fallback chain (default when no subcommand) |
-| `add` | Pick a provider + model (same picker as `hermes model`) and append to the chain |
+| `add` | Pick a provider + model (same picker as `fool model`) and append to the chain |
 | `remove` (alias: `rm`) | Pick an entry to delete from the chain |
 | `clear` | Remove all fallback entries |
 
@@ -1294,10 +1294,10 @@ Inspect shell-script hooks declared in `~/.hermes/config.yaml`, test them agains
 
 See [Hooks](../user-guide/features/hooks.md) for event signatures and payload shapes.
 
-## `hermes memory`
+## `fool memory`
 
 ```bash
-hermes memory <subcommand>
+fool memory <subcommand>
 ```
 
 Set up and manage external memory provider plugins. Available providers: honcho, openviking, mem0, hindsight, holographic, retaindb, byterover, supermemory. Only one external provider can be active at a time. Built-in memory (MEMORY.md/USER.md) is always active.
@@ -1314,10 +1314,10 @@ Subcommands:
 When an external memory provider is active, it may register its own top-level `hermes <provider>` command for provider-specific management (e.g. `hermes honcho` when Honcho is active). Inactive providers do not expose their subcommands. Run `hermes --help` to see what's currently wired in.
 :::
 
-## `hermes acp`
+## `fool acp`
 
 ```bash
-hermes acp
+fool acp
 ```
 
 Starts Hermes as an ACP (Agent Client Protocol) stdio server for editor integration.
@@ -1337,10 +1337,10 @@ cd ~/.hermes/hermes-agent && uv pip install -e '.[acp]'
 
 See [ACP Editor Integration](../user-guide/features/acp.md) and [ACP Internals](../developer-guide/acp-internals.md).
 
-## `hermes mcp`
+## `fool mcp`
 
 ```bash
-hermes mcp <subcommand>
+fool mcp <subcommand>
 ```
 
 Manage MCP (Model Context Protocol) server configurations and run Hermes as an MCP server.
@@ -1349,7 +1349,7 @@ Manage MCP (Model Context Protocol) server configurations and run Hermes as an M
 |------------|-------------|
 | *(none)* or `picker` | Interactive catalog picker — browse Nous-approved MCPs and install/enable/disable. |
 | `catalog` | List Nous-approved MCPs (plain text, scriptable). |
-| `install <name>` | Install a catalog entry (e.g. `hermes mcp install n8n`). |
+| `install <name>` | Install a catalog entry (e.g. `fool mcp install n8n`). |
 | `serve [-v\|--verbose]` | Run Hermes as an MCP server — expose conversations to other agents. |
 | `add <name> [--url URL] [--command CMD] [--auth oauth\|header] [--args ...]` | Add a custom MCP server with automatic tool discovery. `--args` passes the remaining argv to the stdio command, so put it last. |
 | `remove <name>` (alias: `rm`) | Remove an MCP server from config. |
@@ -1360,13 +1360,13 @@ Manage MCP (Model Context Protocol) server configurations and run Hermes as an M
 
 See [MCP Config Reference](./mcp-config-reference.md), [Use MCP with Hermes](../guides/use-mcp-with-hermes.md), and [MCP Server Mode](../user-guide/features/mcp.md#running-hermes-as-an-mcp-server).
 
-## `hermes plugins`
+## `fool plugins`
 
 ```bash
-hermes plugins [subcommand]
+fool plugins [subcommand]
 ```
 
-Unified plugin management — general plugins, memory providers, and context engines in one place. Running `hermes plugins` with no subcommand opens a composite interactive screen with two sections:
+Unified plugin management — general plugins, memory providers, and context engines in one place. Running `fool plugins` with no subcommand opens a composite interactive screen with two sections:
 
 - **General Plugins** — multi-select checkboxes to enable/disable installed plugins
 - **Provider Plugins** — single-select configuration for Memory Provider and Context Engine. Press ENTER on a category to open a radio picker.
@@ -1397,10 +1397,10 @@ not contain plugin config, environment values, secrets, or capability grants.
 
 See [Plugins](../user-guide/features/plugins.md) and [Build a Hermes Plugin](../developer-guide/plugins/index.md).
 
-## `hermes tools`
+## `fool tools`
 
 ```bash
-hermes tools [--summary]
+fool tools [--summary]
 ```
 
 | Option | Description |
@@ -1409,10 +1409,10 @@ hermes tools [--summary]
 
 Without `--summary`, this launches the interactive per-platform tool configuration UI.
 
-## `hermes computer-use`
+## `fool computer-use`
 
 ```bash
-hermes computer-use <subcommand>
+fool computer-use <subcommand>
 ```
 
 Subcommands:
@@ -1426,10 +1426,10 @@ Subcommands:
 | `permissions status [--json]` | Report macOS Accessibility and Screen Recording grants. |
 | `permissions grant` | Ask macOS to grant Accessibility and Screen Recording to Cua Driver. |
 
-`hermes computer-use install` is the stable entry point for installing the
+`fool computer-use install` is the stable entry point for installing the
 [cua-driver](https://github.com/trycua/cua) binary used by the
 `computer_use` toolset. It runs the same upstream installer that
-`hermes tools` invokes when you first enable Computer Use, so it's safe
+`fool tools` invokes when you first enable Computer Use, so it's safe
 to use for re-running the install if the toolset toggle didn't trigger
 it (for example, on returning-user setups).
 
@@ -1438,7 +1438,7 @@ manifest. A compatible 0.20.0 or newer installation is left in place. An old or
 incomplete standard installation is repaired with the current upstream
 installer. Hermes never replaces a custom binary selected through
 `FOOL_CUA_DRIVER_CMD`; update that binary directly or remove the override.
-`hermes computer-use status` reports when repair is required.
+`fool computer-use status` reports when repair is required.
 
 The built-in `computer_use` toolset is the recommended Hermes integration.
 Registering raw Cua MCP tools is an alternative when you need Cua's low-level
@@ -1451,7 +1451,7 @@ belong to runtime launch. In bounded mode Hermes passes Cua's canonical
 transport owns a private lifecycle session inside its runtime. Public session
 names label cursor and session state; they do not own or share the runtime.
 
-`hermes update` automatically re-runs the upstream installer at the end
+`fool update` automatically re-runs the upstream installer at the end
 of the update if cua-driver is on PATH, so most users will not need to
 call `--upgrade` manually. Use it when upstream ships a fix you want
 right now without waiting for the next Hermes update.
@@ -1477,10 +1477,10 @@ hermes pets <list|install|select|show|off|scale|remove|doctor>
 
 You can also generate a brand-new pet from a text description with the `/hatch` slash command. See [Pets](../user-guide/features/pets.md).
 
-## `hermes sessions`
+## `fool sessions`
 
 ```bash
-hermes sessions <subcommand>
+fool sessions <subcommand>
 ```
 
 Subcommands:
@@ -1502,10 +1502,10 @@ Subcommands:
 | `recover` | Offline, non-destructive recovery of a damaged `state.db` into a separate clean database. |
 | `retitle-skills` | Regenerate titles for sessions opened with a `/skill`, using what the user actually typed; lists changes unless `--apply` is passed. |
 
-## `hermes insights`
+## `fool insights`
 
 ```bash
-hermes insights [--days N] [--source platform]
+fool insights [--days N] [--source platform]
 ```
 
 | Option | Description |
@@ -1582,21 +1582,21 @@ Import a **Claude Code** (`~/.claude`) or **OpenAI Codex CLI** (`~/.codex`) setu
 
 See the **[import guide](../user-guide/import-from-other-agents.md)** for the full mapping tables.
 
-## `hermes serve`
+## `fool serve`
 
 ```bash
-hermes serve [options]
+fool serve [options]
 ```
 
-Start the Hermes **backend server** — the JSON-RPC/WebSocket gateway the [desktop app](/user-guide/desktop) and remote clients connect to. It is the same server `hermes dashboard` runs, but **headless**: it never opens a browser UI. The desktop app launches its own `hermes serve` backend; use this command directly when you want a headless backend on a remote host. Accepts the same `--host` / `--port` / `--insecure` / `--skip-build` / `--stop` / `--status` options as `hermes dashboard` below (a non-loopback bind engages the same auth gate). Requires the `[web]` extra; the embedded Chat socket additionally needs `[pty]` on a POSIX host.
+Start the Hermes **backend server** — the JSON-RPC/WebSocket gateway the [desktop app](/user-guide/desktop) and remote clients connect to. It is the same server `fool dashboard` runs, but **headless**: it never opens a browser UI. The desktop app launches its own `fool serve` backend; use this command directly when you want a headless backend on a remote host. Accepts the same `--host` / `--port` / `--insecure` / `--skip-build` / `--stop` / `--status` options as `fool dashboard` below (a non-loopback bind engages the same auth gate). Requires the `[web]` extra; the embedded Chat socket additionally needs `[pty]` on a POSIX host.
 
-## `hermes dashboard`
+## `fool dashboard`
 
 ```bash
-hermes dashboard [options]
+fool dashboard [options]
 ```
 
-Launch the web dashboard — a browser-based UI for managing configuration, API keys, and monitoring sessions. (For a headless backend with no browser UI — e.g. what the desktop app spawns — use [`hermes serve`](#hermes-serve) above.) Requires `cd ~/.hermes/hermes-agent && uv pip install -e ".[web]"` (FastAPI + Uvicorn). The embedded browser Chat tab is always available and additionally needs the `pty` extra (`cd ~/.hermes/hermes-agent && uv pip install -e ".[web,pty]"`) plus a POSIX PTY environment such as Linux, macOS, or WSL2. See [Web Dashboard](/user-guide/features/web-dashboard) for full documentation.
+Launch the web dashboard — a browser-based UI for managing configuration, API keys, and monitoring sessions. (For a headless backend with no browser UI — e.g. what the desktop app spawns — use [`fool serve`](#hermes-serve) above.) Requires `cd ~/.hermes/hermes-agent && uv pip install -e ".[web]"` (FastAPI + Uvicorn). The embedded browser Chat tab is always available and additionally needs the `pty` extra (`cd ~/.hermes/hermes-agent && uv pip install -e ".[web,pty]"`) plus a POSIX PTY environment such as Linux, macOS, or WSL2. See [Web Dashboard](/user-guide/features/web-dashboard) for full documentation.
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -1606,12 +1606,12 @@ Launch the web dashboard — a browser-based UI for managing configuration, API 
 | `--insecure` | off | **Deprecated / no-op.** Formerly bypassed auth on a non-loopback bind. Since the June 2026 hardening a public bind *always* requires an auth provider (password or OAuth). Bind `127.0.0.1` and tunnel to keep it local. |
 | `--skip-build` | off | Skip the web UI build step and serve the existing `dist` directly. Useful for non-interactive contexts (Windows Scheduled Tasks, CI) where npm isn't available. Pre-build with `cd web && npm run build`. |
 | `--isolated` | off | When launched from a named profile (`worker dashboard`), run a dedicated per-profile server instead of routing to the machine dashboard. |
-| `--stop` | — | Stop running `hermes dashboard` processes and exit. |
-| `--status` | — | List running `hermes dashboard` processes and exit. |
+| `--stop` | — | Stop running `fool dashboard` processes and exit. |
+| `--status` | — | List running `fool dashboard` processes and exit. |
 
-### `hermes dashboard register`
+### `fool dashboard register`
 
-Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `FOOL_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env`, and prints how to engage the login gate. Requires being logged in (`hermes setup`).
+Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `FOOL_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env`, and prints how to engage the login gate. Requires being logged in (`fool setup`).
 
 | Option | Description |
 |--------|-------------|
@@ -1621,20 +1621,20 @@ Register this install as a self-hosted dashboard with your Nous Portal account. 
 
 ```bash
 # Default — opens browser to http://127.0.0.1:9119
-hermes dashboard
+fool dashboard
 
 # Custom port, no browser
-hermes dashboard --port 8080 --no-open
+fool dashboard --port 8080 --no-open
 
 # From a profile alias — routes to the machine dashboard with the
 # profile preselected in the sidebar switcher (attach if running)
 worker dashboard
 ```
 
-## `hermes profile`
+## `fool profile`
 
 ```bash
-hermes profile <subcommand>
+fool profile <subcommand>
 ```
 
 Manage profiles — multiple isolated Hermes instances, each with its own config, sessions, skills, and home directory.
@@ -1657,14 +1657,14 @@ Manage profiles — multiple isolated Hermes instances, each with its own config
 Examples:
 
 ```bash
-hermes profile list
-hermes profile create work --clone
-hermes profile use work
-hermes profile alias work --name h-work
-hermes profile export work -o work-backup.tar.gz
-hermes profile import work-backup.tar.gz --name restored
-hermes profile install github.com/user/my-distro --alias
-hermes profile update work
+fool profile list
+fool profile create work --clone
+fool profile use work
+fool profile alias work --name h-work
+fool profile export work -o work-backup.tar.gz
+fool profile import work-backup.tar.gz --name restored
+fool profile install github.com/user/my-distro --alias
+fool profile update work
 hermes -p work chat -q "Hello from work profile"
 ```
 
@@ -1689,15 +1689,15 @@ hermes completion zsh >> ~/.zshrc
 hermes completion fish > ~/.config/fish/completions/hermes.fish
 ```
 
-## `hermes update`
+## `fool update`
 
 ```bash
-hermes update [--gateway] [--check] [--no-backup] [--backup] [--yes]
+fool update [--gateway] [--check] [--no-backup] [--backup] [--yes]
 ```
 
 Pulls the latest `hermes-agent` code and reinstalls dependencies in the managed venv, then re-runs the post-install hooks (MCP servers, skills sync, completion install). Safe to run on a live install. Use `--check` to see whether your checkout is behind `origin/main` without installing.
 
-`hermes update` pulls the configured update branch (default: `main`). If your checkout is on another branch, Hermes may check out the update branch before pulling. Commit branch work before updating when you want to keep it outside the update autostash flow.
+`fool update` pulls the configured update branch (default: `main`). If your checkout is on another branch, Hermes may check out the update branch before pulling. Commit branch work before updating when you want to keep it outside the update autostash flow.
 
 | Option | Description |
 |--------|-------------|
@@ -1705,14 +1705,14 @@ Pulls the latest `hermes-agent` code and reinstalls dependencies in the managed 
 | `--check` | Check whether an update is available without pulling, installing dependencies, or restarting anything. |
 | `--no-backup` | Skip all pre-update backups for this run (both the quick state snapshot and the full zip), regardless of `updates.pre_update_backup`. |
 | `--backup` | Force a **full** pre-update backup for this run: the quick state snapshot plus a complete zip of `FOOL_HOME` (config, auth, sessions, skills, pairing data). The default mode is `quick` — a lightweight state snapshot only. Set the permanent mode via `updates.pre_update_backup: quick | full | off` in `config.yaml`. |
-| `--yes`, `-y` | Assume yes for interactive prompts such as config migration and stash restore. API-key entry is skipped; run `hermes config migrate` separately for those. |
+| `--yes`, `-y` | Assume yes for interactive prompts such as config migration and stash restore. API-key entry is skipped; run `fool config migrate` separately for those. |
 
 Additional behavior:
 
-- **Gateway restart.** After a successful update, Hermes attempts to restart all running gateway profiles automatically so they pick up the new code. Use `hermes gateway restart` when you want to restart a gateway without applying an update.
+- **Gateway restart.** After a successful update, Hermes attempts to restart all running gateway profiles automatically so they pick up the new code. Use `fool gateway restart` when you want to restart a gateway without applying an update.
 - **Local source changes.** For git installs, dirty tracked files and untracked files are auto-stashed before branch checkout or pull (`git stash push --include-untracked`). Interactive terminal updates ask before restoring the stash. Non-interactive updates restore it by default; set `updates.non_interactive_local_changes: discard` only on managed installs where local source edits should be thrown away after a successful pull. If stash restore conflicts or the pull fails, the stash is left in place for manual recovery.
-- **npm lockfile churn.** Before stashing or switching branches, Hermes makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before running `hermes update`.
-- **Pairing data snapshot.** Even when `--backup` is off, `hermes update` takes a lightweight snapshot of `~/.hermes/pairing/` and the Feishu comment rules before `git pull`. You can roll it back with `hermes backup restore --state pre-update` if a pull rewrites a file you were editing.
+- **npm lockfile churn.** Before stashing or switching branches, Hermes makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before running `fool update`.
+- **Pairing data snapshot.** Even when `--backup` is off, `fool update` takes a lightweight snapshot of `~/.hermes/pairing/` and the Feishu comment rules before `git pull`. You can roll it back with `fool backup restore --state pre-update` if a pull rewrites a file you were editing.
 - **Legacy `hermes.service` warning.** If Hermes detects a pre-rename `hermes.service` systemd unit (instead of the current `hermes-gateway.service`), it prints a one-time migration hint so you can avoid flap-loop issues.
 - **Exit codes.** `0` on success, `1` on pull/install/post-install errors, `2` on unexpected working-tree changes that block `git pull`.
 
@@ -1720,10 +1720,10 @@ Additional behavior:
 
 | Command | Description |
 |---------|-------------|
-| `hermes version` | Print version information. |
-| `hermes update` | Pull latest changes and reinstall dependencies. |
+| `fool version` | Print version information. |
+| `fool update` | Pull latest changes and reinstall dependencies. |
 
-| `hermes uninstall [--full] [--gui] [--dry-run] [--yes]` | Remove Hermes, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--dry-run` prints what would be removed without changing anything; `--yes` skips prompts. |
+| `fool uninstall [--full] [--gui] [--dry-run] [--yes]` | Remove Hermes, optionally deleting all config/data. `--gui` removes only the desktop Chat GUI, leaving the agent intact; `--full` also deletes config/data; `--dry-run` prints what would be removed without changing anything; `--yes` skips prompts. |
 
 ## See also
 

@@ -14,7 +14,7 @@ Configure and troubleshoot Honcho memory for Hermes.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/autonomous-ai-agents/honcho` |
+| Source | Optional — install with `fool skills install official/autonomous-ai-agents/honcho` |
 | Path | `optional-skills/autonomous-ai-agents/honcho` |
 | Version | `2.0.0` |
 | Author | Hermes Agent |
@@ -47,14 +47,14 @@ Honcho provides AI-native cross-session user modeling. It learns who the user is
 ### Cloud (app.honcho.dev)
 
 ```bash
-hermes memory setup honcho
+fool memory setup honcho
 # select "cloud", paste API key from https://app.honcho.dev
 ```
 
 ### Self-hosted
 
 ```bash
-hermes memory setup honcho
+fool memory setup honcho
 # select "local", enter base URL (e.g. http://localhost:8000)
 ```
 
@@ -220,7 +220,7 @@ Each Hermes profile gets its own Honcho AI peer while sharing the same workspace
 ### Create a profile with Honcho peer
 
 ```bash
-hermes profile create coder --clone
+fool profile create coder --clone
 # creates host block hermes.coder, AI peer "coder", inherits config from default
 ```
 
@@ -410,7 +410,7 @@ Run `hermes honcho setup`. Ensure `memory.provider: honcho` is in `~/.hermes/con
 Check `hermes honcho status` -- verify `saveMessages: true` and `writeFrequency` isn't `session` (which only writes on exit).
 
 ### Profile not getting its own peer
-Use `--clone` when creating: `hermes profile create <name> --clone`. For existing profiles: `hermes honcho sync`.
+Use `--clone` when creating: `fool profile create <name> --clone`. For existing profiles: `hermes honcho sync`.
 
 ### Observation changes in dashboard not reflected
 Observation config is synced from the server on each session init. Start a new session after changing settings in the Honcho UI.
@@ -441,6 +441,6 @@ Session summary requires at least one prior turn in the current Honcho session. 
 | `hermes honcho identity` | Seed AI peer identity or show both peer representations |
 | `hermes honcho sync` | Create host blocks for all Hermes profiles that don't have one yet |
 | `hermes honcho migrate` | Step-by-step migration guide from OpenClaw native memory to Hermes + Honcho |
-| `hermes memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
-| `hermes memory status` | Show active memory provider and config |
-| `hermes memory off` | Disable external memory provider |
+| `fool memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
+| `fool memory status` | Show active memory provider and config |
+| `fool memory off` | Disable external memory provider |

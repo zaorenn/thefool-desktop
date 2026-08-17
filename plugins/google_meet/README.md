@@ -66,7 +66,7 @@ Without v2: the "realtime" path is skipped; transcribe runs alone.
 ## Local quick start
 
 ```bash
-hermes plugins enable google_meet
+fool plugins enable google_meet
 hermes meet install                                      # pip + Chromium
 hermes meet setup                                        # preflight
 hermes meet auth                                         # optional
@@ -102,7 +102,7 @@ On the node machine (e.g. user's Mac with a signed-in Chrome):
 ```bash
 pip install playwright websockets
 python -m playwright install chromium
-hermes plugins enable google_meet
+fool plugins enable google_meet
 hermes meet node run --display-name my-mac --host 0.0.0.0 --port 18789
 # prints the bearer token on first run; copy it
 ```

@@ -147,7 +147,7 @@ docs/superpowers/*
 
 # Desktop/bootstrap install marker written into the managed checkout root by the
 # bootstrap installer. It is Hermes-managed runtime state, never a code change —
-# ignore it so `hermes update`'s `git stash push --include-untracked` does not
+# ignore it so `fool update`'s `git stash push --include-untracked` does not
 # treat it as a local edit and autostash it on every run (#38529).
 .hermes-bootstrap-complete
 
@@ -158,7 +158,7 @@ docs/superpowers/*
 .hermes-sandbox-e2e*/
 
 # Interrupted-update breadcrumb + recovery lock written next to the shared venv
-# by `hermes update` / launch-time self-heal. Runtime state, never a code change
+# by `fool update` / launch-time self-heal. Runtime state, never a code change
 # — ignore so `git status` stays clean and update's autostash skips them.
 .update-incomplete
 .update-incomplete.lock
@@ -170,7 +170,7 @@ docs/superpowers/*
 
 # Installer-written method stamp in the managed checkout root (scripts/install.sh).
 # Runtime metadata only — never a code change. Ignore so `git status` stays clean
-# and `hermes update`'s untracked autostash does not treat it as a local edit (#66189 / #54855).
+# and `fool update`'s untracked autostash does not treat it as a local edit (#66189 / #54855).
 /.install_method
 
 # Tool Search live-test harness output — non-deterministic model transcripts,
@@ -201,7 +201,7 @@ infographics/
 infograficos/
 infografico/
 native/fts5_cjk/*.so
-# Runtime marker written by hermes update when a lazy dependency refresh is
+# Runtime marker written by fool update when a lazy dependency refresh is
 # interrupted; consumed by launch-time recovery. Never commit it (was tracked
 # by accident via 3a69e34702, removed in the #72002 salvage).
 .lazy-refresh-incomplete

@@ -73,7 +73,7 @@ def _resolve_provider_key(env_var: str, provider_id: str) -> str:
 
     Delegates to ``tools.tool_backend_helpers.resolve_provider_secret`` —
     the single owner of STT/TTS key resolution (config > env/.env > the
-    credential pool populated by ``hermes auth add <provider_id>``).
+    credential pool populated by ``fool auth add <provider_id>``).
     Resolved at call time so tests that reload the helpers module see the
     live function.
     """

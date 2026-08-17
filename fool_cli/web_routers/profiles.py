@@ -1117,7 +1117,7 @@ async def update_profile_model_endpoint(name: str, body: ProfileModelUpdate):
 @router.post("/api/profiles/{name}/describe-auto")
 async def describe_profile_auto_endpoint(name: str, body: ProfileDescribeAuto):
     """Auto-generate a profile's description via the auxiliary LLM
-    (``auxiliary.profile_describer``). Mirrors ``hermes profile describe
+    (``auxiliary.profile_describer``). Mirrors ``fool profile describe
     <name> --auto``.
 
     A failed generation (no aux client, LLM error, …) is returned as
@@ -1144,7 +1144,7 @@ async def describe_profile_auto_endpoint(name: str, body: ProfileDescribeAuto):
 
 # ── Export / Import ──────────────────────────────────────────────────────────
 # Profile sharing for the desktop: wraps fool_cli.profiles.export_profile /
-# import_profile (the same machinery behind `hermes profile export|import`).
+# import_profile (the same machinery behind `fool profile export|import`).
 # Paths are exchanged, not bytes — the desktop's local and pooled backends
 # share the filesystem with the native save/open dialogs that produce them.
 

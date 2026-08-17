@@ -394,7 +394,7 @@ def list_archived_skill_names() -> List[str]:
     """Enumerate skills in ``~/.hermes/skills/.archive/``.
 
     Archive layout is flat (``.archive/<skill>/``) as set by ``archive_skill``,
-    so the directory name is the skill name. Used by ``hermes curator
+    so the directory name is the skill name. Used by ``fool curator
     list-archived`` to help users pass a name to ``fool curator restore``.
     """
     archive_root = _archive_dir()
@@ -532,7 +532,7 @@ def list_unmanaged_skill_names() -> List[str]:
 
     Either way the skill is invisible to ``curated_report()`` and therefore to
     every automatic transition. ``fool curator status`` surfaces this count
-    so the blind spot is legible instead of silent, and ``hermes curator
+    so the blind spot is legible instead of silent, and ``fool curator
     adopt`` lets the user hand specific skills over explicitly.
 
     Provenance is a DECLARATION, never an inference: this function only

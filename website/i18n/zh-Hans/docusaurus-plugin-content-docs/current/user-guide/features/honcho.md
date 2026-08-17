@@ -33,7 +33,7 @@ Honcho 已集成到 [Memory Providers](./memory-providers.md) 系统中。以下
 ## 设置
 
 ```bash
-hermes memory setup    # 从 provider 列表中选择 "honcho"
+fool memory setup    # 从 provider 列表中选择 "honcho"
 ```
 
 或手动配置：
@@ -199,11 +199,11 @@ Honcho 将对话建模为 peer 之间的消息交换。每个 peer 有两个观�
 
 ## CLI 命令
 
-`hermes honcho` 子命令**仅在 Honcho 为当前活跃 memory provider 时注册**（`config.yaml` 中 `memory.provider: honcho`）。先运行 `hermes memory setup` 并选择 Honcho，子命令将在下次调用时出现。
+`hermes honcho` 子命令**仅在 Honcho 为当前活跃 memory provider 时注册**（`config.yaml` 中 `memory.provider: honcho`）。先运行 `fool memory setup` 并选择 Honcho，子命令将在下次调用时出现。
 
 ```bash
 hermes honcho status          # 连接状态、配置及关键设置
-hermes honcho setup           # 重定向到 `hermes memory setup`
+hermes honcho setup           # 重定向到 `fool memory setup`
 hermes honcho strategy        # 查看或设置会话策略（per-session/per-directory/per-repo/global）
 hermes honcho peer            # 查看或更新 peer 名称及辩证推理级别
 hermes honcho mode            # 查看或设置 recall 模式（hybrid/context/tools）
@@ -226,7 +226,7 @@ hermes honcho migrate         # 从 openclaw-honcho 迁移的分步指南
 2. 你的服务端数据（记忆、结论、用户画像）完好无损
 3. 在 config.yaml 中设置 `memory.provider: honcho` 即可重新激活
 
-无需重新登录或重新设置。运行 `hermes memory setup` 并选择"honcho"——向导会自动检测你的现有配置。
+无需重新登录或重新设置。运行 `fool memory setup` 并选择"honcho"——向导会自动检测你的现有配置。
 
 ## 完整文档
 

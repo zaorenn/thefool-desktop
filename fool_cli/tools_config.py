@@ -41,7 +41,7 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
     """Win32 creationflags that stop post-setup children flashing a console.
 
     The dashboard/GUI runs post-setup hooks through a detached, console-less
-    ``hermes tools post-setup <key>`` child. On Windows, every console child
+    ``fool tools post-setup <key>`` child. On Windows, every console child
     (npm.cmd, npx, pip, powershell, curl) spawned from that console-less
     parent materializes a brand-new console window — the "terminal flash"
     users see when clicking "Run setup". ``CREATE_NO_WINDOW`` (via
@@ -1004,7 +1004,7 @@ def install_cua_driver(
     this so a broken update check costs seconds, not a multi-minute silent
     reinstall on every update (the upstream installer runs up to
     ``_CUA_INSTALLER_TIMEOUT`` and install.ps1's concurrency lock can add
-    a further ~600s wait on Windows). ``hermes computer-use install
+    a further ~600s wait on Windows). ``fool computer-use install
     --upgrade`` leaves it False — an explicit upgrade request should still
     reinstall when the check is indeterminate.
 
@@ -1121,7 +1121,7 @@ def install_cua_driver(
         if os.environ.get("FOOL_CUA_DRIVER_CMD", "").strip():
             _print_info(
                 "    Update the binary selected by FOOL_CUA_DRIVER_CMD, or unset "
-                "the override and run: hermes computer-use install --upgrade"
+                "the override and run: fool computer-use install --upgrade"
             )
             return False
         _print_info("    Repairing it with the current upstream installer.")
@@ -1174,7 +1174,7 @@ def install_cua_driver(
                 "keeping the installed version."
             )
             _print_info(
-                "    Force a refresh with: hermes computer-use install --upgrade"
+                "    Force a refresh with: fool computer-use install --upgrade"
             )
             return True
         if _state is not None and _state.get("update_available"):
@@ -1217,7 +1217,7 @@ def install_cua_driver(
                 "    cua-driver was reinstalled, but its runtime contract is still "
                 f"unusable: {repaired.get('reason') or 'unknown error'}."
             )
-            _print_info("    Run: hermes computer-use doctor")
+            _print_info("    Run: fool computer-use doctor")
             return False
     if ok and before:
         try:
@@ -2052,7 +2052,7 @@ def _run_post_setup(post_setup_key: str):
             from fool_cli.auth import login_spotify_command
         except Exception as exc:
             _print_warning(f"    Could not load Spotify auth: {exc}")
-            _print_info("    Run manually: hermes auth spotify")
+            _print_info("    Run manually: fool auth spotify")
             return
         _print_info("    Starting Spotify login...")
         try:
@@ -2065,10 +2065,10 @@ def _run_post_setup(post_setup_key: str):
             # User aborted the wizard, or OAuth failed — don't fail the
             # toolset enable; they can retry with `fool auth spotify`.
             _print_warning(f"    Spotify login did not complete: {exc}")
-            _print_info("    Run later: hermes auth spotify")
+            _print_info("    Run later: fool auth spotify")
         except Exception as exc:
             _print_warning(f"    Spotify login failed: {exc}")
-            _print_info("    Run manually: hermes auth spotify")
+            _print_info("    Run manually: fool auth spotify")
 
     elif post_setup_key == "langfuse":
         # Install the langfuse SDK.
@@ -2096,9 +2096,9 @@ def _run_post_setup(post_setup_key: str):
                 _print_success("    Plugin observability/langfuse enabled")
         except Exception as exc:
             _print_warning(f"    Could not enable plugin automatically: {exc}")
-            _print_info("    Run manually: hermes plugins enable observability/langfuse")
+            _print_info("    Run manually: fool plugins enable observability/langfuse")
         _print_info("    Restart Hermes for tracing to take effect.")
-        _print_info("    Verify: hermes plugins list")
+        _print_info("    Verify: fool plugins list")
 
     elif post_setup_key == "xai_grok":
         # Shared credential bootstrap for any picker entry that talks to xAI
@@ -2133,7 +2133,7 @@ def _run_post_setup(post_setup_key: str):
             from fool_cli.config import save_env_value
         except Exception as exc:
             _print_warning(f"    Could not load setup helpers: {exc}")
-            _print_info("    Run later: hermes auth add xai-oauth   (or set XAI_API_KEY)")
+            _print_info("    Run later: fool auth add xai-oauth   (or set XAI_API_KEY)")
             return
 
         idx = prompt_choice(
@@ -2153,7 +2153,7 @@ def _run_post_setup(post_setup_key: str):
             else:
                 _print_warning(
                     "    xAI Grok OAuth login did not complete. "
-                    "Run later: hermes auth add xai-oauth"
+                    "Run later: fool auth add xai-oauth"
                 )
         elif idx == 1:
             api_key = _setup_prompt("    xAI API key", password=True)
@@ -2162,7 +2162,7 @@ def _run_post_setup(post_setup_key: str):
                 _print_success("    XAI_API_KEY saved")
             else:
                 _print_warning(
-                    "    No API key provided. Run later: hermes auth add xai-oauth"
+                    "    No API key provided. Run later: fool auth add xai-oauth"
                 )
         else:
             _print_info("    xAI will remain inactive until credentials are configured.")
@@ -2201,7 +2201,7 @@ def valid_post_setup_keys() -> Set[str]:
 
 
 def run_post_setup_command(args) -> int:
-    """``hermes tools post-setup <key>`` — non-interactive post-setup runner.
+    """``fool tools post-setup <key>`` — non-interactive post-setup runner.
 
     Runs the install/bootstrap hook a provider declares (npm install for
     browser/Camofox, pip install for kittentts/piper/ddgs, cua-driver fetch,
@@ -2211,7 +2211,7 @@ def run_post_setup_command(args) -> int:
     """
     key = getattr(args, "post_setup_key", None)
     if not key:
-        _print_error("Usage: hermes tools post-setup <key>")
+        _print_error("Usage: fool tools post-setup <key>")
         return 2
     valid = valid_post_setup_keys()
     if key not in valid:
@@ -2612,7 +2612,7 @@ def _get_platform_tools(
                 # Opt-in plugin toolset — stay off until user picks it
                 continue
             elif pts not in known_for_platform:
-                # New plugin not yet seen by hermes tools — default enabled
+                # New plugin not yet seen by fool tools — default enabled
                 enabled_toolsets.add(pts)
             # else: known but not in config = user disabled it
 
@@ -5603,7 +5603,7 @@ def _configure_mcp_tools_interactive(config: dict):
             continue
 
         # Compute new include list (the chosen tools). We standardize on
-        # tools.include across the codebase (catalog installs, hermes mcp
+        # tools.include across the codebase (catalog installs, fool mcp
         # configure, and this UI) so a server\'s on-disk config shape doesn\'t
         # depend on which UI the user touched last.
         chosen_names = [tool_names[i] for i in sorted(chosen)]

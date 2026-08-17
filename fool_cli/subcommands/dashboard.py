@@ -108,7 +108,7 @@ def build_dashboard_parser(
         "--no-open", action="store_true", help="Don't open browser automatically"
     )
     # Backward-compat shim: older Hermes desktop app shells (<= 0.15.x) spawn the
-    # backend as `hermes dashboard --no-open --tui --host ... --port ...`. The
+    # backend as `fool dashboard --no-open --tui --host ... --port ...`. The
     # `--tui` flag was removed from this subcommand in cae6b5486 (embedded chat is
     # always on now). When a user's CLI updates past that commit but their desktop
     # app binary has not, argparse used to hard-error with "unrecognized arguments:
@@ -183,7 +183,7 @@ def build_dashboard_parser(
             "Register this install as a self-hosted dashboard with your Nous "
             "Portal account. Creates an OAuth client, writes "
             "FOOL_DASHBOARD_OAUTH_CLIENT_ID into ~/.hermes/.env, and prints "
-            "how to engage the login gate. Requires being logged in (hermes setup)."
+            "how to engage the login gate. Requires being logged in (fool setup)."
         ),
     )
     dashboard_register_parser.add_argument(

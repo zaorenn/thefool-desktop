@@ -1414,7 +1414,7 @@ def test_load_pool_skips_exchange_for_suppressed_copilot(tmp_path, monkeypatch):
     ``get_copilot_api_token`` (which retries 3x with backoff, ~13s worst
     case), so every pool load — model picker open, /model, agent startup —
     burned the full exchange dead time for a source the user had already
-    removed with ``hermes auth remove copilot gh_cli``.  The gate must run
+    removed with ``fool auth remove copilot gh_cli``.  The gate must run
     BEFORE the network call.
     """
     monkeypatch.setenv("FOOL_HOME", str(tmp_path / "hermes"))

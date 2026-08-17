@@ -85,7 +85,7 @@ def test_paused_reply_surfaces_reason_and_resume_hint(hermes_home):
     assert notice is not None
     assert "paused" in notice.lower()
     assert "deploy window" in notice
-    assert "hermes resume" in notice
+    assert "fool resume" in notice
 
 
 def test_paused_reply_without_reason(hermes_home):
@@ -93,7 +93,7 @@ def test_paused_reply_without_reason(hermes_home):
     notice = estop.paused_reply()
     assert notice is not None
     assert "paused" in notice.lower()
-    assert "hermes resume" in notice
+    assert "fool resume" in notice
 
 
 # ── check_paused: cheap gate + log-once ─────────────────────────────────────
@@ -225,7 +225,7 @@ async def test_gateway_internal_events_bypass_estop(hermes_home):
     assert reply is None or "paused" not in (reply or "").lower()
 
 
-# ── CLI: hermes pause / hermes resume ───────────────────────────────────────
+# ── CLI: fool pause / fool resume ───────────────────────────────────────
 
 
 def test_cli_pause_engages_with_reason(hermes_home, capsys):
@@ -271,7 +271,7 @@ def test_builtin_subcommands_include_pause_resume():
     assert "resume" in _BUILTIN_SUBCOMMANDS
 
 
-# ── hermes status surfacing ─────────────────────────────────────────────────
+# ── fool status surfacing ─────────────────────────────────────────────────
 
 
 def test_status_line_when_paused(hermes_home):

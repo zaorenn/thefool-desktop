@@ -8,7 +8,7 @@ Usage::
 
     python -m acp_adapter.entry
     # or
-    hermes acp
+    fool acp
     # or
     hermes-acp
 """

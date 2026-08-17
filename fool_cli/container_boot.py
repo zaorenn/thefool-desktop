@@ -353,7 +353,7 @@ def _is_legacy_gateway_run_request(argv: Sequence[str]) -> bool:
 def _is_dashboard_container(argv: Sequence[str]) -> bool:
     """Return True when the container's command is the dashboard.
 
-    A dashboard-only container (``hermes dashboard ...``) never spawns or
+    A dashboard-only container (``fool dashboard ...``) never spawns or
     supervises per-profile gateways — that is the gateway container's job.
     Reconciling profile gateway s6 slots there is not just wasted work: when
     the gateway and dashboard containers share a bind-mounted FOOL_HOME,

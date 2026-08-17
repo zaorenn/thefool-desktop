@@ -6,17 +6,17 @@ under ``~/.hermes/logs/``.
 
 Usage examples::
 
-    hermes logs                    # last 50 lines of agent.log
-    hermes logs -f                 # follow agent.log in real time
-    hermes logs errors             # last 50 lines of errors.log
-    hermes logs gateway -n 100    # last 100 lines of gateway.log
-    hermes logs gui -f            # follow gui.log (dashboard/pty/ws)
-    hermes logs desktop -f        # follow desktop.log (Electron app boot/backend)
-    hermes logs --level WARNING    # only WARNING+ lines
-    hermes logs --session abc123   # filter by session ID substring
-    hermes logs --component tools  # only tool-related lines
-    hermes logs --since 1h         # lines from the last hour
-    hermes logs --since 30m -f     # follow, starting 30 min ago
+    fool logs                    # last 50 lines of agent.log
+    fool logs -f                 # follow agent.log in real time
+    fool logs errors             # last 50 lines of errors.log
+    fool logs gateway -n 100    # last 100 lines of gateway.log
+    fool logs gui -f            # follow gui.log (dashboard/pty/ws)
+    fool logs desktop -f        # follow desktop.log (Electron app boot/backend)
+    fool logs --level WARNING    # only WARNING+ lines
+    fool logs --session abc123   # filter by session ID substring
+    fool logs --component tools  # only tool-related lines
+    fool logs --since 1h         # lines from the last hour
+    fool logs --since 30m -f     # follow, starting 30 min ago
 """
 
 import re

@@ -46,7 +46,7 @@ no-foreground invariant, click-dispatch internals — see
 pass `--skip-computer-use` / `-SkipComputerUse` to opt out), so enabling
 Computer Use is just a config flip:
 
-- **`hermes tools`** → pick `🖱️  Computer Use` — installs the driver
+- **`fool tools`** → pick `🖱️  Computer Use` — installs the driver
   automatically if it's still missing.
 - **Dashboard / desktop app** → toggle the Computer Use toolset — if the
   driver is missing, the toggle kicks off the install in the background
@@ -55,15 +55,15 @@ Computer Use is just a config flip:
 **Manual fallback (older installs, skipped installer step):**
 
 ```
-hermes computer-use install
+fool computer-use install
 ```
 
 This fetches and runs the upstream cua-driver installer — `install.sh`
-on macOS/Linux, `install.ps1` on Windows. Use `hermes computer-use
+on macOS/Linux, `install.ps1` on Windows. Use `fool computer-use
 status` to verify the install.
 
 Already have cua-driver? Hermes reuses it when it supports the 0.20 runtime
-contract. During setup, toolset enablement, `hermes update`, and the first
+contract. During setup, toolset enablement, `fool update`, and the first
 `computer_use` call of a session, Hermes checks the local version and
 manifest. It repairs an old or incomplete standard installation through
 the upstream installer (at most once per session at runtime). A binary
@@ -84,7 +84,7 @@ platform-appropriate prereqs:
 
 | Platform | Prereqs |
 |---|---|
-| **macOS** | System Settings → Privacy & Security → **Accessibility** + **Screen Recording**. Grant the identity named by `hermes computer-use doctor`. Standard mode uses CuaDriver.app; bounded and unrestricted modes use the Hermes host identity. |
+| **macOS** | System Settings → Privacy & Security → **Accessibility** + **Screen Recording**. Grant the identity named by `fool computer-use doctor`. Standard mode uses CuaDriver.app; bounded and unrestricted modes use the Hermes host identity. |
 | **Windows** | None at install time. If you're driving over SSH (not RDP / console), you need the autostart pattern — see [cua.ai/docs/how-to-guides/driver/windows-ssh](https://cua.ai/docs/how-to-guides/driver/windows-ssh) for the Session 0 ↔ Session 1+ proxy. |
 | **Linux** | A reachable display server: `DISPLAY` set for X11, or `XDG_SESSION_TYPE=wayland`. Wayland sessions need an XWayland bridge for capture. AT-SPI must be on (default on GNOME/KDE/Xfce). |
 
@@ -171,14 +171,14 @@ compromise you accept.
 
 </div>
 
-## `hermes computer-use doctor` — your first triage stop
+## `fool computer-use doctor` — your first triage stop
 
-`hermes computer-use doctor` runs cua-driver's structured
+`fool computer-use doctor` runs cua-driver's structured
 `health_report` MCP tool and prints a per-check matrix. It's the single
 fastest way to find out *why* an action isn't working.
 
 ```
-$ hermes computer-use doctor
+$ fool computer-use doctor
 ⚠️  cua-driver VERSION on darwin: degraded
   ✅ binary_version: cua-driver VERSION
   ✅ platform_supported: macOS 26.4.1 (arm64)
@@ -424,7 +424,7 @@ computer_use:
   cua_telemetry: true   # default: false (telemetry off)
 ```
 
-When it's on, `hermes computer-use doctor` reports `telemetry: enabled`;
+When it's on, `fool computer-use doctor` reports `telemetry: enabled`;
 when off (the default), it reports `telemetry: disabled via
 CUA_DRIVER_RS_TELEMETRY_ENABLED`.
 
@@ -489,9 +489,9 @@ FOOL_CUA_DRIVER_CMD=/path/to/cua/libs/cua-driver/rust/target/debug/cua-driver
 
 ### Confirm Hermes is using your build
 
-- `hermes computer-use status` prints the resolved binary path and
+- `fool computer-use status` prints the resolved binary path and
   version.
-- `hermes computer-use doctor` confirms the binary is reachable and
+- `fool computer-use doctor` confirms the binary is reachable and
   exercises the full MCP path end-to-end.
 - In a session, `computer_use(action="capture")` exercises the spawned
   `cua-driver mcp` child process.
@@ -521,15 +521,15 @@ FOOL_CUA_DRIVER_CMD=/path/to/cua/libs/cua-driver/rust/target/debug/cua-driver
 
 ## Troubleshooting
 
-**First action when anything's off: run `hermes computer-use doctor`.**
+**First action when anything's off: run `fool computer-use doctor`.**
 The structured per-check matrix tells you (and any agent helping you
 debug) exactly what's wrong.
 
 Specific failure modes the doctor doesn't catch:
 
 **`computer_use backend unavailable: cua-driver is not installed`** —
-Run `hermes computer-use install` to fetch the cua-driver binary, or
-run `hermes tools` and enable the Computer Use toolset.
+Run `fool computer-use install` to fetch the cua-driver binary, or
+run `fool tools` and enable the Computer Use toolset.
 
 **Clicks seem to have no effect** — Capture and verify. A modal you
 didn't see may be blocking input. Dismiss it with `escape` or the close
@@ -545,7 +545,7 @@ matches the dangerous-shell-pattern list. Break the command up or
 reconsider.
 
 **Empty captures on Linux** — `DISPLAY` not set, or you're on pure
-Wayland without an XWayland bridge. `hermes computer-use doctor` will
+Wayland without an XWayland bridge. `fool computer-use doctor` will
 flag this as `ax_capability: fail` with a `Set DISPLAY (X11)…` hint.
 
 **Empty captures on Windows over SSH** — You're in Session 0 (the

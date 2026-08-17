@@ -127,7 +127,7 @@ gateway:
     upload_failed:         "✗ فشل رفع تقرير التصحيح: {error}"
     header:                "**تم رفع تقرير التصحيح:**"
     auto_delete:           "⏱ ستُحذف اللصقات تلقائيًا خلال 6 ساعات."
-    full_logs_hint:        "لرفع السجلات الكاملة، استخدم `hermes debug share` من واجهة الأوامر."
+    full_logs_hint:        "لرفع السجلات الكاملة، استخدم `fool debug share` من واجهة الأوامر."
     share_hint:            "شارك هذه الروابط مع فريق Hermes للحصول على الدعم."
 
   deny:
@@ -265,7 +265,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ إعادة تشغيل البوابة قيد التنفيذ بالفعل..."
-    restarting:            "♻ جارٍ إعادة تشغيل البوابة. إن لم تُخطَر خلال 60 ثانية، أعِد التشغيل من وحدة التحكّم باستخدام `hermes gateway restart`."
+    restarting:            "♻ جارٍ إعادة تشغيل البوابة. إن لم تُخطَر خلال 60 ثانية، أعِد التشغيل من وحدة التحكّم باستخدام `fool gateway restart`."
 
   resume:
     db_unavailable:        "قاعدة بيانات الجلسات غير متاحة."
@@ -366,9 +366,9 @@ gateway:
     invalid_count:         "عدد غير صالح \"{arg}\" — استخدم /undo أو /undo N."
 
   update:
-    platform_not_messaging:  "✗ /update متاح فقط من منصّات المراسلة. شغّل `hermes update` من الطرفية."
+    platform_not_messaging:  "✗ /update متاح فقط من منصّات المراسلة. شغّل `fool update` من الطرفية."
     not_git_repo:            "✗ ليس مستودع git — لا يمكن التحديث."
-    hermes_cmd_not_found:    "✗ تعذّر تحديد موقع أمر `hermes`. Hermes يعمل، لكن أمر التحديث لم يجد الملف التنفيذي على PATH أو عبر مُفسّر Python الحالي. جرّب تشغيل `hermes update` يدويًا في طرفيتك."
+    hermes_cmd_not_found:    "✗ تعذّر تحديد موقع أمر `hermes`. Hermes يعمل، لكن أمر التحديث لم يجد الملف التنفيذي على PATH أو عبر مُفسّر Python الحالي. جرّب تشغيل `fool update` يدويًا في طرفيتك."
     start_failed:            "✗ فشل بدء التحديث: {error}"
     starting:                "⚕ جارٍ بدء تحديث Hermes… سأبثّ التقدّم هنا."
 

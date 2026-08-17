@@ -69,7 +69,7 @@ class TestGatewayLifecyclePattern:
 
     @pytest.mark.parametrize("text", [
         "restart the server application",
-        "hermes cron list",
+        "fool cron list",
         "fool update",
         "fool config set model claude",
         "echo 'just a normal cron job'",

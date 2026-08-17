@@ -83,7 +83,7 @@ Hermes 将自身注册为 MCP server，以便 Codex 能够回调获取 Codex 自
 
 ### Kanban（多 agent 工作树分发）
 
-**在此运行时上可用，但有一个细微依赖。** Kanban 分发器将每个 worker 生成为独立的 `hermes chat -q` 子进程，该子进程读取用户配置——这意味着如果全局设置了 `model.openai_runtime: codex_app_server`，worker 也会在 Codex 运行时上启动。
+**在此运行时上可用，但有一个细微依赖。** Kanban 分发器将每个 worker 生成为独立的 `fool chat -q` 子进程，该子进程读取用户配置——这意味着如果全局设置了 `model.openai_runtime: codex_app_server`，worker 也会在 Codex 运行时上启动。
 
 Codex 运行时 worker 内可用的功能：
 - Codex 完整工具集（shell、apply_patch、update_plan、view_image、web_search）——worker 原生完成实际任务
@@ -139,7 +139,7 @@ Kanban 工具通过分发器设置的 `FOOL_KANBAN_TASK` 环境变量进行访�
    ```bash
    codex login                  # 将 token 写入 ~/.codex/auth.json
    ```
-   Hermes 自己的 `hermes auth login codex` 写入 `~/.hermes/auth.json`——那是独立的会话。**如果你还没有运行过 `codex login`，请单独运行它。**
+   Hermes 自己的 `fool auth login codex` 写入 `~/.hermes/auth.json`——那是独立的会话。**如果你还没有运行过 `codex login`，请单独运行它。**
 
 3. **（可选）安装你想要的 Codex 插件。** 启用运行时时，Hermes 会自动迁移你已通过 Codex CLI 安装的所有精选插件：
    ```bash
@@ -297,7 +297,7 @@ default_permissions = ":workspace"
 
 ```bash
 # 在 work 配置文件中，你可以这样包装 hermes：
-CODEX_HOME=~/.hermes/profiles/work/codex hermes chat
+CODEX_HOME=~/.hermes/profiles/work/codex fool chat
 ```
 
 你需要在设置了该 `CODEX_HOME` 的情况下重新运行一次 `codex login`，以便 OAuth token 落入配置文件范围的位置。之后，`hermes -p work` 将在隔离的 Codex 状态下运行。
@@ -386,12 +386,12 @@ tool_timeout_sec = 600.0
 
 已知限制：
 
-- **Hermes 认证和 Codex 认证是独立的会话。** 为获得最佳体验，你需要同时运行 `codex login` 和 `hermes auth login codex`（运行时使用 Codex 的会话进行 LLM 调用）。这是 Hermes `_import_codex_cli_tokens` 中的有意设计——Hermes 不会与 Codex CLI 共享 OAuth 状态，以避免在 token 刷新时相互覆盖。
+- **Hermes 认证和 Codex 认证是独立的会话。** 为获得最佳体验，你需要同时运行 `codex login` 和 `fool auth login codex`（运行时使用 Codex 的会话进行 LLM 调用）。这是 Hermes `_import_codex_cli_tokens` 中的有意设计——Hermes 不会与 Codex CLI 共享 OAuth 状态，以避免在 token 刷新时相互覆盖。
 - **`delegate_task`、`memory`、`session_search`、`todo` 在此运行时上不可用。** 它们需要运行中的 AIAgent 上下文，无状态的 MCP 回调无法提供。需要这些工具时，请使用 `/codex-runtime auto`。
 - **当 Codex 未跟踪变更集时，审批提示中没有内联 patch 预览。** Codex 的 `fileChange` 审批参数并不总是携带变更集。Hermes 会尽可能从对应的 `item/started` 通知中缓存数据，但如果审批在事件项流式传输完成之前到达，提示会回退到 Codex 提供的 `reason`。
 - **亚秒级取消无法保证。** 流式传输中途的中断（Codex 响应时按 Ctrl+C）通过 `turn/interrupt` 发送，但如果 Codex 已经刷新了最终消息，你仍会收到该响应。
 
-如果你发现 bug，请[提交 issue](https://github.com/NousResearch/hermes-agent/issues)，附上 `hermes logs --since 5m` 的输出。在标题中注明 `codex-runtime` 以便于分类处理。
+如果你发现 bug，请[提交 issue](https://github.com/NousResearch/hermes-agent/issues)，附上 `fool logs --since 5m` 的输出。在标题中注明 `codex-runtime` 以便于分类处理。
 
 ## 架构
 

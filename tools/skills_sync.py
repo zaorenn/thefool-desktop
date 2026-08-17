@@ -58,7 +58,7 @@ SKILLS_DIR = FOOL_HOME / "skills"
 MANIFEST_FILE = SKILLS_DIR / ".bundled_manifest"
 
 # Marker file written by `fool profile create --no-skills` (named profiles)
-# and by the installer's `--no-skills` flag (the default ~/.hermes profile).
+# and by the installer's `--no-skills` flag (the default ~/.fool profile).
 # When present in FOOL_HOME, sync_skills() is a no-op so neither the
 # installer, `fool update`, nor a direct sync re-injects bundled skills.
 # Delete the file to opt back in. Mirrors
@@ -652,7 +652,7 @@ def _recover_renamed_skill(
                     f"  ⚠ {skill_name}: upstream moved this skill to "
                     f"{dest.relative_to(SKILLS_DIR).as_posix()}, but your "
                     f"modified copy at {rel} was kept — it will not receive "
-                    f"updates. Run `hermes skills reset {skill_name} --restore` "
+                    f"updates. Run `fool skills reset {skill_name} --restore` "
                     f"to move to the new location."
                 )
             continue
@@ -818,7 +818,7 @@ def sync_skills(quiet: bool = False) -> dict:
                         print(
                             f"  ⚠ {skill_name}: bundled version shipped but you "
                             f"already have a local skill by this name — yours "
-                            f"was kept. Run `hermes skills reset {skill_name}` "
+                            f"was kept. Run `fool skills reset {skill_name}` "
                             f"to replace it with the bundled version."
                         )
                 else:
@@ -1300,7 +1300,7 @@ def set_bundled_skills_opt_out(enabled: bool) -> dict:
                 marker.unlink()
             changed = existed
             message = (
-                "Opted back in. The next `fool update` (or `hermes skills "
+                "Opted back in. The next `fool update` (or `fool skills "
                 "opt-in --sync`) will re-seed bundled skills."
                 if changed
                 else "Not opted out — no marker to remove."

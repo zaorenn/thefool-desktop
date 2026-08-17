@@ -10,18 +10,18 @@ Server-side LLM fact extraction with semantic search and hybrid multi-signal ret
 ## Setup
 
 ```bash
-hermes memory setup    # select "mem0"
+fool memory setup    # select "mem0"
 ```
 
 Or manually:
 ```bash
-hermes config set memory.provider mem0
+fool config set memory.provider mem0
 echo "MEM0_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
 ## Config
 
-Behavioral settings live in `$FOOL_HOME/mem0.json` (set them via `hermes memory setup`). Only the secret `MEM0_API_KEY` belongs in `~/.hermes/.env`.
+Behavioral settings live in `$FOOL_HOME/mem0.json` (set them via `fool memory setup`). Only the secret `MEM0_API_KEY` belongs in `~/.hermes/.env`.
 
 | Key | Default | Description |
 |-----|---------|-------------|
@@ -44,9 +44,9 @@ Connect the plugin to a standalone Mem0 server you run yourself — the Docker-s
 1. Run the Mem0 server (FastAPI + pgvector) from its Docker image and note its URL and `ADMIN_API_KEY`.
 2. Point the plugin at it — via the setup wizard:
    ```bash
-   hermes memory setup    # select "mem0" → "Self-hosted server"
+   fool memory setup    # select "mem0" → "Self-hosted server"
    # Or non-interactive:
-   hermes memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-key your-admin-api-key
+   fool memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-key your-admin-api-key
    ```
    or via env vars:
    ```bash
@@ -73,7 +73,7 @@ Run Mem0 locally with your own LLM, embedder, and vector store. This is the in-p
 ### Interactive Setup
 
 ```bash
-hermes memory setup
+fool memory setup
 # Select "mem0" → "Open Source (self-hosted)"
 # Follow prompts for LLM, embedder, and vector store
 ```
@@ -81,7 +81,7 @@ hermes memory setup
 ### Agent-Driven Setup (Flags)
 
 ```bash
-hermes memory setup mem0 --mode oss \
+fool memory setup mem0 --mode oss \
   --oss-llm openai --oss-llm-key sk-... \
   --oss-vector qdrant
 ```
@@ -111,7 +111,7 @@ hermes memory setup mem0 --mode oss \
 ### Platform to OSS
 
 ```bash
-hermes memory setup mem0 --mode oss --oss-llm-key sk-...
+fool memory setup mem0 --mode oss --oss-llm-key sk-...
 ```
 
 Or edit `$FOOL_HOME/mem0.json` directly:
@@ -129,13 +129,13 @@ Or edit `$FOOL_HOME/mem0.json` directly:
 ### OSS to Platform
 
 ```bash
-hermes memory setup mem0 --mode platform --api-key sk-...
+fool memory setup mem0 --mode platform --api-key sk-...
 ```
 
 ### Dry Run (preview without writing)
 
 ```bash
-hermes memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
+fool memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
 ```
 
 ## Tools

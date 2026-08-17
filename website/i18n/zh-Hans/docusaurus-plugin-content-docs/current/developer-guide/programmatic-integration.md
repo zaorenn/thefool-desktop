@@ -20,15 +20,15 @@ Hermes 提供三种协议，供外部程序驱动 agent——IDE 插件、自定
 
 ## ACP（Agent Client Protocol）
 
-`hermes acp` 启动一个基于 stdio 的 JSON-RPC 服务器，使用 ACP 协议。已在 VS Code（Zed Industries 的 ACP 扩展）、Zed 以及所有安装了 ACP 插件的 JetBrains IDE 中投入生产使用。
+`fool acp` 启动一个基于 stdio 的 JSON-RPC 服务器，使用 ACP 协议。已在 VS Code（Zed Industries 的 ACP 扩展）、Zed 以及所有安装了 ACP 插件的 JetBrains IDE 中投入生产使用。
 
 暴露的能力：会话创建、prompt（提示词）提交、流式 agent 消息块、工具调用事件、权限请求、会话 fork、取消及身份验证。工具输出会被渲染为 IDE 可理解的 ACP `Diff`/`ToolCall` 内容块。
 
 完整生命周期、事件桥接及审批流程：[ACP 内部机制](./acp-internals)。
 
 ```bash
-hermes acp                  # 在 stdio 上提供 ACP 服务
-hermes acp --bootstrap      # 打印适用于支持 ACP 的 IDE 的安装代码片段
+fool acp                  # 在 stdio 上提供 ACP 服务
+fool acp --bootstrap      # 打印适用于支持 ACP 的 IDE 的安装代码片段
 ```
 
 ---

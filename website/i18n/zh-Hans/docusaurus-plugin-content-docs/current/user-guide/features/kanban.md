@@ -119,7 +119,7 @@ Slug 经过验证：小写字母数字 + 连字符 + 下划线，1-64 个字符�
 
 ### 通过仪表盘管理看板
 
-`hermes dashboard` → Kanban 标签页在存在多个看板（或任何看板有任务）时，顶部会显示看板切换器。单看板用户只看到一个小的 `+ New board` 按钮；切换器在需要时才显示。
+`fool dashboard` → Kanban 标签页在存在多个看板（或任何看板有任务）时，顶部会显示看板切换器。单看板用户只看到一个小的 `+ New board` 按钮；切换器在需要时才显示。
 
 - **看板下拉菜单** —— 选择活动看板。你的选择保存在浏览器的 `localStorage` 中，因此在重新加载后仍然有效，不会影响你打开的终端中 CLI 的 `current` 指针。
 - **+ New board** —— 打开一个模态框，询问 slug、显示名称、描述和图标。可选择自动切换到新看板。
@@ -137,7 +137,7 @@ Slug 经过验证：小写字母数字 + 连字符 + 下划线，1-64 个字符�
 hermes kanban init
 
 # 2. 启动 gateway（托管内嵌调度器）
-hermes gateway start
+fool gateway start
 
 # 3. 创建任务（你 —— 或编排器 agent 通过 kanban_create）
 hermes kanban create "research AI funding landscape" --assignee researcher
@@ -165,7 +165,7 @@ kanban:
                                    # 纯人工审查看板可设为 false。
 ```
 
-通过 `FOOL_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `hermes gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 —— `hermes kanban create` 在创建时会对此发出警告。
+通过 `FOOL_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `fool gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 —— `hermes kanban create` 在创建时会对此发出警告。
 
 将 `hermes kanban daemon` 作为单独进程运行已**弃用**；请使用 gateway。如果你确实无法运行 gateway（无头主机策略禁止长期运行的服务等），`--force` 逃生舱口在一个发布周期内保持旧的独立守护进程可用，但同时运行 gateway 内嵌调度器和针对同一 `kanban.db` 的独立守护进程会导致认领竞争，不受支持。
 
@@ -254,7 +254,7 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 2. **无 shell 引用脆弱性。** 通过 shlex + argparse 传递 `--metadata '{"files": [...]}'` 是潜在的隐患。结构化工具参数完全绕过了这个问题。
 3. **更好的错误处理。** 工具结果是模型可以推理的结构化 JSON，而不是需要解析的 stderr 字符串。
 
-**对普通会话零 schema 占用。** 普通的 `hermes chat` 会话在其 schema 中没有任何 `kanban_*` 工具，除非活动配置文件为编排器工作显式启用了 `kanban` 工具集。调度器启动的任务 worker 因为设置了 `FOOL_KANBAN_TASK` 而获得任务范围的工具；编排器配置文件通过配置获得更广泛的路由界面。对于从不使用 kanban 的用户，没有工具膨胀。
+**对普通会话零 schema 占用。** 普通的 `fool chat` 会话在其 schema 中没有任何 `kanban_*` 工具，除非活动配置文件为编排器工作显式启用了 `kanban` 工具集。调度器启动的任务 worker 因为设置了 `FOOL_KANBAN_TASK` 而获得任务范围的工具；编排器配置文件通过配置获得更广泛的路由界面。对于从不使用 kanban 的用户，没有工具膨胀。
 
 自动注入的 kanban 指引教导模型何时调用哪个工具以及调用顺序。
 
@@ -330,7 +330,7 @@ hermes kanban create "audit auth flow" \
 
 **从仪表盘**，在内联创建表单的 **skills** 字段中以逗号分隔输入 skill 名称。
 
-调度器为列出的每个 skill 发出一个 `--skills <name>` 标志，因此 worker 在自动注入的 kanban 指引之上加载了所有这些 skill。skill 名称必须与受让人配置文件上实际安装的 skill 匹配（运行 `hermes skills list` 查看可用内容）；没有运行时安装。
+调度器为列出的每个 skill 发出一个 `--skills <name>` 标志，因此 worker 在自动注入的 kanban 指引之上加载了所有这些 skill。skill 名称必须与受让人配置文件上实际安装的 skill 匹配（运行 `fool skills list` 查看可用内容）；没有运行时安装。
 
 ### 成本策略：前沿模型编排，低价模型执行
 
@@ -389,7 +389,7 @@ kanban_complete(
 
 ```bash
 hermes kanban init      # 一次性：如果尚未创建 kanban.db
-hermes dashboard        # 导航栏中出现 "Kanban" 标签页，位于 "Skills" 之后
+fool dashboard        # 导航栏中出现 "Kanban" 标签页，位于 "Skills" 之后
 ```
 
 ### 插件提供的功能
@@ -425,7 +425,7 @@ hermes dashboard        # 导航栏中出现 "Kanban" 标签页，位于 "Skills
 
 从 kanban 页面顶部的 **Orchestration: Auto/Manual** 切换按钮（翠绿色 = 自动，静音灰色 = 手动）在两种模式之间切换，或直接编辑 `config.yaml`。两种模式都与 `hermes kanban specify` 共存 —— 当你不想扇出时，它仍然可用作单任务规格重写。
 
-分解器的路由决策依赖于配置文件描述，这是一个每配置文件的标签原语，通过 `hermes profile create --description "..."`、`hermes profile describe <name> --text "..."`、`hermes profile describe <name> --auto`（LLM 从配置文件安装的 skill + 模型自动生成），或仪表盘展开的 **Orchestration settings** 面板中的每配置文件编辑器来设置。没有描述的配置文件仍然出现在名册中 —— 它们可以按名称路由，只是精度较低。分解器**绝不**会将子任务落地为 `assignee=None`：当 LLM 选择未知配置文件时，子任务路由到 `kanban.default_assignee`（如果未设置，则路由到活动默认配置文件）。
+分解器的路由决策依赖于配置文件描述，这是一个每配置文件的标签原语，通过 `fool profile create --description "..."`、`fool profile describe <name> --text "..."`、`fool profile describe <name> --auto`（LLM 从配置文件安装的 skill + 模型自动生成），或仪表盘展开的 **Orchestration settings** 面板中的每配置文件编辑器来设置。没有描述的配置文件仍然出现在名册中 —— 它们可以按名称路由，只是精度较低。分解器**绝不**会将子任务落地为 `assignee=None`：当 LLM 选择未知配置文件时，子任务路由到 `kanban.default_assignee`（如果未设置，则路由到活动默认配置文件）。
 
 配置项（均在 `~/.hermes/config.yaml` 的 `kanban:` 下）：
 
@@ -442,7 +442,7 @@ hermes dashboard        # 导航栏中出现 "Kanban" 标签页，位于 "Skills
 | 键 | 用途 |
 |---|---|
 | `auxiliary.kanban_decomposer` | 生成任务图的模型（由 Decompose 调用）。设置 `provider`/`model` 以覆盖主聊天模型。 |
-| `auxiliary.profile_describer` | 自动生成配置文件描述的模型（由 `hermes profile describe --auto` 调用）。 |
+| `auxiliary.profile_describer` | 自动生成配置文件描述的模型（由 `fool profile describe --auto` 调用）。 |
 
 ### 架构
 
@@ -518,7 +518,7 @@ dashboard:
 
 WebSocket 额外增加了一步：它要求仪表盘的临时会话 token 作为 `?token=…` 查询参数（浏览器无法在升级请求上设置 `Authorization`），与浏览器内 PTY 桥使用的模式一致。
 
-如果你运行 `hermes dashboard --host 0.0.0.0`，每个插件路由 —— 包括 kanban —— 都可以从网络访问。**不要在共享主机上这样做。** 看板包含任务正文、评论和工作区路径；攻击者访问这些路由可以读取你整个协作界面，还可以创建 / 重新分配 / 归档任务。
+如果你运行 `fool dashboard --host 0.0.0.0`，每个插件路由 —— 包括 kanban —— 都可以从网络访问。**不要在共享主机上这样做。** 看板包含任务正文、评论和工作区路径；攻击者访问这些路由可以读取你整个协作界面，还可以创建 / 重新分配 / 归档任务。
 
 `~/.hermes/kanban.db` 中的任务是有意与配置文件无关的（这是协调原语）。如果你用 `hermes -p <profile> dashboard` 打开仪表盘，看板仍然显示主机上任何其他配置文件创建的任务。同一用户拥有所有配置文件，但如果多个角色共存，这一点值得了解。
 
@@ -577,7 +577,7 @@ hermes kanban runs <id> [--json]                       # 尝试历史（每次�
 hermes kanban assignees [--json]                       # 磁盘上的配置文件 + 每受让人任务计数
 hermes kanban dispatch [--dry-run] [--max N]           # 单次扫描
         [--failure-limit N] [--json]
-hermes kanban daemon --force                           # 已弃用 —— 独立调度器（改用 `hermes gateway start`）
+hermes kanban daemon --force                           # 已弃用 —— 独立调度器（改用 `fool gateway start`）
         [--failure-limit N] [--pidfile PATH] [-v]
 hermes kanban stats [--json]                           # 每状态 + 每受让人计数
 hermes kanban log <id> [--tail BYTES]                  # 来自 ~/.hermes/kanban/logs/ 的 worker 日志
@@ -599,7 +599,7 @@ hermes kanban gc [--event-retention-days N]            # 工作区 + 旧事件 +
 
 ## `/kanban` 斜杠命令 {#kanban-slash-command}
 
-每个 `hermes kanban <action>` 动词也可以作为 `/kanban <action>` 访问 —— 从交互式 `hermes chat` 会话内部**以及**从任何 gateway 平台（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost、电子邮件、SMS）。两个界面都调用完全相同的 `fool_cli.kanban.run_slash()` 入口点，该入口点复用 `hermes kanban` argparse 树，因此参数界面、标志和输出格式在 CLI、`/kanban` 和 `hermes kanban` 之间完全相同。你不必离开聊天来驱动看板。
+每个 `hermes kanban <action>` 动词也可以作为 `/kanban <action>` 访问 —— 从交互式 `fool chat` 会话内部**以及**从任何 gateway 平台（Telegram、Discord、Slack、WhatsApp、Signal、Matrix、Mattermost、电子邮件、SMS）。两个界面都调用完全相同的 `fool_cli.kanban.run_slash()` 入口点，该入口点复用 `hermes kanban` argparse 树，因此参数界面、标志和输出格式在 CLI、`/kanban` 和 `hermes kanban` 之间完全相同。你不必离开聊天来驱动看板。
 
 ```
 /kanban list

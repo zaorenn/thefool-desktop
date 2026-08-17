@@ -1802,7 +1802,7 @@ export interface RecommendedDefaultModel {
 }
 
 // Recommended default model for a freshly-authenticated provider. Mirrors the
-// curation `hermes model` does — for Nous it honors the free/paid tier so a
+// curation `fool model` does — for Nous it honors the free/paid tier so a
 // free user gets a free model instead of a paid default.
 export function getRecommendedDefaultModel(provider: string): Promise<RecommendedDefaultModel> {
   return window.hermesDesktop.api<RecommendedDefaultModel>({
@@ -1929,7 +1929,7 @@ export function getElevenLabsVoices(): Promise<ElevenLabsVoicesResponse> {
 }
 
 // ---------------------------------------------------------------------------
-// Skills hub — search / preview / scan / install (parity with `hermes skills`
+// Skills hub — search / preview / scan / install (parity with `fool skills`
 // and the dashboard's Browse-hub tab). Installs spawn background actions whose
 // logs are tailed via getActionStatus().
 // ---------------------------------------------------------------------------
@@ -2004,7 +2004,7 @@ export function updateSkillsFromHub(profile?: null | string): Promise<ActionResp
 
 // ---------------------------------------------------------------------------
 // MCP servers — structured list / test / enable toggle / catalog (parity with
-// `hermes mcp` and the dashboard MCP page). Raw JSON editing stays in
+// `fool mcp` and the dashboard MCP page). Raw JSON editing stays in
 // config.yaml via saveHermesConfig.
 // ---------------------------------------------------------------------------
 
@@ -2084,7 +2084,7 @@ export function installMcpCatalogEntry(
 }
 
 // ---------------------------------------------------------------------------
-// Memory data + curator (parity with `hermes memory` / `hermes curator`).
+// Memory data + curator (parity with `fool memory` / `fool curator`).
 // ---------------------------------------------------------------------------
 
 export function getMemoryStatus(): Promise<MemoryStatusResponse> {
@@ -2129,8 +2129,8 @@ export function runCurator(): Promise<ActionResponse> {
 }
 
 // ---------------------------------------------------------------------------
-// Maintenance operations (parity with `hermes doctor` / `hermes security
-// audit` / `hermes backup` / `hermes debug share` and the dashboard System
+// Maintenance operations (parity with `fool doctor` / `hermes security
+// audit` / `fool backup` / `fool debug share` and the dashboard System
 // page). All except debug share are spawn-based background actions tailed via
 // getActionStatus().
 // ---------------------------------------------------------------------------

@@ -68,7 +68,7 @@ chmod +x ~/.hermes/scripts/maintain-teams-subscriptions.sh
 然后注册一个每 12 小时运行一次的纯脚本 cron 任务（相对于 72 小时过期窗口有 6 倍余量）：
 
 ```bash
-hermes cron create "0 */12 * * *" \
+fool cron create "0 */12 * * *" \
   --name "teams-pipeline-maintain-subscriptions" \
   --no-agent \
   --script maintain-teams-subscriptions.sh \
@@ -78,8 +78,8 @@ hermes cron create "0 */12 * * *" \
 验证注册情况并查看下次运行时间：
 
 ```bash
-hermes cron list
-hermes cron status        # 调度器状态
+fool cron list
+fool cron status        # 调度器状态
 ```
 
 #### 方式二：systemd timer（推荐用于 Linux 生产部署）

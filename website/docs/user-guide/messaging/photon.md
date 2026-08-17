@@ -52,7 +52,7 @@ That's it — there is no public URL or tunnel to set up.
 Either run the unified gateway wizard and pick **Photon iMessage**:
 
 ```bash
-hermes gateway setup
+fool gateway setup
 ```
 
 …or run the Photon setup directly (the wizard calls the same flow):
@@ -94,10 +94,10 @@ channel. Choose one approach:
 line, Hermes replies with a pairing code. Approve it with:
 
 ```bash
-hermes pairing approve photon <CODE>
+fool pairing approve photon <CODE>
 ```
 
-Use `hermes pairing list` to see pending codes and approved users.
+Use `fool pairing list` to see pending codes and approved users.
 
 **Pre-authorize specific numbers** (in `~/.hermes/.env`):
 
@@ -149,7 +149,7 @@ BlueBubbles iMessage channel uses.
 ## Start the gateway
 
 ```bash
-hermes gateway start
+fool gateway start
 ```
 
 You'll see something like:

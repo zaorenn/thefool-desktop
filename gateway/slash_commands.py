@@ -93,7 +93,7 @@ def _model_switch_skew_guard() -> Optional[str]:
         error=(
             f"This gateway is running code from {boot_rev} but the checkout on "
             f"disk is now {disk_rev}. Switching models would risk a stale-module "
-            f"crash — restart the gateway to load the new code: hermes gateway restart"
+            f"crash — restart the gateway to load the new code: fool gateway restart"
         ),
     )
 
@@ -3785,7 +3785,7 @@ class GatewaySlashCommandsMixin:
         ``diff`` output is truncated for chat bubbles — the full diff lives in
         the pending JSON file under ``~/.hermes/pending/skills/``. (Note this is
         the write-approval ``diff <id>``; the CLI also has an unrelated
-        ``hermes skills diff <name>`` that diffs a bundled skill vs stock.)
+        ``fool skills diff <name>`` that diffs a bundled skill vs stock.)
         """
         from gateway.run import _hermes_home
         from fool_cli.write_approval_commands import handle_pending_subcommand
@@ -3822,7 +3822,7 @@ class GatewaySlashCommandsMixin:
                     "(Search/install are CLI-only.)")
 
         # Chat bubbles can't hold a full skill diff — truncate and point at
-        # the real review surface. (Note: `hermes skills diff <name>` is a
+        # the real review surface. (Note: `fool skills diff <name>` is a
         # *different* command — it diffs a bundled skill against its stock
         # version — so we point at the pending JSON file, not that command.)
         if args and args[0].lower() == "diff" and len(out) > 3000:
@@ -5641,7 +5641,7 @@ class GatewaySlashCommandsMixin:
             return (
                 "No skill bundles installed.\n"
                 "Create one on the host with:\n"
-                "  `hermes bundles create <name> --skill <s1> --skill <s2>`\n"
+                "  `fool bundles create <name> --skill <s1> --skill <s2>`\n"
                 f"Directory: `{reply.data['dir']}`"
             )
 

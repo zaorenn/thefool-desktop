@@ -3598,7 +3598,7 @@ def _note_skin_broadcast() -> None:
 
 def _broadcast_skin_if_changed() -> None:
     """Emit ``skin.changed`` when the active skin moved — the agent switched it
-    (``hermes config set display.skin``) OR edited the active skin's colors in
+    (``fool config set display.skin``) OR edited the active skin's colors in
     place ("I don't like that coral" → tweak the YAML).
 
     Routes through the SAME live path as ``/skin`` so every surface (TUI + desktop)
@@ -12701,7 +12701,7 @@ def _discover_repos_payload(
     """Merge filesystem-scanned repos (cached) with session-derived repo roots.
 
     Repo-first: the disk scan (persisted by `projects.record_repos`) surfaces
-    repos even with zero hermes sessions. Session-derived roots cover repos
+    repos even with zero fool sessions. Session-derived roots cover repos
     outside the scan roots. Both are junk-filtered (hermes home subtree + bare
     home) and carry their session totals for the overview.
 
@@ -13175,7 +13175,7 @@ def _rank_slash_completions(
 def _cli_exec_blocked(argv: list[str]) -> str | None:
     """Return user hint if this argv must not run headless in the gateway process."""
     if not argv:
-        return "bare `hermes` is interactive — use `/hermes chat -q …` or run `hermes` in another terminal"
+        return "bare `hermes` is interactive — use `/fool chat -q …` or run `hermes` in another terminal"
     a0 = argv[0].lower()
     if a0 == "setup":
         return "`fool setup` needs a full terminal — run it outside the TUI"

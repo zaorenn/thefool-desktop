@@ -3,8 +3,8 @@
 Traces Hermes conversations, LLM calls, and tool usage to Langfuse.
 
 Activation is handled by the Hermes plugin system — standalone plugins only
-load when listed in ``plugins.enabled`` (via ``hermes plugins enable
-observability/langfuse`` or ``hermes tools → Langfuse Observability``). At
+load when listed in ``plugins.enabled`` (via ``fool plugins enable
+observability/langfuse`` or ``fool tools → Langfuse Observability``). At
 runtime the plugin also requires the ``langfuse`` SDK and credentials; if
 either is missing the hooks are inert.
 
@@ -351,7 +351,7 @@ def _get_langfuse() -> Optional[Langfuse]:
         # atexit is LIFO: registering AFTER the SDK's constructor (which installs
         # its own shutdown flush) means our finalizer runs FIRST at exit — root
         # spans ended there are still picked up by the SDK's exporter. Closes the
-        # short-lived-process gap (kanban workers / hermes chat -q / cron): exit
+        # short-lived-process gap (kanban workers / fool chat -q / cron): exit
         # with tool calls still queued left the root span un-ended → anonymous
         # trace with no name/session/metadata on the backend.
         try:

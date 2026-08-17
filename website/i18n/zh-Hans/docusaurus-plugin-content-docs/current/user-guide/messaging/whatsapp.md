@@ -123,9 +123,9 @@ whatsapp:
 然后启动 gateway（网关）：
 
 ```bash
-hermes gateway              # 前台运行
-hermes gateway install      # 安装为用户服务
-sudo hermes gateway install --system   # 仅 Linux：开机启动系统服务
+fool gateway              # 前台运行
+fool gateway install      # 安装为用户服务
+sudo fool gateway install --system   # 仅 Linux：开机启动系统服务
 ```
 
 Gateway 会使用已保存的会话自动启动 WhatsApp 桥接。
@@ -208,7 +208,7 @@ AI 响应中的标准 Markdown 会自动转换为 WhatsApp 的原生格式：
 | **意外退出登录** | WhatsApp 会在长时间不活跃后取消关联设备。保持手机开机并连接网络，如有需要使用 `hermes whatsapp` 重新配对。 |
 | **桥接崩溃或重连循环** | 重启 gateway，更新 Hermes，如会话因 WhatsApp 协议变更而失效则重新配对。 |
 | **WhatsApp 更新后机器人停止工作** | 更新 Hermes 以获取最新桥接版本，然后重新配对。 |
-| **macOS："Node.js not installed"但终端中 node 可用** | launchd 服务不继承你的 shell PATH。运行 `hermes gateway install` 将当前 PATH 重新快照到 plist 中，然后运行 `hermes gateway start`。详见 [Gateway 服务文档](./index.md#macos-launchd)。 |
+| **macOS："Node.js not installed"但终端中 node 可用** | launchd 服务不继承你的 shell PATH。运行 `fool gateway install` 将当前 PATH 重新快照到 plist 中，然后运行 `fool gateway start`。详见 [Gateway 服务文档](./index.md#macos-launchd)。 |
 | **未收到消息** | 确认 `WHATSAPP_ALLOWED_USERS` 包含发送者号码（含国家代码，不含 `+` 或空格），或将其设为 `*` 允许所有人。在 `.env` 中设置 `WHATSAPP_DEBUG=true` 并重启 gateway，可在 `bridge.log` 中查看原始消息事件。 |
 | **机器人向陌生人回复配对码** | 如需对未授权私信静默处理，在 `~/.hermes/config.yaml` 中设置 `whatsapp.unauthorized_dm_behavior: ignore`。 |
 

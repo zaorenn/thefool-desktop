@@ -14,7 +14,7 @@ description: "配置并使用 Honcho 记忆功能与 Hermes -- 跨会话用户�
 
 | | |
 |---|---|
-| 来源 | 可选 — 通过 `hermes skills install official/autonomous-ai-agents/honcho` 安装 |
+| 来源 | 可选 — 通过 `fool skills install official/autonomous-ai-agents/honcho` 安装 |
 | 路径 | `optional-skills/autonomous-ai-agents/honcho` |
 | 版本 | `2.0.0` |
 | 作者 | Hermes Agent |
@@ -220,7 +220,7 @@ Honcho 的辩证行为由三个独立维度控制。每个维度可单独调整�
 ### 创建带 Honcho peer 的配置文件
 
 ```bash
-hermes profile create coder --clone
+fool profile create coder --clone
 # creates host block hermes.coder, AI peer "coder", inherits config from default
 ```
 
@@ -410,7 +410,7 @@ Honcho 在注入前对 `memory-context` 块进行净化，以防止 prompt 注�
 检查 `hermes honcho status` -- 验证 `saveMessages: true` 且 `writeFrequency` 不是 `session`（该选项仅在退出时写入）。
 
 ### 配置文件未获得自己的 peer
-创建时使用 `--clone`：`hermes profile create <name> --clone`。对于现有配置文件：`hermes honcho sync`。
+创建时使用 `--clone`：`fool profile create <name> --clone`。对于现有配置文件：`hermes honcho sync`。
 
 ### 控制台中的观察更改未生效
 观察配置在每次会话初始化时从服务器同步。在 Honcho UI 中更改设置后，启动新会话。
@@ -441,6 +441,6 @@ Honcho 在注入前对 `memory-context` 块进行净化，以防止 prompt 注�
 | `hermes honcho identity` | 为 AI peer 身份播种，或显示两个 peer 的表示 |
 | `hermes honcho sync` | 为所有尚未拥有 host 块的 Hermes 配置文件创建 host 块 |
 | `hermes honcho migrate` | 从 OpenClaw 原生记忆迁移到 Hermes + Honcho 的分步指南 |
-| `hermes memory setup` | 通用记忆提供商选择器（选择 "honcho" 运行相同向导） |
-| `hermes memory status` | 显示当前活跃的记忆提供商及配置 |
-| `hermes memory off` | 禁用外部记忆提供商 |
+| `fool memory setup` | 通用记忆提供商选择器（选择 "honcho" 运行相同向导） |
+| `fool memory status` | 显示当前活跃的记忆提供商及配置 |
+| `fool memory off` | 禁用外部记忆提供商 |

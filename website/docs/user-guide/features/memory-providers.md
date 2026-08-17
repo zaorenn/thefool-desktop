@@ -11,12 +11,12 @@ Hermes Agent ships with 8 external memory provider plugins that give the agent p
 ## Quick Start
 
 ```bash
-hermes memory setup      # interactive picker + configuration
-hermes memory status     # check what's active
-hermes memory off        # disable external provider
+fool memory setup      # interactive picker + configuration
+fool memory status     # check what's active
+fool memory off        # disable external provider
 ```
 
-You can also select the active memory provider via `hermes plugins` → Provider Plugins → Memory Provider.
+You can also select the active memory provider via `fool plugins` → Provider Plugins → Memory Provider.
 
 Or set manually in `~/.hermes/config.yaml`:
 
@@ -65,10 +65,10 @@ The auto-injected dialectic also scales its reasoning level by query length (lon
 
 **Setup Wizard:**
 ```bash
-hermes memory setup        # select "honcho" — runs the Honcho-specific post-setup
+fool memory setup        # select "honcho" — runs the Honcho-specific post-setup
 ```
 
-The legacy `hermes honcho setup` command still works (it now redirects to `hermes memory setup`), but is only registered after Honcho is selected as the active memory provider.
+The legacy `hermes honcho setup` command still works (it now redirects to `fool memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
 **Headless / remote machines:** for cloud auth on a box without a browser (SSH, remote VM), pick **device** at the wizard's auth-method prompt. The CLI prints a short code and a verification link; open the link in a browser on any other machine, approve, and setup completes — no API key copy-paste. The wizard defaults to this option automatically when it detects no usable local browser.
 
@@ -163,7 +163,7 @@ The mapping:
 ### New profile, fresh Honcho peer
 
 ```bash
-hermes profile create coder --clone
+fool profile create coder --clone
 ```
 
 `--clone` creates a `hermes.coder` host block in `honcho.json` with `aiPeer: "coder"`, shared `workspace`, inherited `peerName`, `recallMode`, `writeFrequency`, `observation`, etc. The AI peer is eagerly created in Honcho so it exists before the first message.
@@ -216,7 +216,7 @@ The peer model above covers CLI, TUI, and desktop sessions, where every conversa
 | `userPeerAliases` | Maps specific runtime IDs to peers (`{"7654321": "alice"}`). The home for routing distinct identities — including agents that each carry their own peer |
 | `runtimePeerPrefix` | Namespaces any unmapped runtime ID (`telegram_7654321`) so platforms with same-shaped IDs don't collide |
 
-Off-gateway these keys do nothing. `hermes memory setup` only prompts for them when it detects a connected gateway platform. See the [Honcho page](./honcho.md#gateway-identity-mapping) for the resolver ladder and the setup flow.
+Off-gateway these keys do nothing. `fool memory setup` only prompts for them when it detects a connected gateway platform. See the [Honcho page](./honcho.md#gateway-identity-mapping) for the resolver ladder and the setup flow.
 
 <details>
 <summary>Full honcho.json example (multi-profile)</summary>
@@ -300,12 +300,12 @@ openviking-server doctor
 openviking-server
 
 # Then configure Hermes
-hermes memory setup    # select "openviking"
+fool memory setup    # select "openviking"
 # Or manually:
-hermes config set memory.provider openviking
+fool config set memory.provider openviking
 ```
 
-`hermes memory setup` can reuse or copy connection values from
+`fool memory setup` can reuse or copy connection values from
 `~/.openviking/ovcli.conf`. Manual setup uses the active profile's `.env` file;
 for the default profile that is `~/.hermes/.env`, and for named profiles use
 `~/.hermes/profiles/<profile>/.env`.
@@ -348,30 +348,30 @@ Server-side LLM fact extraction with semantic search, reranking, and automatic d
 
 **Setup (Platform):**
 ```bash
-hermes memory setup    # select "mem0" → "Platform"
+fool memory setup    # select "mem0" → "Platform"
 # Or manually:
-hermes config set memory.provider mem0
+fool config set memory.provider mem0
 echo "MEM0_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
 **Setup (OSS):**
 ```bash
-hermes memory setup    # select "mem0" → "Open Source (self-hosted)"
+fool memory setup    # select "mem0" → "Open Source (self-hosted)"
 # Or via flags:
-hermes memory setup mem0 --mode oss --oss-llm openai --oss-llm-key sk-... --oss-vector qdrant
+fool memory setup mem0 --mode oss --oss-llm openai --oss-llm-key sk-... --oss-vector qdrant
 ```
 
 Preview without writing files:
 ```bash
-hermes memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
+fool memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
 ```
 
 **Setup (Self-Hosted Dashboard):** connect to a Mem0 server you run via Docker (the dashboard's REST API):
 
 ```bash
-hermes memory setup    # select "mem0" → "Self-hosted server"
+fool memory setup    # select "mem0" → "Self-hosted server"
 # Or via flags:
-hermes memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-key your-admin-api-key
+fool memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-key your-admin-api-key
 ```
 
 Or configure manually — either as env vars:
@@ -407,7 +407,7 @@ The plugin authenticates with `X-API-Key` and uses the server's `/search` / `/me
 | Embedder | openai, ollama |
 | Vector Store | qdrant (local/server), pgvector |
 
-**Switching modes:** Re-run `hermes memory setup mem0 --mode <platform|selfhosted|oss>` or edit `mem0.json` directly.
+**Switching modes:** Re-run `fool memory setup mem0 --mode <platform|selfhosted|oss>` or edit `mem0.json` directly.
 
 ---
 
@@ -426,9 +426,9 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 
 **Setup:**
 ```bash
-hermes memory setup    # select "hindsight"
+fool memory setup    # select "hindsight"
 # Or manually:
-hermes config set memory.provider hindsight
+fool config set memory.provider hindsight
 echo "HINDSIGHT_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
@@ -473,9 +473,9 @@ Local SQLite fact store with FTS5 full-text search, trust scoring, and HRR (Holo
 
 **Setup:**
 ```bash
-hermes memory setup    # select "holographic"
+fool memory setup    # select "holographic"
 # Or manually:
-hermes config set memory.provider holographic
+fool config set memory.provider holographic
 ```
 
 **Config:** `config.yaml` under `plugins.hermes-memory-store`
@@ -509,9 +509,9 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking), 7 memory types,
 
 **Setup:**
 ```bash
-hermes memory setup    # select "retaindb"
+fool memory setup    # select "retaindb"
 # Or manually:
-hermes config set memory.provider retaindb
+fool config set memory.provider retaindb
 echo "RETAINDB_API_KEY=your-key" >> ~/.hermes/.env
 ```
 
@@ -536,9 +536,9 @@ Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered 
 curl -fsSL https://byterover.dev/install.sh | sh
 
 # Then configure Hermes
-hermes memory setup    # select "byterover"
+fool memory setup    # select "byterover"
 # Or manually:
-hermes config set memory.provider byterover
+fool config set memory.provider byterover
 ```
 
 **Key features:**
@@ -563,9 +563,9 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 
 **Setup:**
 ```bash
-hermes memory setup    # select "supermemory"
+fool memory setup    # select "supermemory"
 # Or manually:
-hermes config set memory.provider supermemory
+fool config set memory.provider supermemory
 echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
 ```
 
@@ -575,7 +575,7 @@ Self-hosted setup:
 npx supermemory local
 ```
 
-Before running `hermes memory setup`, set `base_url` in
+Before running `fool memory setup`, set `base_url` in
 `$FOOL_HOME/supermemory.json`:
 
 ```json
@@ -584,7 +584,7 @@ Before running `hermes memory setup`, set `base_url` in
 }
 ```
 
-Then run `hermes memory setup` and enter the API key printed by the local
+Then run `fool memory setup` and enter the API key printed by the local
 server. Configuring the endpoint first ensures the setup connection probe also
 stays local.
 
@@ -648,8 +648,8 @@ Structured long-term memory using Memori Cloud, with background completed-turn c
 ```bash
 pip install hermes-memori
 hermes-memori install
-hermes config set memory.provider memori
-hermes memory setup
+fool config set memory.provider memori
+fool memory setup
 ```
 
 ---

@@ -16,7 +16,7 @@ Each source has its own reader inside ``agent.credential_pool._seed_from_*``
 (which keep their existing shape — we haven't restructured them).  What we
 unify here is **removal**:
 
-    ``hermes auth remove <provider> <N>`` must make the pool entry stay gone.
+    ``fool auth remove <provider> <N>`` must make the pool entry stay gone.
 
 Before this module, every source had an ad-hoc removal branch in
 ``auth_remove_command``, and several sources had no branch at all — so
@@ -189,7 +189,7 @@ def _remove_env_source(provider: str, removed) -> RemovalResult:
             "  Unset it there (shell profile, systemd EnvironmentFile, "
             "launchd plist, etc.) or it will keep being visible to Hermes.",
             f"  The pool entry is now suppressed — Hermes will ignore "
-            f"{env_var} until you run `hermes auth add {provider}`.",
+            f"{env_var} until you run `fool auth add {provider}`.",
         ])
     else:
         result.hints.append(
@@ -276,7 +276,7 @@ def _remove_minimax_oauth(provider: str, removed) -> RemovalResult:
 def _remove_xai_oauth_device_code(provider: str, removed) -> RemovalResult:
     """xAI OAuth tokens live in auth.json providers.xai-oauth — clear them.
 
-    Without this step, ``hermes auth remove xai-oauth <N>`` silently undoes
+    Without this step, ``fool auth remove xai-oauth <N>`` silently undoes
     itself: the central dispatcher only removes the in-memory pool entry,
     leaves ``providers.xai-oauth`` in auth.json intact, and on the next
     ``load_pool("xai-oauth")`` call ``_seed_from_singletons`` re-seeds the

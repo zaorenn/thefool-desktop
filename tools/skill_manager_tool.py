@@ -109,7 +109,7 @@ def _guard_agent_created_enabled() -> bool:
     Off by default because the agent can already execute the same code
     paths via terminal() with no gate, so the scan adds friction without
     meaningful security.  Users who want belt-and-suspenders can turn it
-    on via `hermes config set skills.guard_agent_created true`.
+    on via `fool config set skills.guard_agent_created true`.
     """
     try:
         from fool_cli.config import load_config
@@ -289,7 +289,7 @@ def _pinned_guard(name: str) -> Optional[str]:
             return (
                 f"Skill '{name}' is pinned and cannot be deleted by "
                 f"skill_manage. Ask the user to run "
-                f"`hermes curator unpin {name}` if they want to delete it. "
+                f"`fool curator unpin {name}` if they want to delete it. "
                 f"Patches and edits are allowed on pinned skills; only "
                 f"deletion is blocked."
             )
@@ -332,7 +332,7 @@ def _background_review_write_guard(
                     f"Refusing background curator {action} for pinned skill "
                     f"'{name}': pinned skills are off-limits to autonomous "
                     "maintenance. Ask the user to run "
-                    f"`hermes curator unpin {name}` if they want it changed."
+                    f"`fool curator unpin {name}` if they want it changed."
                 ),
             }
     except Exception:
@@ -391,7 +391,7 @@ def _background_review_write_guard(
         # bump_patch() which created a `created_by: null` record, and the very
         # same write was refused from then on. "Allowed exactly once" is not a
         # policy — it is a race with our own bookkeeping. Fail closed for both
-        # shapes; `hermes curator adopt <name>` is the supported way in.
+        # shapes; `fool curator adopt <name>` is the supported way in.
         usage_data = skill_usage.load_usage()
         usage_rec = usage_data.get(name)
         if not skill_usage._is_curator_managed_record(usage_rec):
@@ -405,7 +405,7 @@ def _background_review_write_guard(
                     f"Refusing background curator {action} for skill "
                     f"'{name}': the skill is not curator-managed ({_detail}). "
                     "User-owned skills are off-limits to autonomous curation. "
-                    f"Run `hermes curator adopt {name}` to opt it in."
+                    f"Run `fool curator adopt {name}` to opt it in."
                 ),
             }
     except Exception:
@@ -1680,7 +1680,7 @@ def skill_manage(
                 )
             elif action == "delete":
                 # A recoverable curator archive (routed through archive_skill)
-                # keeps its usage record as STATE_ARCHIVED so `hermes curator
+                # keeps its usage record as STATE_ARCHIVED so `fool curator
                 # status`/`restore` still see it. Only a hard delete forgets.
                 if not result.get("_archived"):
                     forget(name)
@@ -1738,7 +1738,7 @@ SKILL_MANAGE_SCHEMA = {
         "via skills_list/skill_view. Keep the trigger self-contained in that "
         "first 57-char window: 'Use when <trigger>. <one-line behavior>.'\n\n"
         "Pinned skills are protected from deletion only — skill_manage(action='delete') "
-        "will refuse with a message pointing the user to `hermes curator unpin <name>`. "
+        "will refuse with a message pointing the user to `fool curator unpin <name>`. "
         "Patches and edits go through on pinned skills so you can still improve them as "
         "pitfalls come up; pin only guards against irrecoverable loss."
     ),

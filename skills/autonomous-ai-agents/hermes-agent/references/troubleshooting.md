@@ -6,15 +6,15 @@
 3. In gateway: `/restart`. In CLI: exit and relaunch.
 
 ### Tool not available
-1. `hermes tools` — check if toolset is enabled for your platform
+1. `fool tools` — check if toolset is enabled for your platform
 2. Some tools need env vars (check `.env`)
 3. `/reset` after enabling tools
 
 ### Model/provider issues
-1. `hermes doctor` — check config and dependencies
-2. `hermes auth` — re-authenticate OAuth providers (or `hermes auth add <provider>`)
+1. `fool doctor` — check config and dependencies
+2. `fool auth` — re-authenticate OAuth providers (or `fool auth add <provider>`)
 3. Check `.env` has the right API key
-4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `hermes model` → GitHub Copilot.
+4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `fool model` → GitHub Copilot.
 
 ### Changes not taking effect
 - **Tools/skills:** `/reset` starts a new session with updated toolset
@@ -22,8 +22,8 @@
 - **Code changes:** Restart the CLI or gateway process
 
 ### Skills not showing
-1. `hermes skills list` — verify installed
-2. `hermes skills config` — check platform enablement
+1. `fool skills list` — verify installed
+2. `fool skills config` — check platform enablement
 3. Load explicitly: `hermes -s name` (or the skill's own `/<name>` slash command)
 
 ### Gateway issues
@@ -45,8 +45,8 @@ Common gateway problems:
 ### Auxiliary models not working
 If `auxiliary` tasks (vision, compression, session_search) fail silently, the `auto` provider can't find a backend. Either set `OPENROUTER_API_KEY` or `GOOGLE_API_KEY`, or explicitly configure each auxiliary task's provider:
 ```bash
-hermes config set auxiliary.vision.provider <your_provider>
-hermes config set auxiliary.vision.model <model_name>
+fool config set auxiliary.vision.provider <your_provider>
+fool config set auxiliary.vision.model <model_name>
 ```
 
 ### "Reset permissions" / auto-approving everything

@@ -9,12 +9,12 @@ None — uses SQLite (always available). NumPy optional for HRR algebra.
 ## Setup
 
 ```bash
-hermes memory setup    # select "holographic"
+fool memory setup    # select "holographic"
 ```
 
 Or manually:
 ```bash
-hermes config set memory.provider holographic
+fool config set memory.provider holographic
 ```
 
 ## Config

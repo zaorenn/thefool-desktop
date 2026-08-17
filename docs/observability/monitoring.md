@@ -67,7 +67,7 @@ off the hot path, while terminal cron events make one bounded fail-open flush
 attempt of up to one second so the final state is less likely to be lost.
 
 Works identically under systemd/launchd/s6 supervision, containers, tmux, or
-a plain `hermes gateway run`: the exporter lives in the gateway process, so
+a plain `fool gateway run`: the exporter lives in the gateway process, so
 no sidecar, agent, or collector is required on the host.
 
 ## Collecting into DataDog

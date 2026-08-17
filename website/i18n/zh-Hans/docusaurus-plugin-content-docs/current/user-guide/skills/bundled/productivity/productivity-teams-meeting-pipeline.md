@@ -110,7 +110,7 @@ Microsoft Graph 将 webhook 订阅上限设为 72 小时，且**不会自动续�
 当用户反馈"昨天流水线还正常，今天没有任何内容进来"时：
 1. 执行 `hermes teams-pipeline subscriptions` — 如果结果为空，或所有条目的 `expirationDateTime` 均已过期，即为原因所在。
 2. 按上方示例使用 `subscribe` 重新创建订阅。
-3. **立即设置自动续期**，可通过 `hermes cron add`、systemd timer 或普通 crontab 实现。运维手册 `/docs/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production` 提供了三种方案的完整说明。12 小时间隔是安全的（相对 72 小时上限有 6 倍余量）。
+3. **立即设置自动续期**，可通过 `fool cron add`、systemd timer 或普通 crontab 实现。运维手册 `/docs/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production` 提供了三种方案的完整说明。12 小时间隔是安全的（相对 72 小时上限有 6 倍余量）。
 
 ## 其他注意事项
 

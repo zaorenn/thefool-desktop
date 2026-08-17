@@ -952,7 +952,7 @@ def test_skin_live_switch_end_to_end(server, tmp_path, monkeypatch):
     server._broadcast_skin_if_changed()
     emitted.clear()
 
-    # Activate midnight, as `hermes config set display.skin midnight` would.
+    # Activate midnight, as `fool config set display.skin midnight` would.
     time.sleep(0.01)  # ensure the config mtime moves
     (tmp_path / "config.yaml").write_text("display:\n  skin: midnight\n", encoding="utf-8")
     server._broadcast_skin_if_changed()

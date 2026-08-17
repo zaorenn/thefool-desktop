@@ -318,7 +318,7 @@ def install_cli(timeout_s: int = 600) -> Tuple[bool, str]:
     # browser-use found on PATH is a user-level side install — it must NOT
     # prevent provisioning the canonical Hermes-managed copy, or resolution
     # stays pinned to a binary we don't control (version drift, no updates
-    # through hermes tools).
+    # through fool tools).
     bin_dir = _managed_bin_dir()
     if bin_dir:
         managed = shutil.which("browser-use", path=bin_dir)

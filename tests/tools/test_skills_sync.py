@@ -740,7 +740,7 @@ class TestNoBundledSkillsOptOut:
 
 
 class TestOptOutToggleAndRemove:
-    """`hermes skills opt-out/opt-in` core: marker toggle + safe removal."""
+    """`fool skills opt-out/opt-in` core: marker toggle + safe removal."""
 
     def _setup_bundled(self, tmp_path):
         bundled = tmp_path / "bundled"

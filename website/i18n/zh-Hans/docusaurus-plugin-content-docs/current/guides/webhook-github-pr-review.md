@@ -27,7 +27,7 @@ Webhook payload 包含攻击者可控的数据——PR 标题、commit 消息和
 
 ## 前提条件
 
-- Hermes Agent 已安装并运行（`hermes gateway`）
+- Hermes Agent 已安装并运行（`fool gateway`）
 - [`gh` CLI](https://cli.github.com/) 已安装并在 gateway 主机上完成认证（`gh auth login`）
 - 你的 Hermes 实例有一个可公网访问的 URL（如果在本地运行，请参阅[使用 ngrok 进行本地测试](#local-testing-with-ngrok)）
 - 对 GitHub 仓库的管理员权限（管理 webhook 所需）
@@ -96,7 +96,7 @@ GitHub webhook payload 包含 PR 元数据（标题、描述、分支名、URL�
 ## 第二步——启动 gateway
 
 ```bash
-hermes gateway
+fool gateway
 ```
 
 你应该看到：

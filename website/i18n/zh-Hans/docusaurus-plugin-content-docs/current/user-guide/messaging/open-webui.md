@@ -33,20 +33,20 @@ Open WebUI 与 Hermes 之间是服务器到服务器的通信，因此此集成�
 ### 1. 启用 API 服务器
 
 ```bash
-hermes config set API_SERVER_ENABLED true
-hermes config set API_SERVER_KEY your-secret-key
+fool config set API_SERVER_ENABLED true
+fool config set API_SERVER_KEY your-secret-key
 ```
 
-`hermes config set` 会自动将标志路由到 `config.yaml`，将密钥路由到 `~/.hermes/.env`。如果 gateway 已在运行，请重启以使更改生效：
+`fool config set` 会自动将标志路由到 `config.yaml`，将密钥路由到 `~/.hermes/.env`。如果 gateway 已在运行，请重启以使更改生效：
 
 ```bash
-hermes gateway stop && hermes gateway
+fool gateway stop && fool gateway
 ```
 
 ### 2. 启动 Hermes Agent gateway
 
 ```bash
-hermes gateway
+fool gateway
 ```
 
 你应该看到：
@@ -240,14 +240,14 @@ Open WebUI 在首次启动后会将 OpenAI 兼容连接设置持久化到其自�
 `API_SERVER_*` 是环境变量，而非 YAML 配置键，因此请将它们写入每个 profile 的 `.env`。选择默认平台范围之外的端口（`8644` 是 webhook 适配器，`8645` 是 wecom-callback，`8646` 是 msgraph-webhook），例如 `8650+`：
 
 ```bash
-hermes profile create alice
+fool profile create alice
 cat >> ~/.hermes/profiles/alice/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8650
 API_SERVER_KEY=alice-secret
 EOF
 
-hermes profile create bob
+fool profile create bob
 cat >> ~/.hermes/profiles/bob/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8651

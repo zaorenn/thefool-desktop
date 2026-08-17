@@ -186,7 +186,7 @@ class TestPromptInjection:
         assert "8842" in prompt
         assert "watchlist" in prompt
         # The injected section documents the CLI write path for this job.
-        assert f"hermes cron notepad {job['id']} set" in prompt
+        assert f"fool cron notepad {job['id']} set" in prompt
 
     def test_empty_notepad_prompt_byte_stable(self, cron_env, notepad):
         from cron.jobs import create_job

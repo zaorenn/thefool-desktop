@@ -93,7 +93,7 @@ def _warn_if_gateway_not_running() -> None:
     print(color("  ⚠  Gateway is not running — jobs won't fire automatically.", Colors.YELLOW))
     print(color("     Start it with: fool gateway install", Colors.DIM))
     print(color("                    sudo fool gateway install --system  # Linux servers", Colors.DIM))
-    print(color("     Check status:  hermes cron status", Colors.DIM))
+    print(color("     Check status:  fool cron status", Colors.DIM))
 
 
 def cron_list(show_all: bool = False):
@@ -104,7 +104,7 @@ def cron_list(show_all: bool = False):
 
     if not jobs:
         print(color("No scheduled jobs.", Colors.DIM))
-        print(color("Create one with 'hermes cron create ...' or the /cron command in chat.", Colors.DIM))
+        print(color("Create one with 'fool cron create ...' or the /cron command in chat.", Colors.DIM))
         return
 
     print()
@@ -320,7 +320,7 @@ def cron_status():
                     print(color(
                         "  Hint: jobs.json may be owned by another user "
                         "(e.g. rewritten by a root `docker exec hermes "
-                        "hermes cron ...`). Fix ownership to match the "
+                        "fool cron ...`). Fix ownership to match the "
                         "gateway user, and prefer `docker exec -u <uid>:<gid>`.",
                         Colors.YELLOW,
                     ))
@@ -552,7 +552,7 @@ def _job_action(action: str, job_id: str, success_verb: str) -> int:
 
 
 def cron_notepad(args) -> int:
-    """Handle ``hermes cron notepad <job_id> [get|set|delete|list]``.
+    """Handle ``fool cron notepad <job_id> [get|set|delete|list]``.
 
     The per-job durable KV scratchpad (``cron/notepad.py``). This CLI is the
     write path — a running cron agent updates its own notepad by invoking
@@ -573,7 +573,7 @@ def cron_notepad(args) -> int:
     try:
         if action == "set":
             if key is None or value is None:
-                print(color("Usage: hermes cron notepad <job_id> set <key> <value>", Colors.RED))
+                print(color("Usage: fool cron notepad <job_id> set <key> <value>", Colors.RED))
                 return 1
             notepad.set_note(job_id, key, value)
             print(color(f"Set notepad key '{key}' for job {job_id}.", Colors.GREEN))
@@ -581,7 +581,7 @@ def cron_notepad(args) -> int:
 
         if action == "get":
             if key is None:
-                print(color("Usage: hermes cron notepad <job_id> get <key>", Colors.RED))
+                print(color("Usage: fool cron notepad <job_id> get <key>", Colors.RED))
                 return 1
             stored = notepad.get_note(job_id, key)
             if stored is None:
@@ -592,7 +592,7 @@ def cron_notepad(args) -> int:
 
         if action == "delete":
             if key is None:
-                print(color("Usage: hermes cron notepad <job_id> delete <key>", Colors.RED))
+                print(color("Usage: fool cron notepad <job_id> delete <key>", Colors.RED))
                 return 1
             if notepad.delete_note(job_id, key):
                 print(color(f"Deleted notepad key '{key}' for job {job_id}.", Colors.GREEN))
@@ -656,5 +656,5 @@ def cron_command(args):
         return _job_action("remove", args.job_id, "Removed")
 
     print(f"Unknown cron command: {subcmd}")
-    print("Usage: hermes cron [list|create|edit|pause|resume|run|remove|status|runs|tick]")
+    print("Usage: fool cron [list|create|edit|pause|resume|run|remove|status|runs|tick]")
     sys.exit(1)

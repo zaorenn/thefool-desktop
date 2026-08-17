@@ -14,7 +14,7 @@ description: "规划、搭建并监控由 Hermes Kanban 支撑的多智能体视
 
 | | |
 |---|---|
-| 来源 | 可选 — 通过 `hermes skills install official/creative/kanban-video-orchestrator` 安装 |
+| 来源 | 可选 — 通过 `fool skills install official/creative/kanban-video-orchestrator` 安装 |
 | 路径 | `optional-skills/creative/kanban-video-orchestrator` |
 | 版本 | `1.0.0` |
 | 作者 | ['SHL0MS', 'alt-glitch'] |
@@ -98,7 +98,7 @@ DISCOVER  →  BRIEF  →  TEAM DESIGN  →  SETUP  →  EXECUTE  →  MONITOR
 
 1. 创建项目工作区（`~/projects/video-pipeline/<slug>/`）
 2. 将提供的资产复制到 `taste/`、`audio/`、`assets/`
-3. 通过 `hermes profile create --clone` 创建每个 Hermes profile
+3. 通过 `fool profile create --clone` 创建每个 Hermes profile
 4. 编写各 profile 的 `SOUL.md`（个性 + 角色定义）
 5. 配置 profile YAML（工具集、always_load 技能、cwd）
 6. 编写 `brief.md`、`TEAM.md` 和 `taste/` 内容
@@ -113,7 +113,7 @@ DISCOVER  →  BRIEF  →  TEAM DESIGN  →  SETUP  →  EXECUTE  →  MONITOR
 ```bash
 hermes kanban watch --tenant <project-tenant>     # 实时事件
 hermes kanban list  --tenant <project-tenant>     # 看板快照
-hermes dashboard                                   # 可视化看板 UI
+fool dashboard                                   # 可视化看板 UI
 ```
 
 director profile 从此接管，通过 kanban 工具集将工作分解并路由给专业 profiles。

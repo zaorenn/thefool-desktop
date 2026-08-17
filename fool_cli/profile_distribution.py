@@ -7,16 +7,16 @@ credentials untouched.
 
 Where this fits relative to the existing pieces:
 
-* ``hermes profile export/import`` — local backup / restore for a profile
+* ``fool profile export/import`` — local backup / restore for a profile
   on your own machine. NOT a distribution format. Stays as-is.
-* ``hermes skills install <url>`` — the URL install pattern we're mirroring,
+* ``fool skills install <url>`` — the URL install pattern we're mirroring,
   but at the profile granularity.
 
 Subcommands (all live under ``fool profile``, not a parallel tree):
 
-    hermes profile install <source> [--name N] [--alias] [--force] [--yes]
-    hermes profile update  <name>  [--force-config] [--yes]
-    hermes profile info    <name>
+    fool profile install <source> [--name N] [--alias] [--force] [--yes]
+    fool profile update  <name>  [--force-config] [--yes]
+    fool profile info    <name>
 
 ``<source>`` is one of:
 
@@ -734,7 +734,7 @@ def update_distribution(
     if not existing_manifest.source:
         raise DistributionError(
             f"Profile '{canon}' has no recorded source.  Re-install with "
-            "`hermes profile install <source> --name {canon} --force`."
+            "`fool profile install <source> --name {canon} --force`."
         )
 
     with tempfile.TemporaryDirectory(prefix="hermes_dist_update_") as tmp:

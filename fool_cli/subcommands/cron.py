@@ -203,7 +203,7 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
         "--monitor-script",
         dest="monitor_script",
         help=(
-            "Set/replace the monitor source script (see `hermes cron create "
+            "Set/replace the monitor source script (see `fool cron create "
             "--monitor-script`). Pass empty string to clear."
         ),
     )

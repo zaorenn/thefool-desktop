@@ -59,9 +59,9 @@ into chat.
 
 :::tip
 Use `/compress` when a session gets long, `/new` for a fresh thread, and
-`hermes sessions prune` only when you want to delete old ended sessions from
+`fool sessions prune` only when you want to delete old ended sessions from
 storage. If `state.db` has simply grown large, start with the non-destructive
-option first: `hermes sessions optimize` merges FTS5 index segments and
+option first: `fool sessions optimize` merges FTS5 index segments and
 VACUUMs the database without touching any session data. Compression reduces the active context; it is not a privacy delete.
 Pass a name to `/new` (e.g. `/new payments-refactor`) to set the new session's
 initial title up front — useful for finding it later with `/resume <name>` or
@@ -74,7 +74,7 @@ Each session is tagged with its source platform:
 
 | Source | Description |
 |--------|-------------|
-| `cli` | Interactive CLI (`hermes` or `hermes chat`) |
+| `cli` | Interactive CLI (`hermes` or `fool chat`) |
 | `telegram` | Telegram messenger |
 | `discord` | Discord server/DM |
 | `slack` | Slack workspace |
@@ -109,8 +109,8 @@ hermes --continue
 hermes -c
 
 # Or with the chat subcommand
-hermes chat --continue
-hermes chat -c
+fool chat --continue
+fool chat -c
 ```
 
 This looks up the most recent `cli` session from the SQLite database and loads its full conversation history.
@@ -146,10 +146,10 @@ hermes --resume "refactoring auth"
 hermes --resume latest
 
 # Or with the chat subcommand
-hermes chat --resume 20250305_091523_a1b2c3d4
+fool chat --resume 20250305_091523_a1b2c3d4
 ```
 
-Session IDs are shown when you exit a CLI session, and can be found with `hermes sessions list`.
+Session IDs are shown when you exit a CLI session, and can be found with `fool sessions list`.
 
 :::note
 `latest` is a reserved keyword for `--resume`. A session literally titled "latest" is still reachable by its ID or via `-c latest` (title match).
@@ -181,11 +181,11 @@ A `↪ restored workspace dir: …` line confirms the switch. Restore failures n
 
 ### Filtering Sessions by Workspace
 
-`hermes sessions list` accepts `--workspace <needle>` to show only sessions whose workspace key (git repo root, else cwd) matches — by path substring or exact directory basename:
+`fool sessions list` accepts `--workspace <needle>` to show only sessions whose workspace key (git repo root, else cwd) matches — by path substring or exact directory basename:
 
 ```bash
-hermes sessions list --workspace my-project
-hermes sessions list --workspace ~/code/hermes-agent
+fool sessions list --workspace my-project
+fool sessions list --workspace ~/code/hermes-agent
 ```
 
 ### Conversation Recap on Resume
@@ -258,7 +258,7 @@ Give sessions human-readable titles so you can find and resume them easily.
 
 ### Auto-Generated Titles
 
-Hermes automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `hermes sessions list` or `hermes sessions browse`.
+Hermes automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `fool sessions list` or `fool sessions browse`.
 
 Auto-titling only fires once per session and is skipped if you've already set a title manually.
 
@@ -275,7 +275,7 @@ The title is applied immediately. If the session hasn't been created in the data
 You can also rename existing sessions from the command line:
 
 ```bash
-hermes sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
+fool sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
 ```
 
 ### Title Rules
@@ -304,19 +304,19 @@ The `/title` command works in all gateway platforms (Telegram, Discord, Slack, W
 
 ## Session Management Commands
 
-Hermes provides a full set of session management commands via `hermes sessions`:
+Hermes provides a full set of session management commands via `fool sessions`:
 
 ### List Sessions
 
 ```bash
 # List recent sessions (default: last 20)
-hermes sessions list
+fool sessions list
 
 # Filter by platform
-hermes sessions list --source telegram
+fool sessions list --source telegram
 
 # Show more sessions
-hermes sessions list --limit 50
+fool sessions list --limit 50
 ```
 
 When sessions have titles, the output shows titles, previews, and relative timestamps:
@@ -340,7 +340,7 @@ What's the weather in Las Vegas?                    3d ago        tele   2025030
 
 ### Export Sessions
 
-`hermes sessions export` is one surface for every export format, selected with `--format`:
+`fool sessions export` is one surface for every export format, selected with `--format`:
 
 | Format | Output | Use it for |
 |--------|--------|------------|
@@ -357,16 +357,16 @@ All formats share the same selection knobs: `--session-id` for one session, or t
 
 ```bash
 # Export all sessions to a JSONL file
-hermes sessions export backup.jsonl
+fool sessions export backup.jsonl
 
 # Export sessions from a specific platform
-hermes sessions export telegram-history.jsonl --source telegram
+fool sessions export telegram-history.jsonl --source telegram
 
 # Export a single session
-hermes sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
+fool sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
 
 # Redact API keys/tokens/credentials from the exported content
-hermes sessions export backup.jsonl --redact
+fool sessions export backup.jsonl --redact
 ```
 
 Exported files contain one JSON object per line with full session metadata and all messages.
@@ -377,10 +377,10 @@ Exported files contain one JSON object per line with full session metadata and a
 
 ```bash
 # One session as a standalone HTML page
-hermes sessions export --format html --session-id 20250305_091523_a1b2c3d4 transcript.html
+fool sessions export --format html --session-id 20250305_091523_a1b2c3d4 transcript.html
 
 # All Telegram sessions from the last week in one file, secrets redacted
-hermes sessions export --format html --newer-than 1w --source telegram --redact archive.html
+fool sessions export --format html --newer-than 1w --source telegram --redact archive.html
 ```
 
 #### Prompts Only
@@ -389,10 +389,10 @@ hermes sessions export --format html --newer-than 1w --source telegram --redact 
 
 ```bash
 # One JSONL record per prompt (session id, index, timestamp, text)
-hermes sessions export prompts.jsonl --session-id 20250305_091523_a1b2c3d4 --only user-prompts
+fool sessions export prompts.jsonl --session-id 20250305_091523_a1b2c3d4 --only user-prompts
 
 # Markdown, straight to stdout
-hermes sessions export - --session-id 20250305_091523_a1b2c3d4 --only user-prompts --format md
+fool sessions export - --session-id 20250305_091523_a1b2c3d4 --only user-prompts --format md
 ```
 
 Works with `--format jsonl` (default) or `md`, honors the same filters for bulk export, and combines with `--redact`.
@@ -403,13 +403,13 @@ Works with `--format jsonl` (default) or `md`, honors the same filters for bulk 
 
 ```bash
 # Trace of the most recent session, to stdout
-hermes sessions export --format trace
+fool sessions export --format trace
 
 # One session to a local trace file
-hermes sessions export --format trace --session-id 20250305_091523_a1b2c3d4 trace.jsonl
+fool sessions export --format trace --session-id 20250305_091523_a1b2c3d4 trace.jsonl
 
 # Upload straight to your private HF traces dataset
-hermes sessions export --format trace --session-id 20250305_091523_a1b2c3d4 --upload
+fool sessions export --format trace --session-id 20250305_091523_a1b2c3d4 --upload
 ```
 
 Trace exports are secret-redacted by default (they're meant to leave the machine); `--no-redact` opts out after manual review. `--upload` is private unless `--public`. Bulk trace export with filters writes one `<id>.trace.jsonl` per session.
@@ -420,22 +420,22 @@ Pass `--format md` or `--format qmd` when you want a readable, file-based archiv
 
 ```bash
 # Export one session to Markdown
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4
+fool sessions export --format md --session-id 20250305_091523_a1b2c3d4
 
 # Export a compression lineage as one logical document
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4 --lineage logical
+fool sessions export --format md --session-id 20250305_091523_a1b2c3d4 --lineage logical
 
 # Preview ended sessions older than 90 days without writing files
-hermes sessions export --format md --older-than 90 --dry-run
+fool sessions export --format md --older-than 90 --dry-run
 
 # Export ended Telegram sessions older than 2 weeks to QMD files
-hermes sessions export --format qmd --older-than 2w --source telegram
+fool sessions export --format qmd --older-than 2w --source telegram
 
 # Export long Claude sessions, secrets redacted
-hermes sessions export --format md --model sonnet --min-messages 50 --redact
+fool sessions export --format md --model sonnet --min-messages 50 --redact
 
 # Only after verification, export and delete one explicitly named session
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
+fool sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
 ```
 
 Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a `manifest.jsonl` with the file path, message count, lineage ids, and SHA-256. Bulk export requires at least one filter; a bare bulk export is refused. `--delete-after-verified` is intentionally limited to `--session-id` and requires `--yes`. Because deleting a parent session also removes its delegate/subagent sessions, this mode exports and verifies each delegate in a separate file before deleting anything. If the delegate set changes during export, deletion is refused. `--redact` scrubs secrets (API keys, tokens, credentials) from message content and tool output before writing — recommended for any export you plan to share.
@@ -444,20 +444,20 @@ Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a 
 
 ```bash
 # Delete a specific session (with confirmation)
-hermes sessions delete 20250305_091523_a1b2c3d4
+fool sessions delete 20250305_091523_a1b2c3d4
 
 # Delete without confirmation
-hermes sessions delete 20250305_091523_a1b2c3d4 --yes
+fool sessions delete 20250305_091523_a1b2c3d4 --yes
 ```
 
 ### Rename a Session
 
 ```bash
 # Set or change a session's title
-hermes sessions rename 20250305_091523_a1b2c3d4 "debugging auth flow"
+fool sessions rename 20250305_091523_a1b2c3d4 "debugging auth flow"
 
 # Multi-word titles don't need quotes in the CLI
-hermes sessions rename 20250305_091523_a1b2c3d4 debugging auth flow
+fool sessions rename 20250305_091523_a1b2c3d4 debugging auth flow
 ```
 
 If the title is already in use by another session, an error is shown.
@@ -471,59 +471,59 @@ and both see it.
 
 ```bash
 # Pin one or more sessions (unique ID prefixes work)
-hermes sessions pin 20250305_091523_a1b2c3d4
-hermes sessions pin 20250305 20250306
+fool sessions pin 20250305_091523_a1b2c3d4
+fool sessions pin 20250305 20250306
 
 # Remove the pin
-hermes sessions unpin 20250305_091523_a1b2c3d4
+fool sessions unpin 20250305_091523_a1b2c3d4
 
 # List pinned sessions
-hermes sessions pinned
+fool sessions pinned
 
 # Machine-readable output, e.g. for a nightly backup of your pin set
-hermes sessions pinned --json > pinned-sessions.json
+fool sessions pinned --json > pinned-sessions.json
 ```
 
 ### Prune Old Sessions
 
 ```bash
 # Delete ended sessions inactive for 90 days (default)
-hermes sessions prune
+fool sessions prune
 
 # Custom age threshold — bare numbers are days
-hermes sessions prune --older-than 30
+fool sessions prune --older-than 30
 
 # Durations work too: 5h, 30m, 2d, 1w
-hermes sessions prune --older-than 12h
+fool sessions prune --older-than 12h
 
 # Delete only a specific time window (e.g. a batch of test sessions
 # created in the last 5 hours)
-hermes sessions prune --newer-than 5h
+fool sessions prune --newer-than 5h
 
 # Explicit window with absolute timestamps
-hermes sessions prune --after "2026-07-05 09:00" --before "2026-07-05 14:30"
+fool sessions prune --after "2026-07-05 09:00" --before "2026-07-05 14:30"
 
 # Only prune sessions from a specific platform (all ages — any filter
 # disables the implicit 90-day default)
-hermes sessions prune --source telegram
-hermes sessions prune --source cron --older-than 60   # add a time flag to narrow
+fool sessions prune --source telegram
+fool sessions prune --source cron --older-than 60   # add a time flag to narrow
 
 # More filters — all AND together
-hermes sessions prune --newer-than 5h --title "smoke test"   # title substring
-hermes sessions prune --older-than 30 --max-messages 3        # tiny sessions
-hermes sessions prune --cwd ~/scratch --end-reason done       # by cwd / end reason
-hermes sessions prune --model gpt-5 --older-than 1w           # by model (substring)
-hermes sessions prune --provider openrouter --older-than 60   # by billing provider
-hermes sessions prune --branch feature/old-experiment         # by git branch
-hermes sessions prune --user 12345678 --chat-type group       # by messaging origin
-hermes sessions prune --max-tokens 500 --older-than 7         # by token usage
-hermes sessions prune --max-cost 0.01 --max-tool-calls 0      # cheap, tool-less runs
+fool sessions prune --newer-than 5h --title "smoke test"   # title substring
+fool sessions prune --older-than 30 --max-messages 3        # tiny sessions
+fool sessions prune --cwd ~/scratch --end-reason done       # by cwd / end reason
+fool sessions prune --model gpt-5 --older-than 1w           # by model (substring)
+fool sessions prune --provider openrouter --older-than 60   # by billing provider
+fool sessions prune --branch feature/old-experiment         # by git branch
+fool sessions prune --user 12345678 --chat-type group       # by messaging origin
+fool sessions prune --max-tokens 500 --older-than 7         # by token usage
+fool sessions prune --max-cost 0.01 --max-tool-calls 0      # cheap, tool-less runs
 
 # Preview what would be deleted, without deleting anything
-hermes sessions prune --newer-than 5h --dry-run
+fool sessions prune --newer-than 5h --dry-run
 
 # Skip confirmation
-hermes sessions prune --older-than 30 --yes
+fool sessions prune --older-than 30 --yes
 ```
 
 Time values (`--older-than`, `--newer-than`, `--before`, `--after`) accept a
@@ -540,9 +540,9 @@ exact), `--end-reason`, `--user`, `--chat-id`, `--chat-type` (exact),
 `--cwd` (path prefix), plus numeric bounds `--min/--max-messages`,
 `--min/--max-tokens` (input+output), `--min/--max-cost` (USD, actual falling
 back to estimated), and `--min/--max-tool-calls`. Using any filter disables
-the implicit 90-day default, so `hermes sessions prune --source cron` or
+the implicit 90-day default, so `fool sessions prune --source cron` or
 `--model gpt-4o` matches all ages — add a time flag to narrow it. Only a
-completely bare `hermes sessions prune` keeps the 90-day cutoff. Every
+completely bare `fool sessions prune` keeps the 90-day cutoff. Every
 non-`--yes` run shows the match count plus the oldest and newest matching
 session before asking for confirmation.
 
@@ -556,28 +556,28 @@ Pruning only deletes **ended** sessions (sessions that have been explicitly ende
 ### Bulk-Archive Sessions
 
 If you want sessions out of your listings without deleting anything,
-`hermes sessions archive` takes the same filters as `prune` but soft-hides
+`fool sessions archive` takes the same filters as `prune` but soft-hides
 matching sessions instead (sets the same archived flag as archiving a single
 session from the Desktop/Dashboard UI — messages and search stay intact):
 
 ```bash
 # Archive everything from the last 5 hours (e.g. 75 CI smoke-test sessions)
-hermes sessions archive --newer-than 5h
+fool sessions archive --newer-than 5h
 
 # Archive by title substring, preview first
-hermes sessions archive --title "dry run" --dry-run
-hermes sessions archive --title "dry run" --yes
+fool sessions archive --title "dry run" --dry-run
+fool sessions archive --title "dry run" --yes
 ```
 
-At least one filter is required — a bare `hermes sessions archive` refuses to
+At least one filter is required — a bare `fool sessions archive` refuses to
 archive your entire history. Archived sessions are hidden from
-`hermes sessions list` and `/resume` but remain in the database and can be
+`fool sessions list` and `/resume` but remain in the database and can be
 unarchived from the Desktop/Dashboard session list.
 
 ### Session Statistics
 
 ```bash
-hermes sessions stats
+fool sessions stats
 ```
 
 Output:
@@ -591,7 +591,7 @@ Total messages: 3847
 Database size: 12.4 MB
 ```
 
-For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`hermes insights`](/reference/cli-commands#hermes-insights).
+For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`fool insights`](/reference/cli-commands#hermes-insights).
 
 ### Repair Stranded Gateway Sessions
 
@@ -601,20 +601,20 @@ conversation may be stranded in a session row that lost its routing identity
 (the damage class fixed in the v0.21 session-continuity work; current versions
 prevent it by construction and self-heal at runtime).
 
-`hermes sessions repair-routing` finds message-bearing session rows with no
+`fool sessions repair-routing` finds message-bearing session rows with no
 routing identity and re-attaches each one to the conversation it continues —
 but only when the evidence is unambiguous:
 
 ```bash
 # Report only — shows each orphan, the proposed adoption, and the evidence
-hermes sessions repair-routing
+fool sessions repair-routing
 
 # Perform the adoptions (stop the gateway first — a running gateway holds
 # the old routing in memory and would write it back over the repair)
-hermes sessions repair-routing --apply
+fool sessions repair-routing --apply
 
 # Widen/narrow the contiguity window (default 900 seconds)
-hermes sessions repair-routing --max-gap-seconds 300
+fool sessions repair-routing --max-gap-seconds 300
 ```
 
 Evidence rules:
@@ -645,18 +645,18 @@ the foreign files are only read, never modified.
 
 ```bash
 # Interactive picker across both tools, newest first
-hermes sessions import
+fool sessions import
 
 # Limit to one tool, or point at a specific file
-hermes sessions import --from claude
-hermes sessions import --from codex ~/.codex/sessions/2026/08/15/rollout-....jsonl
+fool sessions import --from claude
+fool sessions import --from codex ~/.codex/sessions/2026/08/15/rollout-....jsonl
 
 # Import-and-resume in one step
 hermes --resume @claude
 hermes --resume @codex
 ```
 
-`hermes sessions import` creates a new Hermes session titled
+`fool sessions import` creates a new Hermes session titled
 `Imported from Claude Code: <first user message>` (or Codex CLI) and prints
 the id plus a ready-to-paste `hermes --resume <id>` command.
 `--resume @claude` / `--resume @codex` show the same picker and drop you
@@ -837,12 +837,12 @@ It only ever contains gateway/messaging entries, so if you run a messaging
 platform you'll see only those (e.g. `agent:main:whatsapp:dm:...`).
 
 This is **expected** and does **not** mean your CLI sessions are missing.
-`hermes sessions list`, `/sessions`, and the dashboard all read `state.db`,
+`fool sessions list`, `/sessions`, and the dashboard all read `state.db`,
 which holds **every** session (CLI, TUI, and gateway). The `/save` snapshots
 under `~/.hermes/sessions/saved/*.json` are convenience exports, not the index.
 
-If CLI sessions genuinely don't appear in `hermes sessions list`, the cause is
-`state.db` not receiving them — run `hermes sessions repair` and watch for a
+If CLI sessions genuinely don't appear in `fool sessions list`, the cause is
+`state.db` not receiving them — run `fool sessions repair` and watch for a
 `⚠ Session store unavailable` warning at CLI startup, which means SQLite
 persistence failed for that run.
 :::
@@ -891,16 +891,16 @@ not deleted merely because it began before the retention window.
 
 ```bash
 # Prune sessions older than 90 days
-hermes sessions prune
+fool sessions prune
 
 # Delete a specific session
-hermes sessions delete <session_id>
+fool sessions delete <session_id>
 
 # Export before pruning (backup)
-hermes sessions export backup.jsonl
-hermes sessions prune --older-than 30 --yes
+fool sessions export backup.jsonl
+fool sessions prune --older-than 30 --yes
 ```
 
 :::tip
-The database grows slowly (typical: 10-15 MB for hundreds of sessions) and session history powers `session_search` recall across past conversations, so auto-prune ships disabled. Enable it if you're running a heavy gateway/cron workload where `state.db` is meaningfully affecting performance (observed failure mode: 384 MB state.db with ~1000 sessions slowing down FTS5 inserts and `/resume` listing). Use `hermes sessions prune` for one-off cleanup without turning on the automatic sweep.
+The database grows slowly (typical: 10-15 MB for hundreds of sessions) and session history powers `session_search` recall across past conversations, so auto-prune ships disabled. Enable it if you're running a heavy gateway/cron workload where `state.db` is meaningfully affecting performance (observed failure mode: 384 MB state.db with ~1000 sessions slowing down FTS5 inserts and `/resume` listing). Use `fool sessions prune` for one-off cleanup without turning on the automatic sweep.
 :::

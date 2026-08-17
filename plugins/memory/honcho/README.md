@@ -13,8 +13,8 @@ AI-native cross-session user modeling with multi-pass dialectic reasoning, sessi
 ## Setup
 
 ```bash
-hermes memory setup honcho   # configure Honcho directly (works on a fresh install)
-hermes memory setup          # generic picker, choose Honcho from the list
+fool memory setup honcho   # configure Honcho directly (works on a fresh install)
+fool memory setup          # generic picker, choose Honcho from the list
 ```
 
 For cloud, the wizard asks **OAuth, device code, or API key**. OAuth opens a
@@ -26,13 +26,13 @@ a **Connect** link next to the memory-provider dropdown.
 
 Or manually:
 ```bash
-hermes config set memory.provider honcho
+fool config set memory.provider honcho
 echo "HONCHO_API_KEY=***" >> ~/.hermes/.env
 ```
 
 > `hermes honcho setup` also works, but only **after** Honcho is the active
 > memory provider — the `honcho` subcommand is registered for the active
-> provider only. On a fresh install, use `hermes memory setup honcho`.
+> provider only. On a fresh install, use `fool memory setup honcho`.
 
 ## Architecture Overview
 
@@ -66,7 +66,7 @@ generic dialectic prewarm is skipped so it cannot shadow the first user
 message.
 
 **Off by default** — the rewrite adds one auxiliary-model call per dialectic
-cycle (not per pass). Select a fast, inexpensive model under `hermes model`
+cycle (not per pass). Select a fast, inexpensive model under `fool model`
 -> auxiliary models -> **Memory query rewrite**; its request timeout is
 `auxiliary.memory_query_rewrite.timeout` in config.yaml (default 8s). The
 task and module (`plugins/memory/query_rewrite.py`) are provider-agnostic —
@@ -357,8 +357,8 @@ Presets:
 
 | Command | Description |
 |---------|-------------|
-| `hermes memory setup honcho` | Configure Honcho directly — works on a fresh install |
-| `hermes honcho setup` | Interactive setup wizard (only registered once Honcho is the active provider; redirects to `hermes memory setup`) |
+| `fool memory setup honcho` | Configure Honcho directly — works on a fresh install |
+| `hermes honcho setup` | Interactive setup wizard (only registered once Honcho is the active provider; redirects to `fool memory setup`) |
 | `hermes honcho status` | Show resolved config for active profile |
 | `hermes honcho enable` / `disable` | Toggle Honcho for active profile |
 | `hermes honcho mode <mode>` | Change recall or observation mode |

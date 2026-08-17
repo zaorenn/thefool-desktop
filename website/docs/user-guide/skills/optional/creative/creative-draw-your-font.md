@@ -14,7 +14,7 @@ Turn a photo of handwriting into an installable font (TTF/WOFF).
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/creative/draw-your-font` |
+| Source | Optional — install with `fool skills install official/creative/draw-your-font` |
 | Path | `optional-skills/creative/draw-your-font` |
 | Version | `0.1.0` |
 | Author | Danilo Znamerovszkij (https://github.com/danilo-znamerovszkij/draw-your-font), ported by Hermes Agent |

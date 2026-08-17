@@ -105,12 +105,12 @@ def test_gateway_run_redirects_to_supervised(
 
     # Wait for the redirect breadcrumb to appear in docker logs.
     # Under heavy parallel load (32-way docker test fan-out), the CMD
-    # process (main-wrapper.sh → python → hermes gateway run) can take
+    # process (main-wrapper.sh → python → fool gateway run) can take
     # well over 5s to reach the redirect logic. The breadcrumb is the
     # definitive signal that the redirect fired — polling for it is
     # both faster on quick machines and flake-free on slow ones.
     # Under heavy parallel docker load (32-way fan-out), the CMD process
-    # (main-wrapper.sh → python → hermes gateway run) can take well over
+    # (main-wrapper.sh → python → fool gateway run) can take well over
     # 30s to import the codebase, load config, and reach the redirect
     # logic. 60s matches the deadline other boot-readiness polls use.
     logs = wait_for_docker_logs(
@@ -181,7 +181,7 @@ def test_supervised_gateway_does_not_recurse(
 
     If recursion happened, every supervised gateway start would itself
     re-dispatch to s6 and exec ``sleep infinity`` — so the supervised
-    gateway slot would never actually run a python ``hermes gateway
+    gateway slot would never actually run a python ``fool gateway
     run`` process. The slot would oscillate or settle into a state
     with no python in the supervise tree at all.
 
@@ -194,7 +194,7 @@ def test_supervised_gateway_does_not_recurse(
 
     # Wait for the redirect to fire by polling for the breadcrumb.
     # Under CI parallel docker test fan-out, the CMD process
-    # (main-wrapper.sh → python → hermes gateway run) can take well
+    # (main-wrapper.sh → python → fool gateway run) can take well
     # over 6s to reach the redirect logic. A fixed sleep would race:
     # if we check too early, the CMD process hasn't exec'd into
     # `sleep infinity` yet and the s6-supervised gateway hasn't

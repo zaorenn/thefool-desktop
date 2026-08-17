@@ -11,7 +11,7 @@ thin dispatcher over the platform-injected callback.
 
 Lives in the ``desktop_ui`` toolset, which the GUI gateway enables only for
 desktop-sourced sessions — on every other surface the agent falls back to
-``hermes mcp install <name>`` in the terminal.
+``fool mcp install <name>`` in the terminal.
 """
 
 import json
@@ -32,8 +32,8 @@ def setup_mcp_tool(
     if callback is None:
         return tool_error(
             "setup_mcp is only available in the Hermes desktop app. Use the "
-            "terminal instead: `hermes mcp install <name>` for catalog entries, "
-            "`hermes mcp login <name>` for OAuth."
+            "terminal instead: `fool mcp install <name>` for catalog entries, "
+            "`fool mcp login <name>` for OAuth."
         )
 
     name = (server or "").strip()

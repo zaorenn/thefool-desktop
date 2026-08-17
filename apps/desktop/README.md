@@ -43,7 +43,7 @@ Prebuilt installers are built and distributed via [the Hermes Desktop website.](
 The app checks for updates in the background and offers a one-click update when one is ready. You can also update any time from the CLI:
 
 ```bash
-hermes update
+fool update
 ```
 
 ---
@@ -98,7 +98,7 @@ The app has three boundaries:
   filesystem/git/window capabilities, and exposes a narrow preload bridge.
 - **React** owns the Desktop routes, panes, interaction state, and
   `@assistant-ui/react` transcript.
-- **Hermes Agent** runs as a headless `hermes serve` process and exposes the
+- **Hermes Agent** runs as a headless `fool serve` process and exposes the
   `tui_gateway` JSON-RPC/WebSocket API. The renderer connects through
   [`apps/shared`](../shared/), which is also used by the browser dashboard.
 

@@ -547,7 +547,7 @@ def check_requirements() -> bool:
     channel = os.getenv("IRC_CHANNEL", "")
     # Also accept config.yaml-only configuration (no env vars).
     # The gateway passes PlatformConfig; we just check env for the
-    # hermes setup / requirements check path.
+    # fool setup / requirements check path.
     return bool(server and channel)
 
 
@@ -663,7 +663,7 @@ def interactive_setup() -> None:
 
     print()
     print_success("IRC configuration saved to ~/.hermes/.env")
-    print_info("Restart the gateway for changes to take effect: hermes gateway restart")
+    print_info("Restart the gateway for changes to take effect: fool gateway restart")
 
 
 def is_connected(config) -> bool:

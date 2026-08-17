@@ -11,14 +11,14 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 ## Setup
 
 ```bash
-hermes memory setup    # select "hindsight"
+fool memory setup    # select "hindsight"
 ```
 
 The setup wizard installs dependencies automatically via `uv`, walks you through configuration, and offers to seed the bank with a **starter memory template** (a curated set of dispositions/instructions for common agent roles) — you can skip it, and it warns before overwriting an already-configured bank.
 
 Or manually (cloud mode with defaults):
 ```bash
-hermes config set memory.provider hindsight
+fool config set memory.provider hindsight
 echo "HINDSIGHT_API_KEY=your-key" >> ~/.hermes/.env
 ```
 

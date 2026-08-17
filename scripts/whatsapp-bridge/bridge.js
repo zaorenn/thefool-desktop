@@ -99,7 +99,7 @@ const AUDIO_CACHE_DIR = process.env.FOOL_AUDIO_CACHE_DIR
 // Self-hash of this script file.  Reported in /health so the Python gateway
 // can detect a running bridge that predates the current bridge.js and
 // restart it instead of silently reusing stale code (stale-bridge trap:
-// `hermes update` updates bridge.js on disk but a long-lived bridge process
+// `fool update` updates bridge.js on disk but a long-lived bridge process
 // keeps serving the old behavior forever).
 let SCRIPT_HASH = '';
 try {

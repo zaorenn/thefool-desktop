@@ -132,7 +132,7 @@ def test_try_dispatch_background_run_calls_recovery_before_claiming(monkeypatch)
 
     job = {"id": "unit-test-job", "name": "unit test job", "deliver": "local"}
     # session_id is intentionally empty/None too, matching the direct-
-    # caller ("hermes cron run", tests) early return documented just
+    # caller ("fool cron run", tests) early return documented just
     # below the recovery call -- this test only needs to confirm recovery
     # ran before that point, not exercise the full dispatch.
     cronjob_tools._try_dispatch_background_run(job, session_id=None)

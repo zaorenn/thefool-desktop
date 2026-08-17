@@ -69,7 +69,7 @@ def _redact_terminal_error_text(value: Any) -> str:
 from tools.interrupt import is_interrupted, _interrupt_event  # noqa: F401 — re-exported
 from tools.registry import tool_error
 from tools.shell_heredoc import strip_inert_heredoc_bodies
-# display_hermes_home imported lazily at call site (stale-module safety during hermes update)
+# display_hermes_home imported lazily at call site (stale-module safety during fool update)
 
 
 

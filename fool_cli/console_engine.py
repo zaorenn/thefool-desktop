@@ -1590,7 +1590,7 @@ def _cron_pause(_engine: HermesConsoleEngine, args: list[str]) -> str:
     from cron.jobs import AmbiguousJobReference, pause_job
 
     try:
-        job = pause_job(args[0], reason="paused from hermes console")
+        job = pause_job(args[0], reason="paused from fool console")
     except AmbiguousJobReference as exc:
         raise ConsoleCommandError(str(exc)) from exc
     if not job:

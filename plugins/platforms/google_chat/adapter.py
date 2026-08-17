@@ -3518,7 +3518,7 @@ def interactive_setup() -> None:
 
     print()
     print_success("Google Chat configuration saved to ~/.hermes/.env")
-    print_info("Restart the gateway: hermes gateway restart")
+    print_info("Restart the gateway: fool gateway restart")
 
 
 # Strict resource-name pattern.  ``spaces/<id>`` and ``users/<id>`` must

@@ -38,7 +38,7 @@ mcp_servers:
 3. Start Hermes:
 
 ```bash
-hermes chat
+fool chat
 ```
 
 4. Ask Hermes to use the MCP-backed capability.
@@ -58,9 +58,9 @@ and merged. They're disabled by default — install only what you actually
 want.
 
 ```bash
-hermes mcp                # interactive picker (default)
-hermes mcp catalog        # plain-text list, scriptable
-hermes mcp install n8n    # install a catalog entry by name
+fool mcp                # interactive picker (default)
+fool mcp catalog        # plain-text list, scriptable
+fool mcp install n8n    # install a catalog entry by name
 ```
 
 The picker shows each entry with its current status:
@@ -84,7 +84,7 @@ Catalog entries can require:
 - **OAuth** (remote MCP) — written as `auth: oauth` in your config; the MCP
   client opens a browser on first connection.
 - **OAuth** (third-party provider like Google/GitHub) — Hermes points you at
-  `hermes auth <provider>` if you haven't authenticated already.
+  `fool auth <provider>` if you haven't authenticated already.
 
 ### Tool selection at install time
 
@@ -115,7 +115,7 @@ written (cleanest config shape, identical behavior).
 **If the probe fails** (server unreachable, OAuth not yet completed,
 backing service not running), the install still succeeds: the manifest's
 `tools.default_enabled` is applied directly (if declared), or no filter is
-written (if not). Re-run `hermes mcp configure <name>` once the server is
+written (if not). Re-run `fool mcp configure <name>` once the server is
 reachable to refine.
 
 ### Trust model
@@ -143,7 +143,7 @@ before clicking Install.
 Manifests pin a `manifest_version`. The catalog is forward-compatible: if a
 PR adds an entry with a newer `manifest_version` than your installed Hermes
 understands, the picker will surface a warning (`⚠ '<name>' requires a newer
-Hermes`) for that entry instead of silently hiding it. Run `hermes update`
+Hermes`) for that entry instead of silently hiding it. Run `fool update`
 to install the latest Hermes when you see that.
 
 ### Runtime `${ENV_VAR}` substitution
@@ -167,7 +167,7 @@ repo into.
 ### Updating tool selection later
 
 ```bash
-hermes mcp configure linear
+fool mcp configure linear
 ```
 
 Reopens the same checklist with your current selection pre-checked. Use this
@@ -176,7 +176,7 @@ you want to opt into.
 
 ### Updating the catalog manifest
 
-MCPs are never auto-updated. Re-run `hermes mcp install <name>` to refresh
+MCPs are never auto-updated. Re-run `fool mcp install <name>` to refresh
 after a Hermes update if a manifest version changed.
 
 To add an MCP to the catalog, open a PR against
@@ -250,7 +250,7 @@ mcp_servers:
     auth: oauth
 ```
 
-Or: `hermes mcp install figma`, then `hermes mcp login figma`.
+Or: `fool mcp install figma`, then `fool mcp login figma`.
 :::
 
 ```yaml
@@ -282,9 +282,9 @@ For fully headless gateways (messaging bot, no interactive terminal at all), the
 
 **Pitfall — WAF rejects `127.0.0.1` redirect URIs.** A few providers front their authorization server with a WAF that 403s any authorize request whose query string contains a literal `127.0.0.1` (Reclaim.ai's AWS API Gateway is a known example — every attempt returns `{"message":"Forbidden"}` before reaching the OAuth app). Set `oauth.redirect_host: localhost` to use `http://localhost:<port>/callback` instead; the callback listener still binds `127.0.0.1` either way.
 
-See [OAuth over SSH / Remote Hosts](../../guides/oauth-over-ssh.md#mcp-servers) for the full walkthrough, including DCR-less servers (e.g. Slack), pre-registered `client_id`/`client_secret`, scope customization, and re-auth via `hermes mcp login <server>`.
+See [OAuth over SSH / Remote Hosts](../../guides/oauth-over-ssh.md#mcp-servers) for the full walkthrough, including DCR-less servers (e.g. Slack), pre-registered `client_id`/`client_secret`, scope customization, and re-auth via `fool mcp login <server>`.
 
-**Pitfall — providers that don't support automatic registration (Google Drive, Atlassian).** Some servers reject the dynamic client registration step (RFC 7591) that bare `auth: oauth` relies on — Google's official Drive server (`https://drivemcp.googleapis.com/mcp/v1`) returns a `400 Bad Request`, so no OAuth client is created and no token is acquired. The symptom is subtle: these servers also serve `tools/list` *without* auth, so `hermes mcp login` can list the tools and look like it worked, but every real tool call later times out. `hermes mcp login` now detects this (it checks that a token actually landed on disk) and tells you to supply your own OAuth client. Create one in the provider's console and add it to config:
+**Pitfall — providers that don't support automatic registration (Google Drive, Atlassian).** Some servers reject the dynamic client registration step (RFC 7591) that bare `auth: oauth` relies on — Google's official Drive server (`https://drivemcp.googleapis.com/mcp/v1`) returns a `400 Bad Request`, so no OAuth client is created and no token is acquired. The symptom is subtle: these servers also serve `tools/list` *without* auth, so `fool mcp login` can list the tools and look like it worked, but every real tool call later times out. `fool mcp login` now detects this (it checks that a token actually landed on disk) and tells you to supply your own OAuth client. Create one in the provider's console and add it to config:
 
 ```yaml
 mcp_servers:
@@ -296,9 +296,9 @@ mcp_servers:
       client_secret: "<your-oauth-client-secret>"
 ```
 
-Then run `hermes mcp login googledrive` — with the pre-registered client, Hermes skips registration and runs the normal browser authorization flow.
+Then run `fool mcp login googledrive` — with the pre-registered client, Hermes skips registration and runs the normal browser authorization flow.
 
-**Pitfall — config auto-reload race.** When you edit `~/.hermes/config.yaml` from inside a running Hermes session, the CLI auto-reloads MCP connections with a 30s timeout. That's not enough for an interactive OAuth flow. Add the entry, then run `hermes mcp login <server>` from a fresh terminal — it waits the full 5 minutes for you to complete auth.
+**Pitfall — config auto-reload race.** When you edit `~/.hermes/config.yaml` from inside a running Hermes session, the CLI auto-reloads MCP connections with a 30s timeout. That's not enough for an interactive OAuth flow. Add the entry, then run `fool mcp login <server>` from a fresh terminal — it waits the full 5 minutes for you to complete auth.
 
 ## mTLS / client certificates
 
@@ -416,7 +416,7 @@ mcp_servers:
 
 ## Built-in presets
 
-For well-known MCP servers, `hermes mcp add` accepts a `--preset` flag that fills in the transport details so you don't have to look up the command and args. The preset only supplies defaults — anything else (env vars, headers, filtering) you pass on the same command line still wins.
+For well-known MCP servers, `fool mcp add` accepts a `--preset` flag that fills in the transport details so you don't have to look up the command and args. The preset only supplies defaults — anything else (env vars, headers, filtering) you pass on the same command line still wins.
 
 | Preset | What it wires up |
 |---|---|
@@ -424,7 +424,7 @@ For well-known MCP servers, `hermes mcp add` accepts a `--preset` flag that fill
 
 ```bash
 # Add Codex CLI as an MCP server in one line
-hermes mcp add codex --preset codex
+fool mcp add codex --preset codex
 ```
 
 That writes the equivalent of:
@@ -436,7 +436,7 @@ mcp_servers:
     args: ["mcp-server"]
 ```
 
-You can pick any local name (`hermes mcp add my-codex --preset codex` is fine); the preset only provides the `command`/`args` defaults.
+You can pick any local name (`fool mcp add my-codex --preset codex` is fine); the preset only provides the `command`/`args` defaults.
 
 ## How Hermes registers MCP tools
 
@@ -826,7 +826,7 @@ In addition to connecting **to** MCP servers, Hermes can also **be** an MCP serv
 ### Quick start
 
 ```bash
-hermes mcp serve
+fool mcp serve
 ```
 
 This starts a stdio MCP server. The MCP client (not you) manages the process lifecycle.
@@ -895,8 +895,8 @@ The event queue is in-memory and starts when the bridge connects. Older messages
 ### Options
 
 ```bash
-hermes mcp serve              # Normal mode
-hermes mcp serve --verbose    # Debug logging on stderr
+fool mcp serve              # Normal mode
+fool mcp serve --verbose    # Debug logging on stderr
 ```
 
 ### How it works
@@ -907,7 +907,7 @@ The gateway does NOT need to be running for read operations (listing conversatio
 
 ### Current limits
 
-- The embedded `hermes mcp serve` exposes a **stdio-only** MCP server today. If you need an HTTP MCP server, run a separate adapter — or, much more commonly, use the MCP **client** side of Hermes, which already speaks both stdio and HTTP (`url` + `headers` in `mcp_servers.yaml` / `config.yaml`; see [HTTP servers](#http-servers) above).
+- The embedded `fool mcp serve` exposes a **stdio-only** MCP server today. If you need an HTTP MCP server, run a separate adapter — or, much more commonly, use the MCP **client** side of Hermes, which already speaks both stdio and HTTP (`url` + `headers` in `mcp_servers.yaml` / `config.yaml`; see [HTTP servers](#http-servers) above).
 - Event polling at ~200ms intervals via mtime-optimized DB polling (skips work when files are unchanged)
 - No `claude/channel` push notification protocol yet
 - Text-only sends (no media/attachment sending through `messages_send`)

@@ -43,7 +43,7 @@ Pick `realtime` only when the user actually wants the agent to speak. It costs r
 Easiest path — run the built-in installer:
 
 ```bash
-hermes plugins enable google_meet
+fool plugins enable google_meet
 hermes meet install                 # pip deps + Chromium (transcribe only)
 hermes meet install --realtime      # + pulseaudio-utils / brew blackhole+ffmpeg
 hermes meet auth                    # optional; skips guest-lobby wait
@@ -70,7 +70,7 @@ For a remote node:
 ```bash
 # on the user's Mac (where Chrome is signed in):
 pip install playwright websockets && python -m playwright install chromium
-hermes plugins enable google_meet
+fool plugins enable google_meet
 hermes meet node run --display-name my-mac    # persistent server
 # copy the printed token
 

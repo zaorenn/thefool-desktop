@@ -12,7 +12,7 @@ Hermes Agent 可以在**破坏性操作**之前自动为你的项目创建快照
 在会话中通过 `--checkpoints` 启用检查点：
 
 ```bash
-hermes chat --checkpoints
+fool chat --checkpoints
 ```
 
 或在 `~/.hermes/config.yaml` 中全局启用：
@@ -242,7 +242,7 @@ hermes checkpoints clear-legacy
 
 ## 最佳实践
 
-- **仅在需要时启用检查点** — 使用 `hermes chat --checkpoints` 或在配置文件中设置 `enabled: true`。
+- **仅在需要时启用检查点** — 使用 `fool chat --checkpoints` 或在配置文件中设置 `enabled: true`。
 - **恢复前使用 `/rollback diff` 预览** — 查看将发生的变更，选择正确的检查点。
 - **使用 `/rollback` 而非 `git reset`** 来撤销 Agent 驱动的变更。
 - **定期检查 `hermes checkpoints status`**（如果你经常使用检查点）——显示哪些项目处于活跃状态以及存储占用情况。

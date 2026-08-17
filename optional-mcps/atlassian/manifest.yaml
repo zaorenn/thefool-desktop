@@ -32,5 +32,5 @@ suggest:
 
 post_install: |
   On first connection Hermes opens a browser to authorize with
-  Atlassian (or run `hermes mcp login atlassian`). Approve access,
+  Atlassian (or run `fool mcp login atlassian`). Approve access,
   then restart the session so tools load.

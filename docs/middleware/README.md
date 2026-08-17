@@ -115,7 +115,7 @@ rewritten path, command, or URL is the value downstream policy will evaluate.
 Middleware only runs for enabled plugins. For a bundled plugin:
 
 ```bash
-hermes plugins enable <plugin-name>
+fool plugins enable <plugin-name>
 ```
 
 For isolated local testing, use one `FOOL_HOME` for plugin enablement and the
@@ -124,8 +124,8 @@ agent run:
 ```bash
 export FOOL_HOME=/tmp/hermes-middleware-test
 mkdir -p "$FOOL_HOME"
-hermes plugins enable <plugin-name>
-hermes chat --query 'Reply exactly ok'
+fool plugins enable <plugin-name>
+fool chat --query 'Reply exactly ok'
 ```
 
 For source checkouts, prefer the source command so the runtime sees plugins and
@@ -133,8 +133,8 @@ middleware from the working tree:
 
 ```bash
 uv sync
-uv run hermes plugins enable <plugin-name>
-uv run hermes chat --query 'Reply exactly ok'
+uv run fool plugins enable <plugin-name>
+uv run fool chat --query 'Reply exactly ok'
 ```
 
 ## Generic Plugin Examples

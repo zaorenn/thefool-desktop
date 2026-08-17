@@ -186,7 +186,7 @@ def _failure_streak_nudge(job: dict) -> str:
     job_ref = job.get("name") or job.get("id") or "this job"
     return (
         f"\nThis job has failed {streak} runs in a row — worth a review. "
-        f"Fix its prompt/config, or pause it with `hermes cron pause {job_ref}` "
+        f"Fix its prompt/config, or pause it with `fool cron pause {job_ref}` "
         "(resume/remove also available) to stop the noise."
     )
 
@@ -212,7 +212,7 @@ def _summarize_cron_failure_for_delivery(job: dict, error: str | None) -> str:
             job_id = job.get("id") or "<job_id>"
             remediation = (
                 "On the host running Hermes, pin it explicitly: "
-                f"`hermes cron edit {job_id} --provider <provider> "
+                f"`fool cron edit {job_id} --provider <provider> "
                 "--model <model>`."
             )
         return (
@@ -4182,7 +4182,7 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
         return (
             f"provider credential missing: {exc}. "
             "Set the provider API key in .env (or `fool setup`), or pin a "
-            "working provider via `hermes cron edit "
+            "working provider via `fool cron edit "
             f"{job.get('id')} --provider <p>`."
         )
     except Exception:
@@ -5061,8 +5061,8 @@ def run_job(
                 f"FOOL_MODEL={os.getenv('FOOL_MODEL', '')!r}, "
                 "config.yaml model.default missing or empty). "
                 f"Set a per-job model via "
-                f"`hermes cron edit {job_id} --model <name>` or set a "
-                "default with `hermes model <name>`."
+                f"`fool cron edit {job_id} --model <name>` or set a "
+                "default with `fool model <name>`."
             )
 
         # Apply IPv4 preference if configured.
@@ -5352,7 +5352,7 @@ def run_job(
                     _remediation = (
                         "To run on the new config, on the host running Hermes "
                         "pin it explicitly: "
-                        f"`hermes cron edit {job_id} --provider <provider> "
+                        f"`fool cron edit {job_id} --provider <provider> "
                         "--model <model>` (or pin the original values to keep "
                         "them)."
                     )

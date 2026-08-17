@@ -1,4 +1,4 @@
-"""hermes memory setup|status — configure memory provider plugins.
+"""fool memory setup|status — configure memory provider plugins.
 
 Auto-detects installed memory providers via the plugin system.
 Interactive curses-based UI for provider selection, then walks through

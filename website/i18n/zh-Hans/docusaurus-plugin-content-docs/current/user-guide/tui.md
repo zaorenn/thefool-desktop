@@ -33,7 +33,7 @@ hermes --tui --dev
 ```bash
 export FOOL_TUI=1
 hermes          # 现在使用 TUI
-hermes chat     # 同上
+fool chat     # 同上
 ```
 
 Classic CLI 仍作为默认方式保留。[CLI 界面](cli.md)中记录的所有内容——斜杠命令、快捷命令、skill 预加载、personality、多行输入、中断——在 TUI 中均完全一致。
@@ -65,7 +65,7 @@ TUI 启动 banner 将运行时信息分为四个可折叠区块，每个区块�
 
 ## 环境要求
 
-- **Node.js** ≥ 20 — TUI 作为从 Python CLI 启动的子进程运行。`hermes doctor` 会验证此项。
+- **Node.js** ≥ 20 — TUI 作为从 Python CLI 启动的子进程运行。`fool doctor` 会验证此项。
 - **TTY** — 与 classic CLI 一样，通过管道传入 stdin 或在非交互式环境中运行时，将回退到单次查询模式。
 
 首次启动时，Hermes 会将 TUI 的 Node 依赖安装到 `ui-tui/node_modules`（一次性操作，耗时数秒）。后续启动速度很快。拉取新版 Hermes 后，若源文件比 dist 更新，TUI bundle 将自动重新构建。
@@ -233,9 +233,9 @@ TUI 附带有主见的按区块默认值，将轮次以实时转录形式流式�
 
 默认情况下，TUI 会在进程内启动自己的 gateway，因此每个 TUI 实例是自包含的——无需任何配置。
 
-你可能会在代码或日志中看到 `FOOL_TUI_GATEWAY_URL` 环境变量。它是 **Web 仪表板的内部接线细节**，并非面向用户的远程连接开关。当你打开仪表板的 "Chat" 标签页（`hermes dashboard` → `/chat`）时，仪表板的 Web 服务器会派生一个内嵌的 TUI 子进程，并注入 `FOOL_TUI_GATEWAY_URL`，让该子进程通过本地回环 WebSocket（`/api/ws`）连接到仪表板自己的进程内 `tui_gateway`。`/api/ws` 端点仅存在于仪表板服务器内部（`fool_cli/web_server.py`），并绑定到该进程的生命周期和认证。
+你可能会在代码或日志中看到 `FOOL_TUI_GATEWAY_URL` 环境变量。它是 **Web 仪表板的内部接线细节**，并非面向用户的远程连接开关。当你打开仪表板的 "Chat" 标签页（`fool dashboard` → `/chat`）时，仪表板的 Web 服务器会派生一个内嵌的 TUI 子进程，并注入 `FOOL_TUI_GATEWAY_URL`，让该子进程通过本地回环 WebSocket（`/api/ws`）连接到仪表板自己的进程内 `tui_gateway`。`/api/ws` 端点仅存在于仪表板服务器内部（`fool_cli/web_server.py`），并绑定到该进程的生命周期和认证。
 
-不存在通用的"将任意 TUI 指向任意独立 gateway 端口"的模式。特别是，OpenAI 兼容 API 服务器（`hermes gateway` / `api_server` 平台）**不**提供 `/api/ws`——它是模型后端接口（`/v1/chat/completions`、`/v1/models` 等），并刻意不暴露 TUI 的 JSON-RPC 控制通道。将 `FOOL_TUI_GATEWAY_URL` 设置为该端口将返回 404。
+不存在通用的"将任意 TUI 指向任意独立 gateway 端口"的模式。特别是，OpenAI 兼容 API 服务器（`fool gateway` / `api_server` 平台）**不**提供 `/api/ws`——它是模型后端接口（`/v1/chat/completions`、`/v1/models` 等），并刻意不暴露 TUI 的 JSON-RPC 控制通道。将 `FOOL_TUI_GATEWAY_URL` 设置为该端口将返回 404。
 
 如果你希望多个界面共享同一组会话，请使用共享的 `~/.hermes/state.db`（参见[会话](sessions.md)）或 Web 仪表板的内嵌聊天（参见 [Web Dashboard](features/web-dashboard.md#chat)）——而不是手动设置 gateway URL。
 

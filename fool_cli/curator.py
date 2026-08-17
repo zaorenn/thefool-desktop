@@ -1,4 +1,4 @@
-"""CLI subcommand: `hermes curator <subcommand>`.
+"""CLI subcommand: `fool curator <subcommand>`.
 
 Thin shell around agent/curator.py and tools/skill_usage.py. Renders a status
 table, triggers a run, pauses/resumes, and pins/unpins skills.
@@ -61,7 +61,7 @@ def _print_unmanaged_summary() -> None:
     print(f"  foreground-created  {foreground}")
     print(
         "  never auto-staled or archived — "
-        "`hermes curator adopt <name>` hands one over"
+        "`fool curator adopt <name>` hands one over"
     )
 
 
@@ -336,7 +336,7 @@ def _cmd_list_unmanaged(args) -> int:
             f"last_activity={last:14s}  "
             f"({why})"
         )
-    print("\nadopt one with `hermes curator adopt <name>`, "
+    print("\nadopt one with `fool curator adopt <name>`, "
           "or all with `fool curator adopt --all-unmanaged`")
     return 0
 
@@ -418,7 +418,7 @@ def _cmd_archive(args) -> int:
     if skill_usage.get_record(args.skill).get("pinned"):
         print(
             f"curator: '{args.skill}' is pinned — unpin first with "
-            f"`hermes curator unpin {args.skill}`"
+            f"`fool curator unpin {args.skill}`"
         )
         return 1
     tok = skill_ledger.set_ledger_actor("user")
@@ -561,7 +561,7 @@ def _cmd_ledger(args) -> int:
             f"{r.get('skill', '?')}{extra}"
         )
     print(
-        "\nRoll back a single mutation with `hermes curator rollback <id>`; "
+        "\nRoll back a single mutation with `fool curator rollback <id>`; "
         "whole-tree snapshots remain available via `fool curator rollback --list`."
     )
     return 0

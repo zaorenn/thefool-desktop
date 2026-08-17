@@ -429,7 +429,7 @@ def pick_foreign_session(
     if not sys.stdin.isatty():
         print(
             "Non-interactive terminal — pass the file path directly:\n"
-            "  hermes sessions import --from claude|codex <path>"
+            "  fool sessions import --from claude|codex <path>"
         )
         return None
     try:

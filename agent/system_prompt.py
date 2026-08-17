@@ -392,6 +392,21 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # Pointer to the hermes-agent skill + docs for user questions about The Fool itself.
     stable_parts.append(FOOL_AGENT_HELP_GUIDANCE)
 
+    # FOOL-SEAM: fool-guidance
+    #
+    # The Fool'a ozgu davranis kurallari. Su an tek blok var: "bir baglantiyi
+    # ac/oynat" isteklerinde otomasyon tarayicisi yerine KULLANICININ
+    # varsayilan tarayicisini kullan ve bitince DUR.
+    #
+    # Gozlenen hata: kullanici "su sarkiyi ac" dedi; ajan otomasyon
+    # tarayicisini acti, sayfanin tamaminin anlik goruntusunu aldi (~40k
+    # token), kaydirdi, oynat'a basti, sonra DURMADI -- calan sarkiyi durdurup
+    # bambaska bir sarki acti. Ustelik acilan pencere otomasyona ait oldugu
+    # icin kullanici onu kapatamadi bile.
+    from fool.guidance import blocks as _fool_guidance_blocks
+
+    stable_parts.extend(_fool_guidance_blocks())
+
     # Universal task-completion / no-fabrication guidance.  Applied to ALL
     # models regardless of tool_use_enforcement gating — the failure modes
     # this targets (stopping after a stub; fabricating output when a real

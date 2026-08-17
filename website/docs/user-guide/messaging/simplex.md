@@ -2,7 +2,7 @@
 
 [SimpleX Chat](https://simplex.chat/) is a private, decentralised messaging platform where users own their contacts and groups. Unlike other platforms, SimpleX assigns no persistent user IDs — every contact is identified by an opaque internal ID generated at connection time, which makes it one of the most private messengers available.
 
-> Run `hermes gateway setup` and pick **SimpleX** for a guided walk-through.
+> Run `fool gateway setup` and pick **SimpleX** for a guided walk-through.
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ The daemon listens on WebSocket at `ws://127.0.0.1:5225` by default.
 ### Via setup wizard
 
 ```bash
-hermes gateway setup
+fool gateway setup
 ```
 
 Select **SimpleX Chat** and follow the prompts.
@@ -69,7 +69,7 @@ After starting the daemon, open a conversation with your agent contact. The nume
 By default **all contacts are denied**. You must either:
 
 1. Set `SIMPLEX_ALLOWED_USERS` to a comma-separated list of `contactId`s and/or display names (e.g. `SIMPLEX_ALLOWED_USERS=4,alice` matches either contactId 4 or the contact whose display name is "alice"), or
-2. Use **DM pairing** — send any message to the bot and it will reply with a pairing code. Enter that code via `hermes pairing approve simplex <CODE>`.
+2. Use **DM pairing** — send any message to the bot and it will reply with a pairing code. Enter that code via `fool pairing approve simplex <CODE>`.
 
 ## Group chats
 

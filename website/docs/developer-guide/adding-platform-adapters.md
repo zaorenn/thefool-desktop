@@ -40,7 +40,7 @@ The plugin system lets you add a platform adapter without modifying any core Her
 
 ### plugin.yaml
 
-Plugin metadata. The `requires_env` and `optional_env` blocks auto-populate `hermes config` UI entries (see [Surfacing Env Vars](#surfacing-env-vars-in-hermes-config) below).
+Plugin metadata. The `requires_env` and `optional_env` blocks auto-populate `fool config` UI entries (see [Surfacing Env Vars](#surfacing-env-vars-in-hermes-config) below).
 
 ```yaml
 name: my-platform
@@ -84,7 +84,7 @@ import stays cheap. Without the field, nothing changes: the whole plugin stays
 deferred.
 
 Users enable the toolset per platform like any other, e.g.
-`hermes tools enable my_platform --platform cli`, or by listing the toolset
+`fool tools enable my_platform --platform cli`, or by listing the toolset
 key under `platform_toolsets` in `config.yaml`. Plugin platform names are
 also valid `--platform` targets, so an inbound session on your platform can
 be granted its own outbound tools.
@@ -220,7 +220,7 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | Env-only auto-enable | `env_enablement_fn` seeds `PlatformConfig.extra` + `home_channel` |
 | YAML config bridge | `apply_yaml_config_fn` translates `config.yaml` keys into env vars / extras |
 | Cron delivery | `cron_deliver_env_var` makes `deliver=<name>` work |
-| `hermes config` UI entries | `requires_env` / `optional_env` in `plugin.yaml` auto-populate |
+| `fool config` UI entries | `requires_env` / `optional_env` in `plugin.yaml` auto-populate |
 | send engine (`tools/send_message_tool.py`) | Routes through live gateway adapter |
 | Webhook cross-platform delivery | Registry checked for known platforms |
 | `/update` command access | `allow_update_command` flag |
@@ -228,9 +228,9 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | System prompt hints | `platform_hint` injected into LLM context |
 | Message chunking | `max_message_length` for smart splitting |
 | PII redaction | `pii_safe` flag |
-| `hermes status` | Shows plugin platforms with `(plugin)` tag |
-| `hermes gateway setup` | Plugin platforms appear in setup menu |
-| `hermes tools` / `hermes skills` | Plugin platforms in per-platform config |
+| `fool status` | Shows plugin platforms with `(plugin)` tag |
+| `fool gateway setup` | Plugin platforms appear in setup menu |
+| `fool tools` / `fool skills` | Plugin platforms in per-platform config |
 | Token lock (multi-profile) | Use `acquire_scoped_lock()` in your `connect()` |
 | Orphaned config warning | Descriptive log when plugin is missing |
 
@@ -294,7 +294,7 @@ the next profile.
 
 ## Env-Driven Auto-Configuration
 
-Most users set up a platform by dropping env vars into `~/.hermes/.env` rather than editing `config.yaml`. The `env_enablement_fn` hook lets your plugin pick those env vars up **before** the adapter is constructed, so `hermes gateway status`, `get_connected_platforms()`, and cron delivery see the correct state without instantiating the platform SDK.
+Most users set up a platform by dropping env vars into `~/.hermes/.env` rather than editing `config.yaml`. The `env_enablement_fn` hook lets your plugin pick those env vars up **before** the adapter is constructed, so `fool gateway status`, `get_connected_platforms()`, and cron delivery see the correct state without instantiating the platform SDK.
 
 ```python
 def _env_enablement() -> dict | None:
@@ -390,7 +390,7 @@ The scheduler reads this env var when resolving the home target for `deliver=my_
 
 ### Out-of-process cron delivery
 
-`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `hermes cron run` separate from `hermes gateway`), register a `standalone_sender_fn`:
+`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `fool cron run` separate from `fool gateway`), register a `standalone_sender_fn`:
 
 ```python
 async def _standalone_send(
@@ -419,7 +419,7 @@ Why this hook is necessary: built-in platforms (Telegram, Discord, Slack, etc.) 
 
 The function receives the same `pconfig` and `chat_id` that the live adapter would, plus optional `thread_id`, `media_files`, and `force_document` keyword arguments. Returning `{"success": True, "message_id": ...}` is treated as a successful delivery; returning `{"error": "..."}` surfaces the message in cron's `delivery_errors`. Exceptions raised inside the function are caught by the dispatcher and reported as `Plugin standalone send failed: <reason>`. Reference implementations live in `plugins/platforms/{irc,teams,google_chat}/adapter.py`.
 
-## Surfacing Env Vars in `hermes config`
+## Surfacing Env Vars in `fool config`
 
 `fool_cli/config.py` scans `plugins/platforms/*/plugin.yaml` at import time and auto-populates `OPTIONAL_ENV_VARS` from `requires_env` and (optional) `optional_env` blocks. Use the rich-dict form to contribute proper descriptions, prompts, password flags, and URLs — the CLI setup UI picks them up for free.
 

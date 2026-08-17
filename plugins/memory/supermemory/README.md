@@ -11,13 +11,13 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 ## Setup
 
 ```bash
-hermes memory setup    # select "supermemory"
+fool memory setup    # select "supermemory"
 ```
 
 Or manually:
 
 ```bash
-hermes config set memory.provider supermemory
+fool config set memory.provider supermemory
 echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
 ```
 
@@ -28,7 +28,7 @@ prints on first boot:
 npx supermemory local
 ```
 
-Before running `hermes memory setup`, add the local endpoint to
+Before running `fool memory setup`, add the local endpoint to
 `$FOOL_HOME/supermemory.json`:
 
 ```json
@@ -37,7 +37,7 @@ Before running `hermes memory setup`, add the local endpoint to
 }
 ```
 
-Then run `hermes memory setup` and enter the local server's API key. Configuring
+Then run `fool memory setup` and enter the local server's API key. Configuring
 the endpoint first ensures the setup connection probe also stays local.
 
 ## Config

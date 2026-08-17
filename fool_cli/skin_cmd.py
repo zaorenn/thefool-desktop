@@ -96,7 +96,7 @@ def _skin_list() -> int:
 
 
 def skin_command(args) -> None:
-    """Dispatch ``hermes skin <verb>``."""
+    """Dispatch ``fool skin <verb>``."""
     verb = getattr(args, "skin_command", None)
 
     if verb == "set":

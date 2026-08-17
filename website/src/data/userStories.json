@@ -446,8 +446,8 @@
     "url": "https://github.com/teknium1/nous-discord-archive/blob/main/archives/hermes-agent.txt",
     "date": "2026-02-26",
     "category": "dev-workflow",
-    "headline": "Built hermes mcp-server so Claude Desktop can use Hermes tools",
-    "quote": "I mapped all open + closed PRs to find what was truly missing. PR #64 added MCP client support (Hermes → external tools). The server side was completely absent. So I built hermes mcp-server — making Hermes a full MCP server so Claude Desktop, Cursor, and any MCP client can use Hermes's tools directly. Exposes 9 Hermes tools over MCP: terminal, read/write file, web search, memory, skills, run_agent.",
+    "headline": "Built fool mcp-server so Claude Desktop can use Hermes tools",
+    "quote": "I mapped all open + closed PRs to find what was truly missing. PR #64 added MCP client support (Hermes → external tools). The server side was completely absent. So I built fool mcp-server — making Hermes a full MCP server so Claude Desktop, Cursor, and any MCP client can use Hermes's tools directly. Exposes 9 Hermes tools over MCP: terminal, read/write file, web search, memory, skills, run_agent.",
     "size": "lg"
   },
   {
@@ -480,7 +480,7 @@
     "date": "",
     "category": "personal-assistant",
     "headline": "Two-tier email pipeline so the LLM only fires when needed",
-    "quote": "Two-tier email processing system for my agent (I gave it Spacemail IMAP via himalaya). Tier 1 (Dumb): Pure Python script, no LLM. Detects new email, manages state. Tier 2 (Smart): LLM session via hermes chat -q. Only invoked when new email detected. Key goal: Zero LLM calls when inbox is idle.",
+    "quote": "Two-tier email processing system for my agent (I gave it Spacemail IMAP via himalaya). Tier 1 (Dumb): Pure Python script, no LLM. Detects new email, manages state. Tier 2 (Smart): LLM session via fool chat -q. Only invoked when new email detected. Key goal: Zero LLM calls when inbox is idle.",
     "size": "md"
   },
   {
@@ -1172,8 +1172,8 @@
     "url": "https://gist.github.com/nazt/849e29cd25c148b6cebafdbcc38bb6cc",
     "date": "2026",
     "category": "integrations",
-    "headline": "Fat agent → thin tool provider via hermes mcp serve",
-    "quote": "hermes mcp serve turns Hermes from a monolithic agent into a composable capability layer — any MCP client can borrow Hermes's 15+ messaging platforms, SQLite FTS5 persistence, and 73-skill tool surface without running Hermes as the primary agent.",
+    "headline": "Fat agent → thin tool provider via fool mcp serve",
+    "quote": "fool mcp serve turns Hermes from a monolithic agent into a composable capability layer — any MCP client can borrow Hermes's 15+ messaging platforms, SQLite FTS5 persistence, and 73-skill tool surface without running Hermes as the primary agent.",
     "size": "md"
   },
   {
@@ -2559,7 +2559,7 @@
     "date": "",
     "category": "creative",
     "headline": "Chatting with Hermes on a 1969 Teletype Model 33 at 110 baud",
-    "quote": "I made a minimal login shell that talks to Hermes Agent via the gateway web service, or by running `hermes chat`. Hooked the shell up to an autologin getty on a serial port. Connected the serial port via 20mA current loop at 110 baud, to a 1969 Teletype Model 33. Chatting away!",
+    "quote": "I made a minimal login shell that talks to Hermes Agent via the gateway web service, or by running `fool chat`. Hooked the shell up to an autologin getty on a serial port. Connected the serial port via 20mA current loop at 110 baud, to a 1969 Teletype Model 33. Chatting away!",
     "size": "lg"
   },
   {

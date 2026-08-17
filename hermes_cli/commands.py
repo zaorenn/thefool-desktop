@@ -128,6 +128,15 @@ class CommandDef:
     # pulling in executor dependencies.
     execute: str | None = None
 
+    def __post_init__(self) -> None:
+        # FOOL-SEAM: command-descriptions
+        # /help ve tamamlama menüsünde görünen açıklamalar tek noktadan
+        # markalanır. Upstream yeni komut eklerse o da otomatik kapsanır.
+        # frozen=True olduğu için object.__setattr__ gerekiyor.
+        from fool.branding import brand_text
+
+        object.__setattr__(self, "description", brand_text(self.description))
+
 
 # Valid values for CommandDef.busy_policy (see field docs above).
 VALID_BUSY_POLICIES: frozenset[str] = frozenset(

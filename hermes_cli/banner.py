@@ -617,7 +617,10 @@ def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
 
 def format_banner_version_label() -> str:
     """Return the version label shown in the startup banner title."""
-    base = f"Hermes Agent v{VERSION} ({RELEASE_DATE})"
+    # FOOL-SEAM: version-banner
+    from fool.branding import NAME as _FOOL_NAME
+
+    base = f"{_FOOL_NAME} v{VERSION} ({RELEASE_DATE})"
     state = get_git_banner_state()
     if not state:
         return base

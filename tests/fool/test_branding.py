@@ -130,6 +130,8 @@ EXPECTED_SEAMS = {
     "update-origin",
     "banner-repo",
     "cli-scripts",
+    "version-banner",
+    "command-descriptions",
 }
 
 
@@ -174,3 +176,28 @@ def test_cli_entry_points_are_rebranded() -> None:
     assert f"{branding.CLI} =" in body
     # Modül yolları korunmalı — yalnızca komut adı değişti.
     assert "hermes_cli.main:main" in body
+
+
+# =============================================================================
+# Python CLI yüzeyleri
+# =============================================================================
+
+
+def test_command_descriptions_carry_no_upstream_brand() -> None:
+    """``/help`` listesinde "Hermes" görünmemeli.
+
+    ``CommandDef.__post_init__`` tüm açıklamaları geçerken markalar, bu yüzden
+    upstream yeni komut eklediğinde de otomatik kapsanır.
+    """
+    from hermes_cli.commands import COMMAND_REGISTRY
+
+    leftovers = [c.name for c in COMMAND_REGISTRY if "Hermes" in c.description]
+    assert not leftovers, f"Markalanmamış komut açıklamaları: {leftovers}"
+
+
+def test_version_banner_is_branded() -> None:
+    from hermes_cli.banner import format_banner_version_label
+
+    label = format_banner_version_label()
+    assert label.startswith(branding.NAME)
+    assert "Hermes" not in label

@@ -181,9 +181,13 @@ def read_install_method() -> str | None:
 
 
 def print_fast_version_info() -> None:
+    # FOOL-SEAM: version-banner
+    # Sürüm çıktısı marka adını taşır. Kaybolursa "Hermes Agent" geri gelir.
+    from fool.branding import CLI as _FOOL_CLI
+    from fool.branding import NAME as _FOOL_NAME
     from hermes_cli import __release_date__, __version__
 
-    print(f"Hermes Agent v{__version__} ({__release_date__})")
+    print(f"{_FOOL_NAME} v{__version__} ({__release_date__})")
     print(f"Install directory: {project_root_str()}")
     install_method = read_install_method()
     if install_method:
@@ -193,7 +197,7 @@ def print_fast_version_info() -> None:
 
     openai_version = read_openai_version()
     print(f"OpenAI SDK: {openai_version}" if openai_version else "OpenAI SDK: Not installed")
-    print("Run 'hermes version' for update status.")
+    print(f"Run '{_FOOL_CLI} version' for update status.")
 
 
 def try_fast_version(argv: list[str] | None = None) -> bool:

@@ -163,9 +163,14 @@ function VoiceRow({
                 {device === 'auto' ? 'Auto' : device.toUpperCase()}
               </Button>
             ))}
-            {!item.cuda_available && (
+            {!item.cuda_available ? (
               <span className="ml-1 text-[0.62rem] text-muted-foreground">no CUDA on this machine</span>
-            )}
+            ) : item.device === 'cuda' && !item.cuda_ready ? (
+              // Yapilandirmada "cuda" yazmasi ile motorun GERCEKTEN CUDA
+              // calistirmasi ayri seyler; ikincisi olmadan sessizce CPU'ya
+              // duser. Fark burada gorunur oluyor.
+              <span className="ml-1 text-[0.62rem] text-(--theme-warm)">CUDA runtime missing</span>
+            ) : null}
           </div>
         ) : null
       }
@@ -409,7 +414,17 @@ export function VoiceSettings() {
 
   const setDevice = useCallback(async (id: string, device: 'auto' | 'cpu' | 'cuda') => {
     try {
-      await voiceApi.setDevice(id, device)
+      const result = await voiceApi.setDevice(id, device)
+
+      // CUDA secildi ama ortam onu CALISTIRAMIYOR: yalnizca yapilandirmaya
+      // yazmak sessiz bir yalan olurdu -- motor CPU'ya duser ve kullanici
+      // yalnizca "cok yavas" gorur. Gercek calisma zamani hemen kuruluyor.
+      if ((result as { needs_cuda_runtime?: boolean }).needs_cuda_runtime) {
+        const job = await voiceApi.installCuda(id)
+
+        setJobs(previous => ({ ...previous, [id]: job }))
+      }
+
       setReloadToken(token => token + 1)
     } catch (error) {
       notifyError(error, 'Could not change device')

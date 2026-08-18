@@ -33,6 +33,9 @@ export interface VoiceItem {
   voice: string
   /** Bu motorun secilebilir sesleri. */
   voices: { id: string; label: string }[]
+  /** Motor GERCEKTEN CUDA calistirabiliyor mu? Yapilandirmada "cuda"
+   *  yazmasindan AYRI: calisma zamani eksikse sessizce CPU'ya duser. */
+  cuda_ready: boolean
   /** Bu motor ses klonlamayi destekliyor mu? */
   clone_capable: boolean
   /** Secili klon dosyasinin adi ("" = kapali). */
@@ -99,6 +102,7 @@ export const voiceApi = {
     call<{ ok: boolean }>('/api/fool/voice/device', { device, entry_id: entryId }),
   setVoice: (entryId: string, voice: string) =>
     call<{ ok: boolean }>('/api/fool/voice/voice', { entry_id: entryId, voice }),
+  installCuda: (entryId: string) => call<VoiceJob>('/api/fool/voice/cuda', { entry_id: entryId }),
   clones: () => call<{ clones: VoiceClone[] }>('/api/fool/voice/clones'),
   uploadClone: (filename: string, dataBase64: string) =>
     call<{ id: string; label: string }>('/api/fool/voice/clones/upload', {

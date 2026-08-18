@@ -49,7 +49,10 @@ copies. You only need them if you plan to build from source.
 
 ## Install
 
-One command. No installer to download, no release page to visit.
+**First time here?** Four steps, all from the terminal. Nothing to download by
+hand, no release page to visit.
+
+### 1 — Install the agent
 
 **Windows (PowerShell)**
 
@@ -63,26 +66,38 @@ irm https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/insta
 curl -fsSL https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh | bash
 ```
 
-That installs the terminal agent and puts `fool` on your PATH. Open a new
-terminal and it's there:
+This fetches its own Python and Node — you do not need either installed
+beforehand — and puts `fool` on your PATH.
+
+### 2 — Open a NEW terminal
+
+PATH changes only reach terminals opened afterwards. In the new one:
 
 ```bash
 fool --help
-fool            # interactive chat
 ```
 
-### Desktop app
+If that prints usage, the install worked.
 
-Once the CLI is installed, one more command builds and launches the desktop
-app from the same checkout:
+### 3 — Start a local model
+
+Open [LM Studio](https://lmstudio.ai), load a **tool-calling capable** model and
+start its server. The Fool finds it by itself — see [First run](#first-run) for
+the full list of runners it detects.
+
+### 4 — Run it
 
 ```bash
-fool desktop
+fool             # chat in the terminal
+fool desktop     # build and launch the desktop app
 ```
+
+`fool desktop` compiles the app from the same checkout the first time, so it
+takes a few minutes; after that it launches immediately.
 
 ### Updating
 
-One command updates **both** — the terminal agent and the desktop app:
+One command updates **both** the terminal agent and the desktop app:
 
 ```bash
 fool update
@@ -90,6 +105,8 @@ fool update
 
 The desktop rebuild only runs if you have actually used `fool desktop`, so a
 terminal-only install never pays for an Electron build.
+
+---
 
 ## First run
 

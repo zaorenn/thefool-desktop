@@ -20,6 +20,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 
+import { onGatewayEvent } from '@/contrib/events'
 import { Mic } from '@/lib/icons'
 
 import {
@@ -121,6 +122,8 @@ export function NotchShell() {
 
   const voice = useNotchVoice()
   const [hovered, setHovered] = useState(false)
+  // Oturum acik mi? Sag Ctrl yalnizca acikken dinliyor.
+  const [sessionActive, setSessionActive] = useState(false)
   // Hangi kisayolun kayitli oldugu makineye gore degisiyor (aday
   // merdiveni), o yuzden SABIT yazmak yerine ana surece soruluyor.
   const [shortcut, setShortcut] = useState<null | string>(null)
@@ -161,6 +164,41 @@ export function NotchShell() {
     return () => window.removeEventListener('mousemove', onMove)
   }, [])
 
+  // Wake word de kisayolla AYNI seyi yapiyor: oturumu acar.
+  //
+  // Kullanicinin istedigi buydu ve mantikli: "hey fool" demek ile Ctrl+Alt+V
+  // basmak ayni niyet -- konusmaya baslamak. Ikisini farkli davranislara
+  // baglamak, hangisini kullandigina gore farkli bir uygulama demek olurdu.
+  useEffect(
+    () =>
+      onGatewayEvent('wake.detected', () => {
+        setSessionActive(true)
+        void window.hermesDesktop?.notch?.open?.()
+      }),
+    []
+  )
+
+  // Oturum acikken centik ODAGI KORUMALI.
+  //
+  // Bildirilen kiriklik tam buydu: ilk istem gonderildikten sonra sag Ctrl
+  // artik algilanmiyordu. Sebebi centigin odagi kaybetmesi -- odaklanmamis
+  // bir pencere hicbir tus olayi almaz, yani bas-konus sessizce oluyordu.
+  //
+  // Tur bittiginde (durum 'idle'e dondugunde) odak geri aliniyor. Suren bir
+  // tur sirasinda dokunulmuyor: kullanici o esnada baska bir uygulamada
+  // calisiyor olabilir ve odagi calmak sinir bozucu olurdu.
+  useEffect(() => {
+    if (!sessionActive || voice.status !== 'idle') {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      void window.hermesDesktop?.notch?.open?.()
+    }, 150)
+
+    return () => clearTimeout(timer)
+  }, [sessionActive, voice.status])
+
   // Tur bittikten SONRA da bir süre açık kal.
   //
   // Neden: durum `idle`'a döndüğü anda daraltmak, kullanıcının az önce ne
@@ -196,7 +234,7 @@ export function NotchShell() {
     const onDown = (event: KeyboardEvent) => {
       const action = ptOnKeyDown(ptt.current, event, Date.now())
 
-      if (action?.type === 'start') {
+      if (action?.type === 'start' && sessionActive) {
         // Tuşun varsayılan davranışını yutuyoruz ki basılı tutuş başka bir
         // kısayolu tetiklemesin.
         event.preventDefault()
@@ -217,6 +255,9 @@ export function NotchShell() {
     // Odak kaybı bırakma sayılıyor: tuş hâlâ basılı olsa bile ``keyup`` artık
     // bize gelmeyecek, o olay odağı alan uygulamaya gider. Basılı saymaya devam
     // etmek mikrofonu sonsuza kadar açık bırakırdı.
+    //
+    // OTURUMU kapatmiyor: kullanici centige degil, calistigi uygulamaya
+    // bakiyor olabilir. Oturum yalnizca kisayolla kapanir.
     const onWindowBlur = () => {
       if (ptOnBlur(ptt.current)) {
         voice.cancel()
@@ -226,26 +267,31 @@ export function NotchShell() {
     // Global kisayol (notch ODAKTA DEGILKEN): tek dokunus dinlemeyi acar,
     // ikinci dokunus gonderir. Basili tutus burada kullanilamaz -- Electron'un
     // globalShortcut'i tus birakmayi bildirmiyor.
+    // Ctrl+Alt+V bir OTURUM aciyor/kapatiyor -- tek seferlik dinleme degil.
+    //
+    // Onceki davranis su kirikligi uretiyordu: kisayol bir kez dinlemeyi
+    // aciyor, ilk istem gonderildikten sonra centik odagi kaybediyor ve sag
+    // Ctrl artik ALGILANMIYOR (odaklanmamis bir pencere tus olayi almaz).
+    // Kullanici centigi acik gorup konusmaya calisiyor, hicbir sey olmuyor.
+    //
+    // Dogru model: kisayol oturumu ACAR, oturum boyunca sag Ctrl calisir,
+    // ayni kisayol oturumu KAPATIR.
     const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(() => {
-      if (voice.status === 'listening') {
-        // AYNI kisayola ikinci basis VAZGECMEK demek: kaydi at ve centigi
-        // kapat. Gondermek degil -- ayni tusa tekrar basmanin dogal anlami
-        // "bosver", ve gondermek isteyen zaten sag Ctrl'yi birakiyor.
-        voice.cancel()
-        window.hermesDesktop?.notch?.close?.()
+      setSessionActive(previous => {
+        if (previous) {
+          // Kapatiliyor: suren bir kayit varsa atilir.
+          voice.cancel()
+          window.hermesDesktop?.notch?.close?.()
 
-        return
-      }
+          return false
+        }
 
-      if (voice.status === 'idle') {
-        voice.begin()
+        // Oturum aciliyor: centigi one getir ve ODAGI al. Odak olmadan sag
+        // Ctrl hicbir zaman ulasmaz.
+        void window.hermesDesktop?.notch?.open?.()
 
-        return
-      }
-
-      // Yaziya dokuluyor / dusunuyor / konusuyor: kisayol centigi kapatir.
-      // O sirada yeni bir kayit acmak suren turu bozardi.
-      window.hermesDesktop?.notch?.close?.()
+        return true
+      })
     })
 
     window.addEventListener('keydown', onDown)
@@ -258,7 +304,7 @@ export function NotchShell() {
       window.removeEventListener('keyup', onUp)
       window.removeEventListener('blur', onWindowBlur)
     }
-  }, [voice])
+  }, [sessionActive, voice])
 
   return (
     <div className="flex h-screen w-screen justify-center bg-transparent" data-fool-notch>

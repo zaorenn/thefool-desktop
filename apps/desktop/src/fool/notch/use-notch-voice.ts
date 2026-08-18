@@ -166,9 +166,10 @@ export function useNotchVoice(): NotchVoice {
   // göndermek aynı cümleleri defalarca okuturdu.
   //
    
-  // eslint-disable-next-line no-restricted-syntax -- ``streamRef`` reaktif bir değerin AYNASI değil: açık bir WebSocket oturumu ve o oturuma kaç karakter
-  // gönderildiği. State'e taşımak her token'da yeniden render tetiklerdi ve
-  // oturumun kendisi zaten render'a ait bir şey değil.
+  // ``streamRef`` reaktif bir değerin AYNASI değil: açık bir WebSocket
+  // oturumu ve o oturuma kaç karakter gönderildiği. State'e taşımak her
+  // token'da yeniden render tetiklerdi.
+  // eslint-disable-next-line no-restricted-syntax -- yukarıdaki gerekçe
   useEffect(() => {
     if (status !== 'thinking' && status !== 'speaking') {
       return

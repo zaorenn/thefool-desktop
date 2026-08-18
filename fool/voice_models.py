@@ -96,6 +96,15 @@ class VoiceEntry:
     sidecar_cuda_index: str = ""
     #: PyPI'da olmayan, resmi URL'den gelen ek tekerlekler.
     sidecar_wheels: tuple[str, ...] = ()
+    #: Paket kurulduktan SONRA agirliklari indiren Python parcasi.
+    #:
+    #: Neden gerekli: faster-whisper paketi model agirliklarini TASIMIYOR;
+    #: ilk kullanimda sessizce indiriyor. Kullanici o an sadece "cok yavas"
+    #: goruyor. Burada indirme kurulumun parcasi oluyor, yani ilerleme
+    #: cubugunda gorunuyor.
+    warmup: str = ""
+    #: Isinma ve model kimligi icin kullanilan ad.
+    model_id: str = ""
     assets: tuple[VoiceAsset, ...] = ()
     #: Yaklaşık toplam indirme boyutu, kullanıcıya gösterilir.
     size_label: str = ""
@@ -194,6 +203,25 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         size_label="~3 GB",
     ),
     VoiceEntry(
+        id="whisper-turbo",
+        label="Whisper Large-v3 Turbo",
+        kind="stt",
+        summary=(
+            "En iyi yerel konusma tanima. Turkce ve Ingilizce dahil 99 dil, "
+            "large-v3'un dogruluguna yakin ama belirgin sekilde hizli."
+        ),
+        dep_group="stt.faster_whisper",
+        probe_module="faster_whisper",
+        model_id="large-v3-turbo",
+        warmup=(
+            "from faster_whisper import WhisperModel; "
+            "WhisperModel('large-v3-turbo', device='cpu', compute_type='int8')"
+        ),
+        devices=("cpu", "cuda"),
+        size_label="~1,6 GB",
+        recommended=True,
+    ),
+    VoiceEntry(
         id="faster-whisper",
         label="Faster-Whisper",
         kind="stt",
@@ -205,7 +233,6 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         probe_module="faster_whisper",
         devices=("cpu", "cuda"),
         size_label="~150 MB",
-        recommended=True,
     ),
 )
 
@@ -420,6 +447,30 @@ _PIP_STAGES: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
 )
 
 
+def _run_warmup(e: VoiceEntry) -> None:
+    """Model agirliklarini indir (ana yorumlayicida, alt surec olarak).
+
+    Alt surec kasitli: indirme sirasinda ithal edilen agir moduller ana
+    surecte kalmasin ve bir cokme paneli dusurmesin.
+    """
+    import subprocess
+    import sys
+
+    completed = subprocess.run(
+        [sys.executable, "-c", e.warmup],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=1800,
+        check=False,
+    )
+    if completed.returncode != 0:
+        tail = (completed.stderr or completed.stdout or "").strip()
+        last = tail.splitlines()[-1] if tail else "bilinmeyen hata"
+        raise RuntimeError(f"model agirliklari indirilemedi: {last}")
+
+
 def _install_sidecar(e: VoiceEntry, job: Job, base: float, span: float, device: Device = "cpu") -> None:
     """Motoru KENDI izole ortamina kur.
 
@@ -522,6 +573,11 @@ def _run(job: Job, e: VoiceEntry) -> None:
         # model dosyalarından belirgin biçimde büyük.
         engine_span = 70.0 if e.assets else 100.0
         _install_engine(e, job.device, job, 0.0, engine_span)
+
+        if e.warmup:
+            job.stage = "downloading model weights"
+            job.detail = e.model_id
+            _run_warmup(e)
 
         if e.assets:
             job.stage = "downloading voice model"

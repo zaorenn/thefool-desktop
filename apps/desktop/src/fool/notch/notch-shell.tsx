@@ -102,6 +102,13 @@ function Waveform({ active, level }: { active: boolean; level: number }) {
 export function NotchShell() {
   const voice = useNotchVoice()
   const [hovered, setHovered] = useState(false)
+  // Hangi kisayolun kayitli oldugu makineye gore degisiyor (aday
+  // merdiveni), o yuzden SABIT yazmak yerine ana surece soruluyor.
+  const [shortcut, setShortcut] = useState<null | string>(null)
+
+  useEffect(() => {
+    void window.hermesDesktop?.notch?.shortcut?.().then(r => setShortcut(r?.shortcut ?? null))
+  }, [])
   const shellRef = useRef<HTMLDivElement | null>(null)
 
   // Fare uzerine gelince centik TAMAMEN kayboluyor ve masaustunu birakiyor.
@@ -285,7 +292,9 @@ export function NotchShell() {
               transition={{ duration: 0.12 }}
             >
               <Mic className="size-3 text-(--theme-primary)" />
-              <span className="text-[0.66rem] tracking-wide text-(--ui-text-tertiary)">{LABEL.idle}</span>
+              <span className="text-[0.66rem] tracking-wide text-(--ui-text-tertiary)">
+                {shortcut ? `${LABEL.idle} · ${shortcut.replace('CommandOrControl', 'Ctrl')}` : LABEL.idle}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>

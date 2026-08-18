@@ -561,6 +561,115 @@ def install_cuda_runtime(entry_id: str) -> dict[str, Any]:
     return {"ok": True, "cuda_ready": cuda_ready(e)}
 
 
+# ---------------------------------------------------------------------------
+# Ses klonlari
+# ---------------------------------------------------------------------------
+
+
+def clone_dir() -> Path:
+    """Kullanicinin surukleyip biraktigi referans kayitlari."""
+    path = voice_dir() / "clones"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+#: Klonlamayi DESTEKLEYEN motorlar. Digerleri sabit ses kumesiyle calisiyor ve
+#: onlara referans kayit vermek sessizce yok sayilirdi -- kullanici sesini
+#: yukleyip hicbir sey degismedigini gorurdu.
+CLONE_CAPABLE: Final[frozenset[str]] = frozenset({"chatterbox"})
+
+#: Kabul edilen bicimler. Chatterbox 5-10 saniyelik temiz bir kayitla calisiyor.
+CLONE_SUFFIXES: Final[tuple[str, ...]] = (".wav", ".mp3", ".flac", ".m4a", ".ogg")
+
+
+def list_clones() -> list[dict[str, Any]]:
+    """Yuklenmis referans kayitlari."""
+    try:
+        entries = sorted(clone_dir().iterdir())
+    except OSError:
+        return []
+
+    out: list[dict[str, Any]] = []
+    for f in entries:
+        if f.is_file() and f.suffix.lower() in CLONE_SUFFIXES:
+            out.append({"id": f.name, "label": f.stem, "path": str(f), "bytes": f.stat().st_size})
+    return out
+
+
+def _safe_clone_name(name: str, suffix: str) -> str:
+    """Dosya adini guvenli hale getir.
+
+    Kullanicidan gelen ad dogrudan yola yazilirsa ``../`` ile dizin disina
+    cikilabilir. Yalnizca sade karakterler birakiliyor.
+    """
+    import re
+
+    stem = re.sub(r"[^A-Za-z0-9 _-]", "", pathlib_stem(name)).strip() or "ses"
+    return f"{stem[:48]}{suffix}"
+
+
+def pathlib_stem(name: str) -> str:
+    return Path(name).stem
+
+
+def save_clone(filename: str, data: bytes) -> dict[str, Any]:
+    """Referans kaydi diske yaz."""
+    suffix = Path(filename).suffix.lower()
+    if suffix not in CLONE_SUFFIXES:
+        raise ValueError(f"desteklenmeyen bicim: {suffix or '?'}")
+    # 50 MB: 5-10 saniyelik bir kayit birkac yuz KB. Bunun ustu ya yanlis
+    # dosya ya da kotu niyet.
+    if len(data) > 50 * 1024 * 1024:
+        raise ValueError("dosya cok buyuk (en fazla 50 MB)")
+    if len(data) < 1024:
+        raise ValueError("dosya cok kucuk ya da bos")
+
+    target = clone_dir() / _safe_clone_name(filename, suffix)
+    target.write_bytes(data)
+    return {"ok": True, "id": target.name, "label": target.stem, "path": str(target)}
+
+
+def delete_clone(clone_id: str) -> dict[str, Any]:
+    # Ad yeniden guvenlestiriliyor: gelen deger dogrudan yola yazilmamali.
+    target = clone_dir() / Path(clone_id).name
+    if target.is_file():
+        target.unlink()
+    return {"ok": True}
+
+
+def set_clone(entry_id: str, clone_id: str) -> dict[str, Any]:
+    """Bir motorun klon referansini ayarla ("" = kapali)."""
+    e = entry(entry_id)
+    if e is None:
+        raise ValueError(f"bilinmeyen oge: {entry_id}")
+    if (e.provider_id or e.id) not in CLONE_CAPABLE:
+        raise ValueError(f"{e.label} ses klonlamayi desteklemiyor")
+
+    from fool_cli.config import set_config_value
+
+    if not clone_id:
+        set_config_value(f"tts.{e.provider_id or e.id}.voice_sample", "")
+        return {"ok": True, "clone": ""}
+
+    target = clone_dir() / Path(clone_id).name
+    if not target.is_file():
+        raise ValueError(f"klon bulunamadi: {clone_id}")
+
+    set_config_value(f"tts.{e.provider_id or e.id}.voice_sample", str(target))
+    return {"ok": True, "clone": target.name}
+
+
+def current_clone(e: VoiceEntry) -> str:
+    try:
+        from fool_cli.config import load_config
+
+        cfg = load_config() or {}
+    except Exception:
+        return ""
+    node = ((cfg.get("tts") or {}).get(e.provider_id or e.id) or {})
+    return Path(str(node.get("voice_sample") or "")).name
+
+
 def catalog_status() -> list[dict[str, Any]]:
     active = active_providers()
     rows = []
@@ -573,6 +682,8 @@ def catalog_status() -> list[dict[str, Any]]:
         # gelmiyor. Sidecar'in torch'u CPU derlemesiyse motor sessizce CPU'ya
         # dusuyor ve kullanici yalnizca "cok yavas" goruyor.
         row["cuda_ready"] = cuda_ready(e)
+        row["clone_capable"] = (e.provider_id or e.id) in CLONE_CAPABLE
+        row["clone"] = current_clone(e) if row["clone_capable"] else ""
         row["voices"] = available_voices(e) if e.kind == "tts" else []
         row["voice"] = current_voice(e) if e.kind == "tts" else ""
         rows.append(row)

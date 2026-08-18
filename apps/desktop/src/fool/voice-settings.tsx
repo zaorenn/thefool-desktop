@@ -23,7 +23,7 @@ import { triggerHaptic } from '@/lib/haptics'
 import { Cpu, Download, Mic, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
-import { voiceApi, type VoiceCatalog, type VoiceItem, type VoiceJob } from './voice-api'
+import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem, type VoiceJob } from './voice-api'
 
 //: Süren bir kurulum varken yoklama aralığı. Saniyede bir, dakikalarca sürebilen
 //: bir iş için fazlasıyla yeterli ve ağ geçidini meşgul etmiyor.
@@ -53,6 +53,8 @@ function VoiceRow({
   item,
   onInstall,
   onDevice,
+  clones,
+  onClone,
   onSelect,
   onVoice,
   pending
@@ -62,6 +64,8 @@ function VoiceRow({
   onDevice: (id: string, device: 'auto' | 'cpu' | 'cuda') => void
   onSelect: (id: string) => void
   onVoice: (id: string, voice: string) => void
+  clones: VoiceClone[]
+  onClone: (action: 'select' | 'delete' | 'upload', payload: string | File, entryId: string) => void
   pending: VoiceJob | null
 }) {
   const running = pending?.state === 'running'
@@ -119,7 +123,7 @@ function VoiceRow({
     )
   }
 
-  return (
+  const row = (
     <ListRow
       action={action}
       below={
@@ -165,6 +169,7 @@ function VoiceRow({
           </div>
         ) : null
       }
+      className={item.installed && item.clone_capable ? 'pb-1' : undefined}
       description={item.summary}
       hint={
         pending?.state === 'failed'
@@ -179,6 +184,126 @@ function VoiceRow({
       }
     />
   )
+
+  if (!item.installed || !item.clone_capable) {
+    return row
+  }
+
+  // Klonlama YALNIZCA destekleyen ve KURULU motorlarda. Digerlerine referans
+  // kayit sunmak sessizce yok sayilirdi -- kullanici sesini yukleyip hicbir
+  // sey degismedigini gorurdu.
+  return (
+    <div>
+      {row}
+      <CloneSection
+        clones={clones}
+        item={item}
+        onDelete={id => onClone('delete', id, item.id)}
+        onSelect={(entryId, cloneId) => onClone('select', cloneId, entryId)}
+        onUpload={file => onClone('upload', file, item.id)}
+      />
+    </div>
+  )
+}
+
+
+/**
+ * Ses klonlama: referans kaydı sürükle-bırak, klonlar arasından seç.
+ *
+ * Chatterbox sıfır-atış klonlama yapıyor — 5-10 saniyelik temiz bir kayıt
+ * yeterli, eğitim yok. Yetenek arka uçta zaten vardı ama kaydı vermenin
+ * hiçbir yolu yoktu: yapılandırmaya elle dosya yolu yazmak gerekiyordu.
+ */
+function CloneSection({
+  item,
+  clones,
+  onDelete,
+  onSelect,
+  onUpload
+}: {
+  item: VoiceItem
+  clones: VoiceClone[]
+  onDelete: (id: string) => void
+  onSelect: (entryId: string, cloneId: string) => void
+  onUpload: (file: File) => void
+}) {
+  const [dragging, setDragging] = useState(false)
+
+  return (
+    <div className="mt-3 rounded-lg border border-dashed border-(--stroke-nous) p-3">
+      <div
+        className={`flex flex-col items-center justify-center gap-1 rounded-md px-3 py-4 text-center transition-colors ${
+          dragging ? 'bg-(--theme-primary)/10' : ''
+        }`}
+        onDragLeave={() => setDragging(false)}
+        onDragOver={event => {
+          event.preventDefault()
+          setDragging(true)
+        }}
+        onDrop={event => {
+          event.preventDefault()
+          setDragging(false)
+
+          const file = event.dataTransfer.files?.[0]
+
+          if (file) {
+            onUpload(file)
+          }
+        }}
+      >
+        <Mic className="size-4 text-(--theme-primary)" />
+        <div className="text-[0.72rem] font-medium">Drop a voice sample to clone it</div>
+        <div className="text-[0.66rem] text-muted-foreground">
+          5–10 seconds of clean speech · wav, mp3, flac, m4a, ogg
+        </div>
+      </div>
+
+      {clones.length > 0 && (
+        <div className="mt-2 flex flex-col gap-1">
+          {/* Motorun KENDI sesine donus: klonu kapatmanin tek yolu bu.
+              Olmazsa kullanici bir kez klon sectikten sonra geri donemez. */}
+          <button
+            className={`flex items-center justify-between rounded px-2 py-1 text-left text-[0.7rem] ${
+              item.clone ? 'text-muted-foreground' : 'bg-(--theme-primary)/15 font-medium'
+            }`}
+            onClick={() => onSelect(item.id, '')}
+            type="button"
+          >
+            <span>Model&rsquo;s own voice</span>
+            {!item.clone && <span className="text-[0.62rem]">in use</span>}
+          </button>
+
+          {clones.map(clone => (
+            <div
+              className={`flex items-center justify-between rounded px-2 py-1 text-[0.7rem] ${
+                item.clone === clone.id ? 'bg-(--theme-primary)/15 font-medium' : ''
+              }`}
+              key={clone.id}
+            >
+              <button
+                className="min-w-0 flex-1 truncate text-left"
+                onClick={() => onSelect(item.id, clone.id)}
+                type="button"
+              >
+                {clone.label}
+              </button>
+              <span className="ml-2 shrink-0 text-[0.62rem] text-muted-foreground">
+                {item.clone === clone.id ? 'in use' : `${Math.round(clone.bytes / 1024)} KB`}
+              </span>
+              <Button
+                className="ml-1 h-5 px-1 text-[0.62rem]"
+                onClick={() => onDelete(clone.id)}
+                size="sm"
+                variant="ghost"
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function VoiceSettings() {
@@ -189,6 +314,7 @@ export function VoiceSettings() {
   // kullanmak, iptal bayragini efektin KENDI kapanisinda tutmayi mumkun
   // kiliyor; ref'e alinmis bir bayrak bir render geç kalir ve bayat okur.
   const [reloadToken, setReloadToken] = useState(0)
+  const [clones, setClones] = useState<VoiceClone[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -290,6 +416,55 @@ export function VoiceSettings() {
     }
   }, [])
 
+  // Klon listesi katalogla AYNI anda yenileniyor: yukleme sonrasi liste
+  // guncellenmezse kullanici sesini yukleyip goremez.
+  useEffect(() => {
+    let cancelled = false
+
+    void voiceApi
+      .clones()
+      .then(r => {
+        if (!cancelled) {
+          setClones(r.clones)
+        }
+      })
+      .catch(() => undefined)
+
+    return () => {
+      cancelled = true
+    }
+  }, [reloadToken])
+
+  const onClone = useCallback(
+    async (action: 'select' | 'delete' | 'upload', payload: File | string, entryId: string) => {
+      try {
+        if (action === 'upload' && payload instanceof File) {
+          // Dosya kopruden gectigi icin ham bayt tasinamiyor; base64'e
+          // cevriliyor. ``readAsDataURL`` basina MIME onEki koyuyor, o
+          // kirpiliyor.
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+
+            reader.onerror = () => reject(reader.error ?? new Error('okunamadi'))
+            reader.onload = () => resolve(String(reader.result ?? ''))
+            reader.readAsDataURL(payload)
+          })
+
+          await voiceApi.uploadClone(payload.name, dataUrl.slice(dataUrl.indexOf(',') + 1))
+        } else if (action === 'delete' && typeof payload === 'string') {
+          await voiceApi.deleteClone(payload)
+        } else if (action === 'select' && typeof payload === 'string') {
+          await voiceApi.selectClone(entryId, payload)
+        }
+
+        setReloadToken(token => token + 1)
+      } catch (error) {
+        notifyError(error, 'Voice clone action failed')
+      }
+    },
+    []
+  )
+
   const setVoice = useCallback(async (id: string, voice: string) => {
     try {
       await voiceApi.setVoice(id, voice)
@@ -330,13 +505,13 @@ export function VoiceSettings() {
         title="Text to speech"
       >
         {tts.map(item => (
-          <VoiceRow item={item} key={item.id} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
+          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}
       </SettingsSection>
 
       <SettingsSection icon={Mic} title="Speech to text">
         {stt.map(item => (
-          <VoiceRow item={item} key={item.id} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
+          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}
       </SettingsSection>
 

@@ -23,6 +23,10 @@ vi.mock('./voice-api', () => ({
     job: (...args: unknown[]) => job(...args),
     setDevice: (...args: unknown[]) => Promise.resolve({ ok: true }),
     setVoice: (...args: unknown[]) => Promise.resolve({ ok: true }),
+    clones: () => Promise.resolve({ clones: [] }),
+    uploadClone: () => Promise.resolve({ id: 'x', label: 'x' }),
+    selectClone: () => Promise.resolve({ ok: true }),
+    deleteClone: () => Promise.resolve({ ok: true }),
     select: (...args: unknown[]) => Promise.resolve({ ok: true })
   }
 }))
@@ -41,6 +45,8 @@ function item(overrides: Partial<VoiceItem> = {}): VoiceItem {
     device: 'auto',
     voice: '',
     voices: [],
+    clone_capable: false,
+    clone: '',
     assets_installed: true,
     cuda_available: false,
     devices: ['cpu'],

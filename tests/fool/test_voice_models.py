@@ -395,3 +395,67 @@ class TestCudaKutuphaneleri:
             pytest.fail("enable() yukseldi; CPU'ya dusmeli")
         except Exception:
             pytest.fail("enable() beklenmedik sekilde yukseldi")
+
+
+class TestSesKlonlama:
+    """Surukle-birak ses klonlama.
+
+    Chatterbox sifir-atis klonlama yapiyor ve yetenek arka ucta ZATEN vardi;
+    eksik olan referans kaydi VERMENIN yoluydu -- yapilandirmaya elle dosya
+    yolu yazmak gerekiyordu.
+    """
+
+    def test_yalnizca_destekleyen_motor(self):
+        """Desteklemeyen motora referans kayit vermek sessizce yok sayilirdi.
+
+        Kullanici sesini yukler, hicbir sey degismez, sebebini ogrenemez.
+        """
+        from fool.voice_models import CLONE_CAPABLE, set_clone
+
+        assert "chatterbox" in CLONE_CAPABLE
+
+        with pytest.raises(ValueError):
+            set_clone("piper", "herhangi.wav")
+
+    def test_desteklenmeyen_bicim_reddedilir(self, tmp_path, monkeypatch):
+        from fool import voice_models as vm
+
+        monkeypatch.setattr(vm, "clone_dir", lambda: tmp_path)
+
+        with pytest.raises(ValueError):
+            vm.save_clone("ses.txt", b"x" * 4096)
+
+    def test_bos_ve_devasa_dosya_reddedilir(self, tmp_path, monkeypatch):
+        from fool import voice_models as vm
+
+        monkeypatch.setattr(vm, "clone_dir", lambda: tmp_path)
+
+        with pytest.raises(ValueError):
+            vm.save_clone("ses.wav", b"kisa")
+
+        with pytest.raises(ValueError):
+            vm.save_clone("ses.wav", b"x" * (51 * 1024 * 1024))
+
+    def test_dosya_adi_dizin_disina_cikamaz(self, tmp_path, monkeypatch):
+        """Kullanicidan gelen ad dogrudan yola yazilirsa ``../`` ile kacilir."""
+        from fool import voice_models as vm
+
+        monkeypatch.setattr(vm, "clone_dir", lambda: tmp_path)
+
+        saved = vm.save_clone("../../kotu.wav", b"x" * 4096)
+
+        assert Path(saved["path"]).parent == tmp_path
+        assert ".." not in saved["id"]
+
+    def test_kaydet_listele_sil_dongusu(self, tmp_path, monkeypatch):
+        from fool import voice_models as vm
+
+        monkeypatch.setattr(vm, "clone_dir", lambda: tmp_path)
+
+        vm.save_clone("benim_sesim.wav", b"x" * 8192)
+        clones = vm.list_clones()
+
+        assert [c["label"] for c in clones] == ["benim_sesim"]
+
+        vm.delete_clone(clones[0]["id"])
+        assert vm.list_clones() == []

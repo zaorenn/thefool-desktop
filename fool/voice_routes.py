@@ -49,6 +49,22 @@ class VoiceBody(BaseModel):
     voice: str
 
 
+class CloneUploadBody(BaseModel):
+    filename: str
+    #: base64 gövde. Dosya köprüden geçtiği için ham bayt taşınamıyor.
+    data_base64: str
+
+
+class CloneSelectBody(BaseModel):
+    entry_id: str
+    #: "" = klonu kapat, motorun kendi sesine dön.
+    clone_id: str = ""
+
+
+class CloneDeleteBody(BaseModel):
+    clone_id: str
+
+
 class CancelBody(BaseModel):
     job_id: str
 
@@ -99,6 +115,40 @@ async def voice_set_voice(body: VoiceBody) -> dict[str, Any]:
         return voice_models.set_voice(body.entry_id, body.voice)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/api/fool/voice/clones")
+async def voice_clones() -> dict[str, Any]:
+    return {"clones": voice_models.list_clones()}
+
+
+@router.post("/api/fool/voice/clones/upload")
+async def voice_clone_upload(body: CloneUploadBody) -> dict[str, Any]:
+    import base64
+    import binascii
+
+    try:
+        raw = base64.b64decode(body.data_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=f"gecersiz veri: {exc}") from exc
+
+    try:
+        return voice_models.save_clone(body.filename, raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/fool/voice/clones/select")
+async def voice_clone_select(body: CloneSelectBody) -> dict[str, Any]:
+    try:
+        return voice_models.set_clone(body.entry_id, body.clone_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/fool/voice/clones/delete")
+async def voice_clone_delete(body: CloneDeleteBody) -> dict[str, Any]:
+    return voice_models.delete_clone(body.clone_id)
 
 
 @router.get("/api/fool/voice/job/{job_id}")

@@ -33,6 +33,10 @@ export interface VoiceItem {
   voice: string
   /** Bu motorun secilebilir sesleri. */
   voices: { id: string; label: string }[]
+  /** Bu motor ses klonlamayi destekliyor mu? */
+  clone_capable: boolean
+  /** Secili klon dosyasinin adi ("" = kapali). */
+  clone: string
   assets_installed: boolean
   cuda_available: boolean
   devices: ('cpu' | 'cuda')[]
@@ -45,6 +49,13 @@ export interface VoiceItem {
   recommended: boolean
   size_label: string
   summary: string
+}
+
+export interface VoiceClone {
+  bytes: number
+  id: string
+  label: string
+  path: string
 }
 
 export interface VoiceCatalog {
@@ -87,5 +98,15 @@ export const voiceApi = {
   setDevice: (entryId: string, device: 'auto' | 'cpu' | 'cuda') =>
     call<{ ok: boolean }>('/api/fool/voice/device', { device, entry_id: entryId }),
   setVoice: (entryId: string, voice: string) =>
-    call<{ ok: boolean }>('/api/fool/voice/voice', { entry_id: entryId, voice })
+    call<{ ok: boolean }>('/api/fool/voice/voice', { entry_id: entryId, voice }),
+  clones: () => call<{ clones: VoiceClone[] }>('/api/fool/voice/clones'),
+  uploadClone: (filename: string, dataBase64: string) =>
+    call<{ id: string; label: string }>('/api/fool/voice/clones/upload', {
+      data_base64: dataBase64,
+      filename
+    }),
+  selectClone: (entryId: string, cloneId: string) =>
+    call<{ ok: boolean }>('/api/fool/voice/clones/select', { clone_id: cloneId, entry_id: entryId }),
+  deleteClone: (cloneId: string) =>
+    call<{ ok: boolean }>('/api/fool/voice/clones/delete', { clone_id: cloneId })
 }

@@ -30,10 +30,10 @@ import {
 } from './push-to-talk'
 import { type NotchStatus, useNotchVoice } from './use-notch-voice'
 
-const COLLAPSED_WIDTH = 168
-const COLLAPSED_HEIGHT = 32
-const EXPANDED_WIDTH = 400
-const EXPANDED_HEIGHT = 132
+const COLLAPSED_WIDTH = 104
+const COLLAPSED_HEIGHT = 22
+const EXPANDED_WIDTH = 300
+const EXPANDED_HEIGHT = 92
 
 /** Tur bittikten sonra yazının ekranda kalma süresi. */
 const LINGER_MS = 6000
@@ -228,12 +228,24 @@ export function NotchShell() {
     // globalShortcut'i tus birakmayi bildirmiyor.
     const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(() => {
       if (voice.status === 'listening') {
-        voice.commit()
-      } else if (voice.status === 'idle') {
-        voice.begin()
+        // AYNI kisayola ikinci basis VAZGECMEK demek: kaydi at ve centigi
+        // kapat. Gondermek degil -- ayni tusa tekrar basmanin dogal anlami
+        // "bosver", ve gondermek isteyen zaten sag Ctrl'yi birakiyor.
+        voice.cancel()
+        window.hermesDesktop?.notch?.close?.()
+
+        return
       }
-      // Diger durumlar (yaziya dokuluyor / dusunuyor / konusuyor) bilerek
-      // yok sayiliyor: o sirada yeni bir kayit acmak suren turu bozar.
+
+      if (voice.status === 'idle') {
+        voice.begin()
+
+        return
+      }
+
+      // Yaziya dokuluyor / dusunuyor / konusuyor: kisayol centigi kapatir.
+      // O sirada yeni bir kayit acmak suren turu bozardi.
+      window.hermesDesktop?.notch?.close?.()
     })
 
     window.addEventListener('keydown', onDown)
@@ -264,13 +276,23 @@ export function NotchShell() {
         // Renkler TEMADAN geliyor, sabit siyah değil: uygulamanın vurgu rengi
         // değiştiğinde çentik de onunla değişmeli, yoksa ekranın tepesinde
         // temaya ait olmayan bir kara leke kalıyor.
-        className="max-w-full overflow-hidden rounded-b-[22px] border-x border-b border-(--stroke-nous) bg-(--ui-bg-chrome)/85 text-(--ui-text-primary) shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+        className="max-w-full overflow-hidden rounded-b-[18px] border-x border-b border-white/10 text-(--ui-text-primary) shadow-[0_8px_28px_rgba(0,0,0,0.28)] backdrop-blur-2xl backdrop-saturate-150"
         initial={false}
         // Fare üzerine gelince TAMAMEN görünmez: çentik ekranın en üstünde
         // duruyor ve oradaki sekmeleri/menüleri kapatmamalı. Görünmezken
         // fareyi de geçiriyor (pointer-events), yani altındaki şeye tıklanır.
         ref={shellRef}
-        style={{ pointerEvents: 'none' }}
+        // Buzlu cam: SAF SIYAH degil. Arkaplan yariya kadar saydam ve
+        // dinlerken vurgu rengiyle hafifce tonlaniyor, boylece centik
+        // ekranin bir parcasi gibi duruyor -- uzerine yapistirilmis bir
+        // kutu gibi degil.
+        style={{
+          background:
+            voice.status === 'listening'
+              ? 'color-mix(in srgb, var(--theme-primary) 18%, rgb(0 0 0 / 0.45))'
+              : 'rgb(0 0 0 / 0.42)',
+          pointerEvents: 'none'
+        }}
         transition={hovered ? { duration: 0.18 } : SPRING}
       >
         <AnimatePresence initial={false} mode="wait">
@@ -310,10 +332,12 @@ export function NotchShell() {
               key="collapsed"
               transition={{ duration: 0.12 }}
             >
+              {/* Kapali halde METIN YOK. Kisayolu surekli yazmak centigi
+                  genisletiyor ve ekranin tepesinde gereksiz yer kapliyordu;
+                  kullanici onu zaten bir kez ogreniyor. Kisayol yalnizca
+                  uzerine gelindiginde ipucu olarak duruyor. */}
               <Mic className="size-3 text-(--theme-primary)" />
-              <span className="text-[0.66rem] tracking-wide text-(--ui-text-tertiary)">
-                {shortcut ? `${LABEL.idle} · ${shortcut.replace('CommandOrControl', 'Ctrl')}` : LABEL.idle}
-              </span>
+              <span className="h-1 w-1 rounded-full bg-(--theme-primary)/60" />
             </motion.div>
           )}
         </AnimatePresence>

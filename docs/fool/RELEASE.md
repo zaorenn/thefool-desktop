@@ -1,7 +1,17 @@
 # The Fool — sürüm ve güncelleme hattı
 
-> **Durum:** yapılandırma hazır, **hiçbir şey yayınlanmadı.** Depo henüz
-> GitHub'da yok. Aşağıdakiler sen hazır olduğunda çalışacak adımlar.
+> **Durum:** depo yayında (`zaorenn/thefool-desktop`) ve `main` itildi.
+>
+> **`gh` VARSAYILANI ÖNEMLİ.** Depoda iki uzak sunucu var ve `gh` kendiliğinden
+> `upstream`i (NousResearch/hermes-agent) hedefliyordu — bir `gh release create`
+> komutu doğrudan Nous'un deposuna giderdi. Bir kez sabitlendi:
+>
+> ```bash
+> gh repo set-default zaorenn/thefool-desktop
+> ```
+>
+> Yine de yayın komutlarında `--repo zaorenn/thefool-desktop` yazmak en
+> güvenlisi: varsayılan bir makinede sabitlenmiş olabilir, başkasında değil.
 
 ## Kullanıcılar güncellemeyi nereden alacak
 

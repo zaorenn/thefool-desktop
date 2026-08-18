@@ -63,6 +63,10 @@ RUNNERS: Final[tuple[Runner, ...]] = (
     Runner("llamacpp", "llama.cpp", "http://127.0.0.1:8080/v1", "custom"),
     Runner("vllm", "vLLM", "http://127.0.0.1:8000/v1", "custom"),
     Runner("textgen", "text-generation-webui", "http://127.0.0.1:5000/v1", "custom"),
+    # Bionic: OpenAI-uyumlu uc, varsayilan 3000. Listenin SONUNDA cunku o
+    # port cok yaygin (her Node dev sunucusu orada); once gercek model
+    # sunuculari denensin ki yanlis bir servise baglanmayalim.
+    Runner("bionic", "Bionic", "http://127.0.0.1:3000/v1", "custom"),
 )
 
 #: Sohbet edemeyen model kimlikleri — gömme/yeniden sıralama modelleri.

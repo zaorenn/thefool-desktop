@@ -6688,9 +6688,19 @@ def _desktop_packaged_executable(desktop_dir: Path) -> Optional[Path]:
     """Return the current platform's unpacked Electron app executable."""
     release_dir = desktop_dir / "release"
     if sys.platform == "darwin":
-        candidates = list(release_dir.glob("mac*/The Fool.app/Contents/MacOS/The Fool"))
+        candidates = list(release_dir.glob("mac*/*.app/Contents/MacOS/*"))
     elif sys.platform == "win32":
+        # FOOL-SEAM: packaged-exe-name
+        # electron-builder ``productName``den BOSLUKSUZ ad uretiyor:
+        # ``TheFool.exe``. Marka donusumu ise ``Hermes.exe``i bosluklu
+        # ``The Fool.exe``a cevirmisti, yani bu liste gercekte hic olusmayan
+        # bir dosyayi ariyordu. Sonuc: derleme BASARIYLA bitiyor, exe imzalaniyor,
+        # ama ``fool desktop`` "produced no launchable app" deyip pes ediyordu.
+        # Iki ad da deneniyor -- upstream'in adi degisirse yine tutar.
         candidates = [
+            release_dir / "win-unpacked" / "TheFool.exe",
+            release_dir / "win-ia32-unpacked" / "TheFool.exe",
+            release_dir / "win-arm64-unpacked" / "TheFool.exe",
             release_dir / "win-unpacked" / "The Fool.exe",
             release_dir / "win-ia32-unpacked" / "The Fool.exe",
             release_dir / "win-arm64-unpacked" / "The Fool.exe",
@@ -6698,6 +6708,7 @@ def _desktop_packaged_executable(desktop_dir: Path) -> Optional[Path]:
     else:
         candidates = [
             release_dir / "linux-unpacked" / "fool",
+            release_dir / "linux-unpacked" / "thefool",
             release_dir / "linux-unpacked" / "The Fool",
             release_dir / "linux-arm64-unpacked" / "fool",
             release_dir / "linux-arm64-unpacked" / "The Fool",

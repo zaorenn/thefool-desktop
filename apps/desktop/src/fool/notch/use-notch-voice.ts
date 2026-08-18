@@ -58,6 +58,11 @@ export function useNotchVoice(): NotchVoice {
   const { requestGateway } = useGatewayRequest()
 
   const [status, setStatus] = useState<NotchStatus>('idle')
+  // Oynatma geri cagriminin GUNCEL durumu gormesi icin. Kapanis
+  // sirasindaki state degeri bayat olur ve yaris kaybedilir.
+  const statusRef = useRef<NotchStatus>('idle')
+
+  statusRef.current = status
   const [transcript, setTranscript] = useState('')
   const [error, setError] = useState<null | string>(null)
 
@@ -163,7 +168,12 @@ export function useNotchVoice(): NotchVoice {
     void playSpeechText(pending.text, { messageId: pending.id, source: 'voice-conversation' })
       .catch(() => undefined)
       .finally(() => {
-        if (!cancelled) {
+        // ``cancelled`` yetmiyor: kullanici oynatma SURERKEN sag Ctrl'ye
+        // basip konusmaya baslayabiliyor. O durumda ``begin()`` durumu
+        // 'listening' yapiyor ama bu geri cagrim hemen ardindan 'idle'
+        // yaziyordu -- notch kayit surerken daraliyor ve kullanici
+        // dinlenmedigini saniyordu. Yalnizca HALA konusuyorsak bosa dus.
+        if (!cancelled && statusRef.current === 'speaking') {
           setStatus('idle')
         }
       })

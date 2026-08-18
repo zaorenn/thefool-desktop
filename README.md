@@ -42,27 +42,75 @@ give you — the whole provider layer is intact.
 - [LM Studio](https://lmstudio.ai) with a **tool-calling capable** model loaded.
   This matters: The Fool edits files and runs commands. A model without tool
   calling can only chat.
-- Python 3.11–3.13, Node 22+
 - ~16 GB VRAM for a comfortable 9B-class model (less works, with a smaller model)
 
-## Quick start
+Python and Node are **not** prerequisites — the installer below fetches its own
+copies. You only need them if you plan to build from source.
 
-```bash
-git clone https://github.com/zaorenn/thefool-desktop.git
-cd fool-desktop
+## Install
 
-uv venv .venv --python 3.13
-uv pip install --python .venv -e ".[dev]"
-npm install
+One command. No installer to download, no release page to visit.
 
-# CLI
-.venv/Scripts/fool --help
+**Windows (PowerShell)**
 
-# Desktop app
-npm run dev --workspace apps/desktop
+```powershell
+irm https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.ps1 | iex
 ```
 
-Point it at your local model in `~/.fool/config.yaml`:
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh | bash
+```
+
+That installs the terminal agent and puts `fool` on your PATH. Open a new
+terminal and it's there:
+
+```bash
+fool --help
+fool            # interactive chat
+```
+
+### Desktop app
+
+Once the CLI is installed, one more command builds and launches the desktop
+app from the same checkout:
+
+```bash
+fool desktop
+```
+
+### Updating
+
+One command updates **both** — the terminal agent and the desktop app:
+
+```bash
+fool update
+```
+
+The desktop rebuild only runs if you have actually used `fool desktop`, so a
+terminal-only install never pays for an Electron build.
+
+## First run
+
+There is nothing to configure. On first launch The Fool probes the fixed local
+endpoints and adopts whatever it finds:
+
+| Runner | Endpoint |
+|---|---|
+| LM Studio | `127.0.0.1:1234` |
+| Ollama | `127.0.0.1:11434` |
+| Jan | `127.0.0.1:1337` |
+| llama.cpp | `127.0.0.1:8080` |
+| vLLM | `127.0.0.1:8000` |
+| text-generation-webui | `127.0.0.1:5000` |
+| Bionic | `127.0.0.1:3000` |
+
+Start LM Studio with a tool-calling model loaded, then start The Fool — no
+provider picker, no base URL, no model id to copy. An existing provider choice
+is never overwritten.
+
+To set it by hand instead, `~/.fool/config.yaml`:
 
 ```yaml
 model:
@@ -70,6 +118,22 @@ model:
   provider: "lmstudio"
 display:
   skin: "the-fool"
+```
+
+## Building from source
+
+For hacking on The Fool itself:
+
+```bash
+git clone https://github.com/zaorenn/thefool-desktop.git
+cd thefool-desktop
+
+uv venv .venv --python 3.13
+uv pip install --python .venv -e ".[dev]"
+npm install
+
+.venv/Scripts/fool --help                  # CLI
+npm run dev --workspace apps/desktop       # desktop, with hot reload
 ```
 
 > `npm install` — **without** `--workspace`. A workspace-scoped install prunes

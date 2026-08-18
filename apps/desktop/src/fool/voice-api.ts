@@ -25,6 +25,14 @@ export interface VoiceJob {
 }
 
 export interface VoiceItem {
+  /** Su an SECILI olan saglayici mi? */
+  active: boolean
+  /** Calisma aygiti: auto | cpu | cuda. */
+  device: 'auto' | 'cpu' | 'cuda'
+  /** Secili ses kimligi. */
+  voice: string
+  /** Bu motorun secilebilir sesleri. */
+  voices: { id: string; label: string }[]
   assets_installed: boolean
   cuda_available: boolean
   devices: ('cpu' | 'cuda')[]
@@ -40,6 +48,7 @@ export interface VoiceItem {
 }
 
 export interface VoiceCatalog {
+  active: { stt: string; tts: string }
   cuda_available: boolean
   items: VoiceItem[]
   voice_dir: string
@@ -73,5 +82,10 @@ export const voiceApi = {
   catalog: () => call<VoiceCatalog>('/api/fool/voice/catalog'),
   install: (entryId: string, device: 'cpu' | 'cuda') =>
     call<VoiceJob>('/api/fool/voice/install', { device, entry_id: entryId }),
-  job: (jobId: string) => call<VoiceJob>(`/api/fool/voice/job/${jobId}`)
+  job: (jobId: string) => call<VoiceJob>(`/api/fool/voice/job/${jobId}`),
+  select: (entryId: string) => call<{ ok: boolean }>('/api/fool/voice/select', { entry_id: entryId }),
+  setDevice: (entryId: string, device: 'auto' | 'cpu' | 'cuda') =>
+    call<{ ok: boolean }>('/api/fool/voice/device', { device, entry_id: entryId }),
+  setVoice: (entryId: string, voice: string) =>
+    call<{ ok: boolean }>('/api/fool/voice/voice', { entry_id: entryId, voice })
 }

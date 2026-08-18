@@ -35,6 +35,20 @@ class InstallBody(BaseModel):
     device: Literal["cpu", "cuda"] = "cpu"
 
 
+class SelectBody(BaseModel):
+    entry_id: str
+
+
+class DeviceBody(BaseModel):
+    entry_id: str
+    device: Literal["auto", "cpu", "cuda"]
+
+
+class VoiceBody(BaseModel):
+    entry_id: str
+    voice: str
+
+
 class CancelBody(BaseModel):
     job_id: str
 
@@ -50,6 +64,7 @@ async def voice_catalog() -> dict[str, Any]:
     return {
         "items": items,
         "voice_dir": str(voice_models.voice_dir()),
+        "active": voice_models.active_providers(),
         "cuda_available": voice_models._cuda_available(),
     }
 
@@ -58,6 +73,30 @@ async def voice_catalog() -> dict[str, Any]:
 async def voice_install(body: InstallBody) -> dict[str, Any]:
     try:
         return voice_models.start_install(body.entry_id, body.device)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/fool/voice/select")
+async def voice_select(body: SelectBody) -> dict[str, Any]:
+    try:
+        return voice_models.select(body.entry_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/fool/voice/device")
+async def voice_device(body: DeviceBody) -> dict[str, Any]:
+    try:
+        return voice_models.set_device(body.entry_id, body.device)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/fool/voice/voice")
+async def voice_set_voice(body: VoiceBody) -> dict[str, Any]:
+    try:
+        return voice_models.set_voice(body.entry_id, body.voice)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

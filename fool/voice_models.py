@@ -191,7 +191,12 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
             "weight: it wants CUDA to run smoothly."
         ),
         probe_module="chatterbox",
-        sidecar_specs=("chatterbox-tts==0.1.7", "soundfile==0.14.0"),
+        # ``setuptools<81`` SART: chatterbox -> perth -> ``pkg_resources``,
+        # ve o modul setuptools 81'de kaldirildi. ``uv venv`` setuptools'u
+        # hic kurmuyor, yani ikisi birlesince perth sessizce yariq yukleniyor
+        # ve ``PerthImplicitWatermarker`` None kaliyor -- sentez
+        # "TypeError: 'NoneType' object is not callable" ile dusuyor.
+        sidecar_specs=("chatterbox-tts==0.1.7", "soundfile==0.14.0", "setuptools==80.10.2"),
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
         size_label="~3 GB",

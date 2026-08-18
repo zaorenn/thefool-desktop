@@ -72,6 +72,13 @@ class VoiceEntry:
     kind: Kind
     #: Kullanıcıya tek cümlelik açıklama — neden bunu seçsin?
     summary: str
+    #: ``tts.provider`` / ``stt.provider`` yapılandırmasına yazılan ad.
+    #:
+    #: Katalog kimliğinden AYRI tutuluyor çünkü ikisi farklı şeyler: kimlik
+    #: indirilen paketi, bu ad ise ajanın konuşurken kullandığı sağlayıcıyı
+    #: gösteriyor (``qwen3-tts`` indirilir, ``qwen3`` seçilir). Boş bırakılırsa
+    #: kimliğin kendisi kullanılır.
+    provider_id: str = ""
     #: ``tools.lazy_deps`` grubu; motor paketi bundan kurulur.
     dep_group: str | None = None
     #: Bu öğeyi "kurulu" sayan Python modülü.
@@ -79,6 +86,16 @@ class VoiceEntry:
     #: CUDA için ek paket grubu (varsa).
     cuda_group: str | None = None
     devices: tuple[Device, ...] = ("cpu",)
+    #: Doluysa motor ANA ortama DEGIL, kendi izole ortamina kurulur.
+    #: Gerekce ``fool/sidecar.py`` basliginda olculerek anlatildi: bu
+    #: motorlarin ucu de paylasilan paketleri geriye dusuruyor (biri bir CVE
+    #: duzeltmesini, biri Hindsight'i kiriyor).
+    sidecar_specs: tuple[str, ...] = ()
+    #: CUDA icin ana kurulumdan SONRA uygulanan paketler ve indeksleri.
+    sidecar_cuda_specs: tuple[str, ...] = ()
+    sidecar_cuda_index: str = ""
+    #: PyPI'da olmayan, resmi URL'den gelen ek tekerlekler.
+    sidecar_wheels: tuple[str, ...] = ()
     assets: tuple[VoiceAsset, ...] = ()
     #: Yaklaşık toplam indirme boyutu, kullanıcıya gösterilir.
     size_label: str = ""
@@ -129,10 +146,16 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
             "Surprisingly natural for its size. Better intonation than Piper, "
             "still local and quick."
         ),
-        dep_group="tts.kokoro",
         probe_module="kokoro",
+        sidecar_specs=("kokoro==0.9.4", "soundfile==0.14.0"),
+        # Kokoro spaCy'nin ``en_core_web_sm`` modelini istiyor ve o PyPI'da
+        # YOK. Bu adim olmadan motor kuruluyor ama ilk sentezde E050 veriyor.
+        sidecar_wheels=(
+            "https://github.com/explosion/spacy-models/releases/download/"
+            "en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+        ),
         devices=("cpu", "cuda"),
-        size_label="~350 MB",
+        size_label="~1,3 GB",
     ),
     VoiceEntry(
         id="chatterbox",
@@ -142,10 +165,33 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
             "The most realistic option, and it can clone voices. The cost is "
             "weight: it wants CUDA to run smoothly."
         ),
-        dep_group="tts.chatterbox",
         probe_module="chatterbox",
+        sidecar_specs=("chatterbox-tts==0.1.7", "soundfile==0.14.0"),
         devices=("cpu", "cuda"),
-        size_label="~2 GB",
+        size_label="~3 GB",
+    ),
+    VoiceEntry(
+        id="qwen3-tts",
+        label="Qwen3-TTS",
+        kind="tts",
+        summary=(
+            "Alibaba'nin cok dilli modeli: 9 konusmaci, 10 dil (Ingilizce, "
+            "Almanca, Fransizca, Ispanyolca, Italyanca, Portekizce, Rusca, "
+            "Cince, Japonca, Korece). TURKCE DESTEKLENMIYOR."
+        ),
+        provider_id="qwen3",
+        probe_module="qwen_tts",
+        # Ana ortama KURULAMAZ: transformers==4.57.3 huggingface-hub'i
+        # 1.27.0 -> 0.36.2'ye dusuruyor ve lazy_deps.py bunun Hindsight'i
+        # cokerttigini (#60783) yaziyor. Kendi ortamina kuruluyor.
+        sidecar_specs=("qwen-tts==0.1.1",),
+        # PyPI'nin Windows torch tekerlegi CPU-only. Gercek CUDA derlemesi
+        # yalnizca PyTorch'un kendi indeksinde; olculdu: CPU'da kisa bir
+        # cumle 7.8 saniye surdu.
+        sidecar_cuda_specs=("torch==2.13.0", "torchaudio==2.11.0"),
+        sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
+        devices=("cpu", "cuda"),
+        size_label="~3 GB",
     ),
     VoiceEntry(
         id="faster-whisper",
@@ -213,10 +259,18 @@ def status(entry_id: str) -> dict[str, Any]:
     if e is None:
         return {"id": entry_id, "installed": False, "error": "bilinmeyen oge"}
 
-    engine_ok = _module_available(e.probe_module) if e.probe_module else True
+    if e.sidecar_specs:
+        # Sidecar'li motor ANA ortamda asla gorunmez; orada aramak her zaman
+        # "kurulu degil" derdi.
+        from fool import sidecar as _sidecar
+
+        engine_ok = _sidecar.is_ready(e.id, e.probe_module)
+    else:
+        engine_ok = _module_available(e.probe_module) if e.probe_module else True
     assets_ok = all(asset_present(a) for a in e.assets)
     return {
         "id": e.id,
+        "provider_id": e.provider_id or e.id,
         "label": e.label,
         "kind": e.kind,
         "summary": e.summary,
@@ -366,7 +420,56 @@ _PIP_STAGES: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
 )
 
 
+def _install_sidecar(e: VoiceEntry, job: Job, base: float, span: float, device: Device = "cpu") -> None:
+    """Motoru KENDI izole ortamina kur.
+
+    Ilerleme yine uydurulmuyor: uv'nin cikti satirlari ``job.detail``e
+    aktariliyor, yuzde ise ``_creep`` gibi asamayi asmayan bir tahmin.
+    Kullanici en azindan hangi paketin indigini goruyor.
+    """
+    from fool import sidecar as _sidecar
+
+    job.stage = "installing engine (isolated)"
+
+    stop = threading.Event()
+
+    def _creep() -> None:
+        crept = 0.0
+        while not stop.wait(0.5):
+            crept = min(crept + span * 0.004, span * 0.9)
+            job.percent = base + crept
+
+    def _line(text: str) -> None:
+        # uv satirlari uzun olabiliyor; arayuzde tek satira sigsin.
+        job.detail = text[:90]
+
+    ticker = threading.Thread(target=_creep, daemon=True)
+    ticker.start()
+    try:
+        _sidecar.create(
+            _sidecar.SidecarSpec(
+                name=e.id,
+                specs=e.sidecar_specs,
+                probe_module=e.probe_module or "",
+                cuda_specs=e.sidecar_cuda_specs,
+                cuda_index_url=e.sidecar_cuda_index,
+                extra_wheels=e.sidecar_wheels,
+            ),
+            on_output=_line,
+            cuda=device == "cuda",
+        )
+    finally:
+        stop.set()
+
+    job.percent = base + span
+    job.detail = ""
+
+
 def _install_engine(e: VoiceEntry, device: Device, job: Job, base: float, span: float) -> None:
+    if e.sidecar_specs:
+        _install_sidecar(e, job, base, span, device)
+        return
+
     groups = [g for g in (e.dep_group, e.cuda_group if device == "cuda" else None) if g]
     # Sessiz basari yasak. Kurulacak paket yoksa is "tamamlandi" demeden
     # once durur: aksi halde kullanici dugmeye basar, cubuk %100'e gider ve

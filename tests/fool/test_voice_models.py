@@ -9,6 +9,7 @@ uydurulmaması ve yarıda kalan bir dosyanın "inmiş" sayılmaması.
 from __future__ import annotations
 
 import threading
+from pathlib import Path
 import time
 
 import pytest
@@ -38,9 +39,13 @@ class TestKatalog:
         for e in voice_models.CATALOG:
             if "cuda" not in e.devices:
                 continue
-            # Ya ayrı bir CUDA paketi var (piper) ya da motorun kendisi
-            # cihazı çalışma anında seçiyor (torch tabanlılar).
-            assert e.cuda_group or e.dep_group, f"{e.id}: CUDA iddiasi dayanaksiz"
+            # CUDA iddiasinin uc mesru dayanagi var:
+            #   - ayri bir CUDA paket grubu (piper -> onnxruntime-gpu)
+            #   - sidecar'a kurulan CUDA torch tekerlegi (qwen3)
+            #   - motorun kendisi cihazi calisma aninda seciyor (torch tabanli)
+            assert e.cuda_group or e.sidecar_cuda_specs or e.dep_group or e.sidecar_specs, (
+                f"{e.id}: CUDA iddiasi dayanaksiz"
+            )
 
     def test_bilinmeyen_kimlik_none(self):
         assert voice_models.entry("yok-boyle-bir-sey") is None
@@ -102,8 +107,19 @@ class TestKurulumIsleri:
         %100'e gitmesini gorur, oge kurulmamis kalir ve hicbir hata cikmaz --
         sessiz basari, gorunur hatadan cok daha kotudur.
         """
+        from tools.lazy_deps import LAZY_DEPS
+
         for e in voice_models.CATALOG:
+            if e.sidecar_specs:
+                # Sidecar'li oge dep_group KULLANMAZ; sarkan bir grup adi
+                # birakmak ileride yanlis yere bakmaya yol acar.
+                assert not e.dep_group, f"{e.id}: sidecar'li ogede dep_group olmamali"
+                continue
             assert e.dep_group, f"{e.id}: kurulabilir paket grubu yok"
+            assert LAZY_DEPS.get(e.dep_group), (
+                f"{e.id}: dep_group={e.dep_group!r} LAZY_DEPS'te yok -- "
+                f"kurulum sessizce hicbir sey yapmazdi"
+            )
 
     def test_paketsiz_oge_sessizce_basarili_olmaz(self, monkeypatch):
         job = voice_models.Job(id="t3", entry_id="x", device="cpu")
@@ -191,3 +207,84 @@ class TestKurulumIsleri:
         snap = job.snapshot()
         for key in ("id", "entry_id", "device", "state", "percent", "stage", "detail", "error", "elapsed"):
             assert key in snap, f"eksik alan: {key}"
+
+
+class TestSaglayiciBaglantisi:
+    """Katalogdaki her ogenin GERCEKTEN kullanilabilir bir saglayicisi olmali.
+
+    Kokoro tam bu yuzden olu bir dugmeydi: katalogda listeleniyordu, iniyordu,
+    panel "Installed" diyordu ve ajan onu asla kullanamiyordu -- hicbir hata da
+    gorunmuyordu. Indirilebilirlik ile kullanilabilirlik AYRI seyler ve ikisi
+    ayri ayri dogrulanmali.
+    """
+
+    @staticmethod
+    def _tts_saglayici_adlari() -> set[str]:
+        import re
+
+        names: set[str] = set()
+
+        # Yerlesikler
+        from tools.tts_tool import BUILTIN_TTS_PROVIDERS
+
+        names |= set(BUILTIN_TTS_PROVIDERS)
+
+        # Zone A eklentileri: manifestteki ``provides_tts_providers``.
+        root = Path(__file__).resolve().parents[2] / "plugins" / "tts"
+        for manifest in root.glob("*/plugin.yaml"):
+            text = manifest.read_text(encoding="utf-8")
+            block = re.search(
+                r"provides_tts_providers:\s*((?:\s*-\s*\S+\n?)+)", text
+            )
+            if block:
+                names |= set(re.findall(r"-\s*(\S+)", block.group(1)))
+        return names
+
+    def test_her_tts_ogesinin_saglayicisi_var(self):
+        available = self._tts_saglayici_adlari()
+        missing = [
+            e.id
+            for e in voice_models.CATALOG
+            if e.kind == "tts" and (e.provider_id or e.id) not in available
+        ]
+        assert not missing, (
+            f"saglayicisi olmayan TTS ogeleri: {missing}. "
+            f"Bunlar inebilir ama ajan kullanamaz -- sessiz olu dugme. "
+            f"Mevcut saglayicilar: {sorted(available)}"
+        )
+
+    def test_saglayici_adi_kimlikten_ayri_olabilir(self):
+        """``qwen3-tts`` indirilir, ``qwen3`` secilir -- ikisi ayni degil."""
+        entry = voice_models.entry("qwen3-tts")
+        assert entry is not None
+        assert entry.provider_id == "qwen3"
+        assert voice_models.status("qwen3-tts")["provider_id"] == "qwen3"
+
+    def test_sidecar_ogeleri_ana_ortami_kirlemez(self):
+        """Sidecar'li oge ANA ortamda aranmamali.
+
+        Aranırsa her zaman "kurulu degil" derdi: motor orada zaten yok.
+        """
+        for e in voice_models.CATALOG:
+            if not e.sidecar_specs:
+                continue
+            assert e.probe_module, f"{e.id}: sidecar var ama probe_module yok"
+
+    def test_sidecar_adi_katalog_kimligiyle_ayni(self):
+        """Saglayici sidecar'i KATALOG KIMLIGIYLE ariyor.
+
+        Ayrisirlarsa panel "Installed" derken saglayici ortami bulamaz --
+        birbirini goremeyen iki dogru bilesen.
+        """
+        import re
+
+        root = Path(__file__).resolve().parents[2] / "plugins" / "tts"
+        catalog_ids = {e.id for e in voice_models.CATALOG}
+        for init in root.glob("*/__init__.py"):
+            text = init.read_text(encoding="utf-8")
+            found = re.search(r'^SIDECAR_NAME\s*=\s*"([^"]+)"', text, re.M)
+            if found:
+                assert found.group(1) in catalog_ids, (
+                    f"{init.parent.name}: SIDECAR_NAME={found.group(1)!r} "
+                    f"katalogda yok"
+                )

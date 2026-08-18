@@ -477,7 +477,12 @@ def _get_pty_active_session_files(app: "FastAPI") -> dict[str, Path]:
         return app.state.pty_active_session_files
 
 
-app = FastAPI(title="Hermes Agent", version=__version__, lifespan=_lifespan)
+# FOOL-SEAM: api-title
+# OpenAPI basligi kullaniciya gorunur (/docs). Sabit yerine marka
+# kaynagindan besleniyor ki tek yerden degissin.
+from fool.branding import NAME as _BRAND_NAME  # noqa: E402
+
+app = FastAPI(title=_BRAND_NAME, version=__version__, lifespan=_lifespan)
 
 
 # Memory-provider OAuth connect routes live in the memory layer, not here.
@@ -3013,6 +3018,14 @@ def _git_path(path: str) -> str:
 from fool_cli.web_routers import git as _git_routes  # noqa: E402
 
 app.include_router(_git_routes.router)
+
+# FOOL-SEAM: voice-routes
+# Ses modeli kataloğu ve ilerlemeli kurulum uçları. Yönlendirici Zone A'da
+# (``fool/voice_routes.py``) yaşıyor; upstream'in bildiği tek şey bu iki
+# satır, o yüzden birleştirmede çakışma yüzeyi asgari.
+from fool import voice_routes as _fool_voice_routes  # noqa: E402
+
+app.include_router(_fool_voice_routes.router)
 from fool_cli.web_routers.git import (  # noqa: E402,F401 — legacy re-exports; tests call these via web_server.<name>
     git_status_route,
     git_worktrees_route,

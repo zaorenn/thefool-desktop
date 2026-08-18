@@ -94,10 +94,25 @@ class TestKurulumIsleri:
         with pytest.raises(ValueError):
             voice_models.start_install("yok-boyle-bir-sey")
 
-    def test_desteklenmeyen_aygit_reddedilir(self):
-        """KittenTTS yalnızca CPU; CUDA istemek sessizce CPU'ya düşmemeli."""
-        with pytest.raises(ValueError):
-            voice_models.start_install("kittentts", "cuda")
+    def test_her_ogenin_kurulabilir_paketi_var(self):
+        """Kurulacak paketi olmayan oge katalogda YER ALMAMALI.
+
+        KittenTTS tam bu yuzden cikarildi: sabitlenmis bir paket kaydi yoktu,
+        yani dugme hicbir sey yapmadan "kuruldu" derdi. Kullanici cubugun
+        %100'e gitmesini gorur, oge kurulmamis kalir ve hicbir hata cikmaz --
+        sessiz basari, gorunur hatadan cok daha kotudur.
+        """
+        for e in voice_models.CATALOG:
+            assert e.dep_group, f"{e.id}: kurulabilir paket grubu yok"
+
+    def test_paketsiz_oge_sessizce_basarili_olmaz(self, monkeypatch):
+        job = voice_models.Job(id="t3", entry_id="x", device="cpu")
+        bare = voice_models.VoiceEntry(id="x", label="X", kind="tts", summary="")
+
+        with pytest.raises(RuntimeError):
+            voice_models._install_engine(bare, "cpu", job, 0.0, 70.0)
+
+        assert job.percent == 0.0, "hata verirken ilerleme ilerletilmemeli"
 
     def test_ayni_oge_icin_ikinci_is_baslamaz(self, monkeypatch):
         """İki pip aynı hedefe yazarsa ortam yarım kurulumla bozulur."""

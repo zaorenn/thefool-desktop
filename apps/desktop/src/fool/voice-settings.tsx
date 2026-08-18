@@ -15,7 +15,7 @@
  * Zone A: upstream bu dosyayı bilmiyor; birleştirmede çakışamaz.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { ListRow, ListRowSkeleton, Pill, SettingsContent, SettingsSection } from '@/app/settings/primitives'
 import { Button } from '@/components/ui/button'
@@ -23,7 +23,7 @@ import { triggerHaptic } from '@/lib/haptics'
 import { Cpu, Download, Mic, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
-import { type VoiceCatalog, type VoiceItem, type VoiceJob, voiceApi } from './voice-api'
+import { voiceApi, type VoiceCatalog, type VoiceItem, type VoiceJob } from './voice-api'
 
 //: Süren bir kurulum varken yoklama aralığı. Saniyede bir, dakikalarca sürebilen
 //: bir iş için fazlasıyla yeterli ve ağ geçidini meşgul etmiyor.
@@ -128,55 +128,54 @@ export function VoiceSettings() {
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
   const [jobs, setJobs] = useState<Record<string, VoiceJob>>({})
   const [loading, setLoading] = useState(true)
-
-  // Yoklama zamanlayıcısını bileşen sökülünce durdurmak için. Aksi halde panel
-  // kapandıktan sonra da ağ geçidine istek gitmeye devam ederdi.
-  const alive = useRef(true)
-
-  const load = useCallback(async () => {
-    try {
-      const data = await voiceApi.catalog()
-
-      if (!alive.current) {
-        return
-      }
-
-      setCatalog(data)
-      // Sunucudaki süren işler alınıyor: panel kapatılıp açıldığında çubuk
-      // kaldığı yerden devam etsin.
-      setJobs(previous => {
-        const next = { ...previous }
-
-        for (const item of data.items) {
-          if (item.job) {
-            next[item.id] = item.job
-          }
-        }
-
-        return next
-      })
-    } catch (error) {
-      if (alive.current) {
-        notifyError(error, 'Could not load voice models')
-      }
-    } finally {
-      if (alive.current) {
-        setLoading(false)
-      }
-    }
-  }, [])
+  // Katalogu yeniden cekmek icin sayac. Bir "reload" geri cagrimi yerine bunu
+  // kullanmak, iptal bayragini efektin KENDI kapanisinda tutmayi mumkun
+  // kiliyor; ref'e alinmis bir bayrak bir render geç kalir ve bayat okur.
+  const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
-    alive.current = true
-    void load()
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const data = await voiceApi.catalog()
+
+        if (cancelled) {
+          return
+        }
+
+        setCatalog(data)
+        // Sunucudaki suren isler aliniyor: panel kapatilip acildiginda cubuk
+        // kaldigi yerden devam etsin.
+        setJobs(previous => {
+          const next = { ...previous }
+
+          for (const item of data.items) {
+            if (item.job) {
+              next[item.id] = item.job
+            }
+          }
+
+          return next
+        })
+      } catch (error) {
+        if (!cancelled) {
+          notifyError(error, 'Could not load voice models')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    })()
 
     return () => {
-      alive.current = false
+      cancelled = true
     }
-  }, [load])
+  }, [reloadToken])
 
-  // Süren iş VARKEN yokla. Boşta yoklama yapmamak kasıtlı: panel açık kalırsa
-  // saniyede bir gereksiz istek üretirdi.
+  // Suren is VARKEN yokla. Bosta yoklama yapmamak kasitli: panel acik kalirsa
+  // saniyede bir gereksiz istek uretirdi.
   useEffect(() => {
     const running = Object.values(jobs).filter(job => job.state === 'running')
 
@@ -184,32 +183,37 @@ export function VoiceSettings() {
       return
     }
 
+    let cancelled = false
+
     const timer = setInterval(() => {
       void (async () => {
         for (const job of running) {
           try {
             const fresh = await voiceApi.job(job.id)
 
-            if (!alive.current) {
+            if (cancelled) {
               return
             }
 
             setJobs(previous => ({ ...previous, [fresh.entry_id]: fresh }))
 
-            // İş bittiğinde katalog yeniden çekiliyor: "Kurulu" rozeti
-            // gerçek duruma göre gelsin, iyimser tahminle değil.
+            // Is bittiginde katalog yeniden cekiliyor: "Installed" rozeti
+            // gercek duruma gore gelsin, iyimser tahminle degil.
             if (fresh.state !== 'running') {
-              void load()
+              setReloadToken(token => token + 1)
             }
           } catch {
-            // Tek bir yoklama hatası kurulumu iptal etmez; sonraki tur dener.
+            // Tek bir yoklama hatasi kurulumu iptal etmez; sonraki tur dener.
           }
         }
       })()
     }, POLL_MS)
 
-    return () => clearInterval(timer)
-  }, [jobs, load])
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [jobs])
 
   const install = useCallback(async (id: string, device: 'cpu' | 'cuda') => {
     try {

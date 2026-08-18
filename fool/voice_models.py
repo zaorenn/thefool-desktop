@@ -148,15 +148,6 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         size_label="~2 GB",
     ),
     VoiceEntry(
-        id="kittentts",
-        label="KittenTTS",
-        kind="tts",
-        summary="The smallest option at 25 MB. Modest quality, downloads instantly.",
-        probe_module="kittentts",
-        devices=("cpu",),
-        size_label="~25 MB",
-    ),
-    VoiceEntry(
         id="faster-whisper",
         label="Faster-Whisper",
         kind="stt",
@@ -377,9 +368,11 @@ _PIP_STAGES: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
 
 def _install_engine(e: VoiceEntry, device: Device, job: Job, base: float, span: float) -> None:
     groups = [g for g in (e.dep_group, e.cuda_group if device == "cuda" else None) if g]
+    # Sessiz basari yasak. Kurulacak paket yoksa is "tamamlandi" demeden
+    # once durur: aksi halde kullanici dugmeye basar, cubuk %100'e gider ve
+    # oge hala kurulmamis kalir -- hicbir hata da gorunmez.
     if not groups:
-        job.percent = base + span
-        return
+        raise RuntimeError(f"{e.label} icin kurulabilir paket tanimli degil")
 
     from tools.lazy_deps import LAZY_DEPS, install_specs
 
@@ -387,8 +380,7 @@ def _install_engine(e: VoiceEntry, device: Device, job: Job, base: float, span: 
     for group in groups:
         specs.extend(LAZY_DEPS.get(group, ()))
     if not specs:
-        job.percent = base + span
-        return
+        raise RuntimeError(f"{e.label} icin paket listesi bos: {groups}")
 
     job.stage = "installing engine"
     job.detail = ", ".join(specs)

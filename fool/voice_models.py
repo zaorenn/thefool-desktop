@@ -163,6 +163,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         probe_module="kokoro",
         sidecar_specs=("kokoro==0.9.4", "soundfile==0.14.0"),
+        sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         voices=(
             ("af_heart", "Amerikan kadin - sicak"),
             ("af_bella", "Amerikan kadin - berrak"),
@@ -191,6 +192,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         probe_module="chatterbox",
         sidecar_specs=("chatterbox-tts==0.1.7", "soundfile==0.14.0"),
+        sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
         size_label="~3 GB",
     ),
@@ -224,7 +226,6 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         # PyPI'nin Windows torch tekerlegi CPU-only. Gercek CUDA derlemesi
         # yalnizca PyTorch'un kendi indeksinde; olculdu: CPU'da kisa bir
         # cumle 7.8 saniye surdu.
-        sidecar_cuda_specs=("torch==2.13.0", "torchaudio==2.11.0"),
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
         size_label="~3 GB",
@@ -460,7 +461,12 @@ def set_device(entry_id: str, device: str) -> dict[str, Any]:
     from fool_cli.config import set_config_value
 
     set_config_value(device_key(e), device)
-    return {"ok": True, "device": device}
+
+    # CUDA secildi ama ortam onu calistiramiyor: yalnizca yapilandirmaya
+    # yazmak sessiz bir yalan olurdu. Gercek CUDA derlemesi kuruluyor.
+    needs_runtime = device == "cuda" and bool(e.sidecar_specs) and not cuda_ready(e)
+
+    return {"ok": True, "device": device, "needs_cuda_runtime": needs_runtime}
 
 
 def available_voices(e: VoiceEntry) -> list[dict[str, str]]:
@@ -508,6 +514,53 @@ def set_voice(entry_id: str, voice: str) -> dict[str, Any]:
     return {"ok": True, "voice": voice}
 
 
+def cuda_ready(e: VoiceEntry) -> bool:
+    """Bu motor GERCEKTEN CUDA calistirabiliyor mu?
+
+    Karti olmasi yetmiyor: sidecar'a PyPI'dan gelen torch Windows'ta CPU-only
+    derlemedir. Yapilandirmaya ``device: cuda`` yazmak o durumda hicbir sey
+    degistirmiyor -- motor sessizce CPU'ya dusuyor ve Chatterbox gibi agir bir
+    model dakikalarca tek kelime uretmiyor.
+    """
+    if not e.sidecar_specs:
+        return _cuda_available()
+
+    from fool import sidecar as _sidecar
+
+    return _sidecar.has_cuda_torch(e.id)
+
+
+def install_cuda_runtime(entry_id: str) -> dict[str, Any]:
+    """Sidecar'in torch'unu CUDA derlemesiyle degistir.
+
+    Surum SABITLENMIYOR: her motorun kendi torch pini var (chatterbox 2.6.0,
+    kokoro 2.13.0) ve ustune baska bir surum yazmak motoru bozar. Kurulu surum
+    okunup AYNI surumun CUDA derlemesi isteniyor.
+    """
+    e = entry(entry_id)
+    if e is None or not e.sidecar_specs:
+        raise ValueError(f"{entry_id}: izole ortami yok")
+    if not e.sidecar_cuda_index:
+        raise ValueError(f"{e.label}: CUDA indeksi tanimli degil")
+
+    from fool import sidecar as _sidecar
+
+    version = _sidecar.installed_version(e.id, "torch")
+    if not version:
+        raise ValueError(f"{e.label}: torch kurulu degil")
+
+    base = version.split("+")[0]
+
+    # YEREL SURUM ETIKETI sart: ``torch==2.13.0`` kurulu ``2.13.0+cpu``i
+    # KARSILIYOR sayiliyor ve uv hicbir sey yapmadan cikiyor (olculdu: 2 sn,
+    # cuda hala False). CUDA derlemesi ancak ``+cu126`` ile isteniyor.
+    tag = e.sidecar_cuda_index.rstrip("/").rsplit("/", 1)[-1]
+    _sidecar.pip_install(
+        e.id, (f"torch=={base}+{tag}",), index_url=e.sidecar_cuda_index, timeout=2400
+    )
+    return {"ok": True, "cuda_ready": cuda_ready(e)}
+
+
 def catalog_status() -> list[dict[str, Any]]:
     active = active_providers()
     rows = []
@@ -516,6 +569,10 @@ def catalog_status() -> list[dict[str, Any]]:
         key = e.model_id if (e.kind == "stt" and e.model_id) else (e.provider_id or e.id)
         row["active"] = active.get(e.kind, "") == key
         row["device"] = current_device(e)
+        # GERCEK yetenek: yapilandirmada "cuda" yazmasi CUDA calistigi anlamina
+        # gelmiyor. Sidecar'in torch'u CPU derlemesiyse motor sessizce CPU'ya
+        # dusuyor ve kullanici yalnizca "cok yavas" goruyor.
+        row["cuda_ready"] = cuda_ready(e)
         row["voices"] = available_voices(e) if e.kind == "tts" else []
         row["voice"] = current_voice(e) if e.kind == "tts" else ""
         rows.append(row)

@@ -2316,6 +2316,23 @@ def _npm_lifecycle_env(env: dict[str, str] | None = None) -> dict[str, str]:
     # esbuild treats this as an executable override. If a shell points it at a
     # different release, the pinned package's postinstall rejects that binary.
     run_env.pop("ESBUILD_BINARY_PATH", None)
+
+    # FOOL-SEAM: npm-bin-path
+    # Depo kokundeki ``node_modules/.bin`` ACIKCA PATH'e ekleniyor.
+    #
+    # Neden: masaustu derlemesi ``tsc`` gibi arac ikililerini CIPLAK adla
+    # cagiriyor ve onlar yalnizca kokte kurulu (``apps/desktop`` altinda kopya
+    # yok, npm hoisting). npm'in kendi ``node_modules/.bin`` enjeksiyonuna
+    # guvenmek ``fool desktop``ta calismadi: derleme
+    # "'tsc' is not recognized as an internal or external command" ile
+    # dusuyordu ve ustteki yedek yol bunu "Electron indirmesi engellenmis"
+    # diye raporluyordu -- yani hata mesaji da yanlis yeri gosteriyordu.
+    bin_dir = PROJECT_ROOT / "node_modules" / ".bin"
+    if bin_dir.is_dir():
+        existing = run_env.get("PATH", "")
+        if str(bin_dir) not in existing.split(os.pathsep):
+            run_env["PATH"] = f"{bin_dir}{os.pathsep}{existing}" if existing else str(bin_dir)
+
     return run_env
 
 

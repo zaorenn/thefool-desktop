@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Settings2,
   Upload,
+  Volume2,
   Wrench,
   Zap
 } from '@/lib/icons'
@@ -44,6 +45,8 @@ import { NotificationsSettings } from './notifications-settings'
 import { PluginsSettings } from './plugins-settings'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
 import { SessionsSettings } from './sessions-settings'
+import { VoiceSettings } from '@/fool/voice-settings'
+
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 
 const SETTINGS_VIEWS: readonly SettingsViewId[] = [
@@ -54,6 +57,7 @@ const SETTINGS_VIEWS: readonly SettingsViewId[] = [
   'keybinds',
   'keys',
   'notifications',
+  'voice',
   'billing',
   'plugins',
   'sessions',
@@ -260,6 +264,14 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         label: t.settings.nav.archivedChats,
         onSelect: () => setActiveView('sessions')
       },
+      // FOOL-SEAM: voice-nav
+      {
+        active: activeView === 'voice',
+        icon: Volume2,
+        id: 'voice',
+        label: 'Voice',
+        onSelect: () => setActiveView('voice')
+      },
       {
         active: activeView === 'about',
         gapBefore: true,
@@ -340,6 +352,8 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
             <NotificationsSettings />
           ) : activeView === 'billing' ? (
             <BillingSettings />
+          ) : activeView === 'voice' ? (
+            <VoiceSettings />
           ) : activeView === 'plugins' ? (
             <PluginsSettings />
           ) : (

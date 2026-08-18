@@ -30,6 +30,7 @@ Yapılandırma::
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
@@ -38,8 +39,41 @@ from agent.tts_provider import TTSProvider
 
 logger = logging.getLogger(__name__)
 
-#: Model bir kez yüklenir; her çağrıda yeniden yüklemek saniyeler alır.
-_model_cache: Dict[str, Any] = {}
+#: Sidecar ortamının adı — ``fool/voice_models.py`` katalog kimliğiyle AYNI
+#: olmak zorunda, yoksa panel "kurulu" derken sağlayıcı ortamı bulamaz.
+SIDECAR_NAME = "chatterbox"
+
+#: Alt süreçte çalışan sentez betiği.
+#:
+#: Motor ARTIK ana ortamda değil: ``chatterbox-tts`` ``starlette``ı 1.3.1'in
+#: altına düşürüyor ve o pin bir CVE düzeltmesi (CVE-2026-48710). Yani ana
+#: ortama kurmak bir güvenlik gerilemesiydi. Kendi ortamına alındı; buradan
+#: alt süreç olarak çağrılıyor.
+_SYNTH = r"""
+import sys, json
+text, out_path, device, sample, exaggeration, cfg_weight = sys.argv[1:7]
+
+import torch
+from chatterbox.tts import ChatterboxTTS
+import torchaudio
+
+if device == "auto":
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+model = ChatterboxTTS.from_pretrained(device=device)
+
+kwargs = {}
+if sample:
+    kwargs["audio_prompt_path"] = sample
+if exaggeration:
+    kwargs["exaggeration"] = float(exaggeration)
+if cfg_weight:
+    kwargs["cfg_weight"] = float(cfg_weight)
+
+wav = model.generate(text, **kwargs)
+torchaudio.save(out_path, wav, model.sr)
+print(json.dumps({"ok": True, "path": out_path, "device": device}))
+"""
 
 
 class ChatterboxTTSProvider(TTSProvider):
@@ -54,11 +88,15 @@ class ChatterboxTTSProvider(TTSProvider):
         return "Chatterbox (yerel, gerçekçi)"
 
     def is_available(self) -> bool:
-        """Paket kurulu mu? ASLA hata fırlatmaz — picker bunu çağırıyor."""
-        try:
-            import importlib.util
+        """Sidecar ortamı kurulu ve motor içinde mi?
 
-            return importlib.util.find_spec("chatterbox") is not None
+        ASLA hata fırlatmaz — picker bunu çağırıyor ve bir istisna listeyi
+        komple düşürürdü.
+        """
+        try:
+            from fool import sidecar
+
+            return sidecar.is_ready(SIDECAR_NAME, "chatterbox")
         except Exception:
             return False
 
@@ -99,19 +137,6 @@ class ChatterboxTTSProvider(TTSProvider):
             "env_vars": [],
         }
 
-    def _load_model(self, device: str) -> Any:
-        cached = _model_cache.get(device)
-        if cached is not None:
-            return cached
-
-        from chatterbox.tts import ChatterboxTTS
-
-        logger.info("[Chatterbox] Model yukleniyor (device=%s)...", device)
-        model = ChatterboxTTS.from_pretrained(device=device)
-        logger.info("[Chatterbox] Model hazir")
-        _model_cache[device] = model
-        return model
-
     def synthesize(
         self,
         text: str,
@@ -131,11 +156,16 @@ class ChatterboxTTSProvider(TTSProvider):
 
         device = resolve_device(cfg, provider="chatterbox")
 
-        tts_model = self._load_model(device)
+        from fool import sidecar
+
+        if not sidecar.is_ready(SIDECAR_NAME, "chatterbox"):
+            raise RuntimeError(
+                "Chatterbox kurulu degil. Ayarlar > Voice altindan indirin."
+            )
 
         # Ses referansı: açık `voice` argümanı > yapılandırma > yok.
         # "default" özel bir değer — modelin kendi sesi demek.
-        sample = None
+        sample = ""
         if voice and voice != "default" and os.path.isfile(voice):
             sample = voice
         elif isinstance(cfg.get("voice_sample"), str):
@@ -143,21 +173,34 @@ class ChatterboxTTSProvider(TTSProvider):
             if os.path.isfile(candidate):
                 sample = candidate
 
-        kwargs: Dict[str, Any] = {}
-        if sample:
-            kwargs["audio_prompt_path"] = sample
-        for key, cast in (("exaggeration", float), ("cfg_weight", float)):
-            if key in cfg:
-                try:
-                    kwargs[key] = cast(cfg[key])
-                except (TypeError, ValueError):
-                    logger.warning("[Chatterbox] gecersiz %s degeri, yok sayildi", key)
+        def _num(key: str) -> str:
+            if key not in cfg:
+                return ""
+            try:
+                return str(float(cfg[key]))
+            except (TypeError, ValueError):
+                logger.warning("[Chatterbox] gecersiz %s degeri, yok sayildi", key)
+                return ""
 
-        wav = tts_model.generate(text, **kwargs)
+        target = output_path
+        if not target.lower().endswith(".wav"):
+            target = os.path.splitext(output_path)[0] + ".wav"
 
-        import torchaudio
+        stdout = sidecar.run_script(
+            SIDECAR_NAME,
+            _SYNTH,
+            [text, target, device, sample, _num("exaggeration"), _num("cfg_weight")],
+        )
 
-        torchaudio.save(output_path, wav, tts_model.sr)
+        try:
+            result = json.loads(stdout.strip().splitlines()[-1])
+        except (ValueError, IndexError) as exc:
+            raise RuntimeError(f"Chatterbox beklenmeyen cikti verdi: {stdout[:200]}") from exc
+        if not result.get("ok"):
+            raise RuntimeError(f"Chatterbox sentezi basarisiz: {result}")
+
+        logger.debug("[Chatterbox] %s uzerinde sentezlendi -> %s", result.get("device"), target)
+        return target
         return output_path
 
 

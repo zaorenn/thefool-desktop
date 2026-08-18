@@ -786,3 +786,69 @@ class TestSkillBodyBranding:
         ]
         assert not leaks, f"markasiz satirlar: {leaks[:5]}"
         assert "name: hermes-agent" in out, "cagrilabilir kimlik bozuldu"
+
+
+class TestIlkAcilisTespiti:
+    """Yerel model sunucusunun ilk acilista bulunmasi.
+
+    Kullanicinin sarti: uygulamayi denemesi icin birine gonderdiginde o kisi
+    "saglayici sec, base URL yaz, model kimligi kopyala" adimlarina
+    girmemeli. Bu testler o vaadin sessizce bozulmasina karsi.
+    """
+
+    def test_bionic_katalogda(self):
+        from fool.autodetect import RUNNERS
+
+        assert "bionic" in {r.key for r in RUNNERS}
+
+    def test_yaygin_portlar_dogru_sirada(self):
+        """3000 SONDA olmali: her Node dev sunucusu orada dinliyor.
+
+        Onde olsaydi otomatik algilama gercek bir model sunucusu yerine
+        rastgele bir web uygulamasina baglanirdi.
+        """
+        from fool.autodetect import RUNNERS
+
+        keys = [r.key for r in RUNNERS]
+        assert keys[0] == "lmstudio"
+        assert keys[-1] == "bionic"
+
+    def test_dolu_saglayici_EZILMEZ(self, tmp_path):
+        """Kullanicinin bilincli secimi otomatik algilamayla degistirilemez."""
+        import yaml
+
+        from fool_cli.config import _fool_seed_local_model
+
+        (tmp_path / "config.yaml").write_text(
+            yaml.safe_dump({"model": {"provider": "openai", "default": "gpt-4o"}}),
+            encoding="utf-8",
+        )
+        _fool_seed_local_model(tmp_path)
+
+        after = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        assert after["model"]["provider"] == "openai"
+
+    def test_saglayicisiz_yapilandirmada_ALGILAR_ve_kalanini_korur(self, tmp_path):
+        """Dosyanin VARLIGI algilamayi engellememeli.
+
+        Once yalnizca ``config.yaml`` yoksa calisiyordu; baska bir nedenle
+        (tema, kisayol) olusmus bir dosya, LM Studio acik olmasina ragmen
+        kullaniciyi sonsuza kadar "saglayici sec" ekraninda birakiyordu.
+        """
+        import yaml
+
+        from fool.autodetect import detect
+        from fool_cli.config import _fool_seed_local_model
+
+        if detect() is None:
+            pytest.skip("bu makinede calisan yerel model sunucusu yok")
+
+        (tmp_path / "config.yaml").write_text(
+            yaml.safe_dump({"display": {"skin": "mono"}, "tts": {"provider": "piper"}}),
+            encoding="utf-8",
+        )
+        _fool_seed_local_model(tmp_path)
+
+        after = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
+        assert (after.get("model") or {}).get("provider"), "saglayici eklenmedi"
+        assert after["tts"]["provider"] == "piper", "var olan ayar silindi"

@@ -925,12 +925,33 @@ def _fool_seed_local_model(home: Path) -> None:
     seç, base URL yaz, model kimliğini kopyala" adımlarına sokması kabul
     edilemez — özellikle uygulamayı denemesi için birine gönderiyorsan.
 
-    Yalnızca config.yaml YOKKEN çalışır: mevcut bir yapılandırmayı ezmek,
-    kullanıcının bilinçli seçimini sessizce geri almak olurdu.
+    İki durumda çalışır ve İKİSİ de kullanıcının bilinçli seçimini korur:
+
+    1. ``config.yaml`` hiç yok — temiz kurulum.
+    2. ``config.yaml`` var ama içinde SAĞLAYICI YOK — yani kullanıcı henüz
+       bir seçim yapmamış. Yalnızca dosyanın varlığına bakmak, ilk açılışta
+       başka bir nedenle (tema, kısayol) oluşmuş bir yapılandırmanın
+       otomatik algılamayı sonsuza kadar engellemesi demekti: kullanıcı
+       LM Studio açık olmasına rağmen "sağlayıcı seç" ekranında kalıyordu.
+
+    Dolu bir ``model.provider`` ASLA ezilmez.
     """
     config_path = home / "config.yaml"
+
     if config_path.exists():
-        return
+        try:
+            import yaml as _yaml
+
+            existing = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+        except Exception:
+            # Okunamayan bir yapılandırmayı yeniden yazmak veri kaybıdır.
+            return
+
+        if not isinstance(existing, dict):
+            return
+
+        if str((existing.get("model") or {}).get("provider") or "").strip():
+            return
 
     try:
         from fool.autodetect import config_patch, detect
@@ -942,6 +963,24 @@ def _fool_seed_local_model(home: Path) -> None:
         import yaml
 
         patch = config_patch(detection)
+        # Var olan yapilandirma KORUNUR: yalnizca eksik olan saglayici
+        # bilgisi eklenir. Ustune yazmak kullanicinin tema/kisayol gibi
+        # ayarlarini sessizce silerdi.
+        if config_path.exists():
+            try:
+                import yaml as _yaml
+
+                prior = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+                if isinstance(prior, dict):
+                    merged = dict(prior)
+                    for key, value in patch.items():
+                        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                            merged[key] = {**merged[key], **value}
+                        else:
+                            merged[key] = value
+                    patch = merged
+            except Exception:
+                return
         patch.setdefault("display", {})["skin"] = "the-fool"
 
         # FOOL-SEAM: browser-default

@@ -288,3 +288,53 @@ class TestSaglayiciBaglantisi:
                     f"{init.parent.name}: SIDECAR_NAME={found.group(1)!r} "
                     f"katalogda yok"
                 )
+
+
+class TestSidecarIzolasyonu:
+    """Sidecar ana ortamdan GERCEKTEN yalitilmali.
+
+    Ayri bir venv acmak yetmiyor: ana surec ``PYTHONPATH``i alt surece
+    geciriyorsa, o degisken ana ortamin ``site-packages``ini sidecar'in yoluna
+    sokuyor ve sidecar KENDI paketleri yerine onlari ice aktariyor. Izolasyonun
+    tum amaci o noktada cokuyor.
+
+    Gercekte yasandi: Qwen3-TTS "Read aloud failed" veriyordu ve altindaki hata
+    ``tokenizers>=0.22.0,<=0.23.0 required but found 0.23.1`` idi -- sizan ana
+    ortamin tokenizers'i. Onerilen cozum ("pip install transformers -U") de
+    yanlis yeri gosteriyordu: sidecar'in transformers'i zaten dogruydu.
+    """
+
+    def test_kirletici_degiskenler_alt_surece_gecmez(self):
+        from fool.sidecar import _isolated_env
+
+        env = _isolated_env()
+
+        for name in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP"):
+            assert name not in env, f"{name} sidecar ortamina siziyor"
+
+    def test_diger_degiskenler_KORUNUR(self, monkeypatch):
+        """Ortami komple bosaltmak da yanlis olurdu.
+
+        ``PATH`` gitse alt surec DLL'lerini bulamaz, ``HF_HOME`` gitse model
+        agirliklari ikinci kez inerdi.
+        """
+        from fool.sidecar import _isolated_env
+
+        monkeypatch.setenv("HF_HOME", "C:/onbellek")
+        env = _isolated_env()
+
+        assert env.get("HF_HOME") == "C:/onbellek"
+        assert "PATH" in env or "Path" in env
+
+    def test_tum_alt_surec_cagrilari_temiz_ortam_kullanir(self):
+        """Tek bir cagri unutulursa hata YALNIZCA o yolda geri gelir."""
+        import inspect
+
+        from fool import sidecar
+
+        source = inspect.getsource(sidecar)
+        runs = source.count("subprocess.run(") + source.count("subprocess.Popen(")
+
+        assert source.count("_isolated_env()") >= runs, (
+            "bir alt surec cagrisi temiz ortam kullanmiyor"
+        )

@@ -51,6 +51,28 @@ _SIDECAR_DIRNAME: Final = "sidecars"
 SYNTH_TIMEOUT_SECONDS: Final = 300
 
 
+def _isolated_env() -> dict[str, str]:
+    """Sidecar alt sureci icin TEMIZ ortam.
+
+    Neden sart: ana surec ``PYTHONPATH``i alt surece geciriyor. O degisken
+    ana ortamin ``site-packages``ini sidecar'in yoluna sokuyor ve sidecar
+    KENDI paketleri yerine onlari ice aktariyor -- yani izolasyonun tum amaci
+    cokuyor. Gercek belirti:
+
+        ImportError: tokenizers>=0.22.0,<=0.23.0 is required ...
+        but found tokenizers==0.23.1
+        Try: `pip install transformers -U`
+
+    Kullaniciya "Read aloud failed" olarak gorunuyordu ve onerilen komut
+    (transformers'i guncelle) YANLIS yeri gosteriyordu: sidecar'in kendi
+    transformers'i zaten dogru surumdeydi, sizan paket tokenizers'ti.
+    """
+    env = dict(os.environ)
+    for name in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP"):
+        env.pop(name, None)
+    return env
+
+
 def sidecar_root() -> Path:
     from fool_constants import get_hermes_home
 
@@ -84,6 +106,7 @@ def is_ready(name: str, probe_module: str | None = None) -> bool:
         completed = subprocess.run(
             [str(python), "-c", f"import importlib.util as u; raise SystemExit(0 if u.find_spec({probe_module!r}) else 1)"],
             capture_output=True,
+            env=_isolated_env(),
             timeout=60,
             check=False,
         )
@@ -106,6 +129,7 @@ def has_cuda_torch(name: str) -> bool:
         completed = subprocess.run(
             [str(python), "-c", "import torch; raise SystemExit(0 if torch.cuda.is_available() else 1)"],
             capture_output=True,
+            env=_isolated_env(),
             timeout=120,
             check=False,
         )
@@ -204,6 +228,7 @@ def create(
             stderr=subprocess.STDOUT,
             text=True,
             encoding="utf-8",
+            env=_isolated_env(),
             errors="replace",
         )
         tail: list[str] = []
@@ -271,6 +296,7 @@ def run_script(name: str, script: str, args: Sequence[str], *, timeout: int | No
         capture_output=True,
         text=True,
         encoding="utf-8",
+        env=_isolated_env(),
         errors="replace",
         timeout=timeout or SYNTH_TIMEOUT_SECONDS,
         check=False,

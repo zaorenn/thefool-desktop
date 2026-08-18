@@ -17,7 +17,8 @@ import { matchesQuery, useMediaQuery } from '@/hooks/use-media-query'
 import { persistString, persistStringRecord, storedString, storedStringRecord } from '@/lib/storage'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 
-import { $backendThemes, $pendingSkinApply } from './backend-sync'
+import { $backendAccent, $backendThemes, $pendingSkinApply } from './backend-sync'
+import { accentFromSkin, applyAccentOverride } from '@/fool/themes/accent-override'
 import { hexToRgb, mix, readableOn } from './color'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme } from './presets'
 import type { DesktopTheme, DesktopThemeColors } from './types'
@@ -328,6 +329,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // grid, and `/skin` without a reload.
   const userThemes = useStore($userThemes)
   const backendThemes = useStore($backendThemes)
+  const backendAccent = useStore($backendAccent)
   const registryVersion = useStore($registryVersion)
 
   const availableThemes = useMemo(
@@ -395,6 +397,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const renderedMode = useMemo(() => renderedModeFor(activeTheme.colors, resolvedMode), [activeTheme, resolvedMode])
 
   useEffect(() => applyTheme(activeTheme, resolvedMode), [activeTheme, resolvedMode])
+
+  // FOOL-SEAM: accent-override
+  // Tema uygulandiktan SONRA calismali: applyTheme ayni degiskenleri yaziyor,
+  // yani ters sirada katman aninda ezilirdi. `activeTheme` bagimliligi da tam
+  // bu yuzden var -- tema degisince katmanin yeniden serilmesi gerekiyor.
+  useEffect(() => {
+    applyAccentOverride(accentFromSkin(backendAccent, resolvedMode === 'dark'))
+  }, [backendAccent, resolvedMode, activeTheme])
 
   // Keep the native window appearance pinned to the app theme (vibrancy
   // material, titlebar, new-window pre-paint background).

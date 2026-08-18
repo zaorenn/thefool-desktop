@@ -54,6 +54,29 @@ interaction the user asked for — extracting data, filling a form, clicking
 through a flow. Not for simply opening or playing a link."""
 
 
+ACCENT_COLOR_GUIDANCE: Final[str] = """CHANGING THE APP'S ACCENT COLOUR
+When the user asks for a different accent/highlight colour — "make it greener",
+"daha yeşil olsun", "I want a warmer accent", "change the theme colour to
+purple" — do it immediately with one shell command:
+
+    fool skin set ui_accent '#22c55e'
+
+Pick a concrete hex yourself from what they asked for; do not ask them for a
+hex code. Reasonable choices: green #22c55e, blue #3b82f6, purple #a855f7,
+orange #f97316, red #ef4444, teal #14b8a6, pink #ec4899.
+
+This repaints EVERY surface live within about a second — the desktop app, the
+voice notch, and the terminal — with no restart and no further action. Say what
+colour you set in one line and stop.
+
+Notes:
+- Only the ACTIVE skin is touched, so it is easy to undo: run it again with a
+  different value.
+- If they ask to go back, the identity colour is crimson #D01A3F.
+- Do NOT edit theme files by hand, and do NOT restart the app; the command is
+  the supported path and anything else risks leaving the skin inconsistent."""
+
+
 def blocks() -> tuple[str, ...]:
     """Sistem promptuna eklenecek The Fool rehber blokları."""
-    return (OPEN_IN_DEFAULT_BROWSER_GUIDANCE,)
+    return (OPEN_IN_DEFAULT_BROWSER_GUIDANCE, ACCENT_COLOR_GUIDANCE)

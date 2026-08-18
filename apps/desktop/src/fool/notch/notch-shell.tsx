@@ -102,6 +102,38 @@ function Waveform({ active, level }: { active: boolean; level: number }) {
 export function NotchShell() {
   const voice = useNotchVoice()
   const [hovered, setHovered] = useState(false)
+  const shellRef = useRef<HTMLDivElement | null>(null)
+
+  // Fare uzerine gelince centik TAMAMEN kayboluyor ve masaustunu birakiyor.
+  //
+  // Neden `pointerenter` degil de pencere duzeyinde konum: notch penceresi
+  // `setIgnoreMouseEvents(true, { forward: true })` ile calisiyor -- tiklamalar
+  // altta kalana gidiyor, renderer yalnizca ILETILEN hareket olaylarini
+  // goruyor. O kipte enter/leave guvenilir atesle(n)miyor; konumu olcmek
+  // ise her zaman dogru.
+  useEffect(() => {
+    const onMove = (event: MouseEvent) => {
+      const box = shellRef.current?.getBoundingClientRect()
+
+      if (!box) {
+        return
+      }
+
+      // Kucuk bir pay: centigin hemen kenarinda titremesin.
+      const pad = 8
+
+      const inside =
+        event.clientX >= box.left - pad &&
+        event.clientX <= box.right + pad &&
+        event.clientY <= box.bottom + pad
+
+      setHovered(inside)
+    }
+
+    window.addEventListener('mousemove', onMove)
+
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
 
   // Tur bittikten SONRA da bir süre açık kal.
   //
@@ -211,9 +243,8 @@ export function NotchShell() {
         // Fare üzerine gelince TAMAMEN görünmez: çentik ekranın en üstünde
         // duruyor ve oradaki sekmeleri/menüleri kapatmamalı. Görünmezken
         // fareyi de geçiriyor (pointer-events), yani altındaki şeye tıklanır.
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
-        style={{ pointerEvents: hovered ? 'none' : 'auto' }}
+        ref={shellRef}
+        style={{ pointerEvents: 'none' }}
         transition={hovered ? { duration: 0.18 } : SPRING}
       >
         <AnimatePresence initial={false} mode="wait">

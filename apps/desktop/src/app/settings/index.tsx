@@ -20,7 +20,6 @@ import {
   RefreshCw,
   Settings2,
   Upload,
-  Volume2,
   Wrench,
   Zap
 } from '@/lib/icons'
@@ -57,7 +56,6 @@ const SETTINGS_VIEWS: readonly SettingsViewId[] = [
   'keybinds',
   'keys',
   'notifications',
-  'voice',
   'billing',
   'plugins',
   'sessions',
@@ -264,14 +262,6 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         label: t.settings.nav.archivedChats,
         onSelect: () => setActiveView('sessions')
       },
-      // FOOL-SEAM: voice-nav
-      {
-        active: activeView === 'voice',
-        icon: Volume2,
-        id: 'voice',
-        label: 'Voice',
-        onSelect: () => setActiveView('voice')
-      },
       {
         active: activeView === 'about',
         gapBefore: true,
@@ -332,12 +322,19 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
           ) : activeView === 'keybinds' ? (
             <KeybindSettings />
           ) : activeView.startsWith('config:') ? (
-            <ConfigSettings
-              activeSectionId={activeView.slice('config:'.length)}
-              importInputRef={importInputRef}
-              onConfigSaved={onConfigSaved}
-              onMainModelChanged={onMainModelChanged}
-            />
+            <>
+              <ConfigSettings
+                activeSectionId={activeView.slice('config:'.length)}
+                importInputRef={importInputRef}
+                onConfigSaved={onConfigSaved}
+                onMainModelChanged={onMainModelChanged}
+              />
+              {/* FOOL-SEAM: voice-models
+                  Model indirme paneli AYRI bir menu ogesi degil, MEVCUT Voice
+                  bolumunun devami. Ayri giris iki tane "Voice" satiri
+                  uretiyordu ve kullanici hangisinin ne oldugunu bilemiyordu. */}
+              {activeView === 'config:voice' && <VoiceSettings />}
+            </>
           ) : activeView === 'providers' ? (
             <ProvidersSettings
               onClose={onClose}
@@ -352,8 +349,6 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
             <NotificationsSettings />
           ) : activeView === 'billing' ? (
             <BillingSettings />
-          ) : activeView === 'voice' ? (
-            <VoiceSettings />
           ) : activeView === 'plugins' ? (
             <PluginsSettings />
           ) : (

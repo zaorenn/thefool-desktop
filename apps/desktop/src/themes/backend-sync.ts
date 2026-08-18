@@ -23,6 +23,9 @@ import { BUILTIN_THEMES } from './presets'
 import { skinToDesktopTheme } from './skin'
 import type { DesktopTheme } from './types'
 
+/** Backend'in bildirdigi ham skin -- vurgu katmani bunu okuyor. */
+export const $backendAccent = atom<Record<string, unknown> | null>(null)
+
 /** Skins pushed by the backend, keyed by name. Merged by `listAllThemes`. */
 export const $backendThemes = atom<Record<string, DesktopTheme>>({})
 
@@ -40,6 +43,7 @@ let lastSynced: { applied: boolean; name: string } | null = null
 /** Test-only: reset the module's apply guard + registry between cases. */
 export function __resetBackendSkinSync(): void {
   lastSynced = null
+  $backendAccent.set(null)
   $backendThemes.set({})
   $pendingSkinApply.set(null)
 }
@@ -63,6 +67,13 @@ export function ingestBackendSkin(skin: HermesSkin | undefined | null, { apply }
   // skip the registry step here and let it flow through the apply logic below.
   // Built-in names (mono/slate/…) already have a hand-tuned desktop palette — we
   // never shadow it, but the name is still a valid apply target.
+  // FOOL-SEAM: accent-override
+  // Vurgu rengi HER ZAMAN yakalaniyor -- yerlesik ad kontrolunden ONCE.
+  // Cunku ``the-fool`` yerlesik listede ve asagidaki dal onu bilerek atliyor;
+  // atlanirsa ``fool skin set ui_accent`` masaustunde hicbir sey yapmiyor
+  // (olculdu: dosya degisti, olay geldi, ekran ayni kaldi).
+  $backendAccent.set(skin && typeof skin === 'object' ? (skin as Record<string, unknown>) : null)
+
   if (name !== 'default' && !BUILTIN_THEMES[name]) {
     const theme = skinToDesktopTheme(skin as HermesSkin)
 

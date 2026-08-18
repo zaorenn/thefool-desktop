@@ -908,3 +908,49 @@ def test_cli_acilis_logosu_THE_FOOL_yazar():
     assert caduceus, "sol panel isareti bulunamadi"
     for gold in ("#FFD700", "#FFBF00", "#CD7F32", "#B8860B"):
         assert gold not in caduceus.group(1), "sol panel isareti altin palete donmus"
+
+
+def test_whatsapp_uzak_kullaniciya_makineyi_actirmaz(tmp_path, monkeypatch):
+    """WhatsApp'tan gelen mesajlar makineyi KONTROL edememeli.
+
+    Upstream'in ``hermes-whatsapp`` varsayilani 59 arac veriyor ve icinde
+    ``computer_use``, ``execute_code``, 13 tane ``browser_*``, ``cronjob`` ve
+    Home Assistant kontrolu var. WhatsApp'a yazabilen herkes -- aile uyeleri,
+    numarayi bilen herhangi biri -- makineyi surebilir demek.
+
+    Bu test yeni kurulumun kisitli takimla geldigini ve tehlikeli araclarin
+    sizmadigini tutuyor.
+    """
+    import yaml
+
+    from fool_cli.config import ensure_hermes_home
+    from toolsets import resolve_toolset
+
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
+    ensure_hermes_home()
+
+    cfg = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8")) or {}
+    sets = (cfg.get("platform_toolsets") or {}).get("whatsapp")
+
+    assert sets, "yeni kurulumda whatsapp arac takimi kisitlanmamis"
+
+    tools = set()
+    for name in sets:
+        tools |= set(resolve_toolset(name))
+
+    # Makineyi SUREN ya da HAKKINDA bilgi veren hicbir arac olmamali.
+    forbidden = {
+        "computer_use",
+        "cronjob",
+        "delegate_task",
+        "execute_code",
+        "patch",
+        "read_file",
+        "search_files",
+        "write_file",
+    }
+    leaked = forbidden & tools
+    assert not leaked, f"WhatsApp'a tehlikeli arac siziyor: {sorted(leaked)}"
+
+    browser = sorted(t for t in tools if t.startswith("browser") or t.startswith("ha_"))
+    assert not browser, f"WhatsApp'a tarayici/ev kontrolu siziyor: {browser}"

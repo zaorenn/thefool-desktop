@@ -1115,7 +1115,7 @@ def install_cua_driver(
         version = contract.get("version") or "unknown version"
         reason = contract.get("reason") or "required runtime features are missing"
         _print_warning(
-            f"    Found cua-driver {version}, but Hermes cannot use its current "
+            f"    Found cua-driver {version}, but The Fool cannot use its current "
             f"runtime contract: {reason}."
         )
         if os.environ.get("FOOL_CUA_DRIVER_CMD", "").strip():
@@ -1731,7 +1731,7 @@ def _run_cua_driver_installer(
                     _print_info("    IMPORTANT — grant macOS permissions now:")
                     _print_info("      System Settings > Privacy & Security > Accessibility")
                     _print_info("      System Settings > Privacy & Security > Screen Recording")
-                    _print_info("    Both must allow the terminal / Hermes process.")
+                    _print_info("    Both must allow the terminal / The Fool process.")
             return True
         _print_warning(f"    cua-driver {label.lower()} did not complete. Re-run manually:")
         _print_info(f"      {manual_hint}")
@@ -1961,7 +1961,7 @@ def _run_post_setup(post_setup_key: str):
             if result.returncode == 0:
                 _print_success("    faster-whisper installed")
                 _print_info("    Model sizes: tiny, base (default), small, medium, large-v3")
-                _print_info("    Change via stt.local.model in ~/.hermes/config.yaml")
+                _print_info("    Change via stt.local.model in ~/.fool/config.yaml")
             else:
                 _print_warning("    faster-whisper install failed:")
                 _print_info(f"      {(result.stderr or '').strip()[:300]}")
@@ -2017,7 +2017,7 @@ def _run_post_setup(post_setup_key: str):
                 return
         _print_info("    Default voice: en_US-lessac-medium (downloaded on first TTS call)")
         _print_info("    Full voice list: https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md")
-        _print_info("    Switch voices by setting tts.piper.voice in ~/.hermes/config.yaml")
+        _print_info("    Switch voices by setting tts.piper.voice in ~/.fool/config.yaml")
 
     elif post_setup_key == "ddgs":
         try:
@@ -2097,7 +2097,7 @@ def _run_post_setup(post_setup_key: str):
         except Exception as exc:
             _print_warning(f"    Could not enable plugin automatically: {exc}")
             _print_info("    Run manually: fool plugins enable observability/langfuse")
-        _print_info("    Restart Hermes for tracing to take effect.")
+        _print_info("    Restart The Fool for tracing to take effect.")
         _print_info("    Verify: fool plugins list")
 
     elif post_setup_key == "xai_grok":
@@ -2381,7 +2381,7 @@ def _enable_recently_shipped_toolsets(
     declined = {str(ts) for ts in offered} if isinstance(offered, list) else set()
 
     plat_info = PLATFORMS.get(platform)
-    default_ts = plat_info["default_toolset"] if plat_info else f"hermes-{platform}"
+    default_ts = plat_info["default_toolset"] if plat_info else f"fool-{platform}"
     composite_tools = None
 
     for ts_key in sorted(_RECENTLY_SHIPPED_TOOLSETS):
@@ -2423,7 +2423,7 @@ def _get_platform_tools(
             default_ts = plat_info["default_toolset"]
         else:
             # Plugin platform — derive toolset name from platform key
-            default_ts = f"hermes-{platform}"
+            default_ts = f"fool-{platform}"
         toolset_names = [default_ts]
 
     # YAML may parse bare numeric names (e.g. ``12306:``) as int.
@@ -2562,7 +2562,7 @@ def _get_platform_tools(
     # otherwise saving via `fool tools` (which flips has_explicit_config
     # to True) silently drops them.
     _plat_info = PLATFORMS.get(platform)
-    _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"
+    _default_ts = _plat_info["default_toolset"] if _plat_info else f"fool-{platform}"
     platform_tool_universe = set(resolve_toolset(_default_ts))
     configurable_tool_universe = set()
     for ck in configurable_keys:
@@ -2571,7 +2571,7 @@ def _get_platform_tools(
     for ts_key in enabled_toolsets:
         claimed.update(resolve_toolset(ts_key))
     skip = configurable_keys | plugin_ts_keys | platform_default_keys
-    skip |= {k for k in TOOLSETS if k.startswith("hermes-")}
+    skip |= {k for k in TOOLSETS if k.startswith("fool-")}
     skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
     for ts_key, ts_def in TOOLSETS.items():
         if ts_key in skip:
@@ -5214,7 +5214,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 print(color("    (none enabled)", Colors.DIM))
         print()
         return
-    print(color("⚕ Hermes Tool Configuration", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ The Fool Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
     print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
@@ -5498,7 +5498,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
     print()
     from fool_constants import display_hermes_home
     print(color(f"  Tool configuration saved to {display_hermes_home()}/config.yaml", Colors.DIM))
-    print(color("  Changes take effect on next 'hermes' or gateway restart.", Colors.DIM))
+    print(color("  Changes take effect on next 'fool' or gateway restart.", Colors.DIM))
     print()
 
 

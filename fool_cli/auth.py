@@ -112,7 +112,7 @@ AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 # Nous Portal defaults
 DEFAULT_NOUS_PORTAL_URL = "https://portal.nousresearch.com"
 DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nousresearch.com/v1"
-DEFAULT_NOUS_CLIENT_ID = "hermes-cli"
+DEFAULT_NOUS_CLIENT_ID = "fool-cli"
 NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
 NOUS_BILLING_MANAGE_SCOPE = "billing:manage"
 DEFAULT_NOUS_SCOPE = NOUS_INFERENCE_INVOKE_SCOPE
@@ -145,7 +145,7 @@ try:  # Version tag for the Codex token-endpoint User-Agent; fall back if unavai
     from fool_cli import __version__ as _HERMES_CLI_VERSION
 except Exception:  # pragma: no cover - version import should always succeed
     _HERMES_CLI_VERSION = "unknown"
-CODEX_OAUTH_USER_AGENT = f"hermes-cli/{_HERMES_CLI_VERSION}"
+CODEX_OAUTH_USER_AGENT = f"fool-cli/{_HERMES_CLI_VERSION}"
 CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 XAI_OAUTH_ISSUER = "https://auth.x.ai"
 XAI_OAUTH_DISCOVERY_URL = f"{XAI_OAUTH_ISSUER}/.well-known/openid-configuration"
@@ -1052,7 +1052,7 @@ def _auth_file_path() -> Path:
     # hermetic conftest, or sandbox escapes via threads/subprocesses. In
     # production (no PYTEST_CURRENT_TEST) this is a single dict lookup.
     if os.environ.get("PYTEST_CURRENT_TEST"):
-        real_home_auth = (Path.home() / ".hermes" / "auth.json").resolve(strict=False)
+        real_home_auth = (Path.home() / ".fool" / "auth.json").resolve(strict=False)
         try:
             resolved = path.resolve(strict=False)
         except Exception:
@@ -1132,7 +1132,7 @@ def _load_global_auth_store() -> Dict[str, Any]:
     if os.environ.get("PYTEST_CURRENT_TEST"):
         real_home_env = os.environ.get("HOME", "")
         if real_home_env:
-            real_root = Path(real_home_env) / ".hermes" / "auth.json"
+            real_root = Path(real_home_env) / ".fool" / "auth.json"
             try:
                 if global_path.resolve(strict=False) == real_root.resolve(strict=False):
                     _global_auth_store_cache = None
@@ -2289,7 +2289,7 @@ def resolve_provider(
     raise AuthError(
         "No inference provider configured. Run 'fool model' to choose a "
         "provider and model, or set an API key (OPENROUTER_API_KEY, "
-        "OPENAI_API_KEY, etc.) in ~/.hermes/.env.",
+        "OPENAI_API_KEY, etc.) in ~/.fool/.env.",
         code="no_provider_configured",
     )
 
@@ -3402,7 +3402,7 @@ def _spotify_interactive_setup(redirect_uri_hint: str) -> str:
         save_env_value("FOOL_SPOTIFY_REDIRECT_URI", redirect_uri_hint)
 
     print()
-    print("Saved FOOL_SPOTIFY_CLIENT_ID to ~/.hermes/.env")
+    print("Saved FOOL_SPOTIFY_CLIENT_ID to ~/.fool/.env")
     print()
     return raw
 
@@ -3446,7 +3446,7 @@ def login_spotify_command(args) -> None:
     print(f"Redirect URI: {redirect_uri}")
     print("Make sure this redirect URI is allow-listed in your Spotify app settings.")
     print()
-    print("Open this URL to authorize Hermes:")
+    print("Open this URL to authorize The Fool:")
     print(authorize_url)
     print()
     print(f"Full setup guide: {SPOTIFY_DOCS_URL}")
@@ -3655,7 +3655,7 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
     print(divider)
     print("Remote session detected — SSH tunnel required")
     print(divider)
-    print(f"Hermes is waiting for the OAuth callback on {redirect_uri}")
+    print(f"The Fool is waiting for the OAuth callback on {redirect_uri}")
     print("but your browser is on a different machine. Run this command")
     print("in a NEW terminal on your local machine BEFORE opening the URL:")
     print()
@@ -4221,7 +4221,7 @@ def resolve_codex_runtime_credentials(
         "provider": "openai-codex",
         "base_url": base_url,
         "api_key": access_token,
-        "source": "hermes-auth-store",
+        "source": "fool-auth-store",
         "last_refresh": data.get("last_refresh"),
         "auth_mode": "chatgpt",
     }
@@ -4664,7 +4664,7 @@ def _write_through_xai_oauth_to_global_root(state: Dict[str, Any]) -> None:
     if os.environ.get("PYTEST_CURRENT_TEST"):
         real_home_env = os.environ.get("HOME", "")
         if real_home_env:
-            real_root = Path(real_home_env) / ".hermes" / "auth.json"
+            real_root = Path(real_home_env) / ".fool" / "auth.json"
             try:
                 if global_path.resolve(strict=False) == real_root.resolve(strict=False):
                     return
@@ -5169,7 +5169,7 @@ def resolve_xai_oauth_runtime_credentials(
         "provider": "xai-oauth",
         "base_url": base_url,
         "api_key": access_token,
-        "source": "hermes-auth-store",
+        "source": "fool-auth-store",
         "last_refresh": data.get("last_refresh"),
         # Display/telemetry only. Device-code is the only supported xAI OAuth
         # flow, so report it unconditionally — auth.json may still carry a
@@ -5867,10 +5867,10 @@ def _refresh_access_token(
         description = (
             "Nous Portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
-            "custom self-heal hook, or another Hermes install sharing "
+            "custom self-heal hook, or another The Fool install sharing "
             "~/.hermes/auth.json) called POST /api/oauth/token with Hermes's "
             "refresh token without persisting the rotated token back.\n"
-            "Nous refresh tokens are single-use — only Hermes may call the "
+            "Fool Labs refresh tokens are single-use — only The Fool may call the "
             "refresh endpoint. For health checks, use `fool auth status` "
             "instead.\n"
             "Re-authenticate with: fool auth add nous"
@@ -5917,7 +5917,7 @@ def fetch_nous_models(
         if isinstance(model_id, str) and model_id.strip():
             mid = model_id.strip()
             # Skip Hermes models — they're not reliable for agentic tool-calling
-            if "hermes" in mid.lower():
+            if "fool" in mid.lower():
                 continue
             model_ids.append(mid)
 
@@ -5987,7 +5987,7 @@ def resolve_nous_access_token(
 
         if not state:
             raise AuthError(
-                "Hermes is not logged into Nous Portal.",
+                "The Fool is not logged into Fool Labs Portal.",
                 provider="nous",
                 relogin_required=True,
             )
@@ -6221,7 +6221,7 @@ def refresh_nous_oauth_from_state(
     return refresh_nous_oauth_pure(
         state.get("access_token", ""),
         state.get("refresh_token", ""),
-        state.get("client_id", "hermes-cli"),
+        state.get("client_id", "fool-cli"),
         state.get("portal_base_url", DEFAULT_NOUS_PORTAL_URL),
         state.get("inference_base_url", DEFAULT_NOUS_INFERENCE_URL),
         token_type=state.get("token_type", "Bearer"),
@@ -6332,7 +6332,7 @@ def resolve_nous_runtime_credentials(
     ):
 
         if not state:
-            raise AuthError("Hermes is not logged into Nous Portal.",
+            raise AuthError("The Fool is not logged into Fool Labs Portal.",
                             provider="nous", relogin_required=True)
 
         persisted_state = dict(state)
@@ -7894,7 +7894,7 @@ def _login_openai_codex(
             # the user "Login successful!".
             _resolved_key = existing.get("api_key", "")
             if isinstance(_resolved_key, str) and _resolved_key and not _codex_access_token_is_expiring(_resolved_key, 60):
-                print("Existing Codex credentials found in Hermes auth store.")
+                print("Existing Codex credentials found in The Fool auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -7915,7 +7915,7 @@ def _login_openai_codex(
         cli_tokens = _import_codex_cli_tokens()
         if cli_tokens:
             print("Found existing Codex CLI credentials at ~/.codex/auth.json")
-            print("Hermes will create its own session to avoid conflicts with Codex CLI / VS Code.")
+            print("The Fool will create its own session to avoid conflicts with Codex CLI / VS Code.")
             try:
                 do_import = input("Import these credentials? (a separate login is recommended) [y/N]: ").strip().lower()
             except (EOFError, KeyboardInterrupt):
@@ -7926,7 +7926,7 @@ def _login_openai_codex(
                 config_path = _update_config_for_provider("openai-codex", base_url)
                 print()
                 print("Credentials imported. Note: if Codex CLI refreshes its token,")
-                print("Hermes will keep working independently with its own session.")
+                print("The Fool will keep working independently with its own session.")
                 print(f"  Config updated: {config_path} (model.provider=openai-codex)")
                 return
 
@@ -7961,7 +7961,7 @@ def _login_xai_oauth(
             existing = resolve_xai_oauth_runtime_credentials()
             api_key = existing.get("api_key", "")
             if isinstance(api_key, str) and api_key and not _xai_access_token_is_expiring(api_key, 60):
-                print("Existing xAI OAuth credentials found in Hermes auth store.")
+                print("Existing xAI OAuth credentials found in The Fool auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -7980,7 +7980,7 @@ def _login_xai_oauth(
 
     print()
     print("Signing in to xAI Grok OAuth (SuperGrok / Premium+)...")
-    print("(Hermes creates its own local OAuth session)")
+    print("(The Fool creates its own local OAuth session)")
     print()
 
     timeout_seconds = float(getattr(args, "timeout", None) or 20.0)
@@ -8626,7 +8626,7 @@ def _minimax_oauth_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting Hermes login via MiniMax ({region}) OAuth...")
+    print(f"Starting The Fool login via MiniMax ({region}) OAuth...")
     print(f"Portal: {portal_base_url}")
 
     with httpx.Client(timeout=httpx.Timeout(timeout_seconds),
@@ -8941,7 +8941,7 @@ def _nous_device_code_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting Hermes login via {pconfig.name}...")
+    print(f"Starting The Fool login via {pconfig.name}...")
     print(f"Portal: {portal_base_url}")
     if insecure:
         print("TLS verification: disabled (--insecure)")
@@ -9360,9 +9360,9 @@ def logout_command(args) -> None:
             _reset_config_provider()
         print(f"Logged out of {provider_name}.")
         if should_reset_config and os.getenv("OPENROUTER_API_KEY"):
-            print("Hermes will use OpenRouter for inference.")
+            print("The Fool will use OpenRouter for inference.")
         elif should_reset_config:
-            print("Run `fool model` or configure an API key to use Hermes.")
+            print("Run `fool model` or configure an API key to use The Fool.")
         else:
             print("Model provider configuration was unchanged.")
     else:

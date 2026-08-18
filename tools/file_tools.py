@@ -671,7 +671,7 @@ def _get_hermes_config_resolved() -> str | None:
         _hermes_config_resolved = str(get_config_path().resolve())
     except Exception:
         try:
-            _hermes_config_resolved = str(Path(_expand_tilde("~/.hermes/config.yaml")).resolve())
+            _hermes_config_resolved = str(Path(_expand_tilde("~/.fool/config.yaml")).resolve())
         except Exception:
             _hermes_config_resolved = None
     return _hermes_config_resolved
@@ -700,7 +700,7 @@ def _check_sensitive_path(filepath: str, task_id: str = "default") -> str | None
     hermes_config = _get_hermes_config_resolved()
     if hermes_config and (resolved == hermes_config or normalized == hermes_config):
         return (
-            f"Refusing to write to Hermes config file: {filepath}\n"
+            f"Refusing to write to The Fool config file: {filepath}\n"
             "Agent cannot modify security-sensitive configuration. "
             "Edit ~/.hermes/config.yaml directly or use 'fool config' instead."
         )
@@ -748,7 +748,7 @@ def _get_real_hermes_home() -> str | None:
         _real_hermes_home_cached = os.path.realpath(str(get_hermes_home()))
     except Exception:
         try:
-            _real_hermes_home_cached = os.path.realpath(_expand_tilde("~/.hermes"))
+            _real_hermes_home_cached = os.path.realpath(_expand_tilde("~/.fool"))
         except Exception:
             _real_hermes_home_cached = None
     return _real_hermes_home_cached
@@ -831,7 +831,7 @@ def _protected_instruction_reason(filepath: str, task_id: str = "default",
         # checkout that happens to live under ~/.hermes (e.g. the
         # hermes-agent repo itself at ~/.hermes/hermes-agent).
         parts = candidate.replace("\\", "/").rstrip("/").split("/")
-        if len(parts) >= 2 and parts[-2] == ".hermes":
+        if len(parts) >= 2 and parts[-2] == ".fool":
             return candidate
     return None
 
@@ -1041,7 +1041,7 @@ def _get_container_mirror_prefix_for_task(task_id: str = "default") -> str | Non
             if env.__class__.__name__ == "DockerEnvironment" and bool(
                 getattr(env, "_persistent", False)
             ):
-                return "/root/.hermes"
+                return "/root/.fool"
             return None
 
         config = _get_env_config()
@@ -1049,7 +1049,7 @@ def _get_container_mirror_prefix_for_task(task_id: str = "default") -> str | Non
         return None
 
     if config.get("env_type") == "docker" and config.get("container_persistent", True):
-        return "/root/.hermes"
+        return "/root/.fool"
     return None
 
 

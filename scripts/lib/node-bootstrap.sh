@@ -25,7 +25,7 @@
 
 FOOL_NODE_MIN_VERSION="${FOOL_NODE_MIN_VERSION:-20}"
 FOOL_NODE_TARGET_MAJOR="${FOOL_NODE_TARGET_MAJOR:-22}"
-FOOL_HOME="${FOOL_HOME:-$HOME/.hermes}"
+FOOL_HOME="${FOOL_HOME:-$HOME/.fool}"
 FOOL_NODE_AVAILABLE=false
 
 # ---------------------------------------------------------------------------
@@ -382,7 +382,7 @@ heal_managed_node() {
     if ! _nb_managed_node_needs_heal; then
         return 0
     fi
-    _nb_log "Hermes-managed Node is broken — redownloading to $FOOL_HOME/node/..."
+    _nb_log "The Fool-managed Node is broken — redownloading to $FOOL_HOME/node/..."
     _nb_install_bundled_node
 }
 
@@ -406,7 +406,7 @@ ensure_node() {
     if [ -x "$FOOL_HOME/node/bin/node" ]; then
         export PATH="$FOOL_HOME/node/bin:$PATH"
         if _nb_have_modern_node; then
-            _nb_ok "Node $(node --version) found (Hermes-managed)"
+            _nb_ok "Node $(node --version) found (The Fool-managed)"
             FOOL_NODE_AVAILABLE=true
             # A tree from an older install still carries that Node major's
             # bundled npm, and the upgrade in _nb_install_bundled_node is

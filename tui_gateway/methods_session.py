@@ -2535,7 +2535,7 @@ def _(rid, params: dict) -> dict:
     model = getattr(agent, "model", None) or mirror.get("model") or "(unknown)"
     project = _project_info_for_cwd(_display_session_cwd(session))
     lines = [
-        "Hermes TUI Status",
+        "The Fool TUI Status",
         "",
         f"Session ID: {key}",
         f"Path: {display_hermes_home()}",

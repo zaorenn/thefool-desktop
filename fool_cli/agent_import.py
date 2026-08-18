@@ -484,7 +484,7 @@ class AgentImporter:
         if commands_dir.is_dir() and any(commands_dir.glob("*.md")):
             self.record(
                 "slash-commands", commands_dir, None, "skipped",
-                "Claude slash commands have no direct Hermes equivalent — "
+                "Claude slash commands have no direct The Fool equivalent — "
                 "consider converting them into skills",
             )
 
@@ -757,7 +757,7 @@ class AgentImporter:
                 continue
             if name in existing and not self.overwrite:
                 self.record(kind, name, f"mcp_servers.{name}", "conflict",
-                            "MCP server already exists in Hermes config")
+                            "MCP server already exists in The Fool config")
                 continue
 
             hermes_srv: Dict[str, Any] = {}
@@ -880,7 +880,7 @@ def import_agent_command(args) -> None:
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA))
-    print(color("│          ⚕ Hermes — Import From Another Agent          │", Colors.MAGENTA))
+    print(color("│          ⚕ The Fool — Import From Another Agent          │", Colors.MAGENTA))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA))
 
     if not source_dir.is_dir():
@@ -963,7 +963,7 @@ def import_agent_command(args) -> None:
     print()
     print_success("Import complete.")
     print_info("API keys and credentials were NOT imported — run 'fool setup' "
-               "to configure providers, or add them to ~/.hermes/.env.")
+               "to configure providers, or add them to ~/.fool/.env.")
 
 
 def print_import_report(report: Dict[str, Any], dry_run: bool) -> None:

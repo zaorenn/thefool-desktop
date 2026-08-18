@@ -364,7 +364,7 @@ def _standard_runtime_launch_args(
     if platform != "darwin":
         return result, None
     private_socket = socket_path or os.path.join(
-        tempfile.gettempdir(), f"hermes-cua-standard-{uuid.uuid4().hex[:12]}.sock"
+        tempfile.gettempdir(), f"fool-cua-standard-{uuid.uuid4().hex[:12]}.sock"
     )
     result.extend(["--socket", private_socket])
     return result, private_socket
@@ -644,7 +644,7 @@ class _EmbeddedCuaDaemon:
         self._stderr_thread: Optional[threading.Thread] = None
         token = uuid.uuid4().hex[:12]
         if sys.platform == "win32":
-            self.socket_path = rf"\\.\pipe\hermes-cua-{token}"
+            self.socket_path = rf"\\.\pipe\fool-cua-{token}"
         else:
             self.socket_path = os.path.join(
                 tempfile.gettempdir(), f"hc-{token}.sock"
@@ -718,7 +718,7 @@ class _EmbeddedCuaDaemon:
         self._stderr_thread = threading.Thread(
             target=self._drain_stderr,
             args=(self._process,),
-            name="hermes-cua-daemon-stderr",
+            name="fool-cua-daemon-stderr",
             daemon=True,
         )
         self._stderr_thread.start()
@@ -2567,7 +2567,7 @@ class CuaDriverBackend(ComputerUseBackend):
         # `session` on every cua-driver tool call. Labels are an
         # part of the required Cua Driver 0.20 runtime contract checked at
         # backend startup.
-        self._session_id: str = f"hermes-{uuid.uuid4().hex[:12]}"
+        self._session_id: str = f"fool-{uuid.uuid4().hex[:12]}"
         self._typed_browser = CuaTypedBrowserRoute(
             session_id=self._session_id,
             call_tool=self._session.call_tool,

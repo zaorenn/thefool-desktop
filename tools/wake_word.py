@@ -82,7 +82,7 @@ _DEFAULTS: Dict[str, Any] = {
     #   "auto"   — local when a device exists, else client capture
     "capture": "auto",
     "provider": "openwakeword",
-    "phrase": "hey hermes",
+    "phrase": "hey fool",
     "sensitivity": 0.6,
     "confirmation_frames": _DEFAULT_CONFIRMATION_FRAMES,
     "start_new_session": True,
@@ -91,7 +91,7 @@ _DEFAULTS: Dict[str, Any] = {
 # Bundled "hey hermes" model (tools/wakewords/) — the default, so the wake word
 # works out of the box. Config names in _ALIASES resolve to it, not a built-in.
 _BUNDLED_MODEL_NAME = "hey_hermes"
-_BUNDLED_MODEL_ALIASES = frozenset({"", "hey_hermes", "hey hermes", "hermes"})
+_BUNDLED_MODEL_ALIASES = frozenset({"", "hey_hermes", "hey fool", "fool"})
 
 
 def _bundled_wakeword_path(framework: str = "onnx") -> str:
@@ -246,7 +246,7 @@ def _confirmation_frames(cfg: Dict[str, Any]) -> int:
 def wake_phrase(cfg: Optional[Dict[str, Any]] = None) -> str:
     """Human-facing wake phrase label (purely cosmetic; engine keys detection)."""
     cfg = cfg if cfg is not None else load_wake_word_config()
-    return str(_get(cfg, "phrase")) or "hey hermes"
+    return str(_get(cfg, "phrase")) or "hey fool"
 
 
 def resolve_capture_mode(
@@ -476,7 +476,7 @@ def silent_audio_hint(details: Dict[str, Any]) -> str:
     """Platform-specific remediation for an armed stream delivering silence."""
     if sys.platform == "darwin":
         return (
-            "Microphone delivers only silence. Grant the Hermes backend "
+            "Microphone delivers only silence. Grant the Fool backend "
             "microphone access in System Settings > Privacy & Security > "
             "Microphone, then toggle the wake word."
         )
@@ -686,7 +686,7 @@ class _SherpaKwsEngine(_Engine):
         # on — every other wake-enabled profile's phrase, so ONE listener can
         # wake any profile ("hey hermes" / "hey coder" / ...). display-name →
         # profile is kept for routing the match back.
-        phrase = str(_get(cfg, "phrase") or "hey hermes").strip()
+        phrase = str(_get(cfg, "phrase") or "hey fool").strip()
         own_profile = _active_profile_name()
         phrase_map: Dict[str, str] = {phrase: own_profile}
         if bool(cfg.get("profile_routing", True)):
@@ -707,7 +707,7 @@ class _SherpaKwsEngine(_Engine):
         # them and map display → profile for match routing.
         self._display_to_profile: Dict[str, str] = {}
         kw = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", prefix="hermes-kws-", delete=False, encoding="utf-8"
+            mode="w", suffix=".txt", prefix="fool-kws-", delete=False, encoding="utf-8"
         )
         for p, toks in zip(phrases, tokens):
             display = p.upper().replace(" ", "_")

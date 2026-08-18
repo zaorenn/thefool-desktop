@@ -220,7 +220,7 @@ def _github_compare_behind(current_rev: str, target_rev: str) -> Optional[int]:
             headers={
                 "Accept": "application/vnd.github+json",
                 # api.github.com 403s requests without a User-Agent.
-                "User-Agent": "hermes-cli-update-check",
+                "User-Agent": "fool-cli-update-check",
             },
         )
         with urllib.request.urlopen(req, timeout=10) as resp:

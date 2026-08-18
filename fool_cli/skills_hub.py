@@ -233,7 +233,7 @@ def _prompt_for_category(c: Console, existing: List[str]) -> str:
         c.print(f"[dim]Existing: {', '.join(existing)}[/]")
     else:
         c.print(
-            "[bold]Category[/] [dim](optional — press Enter to install flat at ~/.hermes/skills/<name>/)[/]"
+            "[bold]Category[/] [dim](optional — press Enter to install flat at ~/.fool/skills/<name>/)[/]"
         )
     try:
         answer = input("Category: ").strip()
@@ -347,7 +347,7 @@ def do_browse(page: int = 1, page_size: int = 20, source: str = "all",
     # only apply when the index is unavailable (offline / first run before the
     # cache populates).
     _PER_SOURCE_LIMIT = {
-        "hermes-index": 1000000,
+        "fool-index": 1000000,
         "official": 200, "skills-sh": 200, "well-known": 50,
         "github": 200, "clawhub": 500,
         "lobehub": 500, "browse-sh": 500,
@@ -428,7 +428,7 @@ def do_browse(page: int = 1, page_size: int = 20, source: str = "all",
     c.print(f"\n[bold]Skills Hub — Browse {source_label}[/]"
             f"  [dim]({loaded_label}, page {page}/{total_pages})[/]")
     if official_count > 0 and page == 1:
-        c.print(f"[bright_cyan]★ {official_count} official optional skill(s) from Nous Research[/]")
+        c.print(f"[bright_cyan]★ {official_count} official optional skill(s) from Fool Labs[/]")
     c.print()
 
     # Build table
@@ -699,7 +699,7 @@ def do_install(identifier: str, category: str = "", force: bool = False,
         c.print()
         if bundle.source == "official":
             c.print(Panel(
-                "[bold bright_cyan]This is an official optional skill maintained by Nous Research.[/]\n\n"
+                "[bold bright_cyan]This is an official optional skill maintained by Fool Labs.[/]\n\n"
                 "It ships with hermes-agent but is not activated by default.\n"
                 "Installing will copy it to your skills directory where the agent can use it.\n\n"
                 f"Files will be at: [cyan]{display_hermes_home()}/skills/{category + '/' if category else ''}{bundle.name}/[/]",
@@ -857,7 +857,7 @@ def browse_skills(page: int = 1, page_size: int = 20, source: str = "all") -> di
     # "hermes-index" must carry a high limit: when the index is available the
     # router skips external API sources and serves everything from it, so a
     # low cap here silently truncates the whole hub (see do_browse note).
-    _PER_SOURCE_LIMIT = {"hermes-index": 5000, "official": 100, "skills-sh": 100,
+    _PER_SOURCE_LIMIT = {"fool-index": 5000, "official": 100, "skills-sh": 100,
                          "well-known": 25, "github": 100, "clawhub": 50,
                          "lobehub": 50, "browse-sh": 500}
     auth = GitHubAuth()
@@ -1652,8 +1652,8 @@ def _github_publish(skill_path: Path, skill_name: str, target_repo: str,
             headers=headers, timeout=15,
             json={
                 "title": f"Add skill: {skill_name}",
-                "body": f"Submitting the `{skill_name}` skill via Hermes Skills Hub.\n\n"
-                        f"This skill was scanned by the Hermes Skills Guard before submission.",
+                "body": f"Submitting the `{skill_name}` skill via The Fool Skills Hub.\n\n"
+                        f"This skill was scanned by the Fool Skills Guard before submission.",
                 "head": f"{fork_repo.split('/')[0]}:{branch_name}",
                 "base": default_branch,
             },

@@ -181,7 +181,7 @@ def is_free_tier_quota_error(error_message: str) -> bool:
 
 _FREE_TIER_GUIDANCE = (
     "\n\nYour Google API key is on the free tier (a few hundred requests/day "
-    "for Gemini Flash models). Hermes typically makes 3-10 API calls per user turn, "
+    "for Gemini Flash models). The Fool typically makes 3-10 API calls per user turn, "
     "so the free tier is exhausted in a handful of messages and cannot sustain "
     "an agent session. Enable billing on your Google Cloud project and "
     "regenerate the key in a billing-enabled project: "
@@ -220,7 +220,7 @@ _STANDARD_KEY_GUIDANCE = (
     "key's type and status, and create a replacement Gemini API key (or, as "
     "a temporary bridge, restrict the Standard key to "
     "generativelanguage.googleapis.com). Then update GEMINI_API_KEY / "
-    "GOOGLE_API_KEY in ~/.hermes/.env and restart your session. "
+    "GOOGLE_API_KEY in ~/.fool/.env and restart your session. "
     "Details: https://ai.google.dev/gemini-api/docs/api-key"
 )
 
@@ -1058,7 +1058,7 @@ class GeminiNativeClient:
         if not (api_key or "").strip():
             raise RuntimeError(
                 "Gemini native client requires an API key, but none was provided. "
-                "Set GOOGLE_API_KEY or GEMINI_API_KEY in your environment / ~/.hermes/.env "
+                "Set GOOGLE_API_KEY or GEMINI_API_KEY in your environment / ~/.fool/.env "
                 "(get one at https://aistudio.google.com/app/apikey), or run `fool setup` "
                 "to configure the Google provider."
             )

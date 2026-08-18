@@ -1713,7 +1713,7 @@ def check_compression_model_feasibility(agent: Any) -> None:
             raise ValueError(
                 f"Auxiliary compression model {aux_model} has a context "
                 f"window of {aux_context:,} tokens, which is below the "
-                f"minimum {MINIMUM_CONTEXT_LENGTH:,} required by Hermes "
+                f"minimum {MINIMUM_CONTEXT_LENGTH:,} required by The Fool "
                 f"Agent.  Choose a compression model with at least "
                 f"{MINIMUM_CONTEXT_LENGTH // 1000}K context (set "
                 f"auxiliary.compression.model in config.yaml), or set "
@@ -3949,9 +3949,9 @@ def _compress_context_via_codex_app_server(
     auto_mode = str(
         getattr(agent, "codex_app_server_auto_compaction", "native") or "native"
     ).lower()
-    if auto_mode not in {"native", "hermes", "off"}:
+    if auto_mode not in {"native", "fool", "off"}:
         auto_mode = "native"
-    if not force and auto_mode != "hermes":
+    if not force and auto_mode != "fool":
         logger.info(
             "codex app-server compaction skipped: mode=%s force=false "
             "(session=%s messages=%d tokens=~%s)",

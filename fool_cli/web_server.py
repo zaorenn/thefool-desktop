@@ -1167,7 +1167,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "updates.non_interactive_local_changes": {
         "type": "select",
         "description": (
-            "When the chat app / gateway updates Hermes (no terminal prompt), "
+            "When the chat app / gateway updates The Fool (no terminal prompt), "
             "what to do with uncommitted local source edits. 'stash' keeps them "
             "and re-applies them after the update; 'discard' throws them away. "
             "Terminal updates always ask, regardless of this setting."
@@ -2932,7 +2932,7 @@ async def fs_write_text(payload: FsWriteText):
     if not target.parent.is_dir():
         raise HTTPException(status_code=400, detail="Parent directory does not exist")
 
-    tmp = target.with_name(f".{target.name}.hermes-tmp-{os.getpid()}")
+    tmp = target.with_name(f".{target.name}.fool-tmp-{os.getpid()}")
     try:
         tmp.write_text(text, encoding="utf-8")
         os.replace(tmp, target)
@@ -4291,7 +4291,7 @@ _ACTION_LOG_FILES: Dict[str, str] = {
     "gateway-restart": "gateway-restart.log",
     "gateway-start": "gateway-start.log",
     "gateway-stop": "gateway-stop.log",
-    "hermes-update": "hermes-update.log",
+    "fool-update": "fool-update.log",
     "doctor": "action-doctor.log",
     "security-audit": "action-security-audit.log",
     "backup": "action-backup.log",
@@ -4471,7 +4471,7 @@ def _gateway_subcommand(profile: Optional[str], verb: str) -> List[str]:
 
 
 def _gateway_display_command(profile: Optional[str], verb: str) -> str:
-    return " ".join(["hermes", *_gateway_subcommand(profile, verb)])
+    return " ".join(["fool", *_gateway_subcommand(profile, verb)])
 
 
 # Kept in sync with the corresponding frontend validation in ChannelsPage.tsx.
@@ -4676,20 +4676,20 @@ async def gateway_drain(request: Request):
     }
 
 
-@app.post("/api/hermes/update")
+@app.post("/api/fool/update")
 async def update_hermes():
     """Kick off ``fool update`` in the background."""
     if _dashboard_local_update_managed_externally():
         message = (
-            "Hermes updates are managed outside this dashboard in "
+            "The Fool updates are managed outside this dashboard in "
             "containerized environments. The built-in local updater is "
             "disabled here."
         )
-        _record_completed_action("hermes-update", message, exit_code=1)
+        _record_completed_action("fool-update", message, exit_code=1)
         return {
             "ok": False,
             "pid": None,
-            "name": "hermes-update",
+            "name": "fool-update",
             "error": "dashboard_update_managed_externally",
             "message": message,
             "update_command": "managed outside dashboard",
@@ -4698,11 +4698,11 @@ async def update_hermes():
     install_method = detect_install_method(PROJECT_ROOT)
     if install_method == "docker":
         message = format_docker_update_message()
-        _record_completed_action("hermes-update", message, exit_code=1)
+        _record_completed_action("fool-update", message, exit_code=1)
         return {
             "ok": False,
             "pid": None,
-            "name": "hermes-update",
+            "name": "fool-update",
             "error": "docker_update_unsupported",
             "message": message,
             "update_command": recommended_update_command_for_method(install_method),
@@ -4710,25 +4710,25 @@ async def update_hermes():
 
     if install_method in {"nix", "nixos"}:
         message = recommended_update_command_for_method(install_method)
-        _record_completed_action("hermes-update", message, exit_code=1)
+        _record_completed_action("fool-update", message, exit_code=1)
         return {
             "ok": False,
             "pid": None,
-            "name": "hermes-update",
+            "name": "fool-update",
             "error": "nix_update_unsupported",
             "message": message,
             "update_command": message,
         }
 
-    existing = _ACTION_PROCS.get("hermes-update")
+    existing = _ACTION_PROCS.get("fool-update")
     if existing is not None and existing.poll() is None:
         response = {
             "ok": True,
             "pid": existing.pid,
-            "name": "hermes-update",
+            "name": "fool-update",
             "already_running": True,
         }
-        action_id = _ACTION_IDS.get("hermes-update")
+        action_id = _ACTION_IDS.get("fool-update")
         if action_id:
             response["action_id"] = action_id
         return response
@@ -4737,7 +4737,7 @@ async def update_hermes():
     try:
         proc = _spawn_hermes_action(
             ["update"],
-            "hermes-update",
+            "fool-update",
             env_overrides={"FOOL_ACTION_ID": action_id},
         )
     except Exception as exc:
@@ -4746,7 +4746,7 @@ async def update_hermes():
     return {
         "ok": True,
         "pid": proc.pid,
-        "name": "hermes-update",
+        "name": "fool-update",
         "action_id": action_id,
     }
 
@@ -4805,7 +4805,7 @@ def _recent_upstream_commits(n: int = 20) -> List[Dict[str, Any]]:
         return []
 
 
-@app.get("/api/hermes/update/check")
+@app.get("/api/fool/update/check")
 async def check_hermes_update(force: bool = False):
     """Report whether a Hermes update is available, without applying it.
 
@@ -4840,7 +4840,7 @@ async def check_hermes_update(force: bool = False):
             "can_apply": False,
             "update_command": "managed outside dashboard",
             "message": (
-                "Hermes updates are managed outside this dashboard in "
+                "The Fool updates are managed outside this dashboard in "
                 "containerized environments."
             ),
         }
@@ -4935,7 +4935,7 @@ async def transcribe_audio_upload(
     try:
         suffix = _audio_extension_for_mime(mime_type)
         with tempfile.NamedTemporaryFile(
-            prefix="hermes-desktop-voice-",
+            prefix="fool-desktop-voice-",
             suffix=suffix,
             delete=False,
         ) as tmp:
@@ -6305,7 +6305,7 @@ def _read_memory_provider_existing_values(name: str) -> Dict[str, Any]:
     # Holographic stores under plugins.hermes-memory-store.
     plugins_cfg = cfg.get("plugins") if isinstance(cfg, dict) else {}
     if name == "holographic" and isinstance(plugins_cfg, dict):
-        holographic_cfg = plugins_cfg.get("hermes-memory-store")
+        holographic_cfg = plugins_cfg.get("fool-memory-store")
         if isinstance(holographic_cfg, dict):
             values.update(holographic_cfg)
 
@@ -8271,14 +8271,14 @@ async def reveal_env_var(
 _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "telegram": {
         "name": "Telegram",
-        "description": "Run Hermes from Telegram DMs, groups, and topics.",
+        "description": "Run The Fool from Telegram DMs, groups, and topics.",
         "docs_url": "https://core.telegram.org/bots/features#botfather",
         "env_vars": ("TELEGRAM_BOT_TOKEN", "TELEGRAM_ALLOWED_USERS", "TELEGRAM_PROXY"),
         "required_env": ("TELEGRAM_BOT_TOKEN",),
     },
     "discord": {
         "name": "Discord",
-        "description": "Connect Hermes to Discord DMs, channels, and threads.",
+        "description": "Connect The Fool to Discord DMs, channels, and threads.",
         "docs_url": "https://discord.com/developers/applications",
         "env_vars": (
             "DISCORD_BOT_TOKEN",
@@ -8288,21 +8288,21 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "slack": {
         "name": "Slack",
-        "description": "Use Hermes from Slack via Socket Mode. Add allowed Slack member IDs so connected bots can respond.",
+        "description": "Use The Fool from Slack via Socket Mode. Add allowed Slack member IDs so connected bots can respond.",
         "docs_url": "https://api.slack.com/apps",
         "env_vars": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_ALLOWED_USERS"),
         "required_env": ("SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"),
     },
     "mattermost": {
         "name": "Mattermost",
-        "description": "Connect Hermes to Mattermost channels and direct messages.",
+        "description": "Connect The Fool to Mattermost channels and direct messages.",
         "docs_url": "https://mattermost.com/deploy/",
         "env_vars": ("MATTERMOST_URL", "MATTERMOST_TOKEN", "MATTERMOST_ALLOWED_USERS"),
         "required_env": ("MATTERMOST_URL", "MATTERMOST_TOKEN"),
     },
     "matrix": {
         "name": "Matrix",
-        "description": "Use Hermes in Matrix rooms and direct messages.",
+        "description": "Use The Fool in Matrix rooms and direct messages.",
         "docs_url": "https://matrix.org/ecosystem/servers/",
         "env_vars": (
             "MATRIX_HOMESERVER",
@@ -8321,7 +8321,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "whatsapp": {
         "name": "WhatsApp",
-        "description": "Use Hermes through the bundled WhatsApp bridge with QR-based auth.",
+        "description": "Use The Fool through the bundled WhatsApp bridge with QR-based auth.",
         "docs_url": "https://github.com/tulir/whatsmeow",
         "env_vars": (
             "WHATSAPP_ENABLED",
@@ -8333,14 +8333,14 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "homeassistant": {
         "name": "Home Assistant",
-        "description": "Control your smart home from Hermes via Home Assistant.",
+        "description": "Control your smart home from The Fool via Home Assistant.",
         "docs_url": "https://www.home-assistant.io/docs/authentication/",
         "env_vars": ("HASS_URL", "HASS_TOKEN"),
         "required_env": ("HASS_URL", "HASS_TOKEN"),
     },
     "email": {
         "name": "Email",
-        "description": "Talk to Hermes through an IMAP/SMTP mailbox.",
+        "description": "Talk to The Fool through an IMAP/SMTP mailbox.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
         "env_vars": (
             "EMAIL_ADDRESS",
@@ -8364,14 +8364,14 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "dingtalk": {
         "name": "DingTalk",
-        "description": "Connect Hermes to DingTalk groups (钉钉).",
+        "description": "Connect The Fool to DingTalk groups (钉钉).",
         "docs_url": "https://open.dingtalk.com/document/orgapp/the-robot-development-process",
         "env_vars": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
         "required_env": ("DINGTALK_CLIENT_ID", "DINGTALK_CLIENT_SECRET"),
     },
     "feishu": {
         "name": "Feishu / Lark",
-        "description": "Use Hermes inside Feishu / Lark.",
+        "description": "Use The Fool inside Feishu / Lark.",
         "docs_url": "https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/im-v1/intro",
         "env_vars": (
             "FEISHU_APP_ID",
@@ -8383,7 +8383,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "google_chat": {
         "name": "Google Chat",
-        "description": "Connect Hermes to Google Chat via Cloud Pub/Sub.",
+        "description": "Connect The Fool to Google Chat via Cloud Pub/Sub.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat",
     },
     "wecom": {
@@ -8419,7 +8419,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "bluebubbles": {
         "name": "BlueBubbles (iMessage)",
-        "description": "Use Hermes through iMessage via a BlueBubbles server.",
+        "description": "Use The Fool through iMessage via a BlueBubbles server.",
         "docs_url": "https://bluebubbles.app/",
         "env_vars": (
             "BLUEBUBBLES_SERVER_URL",
@@ -8430,7 +8430,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "qqbot": {
         "name": "QQ Bot",
-        "description": "Connect Hermes to a QQ Bot from the QQ Open Platform.",
+        "description": "Connect The Fool to a QQ Bot from the QQ Open Platform.",
         "docs_url": "https://q.qq.com",
         "env_vars": ("QQ_APP_ID", "QQ_CLIENT_SECRET", "QQ_ALLOWED_USERS"),
         "required_env": ("QQ_APP_ID", "QQ_CLIENT_SECRET"),
@@ -8439,22 +8439,22 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     # plugin registry. Only the docs link needs an override here so the
     # Channels page can point at the Microsoft Teams setup guide.
     "teams": {
-        "description": "Connect Hermes to Microsoft Teams chats via the Bot Framework.",
+        "description": "Connect The Fool to Microsoft Teams chats via the Bot Framework.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams",
     },
     # Bundled platform plugins: name comes from the plugin registry label;
     # give each a human description (the registry's install_hint is a
     # dependency note, not a description) and a docs link.
     "irc": {
-        "description": "Relay messages between an IRC channel (or DMs) and Hermes.",
+        "description": "Relay messages between an IRC channel (or DMs) and The Fool.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/irc",
     },
     "line": {
-        "description": "Use Hermes from LINE via the LINE Messaging API webhook.",
+        "description": "Use The Fool from LINE via the LINE Messaging API webhook.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/line",
     },
     "ntfy": {
-        "description": "Chat with Hermes over ntfy push topics (ntfy.sh or self-hosted).",
+        "description": "Chat with The Fool over ntfy push topics (ntfy.sh or self-hosted).",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/ntfy",
     },
     "photon": {
@@ -8466,18 +8466,18 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/raft",
     },
     "simplex": {
-        "description": "Talk to Hermes over SimpleX Chat via a local simplex-chat daemon.",
+        "description": "Talk to The Fool over SimpleX Chat via a local simplex-chat daemon.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex",
     },
     "yuanbao": {
         "name": "Yuanbao (元宝)",
-        "description": "Connect Hermes to Tencent Yuanbao.",
+        "description": "Connect The Fool to Tencent Yuanbao.",
         "docs_url": "",
         "required_env": (),
     },
     "api_server": {
         "name": "API server",
-        "description": "Expose Hermes as an OpenAI-compatible HTTP API for tools like Open WebUI.",
+        "description": "Expose The Fool as an OpenAI-compatible HTTP API for tools like Open WebUI.",
         "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
         "env_vars": (
             "API_SERVER_ENABLED",
@@ -8508,7 +8508,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     },
     "relay": {
         "name": "Relay (experimental)",
-        "description": "Generic relay adapter fronted by the Hermes Relay connector.",
+        "description": "Generic relay adapter fronted by the Fool Relay connector.",
         "docs_url": "",
         "required_env": (),
     },
@@ -9715,7 +9715,7 @@ async def _telegram_onboarding_request(
 
 @app.post("/api/messaging/telegram/onboarding/start")
 async def start_telegram_onboarding(body: TelegramOnboardingStart):
-    bot_name = (body.bot_name or "Hermes Agent").strip() or "Hermes Agent"
+    bot_name = (body.bot_name or "Fool Agent").strip() or "Fool Agent"
     payload = await _telegram_onboarding_request(
         "POST",
         "/v1/telegram/pairings",
@@ -10225,7 +10225,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
         return {
             "logged_in": True,
             "source": "hermes_pkce",
-            "source_label": f"Hermes PKCE ({_get_hermes_oauth_file() if _get_hermes_oauth_file else None})",
+            "source_label": f"The Fool PKCE ({_get_hermes_oauth_file() if _get_hermes_oauth_file else None})",
             "token_preview": _truncate_token(hermes_creds.get("accessToken")),
             "expires_at": hermes_creds.get("expiresAt"),
             "has_refresh_token": bool(hermes_creds.get("refreshToken")),
@@ -10524,7 +10524,7 @@ def _oauth_provider_disconnect_hint(provider: Dict[str, Any], status: Dict[str, 
         if _oauth_provider_disconnect_command(provider):
             # The GUI offers a one-click "run in terminal" path; this hint is the
             # fallback wording for surfaces that only show text.
-            return "Managed outside Hermes — run the disconnect command to remove it."
+            return "Managed outside The Fool — run the disconnect command to remove it."
         return "Managed by that provider's CLI; remove it there."
     if status.get("source") == "env_var":
         return "Remove the API key from Settings → Keys instead."
@@ -10934,7 +10934,7 @@ def _submit_anthropic_pkce(
             data=exchange_data,
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "hermes-dashboard/1.0",
+                "User-Agent": "fool-dashboard/1.0",
             },
             method="POST",
         )
@@ -11440,7 +11440,7 @@ def _codex_device_code_start_error(resp: Any) -> str:
     if "device" in lower and ("authori" in lower or "enable" in lower):
         message = (
             "OpenAI rejected the device-code login request. Your OpenAI "
-            "account may need device-code authorization enabled before Hermes "
+            "account may need device-code authorization enabled before The Fool "
             "can start this dashboard login. Enable device-code authorization "
             "in OpenAI, then return here and click Login again."
         )
@@ -13893,7 +13893,7 @@ def _dashboard_backup_dir() -> Path:
 
 def _new_dashboard_backup_path() -> Path:
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    return _dashboard_backup_dir() / f"hermes-backup-{stamp}-{secrets.token_hex(4)}.zip"
+    return _dashboard_backup_dir() / f"fool-backup-{stamp}-{secrets.token_hex(4)}.zip"
 
 
 @app.post("/api/ops/backup")
@@ -14315,7 +14315,7 @@ from fool_cli.web_routers.skills import (  # noqa: E402,F401 — legacy re-expor
 # provenance).  Keep in sync with create_source_router()'s source list.
 _SKILL_HUB_SOURCE_LABELS = {
     "official": "Official (Nous)",
-    "hermes-index": "Hermes Index",
+    "fool-index": "The Fool Index",
     "skills-sh": "skills.sh",
     "well-known": "Well-Known",
     "url": "Direct URL",
@@ -16140,7 +16140,7 @@ def _active_session_file_for_channel(app: "FastAPI", channel: str) -> Path:
     if existing is not None:
         return existing
 
-    fd, raw_path = tempfile.mkstemp(prefix="hermes-pty-active-", suffix=".json")
+    fd, raw_path = tempfile.mkstemp(prefix="fool-pty-active-", suffix=".json")
     os.close(fd)
     path = Path(raw_path)
     files[channel] = path
@@ -16185,7 +16185,7 @@ def _ws_close_reason(text: str) -> str:
 # structured JSON frames with the dashboard xterm overlay.
 # ---------------------------------------------------------------------------
 
-_CONSOLE_PROMPT = "hermes> "
+_CONSOLE_PROMPT = "fool> "
 _CONSOLE_COMMAND_TIMEOUT_SECONDS = 60.0
 _CONSOLE_OUTPUT_LIMIT = 50000
 
@@ -16208,7 +16208,7 @@ def _get_console_executor() -> concurrent.futures.ThreadPoolExecutor:
             if _console_executor is None:
                 _console_executor = concurrent.futures.ThreadPoolExecutor(
                     max_workers=_CONSOLE_EXECUTOR_MAX_WORKERS,
-                    thread_name_prefix="hermes-console",
+                    thread_name_prefix="fool-console",
                 )
                 # Ensure the pool is torn down on interpreter exit. Don't wait on
                 # in-flight workers: a stuck 60s console command must not block
@@ -16510,7 +16510,7 @@ async def console_ws(ws: WebSocket) -> None:
                         "type": "error",
                         "id": command_id,
                         "message": (
-                            "Command timed out. Hermes Console returned to the prompt."
+                            "Command timed out. The Fool Console returned to the prompt."
                         ),
                         "command": line,
                     },
@@ -17099,7 +17099,7 @@ def _render_active_theme_bootstrap_css() -> str:
             # the cascade — the rule below re-resolves automatically and
             # never goes stale when the user picks a different theme.
             return (
-                '<style id="hermes-theme-bootstrap">'
+                '<style id="fool-theme-bootstrap">'
                 ":root{"
                 f"--background-base:{_esc(bg_hex)};"
                 f"--midground-base:{_esc(mg_hex)};"
@@ -17308,8 +17308,8 @@ def mount_spa(application: FastAPI):
 # Built-in dashboard themes — label + description only.  The actual color
 # definitions live in the frontend (web/src/themes/presets.ts).
 _BUILTIN_DASHBOARD_THEMES = [
-    {"name": "default",       "label": "Hermes Teal",         "description": "Classic dark teal — the canonical Hermes look"},
-    {"name": "default-large", "label": "Hermes Teal (Large)", "description": "Hermes Teal with bigger fonts and roomier spacing"},
+    {"name": "default",       "label": "The Fool Teal",         "description": "Classic dark teal — the canonical Fool look"},
+    {"name": "default-large", "label": "The Fool Teal (Large)", "description": "The Fool Teal with bigger fonts and roomier spacing"},
     {"name": "nous-blue",     "label": "Nous Blue",           "description": "Light mode — vivid Nous-blue accents on cream canvas"},
     {"name": "midnight",      "label": "Midnight",            "description": "Deep blue-violet with cool accents"},
     {"name": "ember",     "label": "Ember",          "description": "Warm crimson and bronze — forge vibes"},
@@ -17748,7 +17748,7 @@ def _discover_dashboard_plugins() -> list:
     # semantics (``1`` / ``true`` / ``yes`` / ``on``) so the gate matches
     # ``fool_cli/plugins.py`` and the documented user contract.
     if env_var_enabled("FOOL_ENABLE_PROJECT_PLUGINS"):
-        search_dirs.append((Path.cwd() / ".hermes" / "plugins", "project"))
+        search_dirs.append((Path.cwd() / ".fool" / "plugins", "project"))
 
     for plugins_root, source in search_dirs:
         if not plugins_root.is_dir():
@@ -18399,7 +18399,7 @@ def _mount_plugin_api_routes():
             _log.warning(
                 "Plugin %s: ignoring backend api=%s (project plugins may "
                 "not auto-import Python code; move the plugin to "
-                "~/.hermes/plugins/ if you trust it)",
+                "~/.fool/plugins/ if you trust it)",
                 plugin["name"], api_file_name,
             )
             continue
@@ -18894,9 +18894,9 @@ def start_server(
             if headless:
                 # No SPA, and the JSON-RPC/WS endpoints are auth-gated — don't
                 # advertise a paste-and-connect URL, just announce the bind.
-                print(f"  Hermes backend listening on {host}:{actual_port}")
+                print(f"  The Fool backend listening on {host}:{actual_port}")
             else:
-                print(f"  Hermes Web UI → http://{host}:{actual_port}")
+                print(f"  The Fool Web UI → http://{host}:{actual_port}")
             _maybe_open_browser(host, actual_port, open_browser, initial_profile)
 
             # Collapse the peer-hangup teardown flood (#50005). When the Desktop

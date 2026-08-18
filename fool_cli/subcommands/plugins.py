@@ -27,7 +27,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
     plugins_install.add_argument(
         "identifier",
         help=(
-            "Git URL, owner/repo shorthand (e.g. anpicasso/hermes-plugin-chrome-profiles), "
+            "Git URL, owner/repo shorthand (e.g. anpicasso/fool-plugin-chrome-profiles), "
             "or a bare plugin name resolved through the community index "
             "(see `fool plugins search`)"
         ),
@@ -175,7 +175,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
 
     plugins_pack = plugins_subparsers.add_parser(
         "pack",
-        help="Declarative, shareable plugin sets (hermes-pack.yaml)",
+        help="Declarative, shareable plugin sets (fool-pack.yaml)",
         description=(
             "Install, export, or inspect plugin packs — a single YAML file "
             "pinning a set of plugins to exact commit SHAs, with optional "
@@ -189,7 +189,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
         "install", help="Review and install a pack from a file path or https URL"
     )
     pack_install.add_argument(
-        "source", help="Path to a hermes-pack.yaml file, or an https:// URL"
+        "source", help="Path to a fool-pack.yaml file, or an https:// URL"
     )
     pack_install.add_argument(
         "--force",
@@ -209,7 +209,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
     )
     pack_export.add_argument(
         "--name",
-        default="my-hermes-pack",
+        default="my-fool-pack",
         help="Pack name to embed in the exported YAML",
     )
 
@@ -217,7 +217,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
         "show", help="Dry-run: parse and display a pack without installing"
     )
     pack_show.add_argument(
-        "source", help="Path to a hermes-pack.yaml file, or an https:// URL"
+        "source", help="Path to a fool-pack.yaml file, or an https:// URL"
     )
 
     plugins_show = plugins_subparsers.add_parser(

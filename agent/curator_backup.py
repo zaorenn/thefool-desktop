@@ -232,7 +232,7 @@ def snapshot_skills(reason: str = "manual", *, protect_ids: Optional[Set[str]] =
 
     skills = _skills_dir()
     if not skills.exists():
-        logger.debug("No ~/.hermes/skills/ directory — nothing to back up")
+        logger.debug("No ~/.fool/skills/ directory — nothing to back up")
         return None
 
     backups = _backups_dir()

@@ -247,7 +247,7 @@ def _set_process_title() -> None:
     try:
         import setproctitle  # type: ignore[import-untyped]
 
-        setproctitle.setproctitle("hermes")
+        setproctitle.setproctitle("fool")
         return
     except ImportError:
         pass
@@ -260,10 +260,10 @@ def _set_process_title() -> None:
         system = platform.system()
         if system == "Linux":
             libc = ctypes.CDLL("libc.so.6", use_errno=True)
-            libc.prctl(15, b"hermes", 0, 0, 0)  # PR_SET_NAME = 15
+            libc.prctl(15, b"fool", 0, 0, 0)  # PR_SET_NAME = 15
         elif system == "Darwin":
             libc = ctypes.CDLL("libc.dylib", use_errno=True)
-            libc.pthread_setname_np(b"hermes")
+            libc.pthread_setname_np(b"fool")
         # Windows: the .exe name is already ``hermes.exe`` — nothing to do.
     except Exception:
         pass
@@ -289,7 +289,7 @@ def _config_default_interface_early() -> str:
         if home:
             cfg_path = os.path.join(home, "config.yaml")
         else:
-            cfg_path = os.path.join(os.path.expanduser("~"), ".hermes", "config.yaml")
+            cfg_path = os.path.join(os.path.expanduser("~"), ".fool", "config.yaml")
         if os.path.exists(cfg_path):
             import yaml as _yaml_iface
 
@@ -493,7 +493,7 @@ def _require_tty(command_name: str) -> None:
     """
     if not sys.stdin.isatty():
         print(
-            f"Error: 'hermes {command_name}' requires an interactive terminal.\n"
+            f"Error: 'fool {command_name}' requires an interactive terminal.\n"
             f"It cannot be run through a pipe or non-interactive subprocess.\n"
             f"Run it directly in your terminal instead.",
             file=sys.stderr,
@@ -559,7 +559,7 @@ def _apply_profile_override() -> None:
         except Exception:
             return None
 
-        candidate = home / ".hermes" / "profiles" / name
+        candidate = home / ".fool" / "profiles" / name
         try:
             if candidate.is_dir():
                 return str(candidate)
@@ -1956,7 +1956,7 @@ def _print_tui_exit_summary(
 
     print()
     print("Resume this session with:")
-    print(f"  hermes --tui --resume {target}")
+    print(f"  fool --tui --resume {target}")
     if title:
         print(f'  hermes --tui -c "{title}"')
     print()
@@ -2077,7 +2077,7 @@ def _tui_need_npm_install(root: Path) -> bool:
     if entry.is_file() and not lock.is_file():
         return False
 
-    ink = ws_root / "node_modules" / "@hermes" / "ink" / "package.json"
+    ink = ws_root / "node_modules" / "@fool" / "ink" / "package.json"
     if not ink.is_file():
         return True
     if not lock.is_file():
@@ -2120,7 +2120,7 @@ def _tui_need_npm_install(root: Path) -> bool:
 
 _TUI_BUILD_INPUT_DIRS = (
     "src",
-    "packages/hermes-ink/src",
+    "packages/fool-ink/src",
 )
 
 _TUI_BUILD_INPUT_FILES = (
@@ -2130,9 +2130,9 @@ _TUI_BUILD_INPUT_FILES = (
     "tsconfig.build.json",
     "babel.compiler.config.cjs",
     "scripts/build.mjs",
-    "packages/hermes-ink/package.json",
-    "packages/hermes-ink/index.js",
-    "packages/hermes-ink/text-input.js",
+    "packages/fool-ink/package.json",
+    "packages/fool-ink/index.js",
+    "packages/fool-ink/text-input.js",
 )
 
 _TUI_BUILD_INPUT_SUFFIXES = frozenset(
@@ -2297,13 +2297,13 @@ def _ensure_tui_workspace(tui_dir: Path) -> None:
         return
 
     print(
-        "Error: the TUI workspace is missing from this Hermes checkout.\n"
+        "Error: the TUI workspace is missing from this The Fool checkout.\n"
         f"Expected directory: {tui_dir}\n"
         "This usually means `fool update` left tracked ui-tui files deleted.\n"
         "Recovery:\n"
-        "  1. From the Hermes checkout, run `git restore -- ui-tui`\n"
+        "  1. From the Fool checkout, run `git restore -- ui-tui`\n"
         "  2. Run `npm install --silent --no-fund --no-audit --progress=false`\n"
-        "  3. Retry `hermes --tui`\n"
+        "  3. Retry `fool --tui`\n"
         "If the checkout is still inconsistent, run `fool update --force`.",
         file=sys.stderr,
     )
@@ -2482,7 +2482,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
         # stale after a pull, newer hooks/components can exist in src while
         # being missing at runtime (e.g. useCursorAdvance). Prebuild it here.
         npm = _node_bin("npm")
-        ink_dir = tui_dir / "packages" / "hermes-ink"
+        ink_dir = tui_dir / "packages" / "fool-ink"
         result = subprocess.run(
             [npm, "run", "build"],
             cwd=str(ink_dir),
@@ -2695,7 +2695,7 @@ def _launch_tui(
     except Exception:
         logger.debug("Failed to apply terminal config bridge for TUI launch", exc_info=True)
     active_session_fd, active_session_file = tempfile.mkstemp(
-        prefix="hermes-tui-active-session-", suffix=".json"
+        prefix="fool-tui-active-session-", suffix=".json"
     )
     os.close(active_session_fd)
     env["FOOL_TUI_ACTIVE_SESSION_FILE"] = active_session_file
@@ -3001,7 +3001,7 @@ def cmd_chat(args):
             print(f"Error: {e}")
             sys.exit(1)
         print(f"✓ Imported as {_imported_id} — resuming it now.")
-        print(f"  (later: hermes --resume {_imported_id})")
+        print(f"  (later: fool --resume {_imported_id})")
         args.resume = _imported_id
 
     # Resolve --resume by title if it's not a direct session ID
@@ -5372,7 +5372,7 @@ def cmd_sync(args):
             print(
                 f"'{skill}' is not sync-eligible (bundled, hub-installed, "
                 f"external, or not found). Only agent-created / user-authored "
-                f"skills under ~/.hermes/skills/ can sync.",
+                f"skills under ~/.fool/skills/ can sync.",
                 file=sys.stderr,
             )
             return 1
@@ -6671,7 +6671,7 @@ def _desktop_packaged_executable(desktop_dir: Path) -> Optional[Path]:
     """Return the current platform's unpacked Electron app executable."""
     release_dir = desktop_dir / "release"
     if sys.platform == "darwin":
-        candidates = list(release_dir.glob("mac*/Hermes.app/Contents/MacOS/Hermes"))
+        candidates = list(release_dir.glob("mac*/The Fool.app/Contents/MacOS/The Fool"))
     elif sys.platform == "win32":
         candidates = [
             release_dir / "win-unpacked" / "The Fool.exe",
@@ -6680,9 +6680,9 @@ def _desktop_packaged_executable(desktop_dir: Path) -> Optional[Path]:
         ]
     else:
         candidates = [
-            release_dir / "linux-unpacked" / "hermes",
+            release_dir / "linux-unpacked" / "fool",
             release_dir / "linux-unpacked" / "The Fool",
-            release_dir / "linux-arm64-unpacked" / "hermes",
+            release_dir / "linux-arm64-unpacked" / "fool",
             release_dir / "linux-arm64-unpacked" / "The Fool",
         ]
 
@@ -8116,7 +8116,7 @@ def _dashboard_probe_host(host: str | None) -> str:
     return normalized
 
 
-_DASHBOARD_SYSTEMD_UNIT = "hermes-dashboard.service"
+_DASHBOARD_SYSTEMD_UNIT = "fool-dashboard.service"
 
 
 def _restart_managed_dashboard_service(
@@ -8695,8 +8695,8 @@ def _recover_core_update_marker_locked() -> None:
         print("✗ Could not auto-recover the interrupted install.")
         if self_locked:
             print(
-                "  Hermes is still running from the launcher that needs "
-                "replacing. Close other Hermes windows, restart from a "
+                "  The Fool is still running from the launcher that needs "
+                "replacing. Close other The Fool windows, restart from a "
                 "different terminal, then run:"
             )
             print(f'    cd /d "{PROJECT_ROOT}"')
@@ -8826,10 +8826,10 @@ def _hermes_exe_shims(scripts_dir: Path) -> list[Path]:
     if not _is_windows():
         return []
 
-    names = set(_load_console_script_names()) or {"hermes", "hermes-agent", "hermes-acp"}
+    names = set(_load_console_script_names()) or {"fool", "hermes-agent", "fool-acp"}
     # The gateway shim is not a [project.scripts] entry point, but older
     # update/install paths still rewrite and quarantine it.
-    names.add("hermes-gateway")
+    names.add("fool-gateway")
     return [scripts_dir / f"{name}.exe" for name in sorted(names)]
 
 
@@ -8929,7 +8929,7 @@ def _quarantine_running_hermes_exe(
             f"another process is holding it open)."
         )
         print(
-            "    Close Hermes Desktop, exit other `hermes` REPLs, stop the "
+            "    Close The Fool Desktop, exit other `fool` REPLs, stop the "
             "gateway, or pause AV scanning, then re-run `fool update`."
         )
 
@@ -9904,7 +9904,7 @@ def cmd_update(args):
     )
 
     if is_managed():
-        managed_error("update Hermes Agent")
+        managed_error("update Fool Agent")
         return
 
     # Docker users can't ``git pull`` — the image excludes ``.git`` from
@@ -10082,7 +10082,7 @@ def cmd_profile(args):
                 print(f"Skills:         {p.skill_count} installed")
                 if p.alias_path:
                     alias_display = p.alias_name or p.name
-                    print(f"Alias:          {alias_display} → hermes -p {p.name}")
+                    print(f"Alias:          {alias_display} → fool -p {p.name}")
                 break
         print()
         return
@@ -10130,7 +10130,7 @@ def cmd_profile(args):
         try:
             set_active_profile(name)
             if name == "default":
-                print("Switched to: default (~/.hermes)")
+                print("Switched to: default (~/.fool)")
             else:
                 print(f"Switched to: {name}")
         except (ValueError, FileNotFoundError) as e:
@@ -10211,7 +10211,7 @@ def cmd_profile(args):
                     print(
                         f"  Choose a custom alias:  fool profile alias {name} --name <custom>"
                     )
-                    print(f"  Or access via flag:     hermes -p {name} chat")
+                    print(f"  Or access via flag:     fool -p {name} chat")
                 else:
                     wrapper_path = create_wrapper_script(name)
                     if wrapper_path:
@@ -10402,7 +10402,7 @@ def cmd_profile(args):
         if alias_name:
             is_windows = sys.platform == "win32"
             wrapper = _get_wrapper_dir() / (f"{alias_name}.bat" if is_windows else alias_name)
-            print(f"Alias:   {alias_name} → hermes -p {name}  ({wrapper})")
+            print(f"Alias:   {alias_name} → fool -p {name}  ({wrapper})")
         print()
 
     elif action == "alias":
@@ -10531,9 +10531,9 @@ def cmd_profile(args):
             if plan.has_cron:
                 print(
                     "  Cron jobs were included but are NOT scheduled automatically.\n"
-                    f"  Review them with:  hermes -p {plan.manifest.name} cron list"
+                    f"  Review them with:  fool -p {plan.manifest.name} cron list"
                 )
-            print(f"\n  Use with:      hermes -p {plan.manifest.name} chat")
+            print(f"\n  Use with:      fool -p {plan.manifest.name} chat")
         except (DistributionError, ValueError) as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -10579,7 +10579,7 @@ def cmd_profile(args):
             if plan.has_cron:
                 print(
                     "  Cron files were refreshed.  Review with:  "
-                    f"hermes -p {plan.manifest.name} cron list"
+                    f"fool -p {plan.manifest.name} cron list"
                 )
         except (DistributionError, ValueError) as e:
             print(f"Error: {e}")
@@ -10806,7 +10806,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
             "the dashboard again:\n"
             "    fool dashboard register\n"
             "  It provisions a Nous Portal OAuth client and writes "
-            "FOOL_DASHBOARD_OAUTH_CLIENT_ID into ~/.hermes/.env for you.\n"
+            "FOOL_DASHBOARD_OAUTH_CLIENT_ID into ~/.fool/.env for you.\n"
             "  Docs: https://hermes-agent.nousresearch.com/docs/"
             "user-guide/features/web-dashboard#authentication-gated-mode"
         )
@@ -10911,7 +10911,7 @@ def _read_ssh_session_token_file(path: str) -> str:
     # get_hermes_home(): a non-default sticky profile (or any FOOL_HOME pointing
     # elsewhere, e.g. a Docker /opt/data root) re-homes get_hermes_home() and
     # would otherwise reject every token the client legitimately wrote (#69551).
-    token_root = _Path.home() / ".hermes" / "desktop-ssh"
+    token_root = _Path.home() / ".fool" / "desktop-ssh"
     try:
         relative = token_path.relative_to(token_root)
     except ValueError as exc:
@@ -12218,7 +12218,7 @@ def main():
         help="Manage external secret sources (Bitwarden, 1Password)",
         description=(
             "Pull API keys from an external secret manager at process startup "
-            "instead of storing them in ~/.hermes/.env.  Supports Bitwarden "
+            "instead of storing them in ~/.fool/.env.  Supports Bitwarden "
             "Secrets Manager and 1Password.  See: "
             "https://hermes-agent.nousresearch.com/docs/user-guide/secrets/"
         ),
@@ -12489,7 +12489,7 @@ def main():
     # =========================================================================
     checkpoints_parser = subparsers.add_parser(
         "checkpoints",
-        help="Inspect / prune / clear ~/.hermes/checkpoints/",
+        help="Inspect / prune / clear ~/.fool/checkpoints/",
         description="Manage the filesystem checkpoint store — the shadow git "
         "repo fool uses to snapshot working directories before "
         "write_file/patch/terminal calls. Lets you see how much "
@@ -12638,7 +12638,7 @@ def main():
         description=(
             "Petdex (https://github.com/crafter-station/petdex) is a public "
             "gallery of animated sprite pets for coding agents. Install one "
-            "and Hermes shows it reacting to agent activity across the CLI, "
+            "and The Fool shows it reacting to agent activity across the CLI, "
             "TUI, and desktop app."
         ),
     )
@@ -12978,7 +12978,7 @@ def main():
         p.add_argument(
             "--model",
             help="Only match sessions whose model name contains this substring "
-            "(e.g. 'sonnet', 'gpt-5', 'hermes')",
+            "(e.g. 'sonnet', 'gpt-5', 'fool')",
         )
         p.add_argument(
             "--provider",
@@ -13394,8 +13394,8 @@ def main():
         help="Import a Claude Code or Codex CLI session into The Fool",
         description=(
             "Pull a conversation started in Claude Code (~/.claude/projects) "
-            "or Codex CLI (~/.codex/sessions) into the Hermes session store "
-            "so it can be resumed with 'hermes --resume <id>'. The foreign "
+            "or Codex CLI (~/.codex/sessions) into the Fool session store "
+            "so it can be resumed with 'fool --resume <id>'. The foreign "
             "files are only read, never modified."
         ),
     )

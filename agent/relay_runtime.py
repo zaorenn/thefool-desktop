@@ -18,12 +18,12 @@ from fool_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
-SESSION_SCOPE = "hermes.session"
-TURN_SCOPE = "hermes.turn"
-LOGICAL_LLM_SCOPE = "hermes.logical_llm_call"
-RUNTIME_SCHEMA_KEY = "hermes.relay.schema_version"
-RUNTIME_SCHEMA_VERSION = "hermes.relay.runtime.v1"
-RUNTIME_INSTANCE_KEY = "hermes.relay.runtime_instance"
+SESSION_SCOPE = "fool.session"
+TURN_SCOPE = "fool.turn"
+LOGICAL_LLM_SCOPE = "fool.logical_llm_call"
+RUNTIME_SCHEMA_KEY = "fool.relay.schema_version"
+RUNTIME_SCHEMA_VERSION = "fool.relay.runtime.v1"
+RUNTIME_INSTANCE_KEY = "fool.relay.runtime_instance"
 _PROFILE_KEY_CACHE: dict[str, str] = {}
 
 # Bound for native scope lifecycle operations (push/pop/flush) that gate
@@ -327,7 +327,7 @@ class RelayRuntime:
                     session,
                     self.relay.scope.pop,
                     old_handle,
-                    output={"hermes.session.segment_reason": reason},
+                    output={"fool.session.segment_reason": reason},
                     metadata={
                         RUNTIME_SCHEMA_KEY: RUNTIME_SCHEMA_VERSION,
                         RUNTIME_INSTANCE_KEY: self.runtime_id,
@@ -336,7 +336,7 @@ class RelayRuntime:
                 )
             except Exception:
                 logger.warning(
-                    "Hermes Relay segment close failed (session=%s segment=%d); "
+                    "The Fool Relay segment close failed (session=%s segment=%d); "
                     "abandoning the old segment span",
                     session.session_id,
                     session.segment - 1,
@@ -345,8 +345,8 @@ class RelayRuntime:
             scope_metadata = {
                 RUNTIME_SCHEMA_KEY: RUNTIME_SCHEMA_VERSION,
                 RUNTIME_INSTANCE_KEY: self.runtime_id,
-                "hermes.session.segment": session.segment,
-                "hermes.session.segment_reason": reason,
+                "fool.session.segment": session.segment,
+                "fool.session.segment_reason": reason,
             }
             parent_handle = None
             if session.parent_session_id:
@@ -369,7 +369,7 @@ class RelayRuntime:
                 session.context = context
             except Exception:
                 logger.warning(
-                    "Hermes Relay segment open failed (session=%s segment=%d); "
+                    "The Fool Relay segment open failed (session=%s segment=%d); "
                     "keeping the prior scope handle",
                     session.session_id,
                     session.segment,
@@ -460,9 +460,9 @@ class RelayRuntime:
         """
         with session.lock:
             if session.closing and not allow_closing:
-                raise RuntimeError("Hermes Relay session is closing")
+                raise RuntimeError("The Fool Relay session is closing")
             if session.context is None or session.handle is None:
-                raise RuntimeError("Hermes Relay session context is unavailable")
+                raise RuntimeError("The Fool Relay session context is unavailable")
             relay_context = session.context.copy()
 
         context = contextvars.copy_context()
@@ -508,9 +508,9 @@ class RelayRuntime:
         """Create and await an operation inside the session's saved context."""
         with session.lock:
             if session.closing and not allow_closing:
-                raise RuntimeError("Hermes Relay session is closing")
+                raise RuntimeError("The Fool Relay session is closing")
             if session.context is None or session.handle is None:
-                raise RuntimeError("Hermes Relay session context is unavailable")
+                raise RuntimeError("The Fool Relay session context is unavailable")
             relay_context = session.context.copy()
 
         context = contextvars.copy_context()
@@ -670,7 +670,7 @@ class RelayRuntime:
                         top,
                         output={
                             "outcome": "cancelled",
-                            "hermes.orphan_drain": True,
+                            "fool.orphan_drain": True,
                         },
                         metadata=metadata,
                     )
@@ -678,14 +678,14 @@ class RelayRuntime:
                 except Exception as drain_exc:
                     error_holder["drain"] = drain_exc
                     logger.warning(
-                        "Hermes Relay orphaned scope drain failed",
+                        "The Fool Relay orphaned scope drain failed",
                         exc_info=True,
                     )
                     break
 
             if drained_holder["count"]:
                 logger.warning(
-                    "Hermes Relay drained %d orphaned scope(s) before closing %s",
+                    "The Fool Relay drained %d orphaned scope(s) before closing %s",
                     drained_holder["count"],
                     handle,
                 )
@@ -765,7 +765,7 @@ class RelayRuntime:
             self._subagent_parent_handles.pop(session_id, None)
         if failures:
             logger.warning(
-                "Hermes Relay session %s closed with errors: %s",
+                "The Fool Relay session %s closed with errors: %s",
                 session_id,
                 "; ".join(failures),
             )
@@ -788,7 +788,7 @@ class RelayRuntime:
         try:
             return callback(*args, **kwargs)
         except Exception:
-            logger.warning("Hermes Relay runtime operation failed", exc_info=True)
+            logger.warning("The Fool Relay runtime operation failed", exc_info=True)
             return None
 
 
@@ -857,7 +857,7 @@ class RelayHostRegistry:
                 host = RelayRuntime(profile_key=key)
             except Exception as exc:
                 logger.warning(
-                    "Hermes Relay runtime initialization failed", exc_info=True
+                    "The Fool Relay runtime initialization failed", exc_info=True
                 )
                 host = NoopRelayRuntime(profile_key=key, reason=str(exc))
             self._hosts[key] = host
@@ -988,7 +988,7 @@ class RelaySessionCoordinator:
                 callback(host, context)
             except Exception:
                 logger.warning(
-                    "Hermes Relay session initializer failed: %s",
+                    "The Fool Relay session initializer failed: %s",
                     name,
                     exc_info=True,
                 )
@@ -1032,7 +1032,7 @@ class RelaySessionCoordinator:
                     )
             except Exception:
                 logger.warning(
-                    "Hermes Relay conversation initialization failed",
+                    "The Fool Relay conversation initialization failed",
                     exc_info=True,
                 )
         return ConversationLease(
@@ -1052,7 +1052,7 @@ class RelaySessionCoordinator:
         task_id: str,
     ) -> RelayTurnContext:
         if lease.released:
-            raise RuntimeError("Hermes Relay conversation lease is released")
+            raise RuntimeError("The Fool Relay conversation lease is released")
         turn = RelayTurnContext(lease=lease, turn_id=turn_id, task_id=task_id)
         key = (lease.profile_key, lease.session_id)
         with self._active_turns_lock:
@@ -1063,7 +1063,7 @@ class RelaySessionCoordinator:
                 # their completion order is not guaranteed to be LIFO.
                 turn.relay_enabled = False
                 logger.warning(
-                    "Skipping Relay instrumentation for concurrent Hermes turn "
+                    "Skipping Relay instrumentation for concurrent The Fool turn "
                     "%s in session %s",
                     turn_id,
                     lease.session_id,
@@ -1095,7 +1095,7 @@ class RelaySessionCoordinator:
                     lease.host.rotate_session_scope(session, reason=reason)
             except Exception:
                 logger.warning(
-                    "Hermes Relay segment rotation failed", exc_info=True
+                    "The Fool Relay segment rotation failed", exc_info=True
                 )
             try:
                 turn.handle = lease.host.run_in_session(
@@ -1113,7 +1113,7 @@ class RelaySessionCoordinator:
                     timeout=_SCOPE_OP_TIMEOUT,
                 )
             except Exception:
-                logger.warning("Hermes Relay turn initialization failed", exc_info=True)
+                logger.warning("The Fool Relay turn initialization failed", exc_info=True)
         turn._previous_turn = _CURRENT_TURN.get()
         _CURRENT_TURN.set(turn)
         return turn
@@ -1142,7 +1142,7 @@ class RelaySessionCoordinator:
                         )
                         if failure:
                             logger.warning(
-                                "Hermes Relay turn finalization failed: %s",
+                                "The Fool Relay turn finalization failed: %s",
                                 failure,
                             )
             finally:
@@ -1170,7 +1170,7 @@ class RelaySessionCoordinator:
                         })
                 except Exception:
                     logger.warning(
-                        "Hermes Relay child conversation finalization failed",
+                        "The Fool Relay child conversation finalization failed",
                         exc_info=True,
                     )
                 finally:
@@ -1206,7 +1206,7 @@ class RelaySessionCoordinator:
             lease.host.close_session({"session_id": lease.session_id})
         except Exception:  # noqa: BLE001 - telemetry must never block end_turn
             logger.warning(
-                "Hermes Relay deferred session close failed", exc_info=True
+                "The Fool Relay deferred session close failed", exc_info=True
             )
 
     def notify_session_compacted(
@@ -1267,7 +1267,7 @@ class RelaySessionCoordinator:
                     session.rotate_pending = True
         except Exception:  # noqa: BLE001 - telemetry must never block compaction
             logger.warning(
-                "Hermes Relay compaction notification failed", exc_info=True
+                "The Fool Relay compaction notification failed", exc_info=True
             )
 
     def has_active_turn(self, *, profile_key: str, session_id: str) -> bool:
@@ -1338,7 +1338,7 @@ class RelaySessionCoordinator:
                         pending_request_id,
                         pending_handle,
                     )
-            logger.warning("Hermes Relay logical LLM finalization failed: %s", failure)
+            logger.warning("The Fool Relay logical LLM finalization failed: %s", failure)
             break
 
     @staticmethod
@@ -1475,7 +1475,7 @@ def emit_mark(
             metadata=metadata,
         )
     except Exception:
-        logger.warning("Hermes Relay mark failed: %s", name, exc_info=True)
+        logger.warning("The Fool Relay mark failed: %s", name, exc_info=True)
         return False
 
 
@@ -1506,7 +1506,7 @@ def ensure_session(*, session_id: str, **context: Any) -> RelaySession | None:
     try:
         return runtime.ensure_session({"session_id": session_id, **context})
     except Exception:
-        logger.warning("Hermes Relay session initialization failed", exc_info=True)
+        logger.warning("The Fool Relay session initialization failed", exc_info=True)
         return None
 
 
@@ -1519,12 +1519,12 @@ def run_in_session(
     """Run a scope, LLM, or tool API against a shared Hermes session."""
     runtime = get_runtime()
     if runtime is None:
-        raise RuntimeError("Hermes Relay runtime is unavailable")
+        raise RuntimeError("The Fool Relay runtime is unavailable")
     session = runtime.get_session(session_id)
     if session is None:
         session = runtime.ensure_session({"session_id": session_id})
     if session is None:
-        raise RuntimeError("Hermes Relay session is unavailable")
+        raise RuntimeError("The Fool Relay session is unavailable")
     return runtime.run_in_session(session, callback, *args, **kwargs)
 
 
@@ -1537,12 +1537,12 @@ async def run_in_session_async(
     """Await a Relay operation inside a shared Hermes session context."""
     runtime = get_runtime()
     if runtime is None:
-        raise RuntimeError("Hermes Relay runtime is unavailable")
+        raise RuntimeError("The Fool Relay runtime is unavailable")
     session = runtime.get_session(session_id)
     if session is None:
         session = runtime.ensure_session({"session_id": session_id})
     if session is None:
-        raise RuntimeError("Hermes Relay session is unavailable")
+        raise RuntimeError("The Fool Relay session is unavailable")
     return await runtime.run_in_session_async(session, callback, *args, **kwargs)
 
 

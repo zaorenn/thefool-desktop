@@ -71,7 +71,7 @@ _NON_CHAT = ("embed", "embedding", "rerank", "bge-", "e5-", "gte-")
 #: Araç çağırmayı güvenilir yapan aileler. Kapsayıcı olmak zorunda değil;
 #: yalnızca eşit adaylar arasında sıralama ipucu.
 _TOOL_CAPABLE_HINTS = (
-    "qwen", "llama", "mistral", "hermes", "command-r", "firefunction",
+    "qwen", "llama", "mistral", "fool", "command-r", "firefunction",
     "granite", "gemma", "phi", "devstral", "gpt-oss",
 )
 

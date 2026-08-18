@@ -57,7 +57,7 @@ from utils import is_truthy_value
 logger = logging.getLogger(__name__)
 _PLUGIN_SECTION_FRAME_RE = re.compile(
     r"^## Plugin Context: (?P<id>[a-z0-9][a-z0-9._-]{0,127})\n"
-    r"<!-- hermes-plugin-section-chars:(?P<chars>[0-9]{1,4}) -->\n\n",
+    r"<!-- fool-plugin-section-chars:(?P<chars>[0-9]{1,4}) -->\n\n",
     re.MULTILINE,
 )
 

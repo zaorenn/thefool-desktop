@@ -319,7 +319,7 @@ def cron_status():
                 if "Permission denied" in last_error:
                     print(color(
                         "  Hint: jobs.json may be owned by another user "
-                        "(e.g. rewritten by a root `docker exec hermes "
+                        "(e.g. rewritten by a root `docker exec fool "
                         "fool cron ...`). Fix ownership to match the "
                         "gateway user, and prefer `docker exec -u <uid>:<gid>`.",
                         Colors.YELLOW,

@@ -580,7 +580,7 @@ def _sanitized_entry_config(plugin_id: str) -> dict[str, Any]:
     return out
 
 
-def export_pack(*, enabled_only: bool = False, pack_name: str = "my-hermes-pack") -> tuple[str, List[str]]:
+def export_pack(*, enabled_only: bool = False, pack_name: str = "my-fool-pack") -> tuple[str, List[str]]:
     """Build pack YAML from the current install.
 
     Returns ``(yaml_text, warnings)``. Plugins whose Git provenance is
@@ -726,7 +726,7 @@ def cmd_pack_install(source: str, *, force: bool = False) -> None:
         sys.exit(1)
 
 
-def cmd_pack_export(*, enabled_only: bool = False, name: str = "my-hermes-pack") -> None:
+def cmd_pack_export(*, enabled_only: bool = False, name: str = "my-fool-pack") -> None:
     """``fool plugins pack export [--enabled-only]`` — pack YAML on stdout."""
     from rich.console import Console
 
@@ -749,7 +749,7 @@ def pack_command(args) -> None:
     elif action == "export":
         cmd_pack_export(
             enabled_only=getattr(args, "enabled_only", False),
-            name=getattr(args, "name", None) or "my-hermes-pack",
+            name=getattr(args, "name", None) or "my-fool-pack",
         )
     elif action == "show":
         cmd_pack_show(args.source)

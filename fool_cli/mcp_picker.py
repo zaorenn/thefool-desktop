@@ -122,7 +122,7 @@ def _enable_disable(name: str, *, enable: bool) -> None:
     save_config(cfg)
     print(color(
         f"  ✓ '{name}' {'enabled' if enable else 'disabled'}. "
-        "Start a new Hermes session for changes to take effect.",
+        "Start a new Fool session for changes to take effect.",
         Colors.GREEN,
     ))
 

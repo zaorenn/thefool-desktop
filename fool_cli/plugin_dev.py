@@ -40,7 +40,7 @@ def _doctor_runtime(plugin_path: Path):
     test framework. Registration code executes under a temporary FOOL_HOME
     with outbound socket connects blocked.
     """
-    temporary_home = tempfile.TemporaryDirectory(prefix="hermes-plugin-doctor-")
+    temporary_home = tempfile.TemporaryDirectory(prefix="fool-plugin-doctor-")
     stack = ExitStack()
     home = Path(temporary_home.name)
     bundled = home / "bundled-plugins"
@@ -84,7 +84,7 @@ def _doctor_runtime(plugin_path: Path):
         manifests = manager._scan_directory(plugins_root, source="user")
         if not manifests:
             raise _DoctorLoadError(
-                f"Hermes discovery found no valid plugin manifest under {copied}"
+                f"The Fool discovery found no valid plugin manifest under {copied}"
             )
         if len(manifests) != 1:
             raise _DoctorLoadError(
@@ -201,7 +201,7 @@ def resolve_plugin_path(target: str | os.PathLike[str] | None = None) -> Path:
         )
     except Exception:
         pass
-    candidates.append(Path.cwd() / ".hermes" / "plugins" / raw)
+    candidates.append(Path.cwd() / ".fool" / "plugins" / raw)
     for candidate in candidates:
         if candidate.is_dir():
             return candidate.resolve()
@@ -228,7 +228,7 @@ def _check_manifest_v2(report: "DoctorReport", manifest: Any) -> None:
     mv = getattr(manifest, "manifest_version", 1)
     if mv > SUPPORTED_MANIFEST_VERSION:
         report.warning(
-            f"manifest_version {mv} is newer than this Hermes supports "
+            f"manifest_version {mv} is newer than this The Fool supports "
             f"({SUPPORTED_MANIFEST_VERSION}); unknown fields are ignored"
         )
 
@@ -272,7 +272,7 @@ def _check_manifest_v2(report: "DoctorReport", manifest: Any) -> None:
         report.warning(
             "declared python_dependencies not installed: "
             + ", ".join(missing)
-            + " — Hermes never auto-installs plugin dependencies; "
+            + " — The Fool never auto-installs plugin dependencies; "
             + "install manually: pip install "
             + " ".join(f"'{m}'" for m in missing)
         )

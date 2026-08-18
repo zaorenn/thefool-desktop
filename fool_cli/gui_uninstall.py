@@ -76,15 +76,15 @@ def desktop_userdata_dir() -> Path:
     """
     home = Path.home()
     if sys.platform == "darwin":
-        return home / "Library" / "Application Support" / "Hermes"
+        return home / "Library" / "Application Support" / "The Fool"
     if sys.platform == "win32":
         appdata = os.environ.get("APPDATA")
         base = Path(appdata) if appdata else (home / "AppData" / "Roaming")
-        return base / "Hermes"
+        return base / "The Fool"
     # Linux / other POSIX — XDG config home.
     xdg = os.environ.get("XDG_CONFIG_HOME")
     base = Path(xdg) if xdg else (home / ".config")
-    return base / "Hermes"
+    return base / "The Fool"
 
 
 def source_built_gui_artifacts(hermes_home: Path) -> "list[Path]":
@@ -119,22 +119,22 @@ def packaged_gui_app_paths() -> "list[Path]":
     paths: list[Path] = []
     if sys.platform == "darwin":
         paths += [
-            Path("/Applications/Hermes.app"),
-            home / "Applications" / "Hermes.app",
+            Path("/Applications/The Fool.app"),
+            home / "Applications" / "The Fool.app",
         ]
     elif sys.platform == "win32":
         local = os.environ.get("LOCALAPPDATA")
         local_base = Path(local) if local else (home / "AppData" / "Local")
         paths += [
             # NSIS per-user install (perMachine=false → Programs\Hermes).
-            local_base / "Programs" / "Hermes",
+            local_base / "Programs" / "The Fool",
             # Older / alternate layout some builds used.
-            local_base / "hermes-desktop",
+            local_base / "fool-desktop",
         ]
         program_files = os.environ.get("ProgramFiles")
         if program_files:
             # NSIS per-machine fallback (needs admin to remove).
-            paths.append(Path(program_files) / "Hermes")
+            paths.append(Path(program_files) / "The Fool")
     else:
         # Linux: AppImage is a single file the user placed somewhere; we can
         # only reliably clean the desktop entry + icon we know the name of.
@@ -151,7 +151,7 @@ def packaged_gui_app_paths() -> "list[Path]":
             # in the checkout, not in the installed app.
             desktop_entry_path(),
             # Some packaged builds emit this casing.
-            data_base / "applications" / "Hermes.desktop",
+            data_base / "applications" / "The Fool.desktop",
         ]
     return paths
 
@@ -298,8 +298,8 @@ def uninstall_gui(hermes_home: "Path | None" = None, *, remove_userdata: bool = 
 
         log_info(
             "If you installed the desktop via a .deb / .rpm package, remove it "
-            "with your package manager (e.g. 'sudo apt remove hermes' or "
-            "'sudo dnf remove hermes'). AppImage builds are a single file you "
+            "with your package manager (e.g. 'sudo apt remove fool' or "
+            "'sudo dnf remove fool'). AppImage builds are a single file you "
             "can delete from wherever you saved it."
         )
 

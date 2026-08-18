@@ -115,7 +115,7 @@ def _get_service_pids() -> set:
                     scope_args
                     + [
                         "list-units",
-                        "hermes-gateway*",
+                        "fool-gateway*",
                         "--plain",
                         "--no-legend",
                         "--no-pager",
@@ -2076,8 +2076,8 @@ def _windows_gateway_breakaway_state() -> bool | None:
 # Service Configuration
 # =============================================================================
 
-_SERVICE_BASE = "hermes-gateway"
-SERVICE_DESCRIPTION = "Hermes Agent Gateway - Messaging Platform Integration"
+_SERVICE_BASE = "fool-gateway"
+SERVICE_DESCRIPTION = "Fool Agent Gateway - Messaging Platform Integration"
 
 
 def _profile_suffix() -> str:
@@ -2143,7 +2143,7 @@ def _profile_arg(hermes_home: str | None = None, default_root: str | Path | None
 
 def _profile_arg_for_target_user(hermes_home: str, target_home_dir: str) -> str:
     """Return the profile arg for a system service running as another user."""
-    target_root = Path(target_home_dir) / ".hermes"
+    target_root = Path(target_home_dir) / ".fool"
     try:
         Path(hermes_home).resolve().relative_to(target_root.resolve())
         return _profile_arg(hermes_home, default_root=target_root)
@@ -2460,7 +2460,7 @@ def has_conflicting_systemd_units() -> bool:
 # hermes-gateway rename. Kept as an explicit allowlist (NOT a glob) so
 # profile units (hermes-gateway-*.service) and unrelated third-party
 # "hermes" units are never matched.
-_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("hermes.service",)
+_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("fool.service",)
 
 # ExecStart content markers that identify a unit as running our gateway.
 # A legacy unit is only flagged when its file contains one of these.
@@ -2537,11 +2537,11 @@ def print_legacy_unit_warning() -> None:
     legacy = _find_legacy_hermes_units()
     if not legacy:
         return
-    print_warning("Legacy Hermes gateway unit(s) detected from an older install:")
+    print_warning("Legacy The Fool gateway unit(s) detected from an older install:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print_info(f"    {path}  ({scope} scope)")
-    print_info("  These run alongside the current hermes-gateway service and")
+    print_info("  These run alongside the current fool-gateway service and")
     print_info("  cause SIGTERM flap loops — both try to use the same bot token.")
     print_info("  Remove them with:")
     print_info("    fool gateway migrate-legacy")
@@ -2569,14 +2569,14 @@ def remove_legacy_hermes_units(
     """
     legacy = _find_legacy_hermes_units()
     if not legacy:
-        print("No legacy Hermes gateway units found.")
+        print("No legacy The Fool gateway units found.")
         return 0, []
 
     user_units = [(n, p) for n, p, is_sys in legacy if not is_sys]
     system_units = [(n, p) for n, p, is_sys in legacy if is_sys]
 
     print()
-    print("Legacy Hermes gateway unit(s) found:")
+    print("Legacy The Fool gateway unit(s) found:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print(f"  {path}  ({scope} scope)")
@@ -2967,7 +2967,7 @@ def get_launchd_plist_path() -> Path:
     Profile ``~/.hermes/profiles/coder`` → ``ai.hermes.gateway-coder.plist``.
     """
     suffix = _profile_suffix()
-    name = f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
+    name = f"ai.fool.gateway-{suffix}" if suffix else "ai.fool.gateway"
     return _launchd_user_home() / "Library" / "LaunchAgents" / f"{name}.plist"
 
 
@@ -3123,8 +3123,8 @@ def _hermes_home_for_target_user(target_home_dir: str) -> str:
     # Keep explicit custom paths lexical. Resolving a non-existent custom path
     # can rewrite it through host-specific path mappings, which would bake a
     # different FOOL_HOME into the generated service unit.
-    current_default = Path.home() / ".hermes"
-    target_default = Path(target_home_dir) / ".hermes"
+    current_default = Path.home() / ".fool"
+    target_default = Path(target_home_dir) / ".fool"
 
     # Default ~/.hermes → remap to target user's default
     if current_hermes == current_default:
@@ -3621,7 +3621,7 @@ def refresh_systemd_unit_if_needed(system: bool = False) -> bool:
     unit_path.write_text(new_unit, encoding="utf-8")
     _run_systemctl(["daemon-reload"], system=system, check=True, timeout=30)
     print(
-        f"↻ Updated gateway {_service_scope_label(system)} service definition to match the current Hermes install"
+        f"↻ Updated gateway {_service_scope_label(system)} service definition to match the current Fool install"
     )
     return True
 
@@ -4176,7 +4176,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
 def get_launchd_label() -> str:
     """Return the launchd service label, scoped per profile."""
     suffix = _profile_suffix()
-    return f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
+    return f"ai.fool.gateway-{suffix}" if suffix else "ai.fool.gateway"
 
 
 # Cached launchd domain result — probing is cheap but should only run once per
@@ -4913,7 +4913,7 @@ def refresh_launchd_plist_if_needed() -> bool:
             _launchd_reload_log_path(),
         )
     print(
-        "↻ Updated gateway launchd service definition to match the current Hermes install"
+        "↻ Updated gateway launchd service definition to match the current Fool install"
     )
     return True
 
@@ -5245,9 +5245,9 @@ def launchd_status(deep: bool = False):
     # ── Report ──
     print(f"Launchd plist: {plist_path}")
     if launchd_plist_is_current():
-        print("✓ Service definition matches the current Hermes install")
+        print("✓ Service definition matches the current Fool install")
     else:
-        print("⚠ Service definition is stale relative to the current Hermes install")
+        print("⚠ Service definition is stale relative to the current Fool install")
         print("  Run: fool gateway start")
 
     if service_listed:
@@ -5297,7 +5297,7 @@ def _truthy_env(value: str | None) -> bool:
 
 def _is_official_docker_checkout() -> bool:
     return (
-        str(PROJECT_ROOT) == "/opt/hermes"
+        str(PROJECT_ROOT) == "/opt/fool"
         and (PROJECT_ROOT / "docker" / "entrypoint.sh").is_file()
     )
 
@@ -5517,12 +5517,12 @@ def _guard_official_docker_root_gateway() -> None:
         return
 
     print_error(
-        "Refusing to run the Hermes gateway as root inside the official Docker image."
+        "Refusing to run the Fool gateway as root inside the official Docker image."
     )
     print(
-        "  The image entrypoint normally drops privileges to the 'hermes' user. "
+        "  The image entrypoint normally drops privileges to the 'fool' user. "
         "If you override entrypoint in Docker Compose, include "
-        "/opt/hermes/docker/entrypoint.sh before the Hermes command."
+        "/opt/fool/docker/entrypoint.sh before the Fool command."
     )
     print(
         "  Running the gateway as root can leave root-owned files in "
@@ -5615,7 +5615,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
     from gateway.run import start_gateway
 
     print("┌─────────────────────────────────────────────────────────┐")
-    print("│           ⚕ Hermes Gateway Starting...                 │")
+    print("│           ⚕ The Fool Gateway Starting...                 │")
     print("├─────────────────────────────────────────────────────────┤")
     print("│  Messaging platforms + cron scheduler                    │")
     print("│  Press Ctrl+C to stop                                   │")
@@ -5820,7 +5820,7 @@ _PLATFORMS = [
         "setup_instructions": [
             "1. In Mattermost: Integrations → Bot Accounts → Add Bot Account",
             "   (System Console → Integrations → Bot Accounts must be enabled)",
-            "2. Give it a username (e.g. hermes) and copy the bot token",
+            "2. Give it a username (e.g. fool) and copy the bot token",
             "3. Works with any self-hosted Mattermost instance — enter your server URL",
             "4. To find your user ID: click your avatar (top-left) → Profile",
             "   Your user ID is displayed there — click it to copy.",
@@ -5851,7 +5851,7 @@ _PLATFORMS = [
                 "name": "MATTERMOST_HOME_CHANNEL",
                 "prompt": "Home channel ID (for cron/notification delivery, or empty to set later with /set-home)",
                 "password": False,
-                "help": "Channel ID where Hermes delivers cron results and notifications.",
+                "help": "Channel ID where The Fool delivers cron results and notifications.",
             },
             {
                 "name": "MATTERMOST_REPLY_MODE",
@@ -5890,7 +5890,7 @@ _PLATFORMS = [
             "2. Complete the BlueBubbles setup wizard — sign in with your Apple ID",
             "3. In BlueBubbles Settings → API, note the Server URL and password",
             "4. The server URL is typically http://<your-mac-ip>:1234",
-            "5. Hermes connects via the BlueBubbles REST API and receives",
+            "5. The Fool connects via the BlueBubbles REST API and receives",
             "   incoming messages via a local webhook",
             "6. To authorize users, use DM pairing: fool pairing generate bluebubbles",
             "   Share the code — the user sends it via iMessage to get approved",
@@ -5971,7 +5971,7 @@ _PLATFORMS = [
             "1. Download the Yuanbao app from https://yuanbao.tencent.com/",
             "2. In the app, go to PAI → My Bot and create a new bot",
             "3. After the bot is created, copy the App ID and App Secret",
-            "4. Enter them below and Hermes will connect automatically over WebSocket",
+            "4. Enter them below and The Fool will connect automatically over WebSocket",
         ],
         "vars": [
             {
@@ -6481,10 +6481,10 @@ def _setup_weixin():
     print()
     print(color("  ─── 💬 Weixin / WeChat Setup ───", Colors.CYAN))
     print()
-    print_info("  1. Hermes will open Tencent iLink QR login in this terminal.")
+    print_info("  1. The Fool will open Tencent iLink QR login in this terminal.")
     print_info("  2. Use WeChat to scan and confirm the QR code.")
     print_info(
-        "  3. Hermes will store the returned account_id/token in ~/.hermes/.env."
+        "  3. The Fool will store the returned account_id/token in ~/.fool/.env."
     )
     print_info(
         "  4. This adapter supports native text, image, video, and document delivery."
@@ -7585,7 +7585,7 @@ def _gateway_command_inner(args):
                 "  tmux new -s hermes 'fool gateway run'         # persistent via tmux"
             )
             print(
-                "  nohup fool gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background"
+                "  nohup fool gateway run > ~/.fool/logs/gateway.log 2>&1 &  # background"
             )
             sys.exit(1)
         elif is_container():
@@ -7597,7 +7597,7 @@ def _gateway_command_inner(args):
                 print("Per-profile gateways are auto-registered when you create a profile.")
                 print()
                 print("  fool profile create <name>     # creates the s6 service slot")
-                print("  hermes -p <name> gateway start   # bring it up via s6")
+                print("  fool -p <name> gateway start   # bring it up via s6")
                 print("  fool status                    # see currently-supervised gateways")
                 return
             # Fallback for pre-s6 containers or other container runtimes
@@ -7646,7 +7646,7 @@ def _gateway_command_inner(args):
                 print("Per-profile gateways are auto-unregistered when you delete the profile.")
                 print()
                 print("  fool profile delete <name>     # tears down the s6 service slot")
-                print("  hermes -p <name> gateway stop    # stop without deleting the profile")
+                print("  fool -p <name> gateway stop    # stop without deleting the profile")
                 return
             print("Service uninstall is not applicable inside a Docker container.")
             print("To stop the gateway, stop or remove the container:")
@@ -7704,7 +7704,7 @@ def _gateway_command_inner(args):
                 "  tmux new -s hermes 'fool gateway run'         # persistent via tmux"
             )
             print(
-                "  nohup fool gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background"
+                "  nohup fool gateway run > ~/.fool/logs/gateway.log 2>&1 &  # background"
             )
             print()
             print(
@@ -8052,14 +8052,14 @@ def _gateway_command_inner(args):
                 print("  fool gateway run      # Run in foreground")
                 if is_termux():
                     print(
-                        "  nohup fool gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # Best-effort background start"
+                        "  nohup fool gateway run > ~/.fool/logs/gateway.log 2>&1 &  # Best-effort background start"
                     )
                 elif is_wsl():
                     print(
                         "  tmux new -s hermes 'fool gateway run'         # persistent via tmux"
                     )
                     print(
-                        "  nohup fool gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background"
+                        "  nohup fool gateway run > ~/.fool/logs/gateway.log 2>&1 &  # background"
                     )
                 elif is_windows():
                     print(

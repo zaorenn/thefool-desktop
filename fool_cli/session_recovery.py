@@ -324,7 +324,7 @@ def _snapshot_and_inspect(
 ) -> tuple[tempfile.TemporaryDirectory[str], Path, dict[str, Any]]:
     before = _source_fingerprint(source)
     temp_dir = tempfile.TemporaryDirectory(
-        prefix="hermes-session-recovery-",
+        prefix="fool-session-recovery-",
         dir=str(work_root),
     )
     snapshot_dir = Path(temp_dir.name)
@@ -334,13 +334,13 @@ def _snapshot_and_inspect(
         if before != after:
             raise SessionRecoverySafetyError(
                 "The source database bundle changed while it was being copied. "
-                "Stop every Hermes process using this profile and retry. "
-                "This includes the interactive `hermes` CLI session this "
+                "Stop every The Fool process using this profile and retry. "
+                "This includes the interactive `fool` CLI session this "
                 "command may have been launched from: a running parent CLI "
                 "writes session bookkeeping (compression ticks, context "
                 "tracking) to state.db in the background and counts as a "
-                "Hermes process even after the gateway is stopped. Run the "
-                "recovery from a fresh shell with no `hermes` session open, "
+                "The Fool process even after the gateway is stopped. Run the "
+                "recovery from a fresh shell with no `fool` session open, "
                 "or point --source at an immutable snapshot copy of the "
                 "database."
             )

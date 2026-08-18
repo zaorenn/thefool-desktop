@@ -9,7 +9,7 @@ DEFAULT_CONFIG = {
     "providers": {},
     "fallback_providers": [],
     "credential_pool_strategies": {},
-    "toolsets": ["hermes-cli"],
+    "toolsets": ["fool-cli"],
     # SQLite journal mode used by every Hermes database opener. WAL is the
     # normal default; set DELETE for weak-fsync/shared filesystems where WAL is
     # not crash-safe (for example macOS virtiofs, NFS, or SMB).
@@ -1735,7 +1735,7 @@ DEFAULT_CONFIG = {
         "input_device": None,          # PortAudio input device index/name; null uses the process default
         "capture": "auto",            # auto | local | client — where PCM is captured (client = desktop streams mic via wake.feed)
         "provider": "openwakeword",   # "openwakeword" (free, local) | "sherpa" (free, ANY phrase, no training) | "porcupine" (premium; needs PORCUPINE_ACCESS_KEY)
-        "phrase": "hey hermes",       # for "sherpa" this IS the detected phrase (any text works); for other engines it's a cosmetic label — detection is keyed by the model/keyword below
+        "phrase": "hey fool",       # for "sherpa" this IS the detected phrase (any text works); for other engines it's a cosmetic label — detection is keyed by the model/keyword below
         "sensitivity": 0.6,           # 0.0-1.0 detection threshold, consistent across engines (higher = stricter, fewer false triggers)
         "confirmation_frames": 3,     # openWakeWord only: consecutive over-threshold frames required to fire (higher = fewer false triggers on ambient speech, slightly more latency; 1 = old single-frame behavior)
         "start_new_session": True,    # start a fresh session on wake vs. continue the current one
@@ -2761,7 +2761,7 @@ DEFAULT_CONFIG = {
             "export_interval_seconds": 60,
             "logs_export_interval_seconds": 5,
             "resource_attributes": {
-                "service.name": "hermes-gateway",
+                "service.name": "fool-gateway",
                 "deployment.environment.name": "production",
             },
         },
@@ -3570,7 +3570,7 @@ OPTIONAL_ENV_VARS = {
     "VERTEX_CREDENTIALS_PATH": {
         "description": "Path to a Google Cloud service account JSON for Vertex AI (Gemini). "
                        "Vertex uses OAuth2, not a static API key — this points at the "
-                       "credentials Hermes mints short-lived tokens from. Falls back to "
+                       "credentials The Fool mints short-lived tokens from. Falls back to "
                        "GOOGLE_APPLICATION_CREDENTIALS, then to ADC (gcloud auth "
                        "application-default login). Set project/region under vertex: in config.yaml.",
         "prompt": "Vertex service account JSON path (leave empty to use ADC / GOOGLE_APPLICATION_CREDENTIALS)",
@@ -4014,7 +4014,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "TOOL_GATEWAY_USER_TOKEN": {
-        "description": "Explicit Nous Subscriber access token for tool-gateway requests (optional; otherwise read from the Hermes auth store)",
+        "description": "Explicit Fool Labs Subscriber access token for tool-gateway requests (optional; otherwise read from the Fool auth store)",
         "prompt": "Tool-gateway user token",
         "url": None,
         "password": True,
@@ -4142,7 +4142,7 @@ OPTIONAL_ENV_VARS = {
         "category": "tool",
     },
     "PORCUPINE_ACCESS_KEY": {
-        "description": "Picovoice access key for the Porcupine 'Hey Hermes' wake word engine (optional; openWakeWord is the free default)",
+        "description": "Picovoice access key for the Porcupine 'Hey The Fool' wake word engine (optional; openWakeWord is the free default)",
         "prompt": "Picovoice access key",
         "url": "https://console.picovoice.ai/",
         "password": True,
@@ -4373,7 +4373,7 @@ OPTIONAL_ENV_VARS = {
         "category": "messaging",
     },
     "SLACK_ALLOWED_USERS": {
-        "description": "Comma-separated Slack member IDs allowed to use Hermes, e.g. U01ABC2DEF3. Without this, Slack may connect but deny messages by default.",
+        "description": "Comma-separated Slack member IDs allowed to use The Fool, e.g. U01ABC2DEF3. Without this, Slack may connect but deny messages by default.",
         "prompt": "Allowed Slack member IDs",
         "help": "In Slack, open your profile, choose More or the three-dot menu, then Copy member ID. Add multiple IDs comma-separated.",
         "url": "https://api.slack.com/apps",
@@ -4430,7 +4430,7 @@ OPTIONAL_ENV_VARS = {
         "category": "messaging",
     },
     "MATRIX_USER_ID": {
-        "description": "Matrix user ID (e.g. @hermes:example.org)",
+        "description": "Matrix user ID (e.g. @fool:example.org)",
         "prompt": "Matrix user ID (@user:server)",
         "url": None,
         "password": False,
@@ -4567,14 +4567,14 @@ OPTIONAL_ENV_VARS = {
         "category": "messaging",
     },
     "IRC_CHANNEL": {
-        "description": "IRC channel to join (e.g. #hermes)",
+        "description": "IRC channel to join (e.g. #fool)",
         "prompt": "IRC channel",
         "url": None,
         "password": False,
         "category": "messaging",
     },
     "IRC_NICKNAME": {
-        "description": "Bot nickname on IRC (default: hermes-bot)",
+        "description": "Bot nickname on IRC (default: fool-bot)",
         "prompt": "IRC nickname",
         "url": None,
         "password": False,
@@ -4645,15 +4645,15 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "GATEWAY_PROXY_URL": {
-        "description": "URL of a remote Hermes API server to forward messages to (proxy mode). When set, the gateway handles platform I/O only — all agent work is delegated to the remote server. Use for Docker E2EE containers that relay to a host agent. Also configurable via gateway.proxy_url in config.yaml.",
-        "prompt": "Remote Hermes API server URL (e.g. http://192.168.1.100:8642)",
+        "description": "URL of a remote Fool API server to forward messages to (proxy mode). When set, the gateway handles platform I/O only — all agent work is delegated to the remote server. Use for Docker E2EE containers that relay to a host agent. Also configurable via gateway.proxy_url in config.yaml.",
+        "prompt": "Remote The Fool API server URL (e.g. http://192.168.1.100:8642)",
         "url": None,
         "password": False,
         "category": "messaging",
         "advanced": True,
     },
     "GATEWAY_PROXY_KEY": {
-        "description": "Bearer token for authenticating with the remote Hermes API server (proxy mode). Must match the API_SERVER_KEY on the remote host.",
+        "description": "Bearer token for authenticating with the remote Fool API server (proxy mode). Must match the API_SERVER_KEY on the remote host.",
         "prompt": "Remote API server auth key",
         "url": None,
         "password": True,

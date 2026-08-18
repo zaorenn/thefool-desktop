@@ -413,7 +413,7 @@ CURATOR_DRY_RUN_BANNER = (
     "write_file, or remove_file.\n"
     "  • DO NOT call terminal to mv skill directories into .archive/.\n"
     "  • DO NOT call terminal to mv, cp, rm, or rewrite any file under "
-    "~/.hermes/skills/.\n"
+    "~/.fool/skills/.\n"
     "  • skills_list and skill_view are FINE — read as much as you need.\n"
     "\n"
     "Your output IS the deliverable. Produce the exact same "
@@ -451,7 +451,7 @@ CURATOR_REVIEW_PROMPT = (
     "to local curator-managed skills only; external skills are externally "
     "owned and read-only to this background curator.\n"
     "2. DO NOT delete any skill. Archiving (moving the skill's directory "
-    "into ~/.hermes/skills/.archive/) is the maximum destructive action. "
+    "into ~/.fool/skills/.archive/) is the maximum destructive action. "
     "Archives are recoverable; deletion is not.\n"
     "3. DO NOT touch skills shown as pinned=yes. Skip them entirely.\n"
     "3b. DO NOT archive, delete, consolidate, move, or otherwise modify any "
@@ -480,7 +480,7 @@ CURATOR_REVIEW_PROMPT = (
     "How to work — not optional:\n"
     "1. Scan the full candidate list. Identify PREFIX CLUSTERS (skills "
     "sharing a first word or domain keyword). Examples you are likely "
-    "to find: hermes-config-*, hermes-dashboard-*, gateway-*, codex-*, "
+    "to find: fool-config-*, fool-dashboard-*, gateway-*, codex-*, "
     "ollama-*, anthropic-*, gemini-*, mcp-*, salvage-*, pr-*, "
     "competitor-*, python-*, security-*, etc. Expect 10-25 clusters.\n"
     "2. For each cluster with 2+ members, do NOT ask 'are these pairs "
@@ -509,7 +509,7 @@ CURATOR_REVIEW_PROMPT = (
     "      • `scripts/<name>.<ext>` for statically re-runnable actions "
     "(verification scripts, fixture generators, probes)\n"
     "      Then archive the old sibling. Use `terminal` with `mkdir -p "
-    "~/.hermes/skills/<umbrella>/references/ && mv ... <umbrella>/"
+    "~/.fool/skills/<umbrella>/references/ && mv ... <umbrella>/"
     "references/<topic>.md` (or templates/ / scripts/).\n\n"
     "Package integrity — not optional:\n"
     "Before demoting or archiving a skill, inspect it as a COMPLETE "
@@ -1351,7 +1351,7 @@ def _render_report_markdown(p: Dict[str, Any]) -> str:
         lines.append(
             "_These skills were **absorbed into another skill** during this run — "
             "their content still lives, just under a different name. "
-            "The original directory was moved to `~/.hermes/skills/.archive/` for "
+            "The original directory was moved to `~/.fool/skills/.archive/` for "
             "safety and can be restored via `fool curator restore <name>` if the "
             "consolidation was wrong._\n"
         )
@@ -1387,7 +1387,7 @@ def _render_report_markdown(p: Dict[str, Any]) -> str:
         lines.append(
             "_These skills were archived without being merged into an umbrella "
             "(e.g. stale, unused, or judged irrelevant). "
-            "Directories live under `~/.hermes/skills/.archive/`. "
+            "Directories live under `~/.fool/skills/.archive/`. "
             "Restore any via `fool curator restore <name>`._\n"
         )
         SHOW = 50
@@ -1474,7 +1474,7 @@ def _render_report_markdown(p: Dict[str, Any]) -> str:
     # Recovery footer
     lines.append("## Recovery\n")
     lines.append("- Restore an archived skill: `fool curator restore <name>`")
-    lines.append("- All archives live under `~/.hermes/skills/.archive/` and are recoverable by `mv`")
+    lines.append("- All archives live under `~/.fool/skills/.archive/` and are recoverable by `mv`")
     lines.append("- See `run.json` in this directory for the full machine-readable record.")
     lines.append("")
 

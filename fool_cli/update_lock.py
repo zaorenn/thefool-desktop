@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 # live. A full update (git pull + uv sync + desktop rebuild) is minutes.
 UPDATE_MARKER_MAX_AGE_SECONDS = 20 * 60
 
-MARKER_NAME = ".hermes-update-in-progress"
+MARKER_NAME = ".fool-update-in-progress"
 
 # Set by an orchestrating updater (the Tauri `hermes-setup --update` flow) to
 # its own pid before spawning `fool update` as a child stage. The parent
@@ -208,7 +208,7 @@ def describe_holder(holder: UpdateHolder) -> str:
     minutes, seconds = divmod(int(max(holder.age_seconds, 0)), 60)
     elapsed = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
     return (
-        f"✗ Another Hermes update is already running (PID {holder.pid}, "
+        f"✗ Another The Fool update is already running (PID {holder.pid}, "
         f"started {elapsed} ago).\n"
         "\n"
         "  Two updates mutating the same checkout corrupt it: one rewrites\n"

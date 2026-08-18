@@ -221,7 +221,7 @@ def _check_disk_usage_warning():
         # Get total size of fool directories
         total_bytes = 0
         import glob
-        for path in glob.glob(str(scratch_dir / "hermes-*")):
+        for path in glob.glob(str(scratch_dir / "fool-*")):
             for f in Path(path).rglob('*'):
                 if f.is_file():
                     try:
@@ -1467,7 +1467,7 @@ def _parse_env_var(name: str, default: str, converter: Any = int, type_label: st
     except (ValueError, json.JSONDecodeError):
         raise ValueError(
             f"Invalid value for {name}: {raw!r} (expected {type_label}). "
-            f"Check ~/.hermes/.env or environment variables."
+            f"Check ~/.fool/.env or environment variables."
         )
 
 
@@ -2176,7 +2176,7 @@ def cleanup_all_environments():
     # Also clean any orphaned directories
     scratch_dir = _get_scratch_dir()
     import glob
-    for path in glob.glob(str(scratch_dir / "hermes-*")):
+    for path in glob.glob(str(scratch_dir / "fool-*")):
         try:
             shutil.rmtree(path, ignore_errors=True)
             logger.info("Removed orphaned: %s", path)
@@ -2512,7 +2512,7 @@ def _foreground_background_guidance(command: str) -> str | None:
         return (
             "Foreground command uses shell-level background wrappers (nohup/disown/setsid). "
             "Re-send WITHOUT the wrapper as terminal(command=\"<cmd>\", background=true, "
-            "notify_on_complete=true) so Hermes tracks the process, then run readiness "
+            "notify_on_complete=true) so The Fool tracks the process, then run readiness "
             "checks and tests in separate commands."
         )
 
@@ -2866,7 +2866,7 @@ def terminal_tool(
                     "error": (
                         "Blocked: launchctl submit/bootstrap registers a persistent "
                         "KeepAlive job and is unsafe from inside the gateway process. "
-                        "Use Hermes cron for one-shot delayed work, or install an "
+                        "Use The Fool cron for one-shot delayed work, or install an "
                         "explicit LaunchAgent from a separate shell."
                     ),
                     "status": "error",
@@ -3225,7 +3225,7 @@ def terminal_tool(
                         result_data["notify_unsupported"] = (
                             "notify_on_complete / watch_patterns are not available in "
                             "this session — it cannot receive an async completion after "
-                            "the turn ends (a one-shot runner such as `hermes -z`, a "
+                            "the turn ends (a one-shot runner such as `fool -z`, a "
                             "cron job, a Kanban worker, or a stateless HTTP endpoint). "
                             "The process is "
                             "running in the background; retrieve its result with "

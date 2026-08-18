@@ -480,5 +480,5 @@ def run_sessions_import(args, db=None) -> Optional[str]:
         return None
     label = _SOURCE_LABELS.get(source, source)
     print(f"✓ Imported {label} session as {session_id}")
-    print(f"  Continue it with:  hermes --resume {session_id}")
+    print(f"  Continue it with:  fool --resume {session_id}")
     return session_id

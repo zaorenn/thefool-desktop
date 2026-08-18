@@ -109,7 +109,7 @@ def _resolved_home() -> str:
     hermes_home = os.environ.get("FOOL_HOME", "").strip()
     if hermes_home:
         return hermes_home
-    return os.path.join(os.path.expanduser("~"), ".hermes")
+    return os.path.join(os.path.expanduser("~"), ".fool")
 
 
 def container_mode_may_be_active() -> bool:
@@ -136,7 +136,7 @@ def container_mode_may_be_active() -> bool:
             and active_profile_may_override_home(hermes_home)
         )
 
-    default_home = os.path.join(os.path.expanduser("~"), ".hermes")
+    default_home = os.path.join(os.path.expanduser("~"), ".fool")
     if active_profile_may_override_home(default_home):
         return True
     return os.path.exists(os.path.join(default_home, ".container-mode"))

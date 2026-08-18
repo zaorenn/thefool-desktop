@@ -15,7 +15,7 @@ from pathlib import Path
 from agent.verify.recipes import Recipe, detect_recipe
 
 MANIFEST_VERSION = 1
-_MANIFEST_RELPATH = Path(".hermes") / "environment.json"
+_MANIFEST_RELPATH = Path(".fool") / "environment.json"
 
 
 def manifest_path(root: Path) -> Path:

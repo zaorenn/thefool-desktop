@@ -47,7 +47,7 @@ from typing import Any, Optional
 # paths can never be confused: BOOTSTRAP seeds a fresh volume; REBOOTSTRAP
 # overwrites a terminally-dead Nous entry on an existing volume.
 REBOOTSTRAP_ENV = "FOOL_AUTH_JSON_REBOOTSTRAP"
-BOOTSTRAP_CLIENT_ID = "hermes-cli-vps"
+BOOTSTRAP_CLIENT_ID = "fool-cli-vps"
 
 
 def _nous_entry_is_terminal(nous_state: Any) -> bool:

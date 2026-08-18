@@ -143,11 +143,11 @@ def _quarantine_running_hermes_exe(scripts_dir: Path) -> list[tuple[Path, Path]]
     if not _is_windows():
         return []
     names = set(_load_console_script_names(scripts_dir.parent.parent)) or {
-        "hermes",
+        "fool",
         "hermes-agent",
-        "hermes-acp",
+        "fool-acp",
     }
-    names.add("hermes-gateway")
+    names.add("fool-gateway")
     moved: list[tuple[Path, Path]] = []
     for name in sorted(names):
         shim = scripts_dir / f"{name}.exe"

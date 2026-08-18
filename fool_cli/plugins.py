@@ -499,8 +499,8 @@ MAX_SYSTEM_PROMPT_SECTIONS = 32
 MAX_SYSTEM_PROMPT_SECTIONS_TOTAL_CHARS = 8_000
 _SYSTEM_PROMPT_SECTION_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 _SYSTEM_PROMPT_SECTION_HEADING_PREFIX = "## Plugin Context: "
-PLUGIN_SECTIONS_START = "<!-- hermes-plugin-sections:start -->"
-PLUGIN_SECTIONS_END = "<!-- hermes-plugin-sections:end -->"
+PLUGIN_SECTIONS_START = "<!-- fool-plugin-sections:start -->"
+PLUGIN_SECTIONS_END = "<!-- fool-plugin-sections:end -->"
 
 
 def is_valid_system_prompt_section_id(value: Any) -> bool:
@@ -512,7 +512,7 @@ def format_system_prompt_section(section_id: str, content: str) -> str:
     """Render an auditable, length-framed block recoverable from the full prompt."""
     return (
         f"{_SYSTEM_PROMPT_SECTION_HEADING_PREFIX}{section_id}\n"
-        f"<!-- hermes-plugin-section-chars:{len(content)} -->\n\n"
+        f"<!-- fool-plugin-section-chars:{len(content)} -->\n\n"
         f"{content}"
     )
 
@@ -524,7 +524,7 @@ def format_system_prompt_sections(sections: list) -> str:
     blocks = [format_system_prompt_section(item.id, item.content) for item in sections]
     return f"{PLUGIN_SECTIONS_START}\n" + "\n\n".join(blocks) + f"\n{PLUGIN_SECTIONS_END}"
 # Reserved event namespace prefix — only core may publish ``hermes:<event>``.
-FOOL_EVENT_NAMESPACE = "hermes"
+FOOL_EVENT_NAMESPACE = "fool"
 
 # Max inter-plugin event dispatch recursion depth. A subscriber may itself
 # call ``ctx.emit``; this bound stops mutually-emitting plugins from looping
@@ -658,7 +658,7 @@ _KNOWN_MANIFEST_FIELDS: Set[str] = {
     "manifest_version", "api_version", "requires_plugins",
     "python_dependencies", "config_schema", "license", "homepage", "tags",
     # owned by sibling sub-issues but reserved so their manifests don't warn
-    "capabilities", "emits", "listens", "hermes", "depends",
+    "capabilities", "emits", "listens", "fool", "depends",
 }
 
 # Highest manifest schema version this Hermes understands.
@@ -700,7 +700,7 @@ def _parse_manifest_v2_fields(data: Mapping, key: str) -> Dict[str, Any]:
         mv = 1
     if mv > SUPPORTED_MANIFEST_VERSION:
         logger.warning(
-            "Plugin %s: manifest_version %d is newer than this Hermes "
+            "Plugin %s: manifest_version %d is newer than this The Fool "
             "supports (%d); loading anyway and ignoring unknown fields",
             key, mv, SUPPORTED_MANIFEST_VERSION,
         )
@@ -4084,7 +4084,7 @@ class PluginManager:
         # 3. Project plugins (./.hermes/plugins/), only when explicitly opted
         # in. This must match the full discovery gate exactly.
         if _env_enabled("FOOL_ENABLE_PROJECT_PLUGINS"):
-            project_dir = Path.cwd() / ".hermes" / "plugins"
+            project_dir = Path.cwd() / ".fool" / "plugins"
             logger.debug("Scanning project plugins: %s", project_dir)
             project_manifests = self._scan_directory(project_dir, source="project")
             logger.debug("  project: %d manifest(s)", len(project_manifests))
@@ -4671,7 +4671,7 @@ class PluginManager:
         if missing:
             logger.warning(
                 "Plugin %s declares Python dependencies that are not "
-                "installed: %s. Hermes does not install plugin dependencies "
+                "installed: %s. The Fool does not install plugin dependencies "
                 "automatically; install them yourself, e.g.: pip install %s",
                 key, ", ".join(missing),
                 " ".join(f"'{m}'" for m in missing),
@@ -5188,7 +5188,7 @@ class PluginManager:
         worker = threading.Thread(
             target=self._event_worker_loop,
             args=(dispatch_queue,),
-            name="hermes-plugin-events",
+            name="fool-plugin-events",
             daemon=True,
         )
         self._event_worker = worker
@@ -6462,7 +6462,7 @@ def resolve_plugin_command_result(result: Any) -> Any:
 
     thread = threading.Thread(
         target=_runner,
-        name="hermes-plugin-command-await",
+        name="fool-plugin-command-await",
         daemon=True,
     )
     thread.start()

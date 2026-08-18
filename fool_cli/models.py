@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Identify ourselves so endpoints fronted by Cloudflare's Browser Integrity
 # Check (error 1010) don't reject the default ``Python-urllib/*`` signature.
-_HERMES_USER_AGENT = f"hermes-cli/{_HERMES_VERSION}"
+_HERMES_USER_AGENT = f"fool-cli/{_HERMES_VERSION}"
 
 COPILOT_BASE_URL = "https://api.githubcopilot.com"
 COPILOT_MODELS_URL = f"{COPILOT_BASE_URL}/models"
@@ -4742,7 +4742,7 @@ _DEEPINFRA_SURFACE_TAGS: frozenset[str] = frozenset({
 })
 
 _DEEPINFRA_DEFAULT_BASE_URL = "https://api.deepinfra.com/v1/openai"
-_DEEPINFRA_MODELS_QUERY = "filter=true&sort_by=hermes"
+_DEEPINFRA_MODELS_QUERY = "filter=true&sort_by=fool"
 
 # Module-level cache for the full tagged catalog response, keyed by base URL.
 # Each value is the parsed ``data`` list. Surface-specific filters read from
@@ -5415,7 +5415,7 @@ def validate_requested_model(
 
         message = (
             f"Note: could not reach this custom endpoint's model listing at `{probe.get('probed_url')}`. "
-            f"Hermes will still save `{requested}`, but the endpoint should expose `/models` for verification."
+            f"The Fool will still save `{requested}`, but the endpoint should expose `/models` for verification."
         )
         if api_mode == "anthropic_messages":
             message += (
@@ -5543,7 +5543,7 @@ def validate_requested_model(
                 "message": (
                     f"Note: `{requested}` was not found in the MiniMax catalog."
                     f"{suggestion_text}"
-                    "\n  MiniMax does not expose a /models endpoint, so Hermes cannot verify the model name."
+                    "\n  MiniMax does not expose a /models endpoint, so The Fool cannot verify the model name."
                     "\n  The model may still work if it exists on the server."
                 ),
             }

@@ -114,7 +114,7 @@ def resolve_hermes_bin() -> Optional[str]:
                 return abs_path
 
     # PATH lookup
-    path_bin = shutil.which("hermes")
+    path_bin = shutil.which("fool")
     if path_bin:
         return path_bin
 
@@ -197,7 +197,7 @@ def relaunch(
             print(
                 f"\nHermes relaunch failed: {exc}\n"
                 f"Command: {' '.join(new_argv)}\n"
-                f"Fix: open a new terminal so PATH picks up, then re-run hermes.",
+                f"Fix: open a new terminal so PATH picks up, then re-run fool.",
                 file=sys.stderr,
             )
             sys.exit(1)

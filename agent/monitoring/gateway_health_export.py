@@ -17,7 +17,7 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_DIAGNOSTIC_SCOPE = "hermes.gateway.diagnostics"
+_DEFAULT_DIAGNOSTIC_SCOPE = "fool.gateway.diagnostics"
 
 _RESOURCE_ATTRIBUTE_KEYS = frozenset({
     "service.name",
@@ -82,7 +82,7 @@ def _runtime_resource_attributes(
     attrs = _safe_resource_attributes(gh.get("resource_attributes"))
     from agent.monitoring.gateway_health import _safe_instance_id
 
-    attrs["service.name"] = "hermes-gateway"
+    attrs["service.name"] = "fool-gateway"
     attrs["service.instance.id"] = _safe_instance_id(_install_id(config))
     attrs["telemetry.scope"] = telemetry_scope
     return attrs
@@ -94,7 +94,7 @@ def _diagnostic_log_attributes(event: Dict[str, Any]) -> Dict[str, Any]:
         value = event.get(key)
         if value is None:
             continue
-        attrs[f"hermes.{key}"] = _redact_string(value) if isinstance(value, str) else value
+        attrs[f"fool.{key}"] = _redact_string(value) if isinstance(value, str) else value
     return attrs
 
 
@@ -151,7 +151,7 @@ class GatewayHealthExportRuntime:
         if closeables:
             worker = threading.Thread(
                 target=_close,
-                name="hermes-gateway-health-export-shutdown",
+                name="fool-gateway-health-export-shutdown",
                 daemon=True,
             )
             worker.start()
@@ -366,14 +366,14 @@ def _read_runtime_snapshot(config: Dict[str, Any]):
         base = dict(gateway_snapshot.metrics[0].attributes) if gateway_snapshot.metrics else {}
         gateway_snapshot.metrics.append(
             GatewayMetric(
-                name="hermes.gateway.background_work",
+                name="fool.gateway.background_work",
                 value=_read_background_work_count(),
                 attributes=base,
             )
         )
         gateway_snapshot.metrics.append(
             GatewayMetric(
-                name="hermes.gateway.background_delegations",
+                name="fool.gateway.background_delegations",
                 value=_read_background_delegations_count(),
                 attributes=base,
             )
@@ -431,26 +431,26 @@ def _start_metric_provider(config: Dict[str, Any], sdk: Dict[str, Any]) -> Any:
         metric_readers=[reader],
         resource=sdk["Resource"].create(resource_attrs),
     )
-    meter = provider.get_meter("hermes.gateway.health")
+    meter = provider.get_meter("fool.gateway.health")
     Observation = sdk["Observation"]
 
     metric_names = [
-        "hermes.gateway.up",
-        "hermes.gateway.state",
-        "hermes.gateway.active_agents",
-        "hermes.gateway.busy",
-        "hermes.gateway.drainable",
-        "hermes.gateway.restart_requested",
-        "hermes.gateway.background_work",
-        "hermes.gateway.background_delegations",
-        "hermes.platform.up",
-        "hermes.platform.degraded",
-        "hermes.cron.scheduler.heartbeat_age_seconds",
-        "hermes.cron.scheduler.last_success_age_seconds",
-        "hermes.cron.scheduler.catch_up_occurrences",
-        "hermes.cron.jobs.enabled",
-        "hermes.cron.jobs.running",
-        "hermes.cron.jobs.overdue",
+        "fool.gateway.up",
+        "fool.gateway.state",
+        "fool.gateway.active_agents",
+        "fool.gateway.busy",
+        "fool.gateway.drainable",
+        "fool.gateway.restart_requested",
+        "fool.gateway.background_work",
+        "fool.gateway.background_delegations",
+        "fool.platform.up",
+        "fool.platform.degraded",
+        "fool.cron.scheduler.heartbeat_age_seconds",
+        "fool.cron.scheduler.last_success_age_seconds",
+        "fool.cron.scheduler.catch_up_occurrences",
+        "fool.cron.jobs.enabled",
+        "fool.cron.jobs.running",
+        "fool.cron.jobs.overdue",
     ]
 
     def callback(name: str):
@@ -563,7 +563,7 @@ def _start_snapshot_thread(config: Dict[str, Any], stop_event: threading.Event) 
         while not stop_event.wait(interval):
             _emit_snapshot_events(config)
 
-    thread = threading.Thread(target=_run, name="hermes-gateway-health-export", daemon=True)
+    thread = threading.Thread(target=_run, name="fool-gateway-health-export", daemon=True)
     thread.start()
     return thread
 

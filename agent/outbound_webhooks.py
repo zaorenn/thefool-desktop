@@ -436,7 +436,7 @@ def _build_delivery(
 ) -> Dict[str, Any]:
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "Hermes-Agent-Outbound-Webhook",
+        "User-Agent": "The Fool-Agent-Outbound-Webhook",
         "X-Fool-Event": event,
         "X-Fool-Delivery": delivery_id,
     }

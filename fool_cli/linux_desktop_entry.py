@@ -32,7 +32,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-DESKTOP_ENTRY_NAME = "hermes.desktop"
+DESKTOP_ENTRY_NAME = "fool.desktop"
 
 
 def is_supported() -> bool:
@@ -90,15 +90,15 @@ def render_desktop_entry(exec_command: str, icon: str) -> str:
     return (
         "[Desktop Entry]\n"
         "Type=Application\n"
-        "Name=Hermes\n"
-        "GenericName=Hermes Desktop\n"
-        "Comment=Launch Hermes Desktop\n"
+        "Name=The Fool\n"
+        "GenericName=The Fool Desktop\n"
+        "Comment=Launch The Fool Desktop\n"
         f"Exec={exec_command}\n"
         f"Icon={icon}\n"
         "Terminal=false\n"
         "Categories=Utility;\n"
         "StartupNotify=true\n"
-        "StartupWMClass=Hermes\n"
+        "StartupWMClass=The Fool\n"
     )
 
 
@@ -153,7 +153,7 @@ def install_desktop_entry(project_root: Path) -> Optional[Path]:
     icon = icon_path(project_root)
     # Use the themed name when the checkout has no icon (a lite or
     # packaged install). A broken absolute path renders as no icon.
-    icon_value = str(icon) if icon.is_file() else "hermes"
+    icon_value = str(icon) if icon.is_file() else "fool"
     contents = render_desktop_entry(resolve_exec_command(), icon_value)
 
     try:

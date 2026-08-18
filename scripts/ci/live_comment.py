@@ -300,7 +300,7 @@ def find_comment_id(token: str, repo: str, pr_number: str) -> int | None:
     )
     for c in comments:
         body = c.get("body", "") if isinstance(c, dict) else ""
-        if body.startswith("<!-- hermes-ci-review-bot -->"):
+        if body.startswith("<!-- fool-ci-review-bot -->"):
             return c.get("id") if isinstance(c, dict) else None
     return None
 

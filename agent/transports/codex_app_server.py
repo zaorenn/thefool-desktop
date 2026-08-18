@@ -107,7 +107,7 @@ class CodexAppServerClient:
                 else spawn_env.get(
                     "FOOL_KANBAN_ROOT",
                     os.path.join(
-                        spawn_env.get("FOOL_HOME", os.path.expanduser("~/.hermes")),
+                        spawn_env.get("FOOL_HOME", os.path.expanduser("~/.fool")),
                         "kanban",
                     ),
                 )
@@ -159,7 +159,7 @@ class CodexAppServerClient:
 
     def initialize(
         self,
-        client_name: str = "hermes",
+        client_name: str = "fool",
         client_title: str = "Fool Agent",
         client_version: str = "0.1",
         capabilities: Optional[dict] = None,

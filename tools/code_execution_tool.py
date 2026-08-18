@@ -1503,7 +1503,7 @@ def execute_code(
             # fails" reports are diagnosable without log spam.
             _external_env_logged.add(_child_python)
             logger.info(
-                "execute_code: child interpreter %s is outside the Hermes "
+                "execute_code: child interpreter %s is outside the Fool "
                 "environment; fool root omitted from PYTHONPATH",
                 _child_python,
             )
@@ -2112,7 +2112,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
     if mode == "strict":
         cwd_note = (
             "Scripts run in their own temp dir, not the session's CWD — use absolute paths "
-            "(os.path.expanduser('~/.hermes/.env')) or terminal()/read_file() for user files."
+            "(os.path.expanduser('~/.fool/.env')) or terminal()/read_file() for user files."
         )
     else:
         cwd_note = (
@@ -2121,7 +2121,7 @@ def build_execute_code_schema(enabled_sandbox_tools: set = None,
         )
 
     description = (
-        "Run a Python script that calls Hermes tools programmatically. "
+        "Run a Python script that calls The Fool tools programmatically. "
         "Use when you need 3+ tool calls with logic between them: "
         "filtering/reducing large outputs before they enter context, "
         "conditional branching, or loops (N pages/files, retry on failure). "

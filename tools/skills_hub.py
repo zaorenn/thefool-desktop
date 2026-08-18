@@ -734,7 +734,7 @@ class GitHubSource(SkillSource):
         tags = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            hermes_meta = metadata.get("hermes", {})
+            hermes_meta = metadata.get("fool", {})
             if isinstance(hermes_meta, dict):
                 tags = hermes_meta.get("tags", [])
         if not tags:
@@ -1487,7 +1487,7 @@ class UrlSource(SkillSource):
         tags: List[str] = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            hermes_meta = metadata.get("hermes", {})
+            hermes_meta = metadata.get("fool", {})
             if isinstance(hermes_meta, dict):
                 raw_tags = hermes_meta.get("tags", [])
                 if isinstance(raw_tags, list):
@@ -3070,7 +3070,7 @@ class LobeHubSource(SkillSource):
             f"name: {identifier}",
             f"description: {description[:500]}",
             "metadata:",
-            "  hermes:",
+            "  fool:",
             f"    tags: [{', '.join(str(t) for t in tag_list)}]",
             "  lobehub:",
             "    source: lobehub",
@@ -3582,7 +3582,7 @@ class OptionalSkillSource(SkillSource):
             tags = []
             meta_block = fm.get("metadata", {})
             if isinstance(meta_block, dict):
-                hermes_meta = meta_block.get("hermes", {})
+                hermes_meta = meta_block.get("fool", {})
                 if isinstance(hermes_meta, dict):
                     tags = hermes_meta.get("tags", [])
 
@@ -4172,7 +4172,7 @@ FOOL_INDEX_TTL = 6 * 3600  # 6 hours
 
 
 def _hermes_index_cache_file() -> Path:
-    return _index_cache_dir() / "hermes-index.json"
+    return _index_cache_dir() / "fool-index.json"
 
 
 def _load_hermes_index() -> Optional[dict]:
@@ -4215,7 +4215,7 @@ def _load_hermes_index() -> Optional[dict]:
                 headers={"Accept-Encoding": accept_encoding},
             )
             if resp.status_code != 200:
-                logger.debug("Hermes index fetch returned %d", resp.status_code)
+                logger.debug("The Fool index fetch returned %d", resp.status_code)
                 return _load_stale_index_cache()
             data = resp.json()
             break
@@ -4223,13 +4223,13 @@ def _load_hermes_index() -> Optional[dict]:
             # Content-Encoding decode failed — retry once uncompressed before
             # giving up on the network path entirely.
             logger.debug(
-                "Hermes index decode failed (Accept-Encoding=%s): %s",
+                "The Fool index decode failed (Accept-Encoding=%s): %s",
                 accept_encoding,
                 e,
             )
             continue
         except (httpx.HTTPError, json.JSONDecodeError) as e:
-            logger.debug("Hermes index fetch failed: %s", e)
+            logger.debug("The Fool index fetch failed: %s", e)
             return _load_stale_index_cache()
 
     if data is None:
@@ -4292,7 +4292,7 @@ class HermesIndexSource(SkillSource):
         return self._github
 
     def source_id(self) -> str:
-        return "hermes-index"
+        return "fool-index"
 
     @property
     def is_available(self) -> bool:
@@ -4379,7 +4379,7 @@ class HermesIndexSource(SkillSource):
         if resolved:
             bundle = self._get_github().fetch(resolved)
             if bundle:
-                bundle.source = entry.get("source", "hermes-index")
+                bundle.source = entry.get("source", "fool-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -4390,7 +4390,7 @@ class HermesIndexSource(SkillSource):
             github_id = f"{repo}/{path}"
             bundle = self._get_github().fetch(github_id)
             if bundle:
-                bundle.source = entry.get("source", "hermes-index")
+                bundle.source = entry.get("source", "fool-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -4439,7 +4439,7 @@ class HermesIndexSource(SkillSource):
         return SkillMeta(
             name=entry.get("name", ""),
             description=entry.get("description", ""),
-            source=entry.get("source", "hermes-index"),
+            source=entry.get("source", "fool-index"),
             identifier=entry.get("identifier", ""),
             trust_level=entry.get("trust_level", "community"),
             repo=entry.get("repo"),
@@ -4524,7 +4524,7 @@ def parallel_search_sources(
                                   "lobehub", "well-known"})
     if _effective_filter == "all":
         for src in sources:
-            if (src.source_id() == "hermes-index"
+            if (src.source_id() == "fool-index"
                     and getattr(src, "is_available", False)):
                 _index_available = True
                 break

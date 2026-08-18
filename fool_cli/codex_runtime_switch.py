@@ -50,7 +50,7 @@ def parse_args(arg_string: str) -> tuple[Optional[str], list[str]]:
     # Accept human-friendly synonyms
     if raw in {"on", "codex", "enable"}:
         return "codex_app_server", []
-    if raw in {"off", "default", "disable", "hermes"}:
+    if raw in {"off", "default", "disable", "fool"}:
         return "auto", []
     if raw in VALID_RUNTIMES:
         return raw, []
@@ -216,7 +216,7 @@ def apply(
             # Tools/MCP servers (excluding the hermes-tools callback,
             # which is internal plumbing — surface separately).
             user_servers = [
-                s for s in mig_report.migrated if s != "hermes-tools"
+                s for s in mig_report.migrated if s != "fool-tools"
             ]
             if user_servers:
                 msg_lines.append(
@@ -241,16 +241,16 @@ def apply(
                     f"Default sandbox: {mig_report.wrote_permissions_default} "
                     f"(no approval prompt on every write)"
                 )
-            if "hermes-tools" in mig_report.migrated:
+            if "fool-tools" in mig_report.migrated:
                 msg_lines.append(
-                    "Hermes tool callback registered: codex can now use "
+                    "The Fool tool callback registered: codex can now use "
                     "web_search, web_extract, browser_*, vision_analyze, "
                     "image_generate, skill_view, skills_list, text_to_speech, "
                     "kanban_* (worker + orchestrator) via MCP."
                 )
                 msg_lines.append(
                     "  (delegate_task, memory, session_search, todo run "
-                    "only on the default Hermes runtime — they need the "
+                    "only on the default Fool runtime — they need the "
                     "agent loop context.)"
                 )
             msg_lines.append(f"  (config: {mig_report.target_path})")
@@ -261,14 +261,14 @@ def apply(
         msg_lines.append(
             "OpenAI/Codex turns now run through `codex app-server` "
             "(terminal/file ops/patching inside Codex; "
-            "Hermes tools available via MCP callback)."
+            "The Fool tools available via MCP callback)."
         )
         msg_lines.append(
             "Effective on next session — current cached agent keeps "
             "the prior runtime to preserve prompt cache."
         )
     else:
-        msg_lines.append("OpenAI/Codex turns will use the default Hermes runtime.")
+        msg_lines.append("OpenAI/Codex turns will use the default Fool runtime.")
         msg_lines.append("Effective on next session.")
     return CodexRuntimeStatus(
         success=True,

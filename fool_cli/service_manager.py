@@ -672,7 +672,7 @@ class S6ServiceManager:
             "set -e",
             "export HOME=/opt/data",
             "cd /opt/data",
-            ". /opt/hermes/.venv/bin/activate",
+            ". /opt/fool/.venv/bin/activate",
         ]
         for k, v in sorted(extra_env.items()):
             lines.append(f"export {k}={shlex.quote(v)}")
@@ -702,11 +702,11 @@ class S6ServiceManager:
         if profile == "default":
             gateway_cmd = "fool gateway run --replace"
         else:
-            gateway_cmd = f"hermes -p {shlex.quote(profile)} gateway run --replace"
+            gateway_cmd = f"fool -p {shlex.quote(profile)} gateway run --replace"
         # Skip the drop when already non-root (setgroups() lacks CAP_SETGID →
         # s6 boot-loop).
         lines.append(f'[ "$(id -u)" = 0 ] || exec {gateway_cmd}')
-        lines.append(f"exec s6-setuidgid hermes {gateway_cmd}")
+        lines.append(f"exec s6-setuidgid fool {gateway_cmd}")
         return "\n".join(lines) + "\n"
 
     @staticmethod

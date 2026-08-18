@@ -264,7 +264,7 @@ class ProviderDef:
     is_aggregator: bool = False
     auth_type: str = "api_key"
     doc: str = ""
-    source: str = ""                      # "models.dev", "hermes", "user-config"
+    source: str = ""                      # "models.dev", "fool", "user-config"
 
 
 # -- Aliases ------------------------------------------------------------------
@@ -522,7 +522,7 @@ def get_provider(name: str, *, allow_network: bool = True) -> Optional[ProviderD
             base_url_env_var=overlay.base_url_env_var,
             is_aggregator=overlay.is_aggregator,
             auth_type=overlay.auth_type,
-            source="hermes",
+            source="fool",
         )
 
     return None
@@ -914,7 +914,7 @@ def resolve_provider_full(
                         transport="openai_chat",
                         api_key_env_vars=tuple(_pcfg.api_key_env_vars or ()),
                         base_url=_pcfg.inference_base_url or "",
-                        source="hermes-auth-registry",
+                        source="fool-auth-registry",
                     )
         except Exception:
             pass

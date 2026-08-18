@@ -252,7 +252,7 @@ _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
 
 # Names that cannot be used as profile aliases
 _RESERVED_NAMES = frozenset({
-    "hermes", "default", "test", "tmp", "root", "sudo",
+    "fool", "default", "test", "tmp", "root", "sudo",
 })
 
 # Hermes subcommands that cannot be used as profile names/aliases
@@ -350,7 +350,7 @@ def validate_profile_name(name: str) -> None:
     if name in _RESERVED_NAMES:
         raise ValueError(
             f"Profile name {name!r} is reserved — it collides with either "
-            f"the Hermes installation itself or a common system binary.  "
+            f"the Fool installation itself or a common system binary.  "
             f"Pick a different name."
         )
 
@@ -422,7 +422,7 @@ def check_alias_collision(name: str) -> Optional[str]:
             if existing_path == str(expected):
                 try:
                     content = expected.read_text(encoding="utf-8")
-                    if "hermes -p" in content:
+                    if "fool -p" in content:
                         return None  # it's our wrapper, safe to overwrite
                 except Exception:
                     pass
@@ -465,7 +465,7 @@ def create_wrapper_script(name: str, target: Optional[str] = None) -> Optional[P
     if is_windows:
         wrapper_path = wrapper_dir / f"{canon}.bat"
         try:
-            wrapper_path.write_text(f"@echo off\r\nhermes -p {profile} %*\r\n", encoding="utf-8")
+            wrapper_path.write_text(f"@echo off\r\nfool -p {profile} %*\r\n", encoding="utf-8")
             return wrapper_path
         except OSError as e:
             print(f"⚠ Could not create wrapper at {wrapper_path}: {e}")
@@ -473,7 +473,7 @@ def create_wrapper_script(name: str, target: Optional[str] = None) -> Optional[P
     else:
         wrapper_path = wrapper_dir / canon
         try:
-            hermes_exe = shutil.which("hermes") or "hermes"
+            hermes_exe = shutil.which("fool") or "fool"
             wrapper_path.write_text(f'#!/bin/sh\nexec {shlex.quote(hermes_exe)} -p {profile} "$@"\n', encoding="utf-8")
             wrapper_path.chmod(wrapper_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
             return wrapper_path
@@ -504,7 +504,7 @@ def remove_wrapper_script(name: str) -> bool:
             try:
                 # Verify it's our wrapper before removing
                 content = wrapper_path.read_text(encoding="utf-8")
-                if "hermes -p" in content:
+                if "fool -p" in content:
                     wrapper_path.unlink()
                     return True
             except Exception:
@@ -587,7 +587,7 @@ def build_alias_map() -> dict[str, str]:
     if not wrapper_dir.is_dir():
         return result
     is_windows = sys.platform == "win32"
-    prefix = "hermes -p "
+    prefix = "fool -p "
 
     for entry in sorted(wrapper_dir.iterdir()):
         if not entry.is_file():
@@ -1157,7 +1157,7 @@ def create_profile(
     if not env_path.exists():
         try:
             env_path.write_text(
-                "# Per-profile secrets for this Hermes profile.\n"
+                "# Per-profile secrets for this The Fool profile.\n"
                 "# API keys and tokens set here override the shell environment.\n"
                 "# Behavioral settings belong in config.yaml, not here.\n",
                 encoding="utf-8",
@@ -1304,7 +1304,7 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
                 shutil.copy2(default_env, env_path)
             else:
                 env_path.write_text(
-                    "# Per-profile secrets for this Hermes profile.\n"
+                    "# Per-profile secrets for this The Fool profile.\n"
                     "# API keys and tokens set here override the shell environment.\n"
                     "# Behavioral settings belong in config.yaml, not here.\n",
                     encoding="utf-8",
@@ -1363,7 +1363,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
         current_user = None
 
     backend_tokens = {"serve", "dashboard", "gateway"}
-    hermes_markers = ("fool_cli.main", "hermes-gateway", "tui_gateway")
+    hermes_markers = ("fool_cli.main", "fool-gateway", "tui_gateway")
     # Matches python / python3 / python3.12 / pythonw(.exe) — the interpreter
     # basenames a `#!/…/python3` console-script shim gets exec'd through when
     # something (e.g. Electron's `findOnPath('hermes')` resolution) spawns the
@@ -1376,7 +1376,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
     # a known shim identity rather than a loose prefix match, since argv[1]
     # can be ANY user-invoked python script path when argv[0] is a bare
     # interpreter.
-    _HERMES_CONSOLE_SCRIPT_NAMES = frozenset({"hermes", "hermes-agent", "hermes-acp"})
+    _HERMES_CONSOLE_SCRIPT_NAMES = frozenset({"fool", "hermes-agent", "fool-acp"})
     pids: list[int] = []
 
     for proc in psutil.process_iter(["pid", "name", "username", "cmdline"]):
@@ -1400,8 +1400,8 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
             exe_name = os.path.basename(argv[0]).lower()
             is_hermes = (
                 any(marker in joined for marker in hermes_markers)
-                or exe_name == "hermes"
-                or exe_name.startswith("hermes")
+                or exe_name == "fool"
+                or exe_name.startswith("fool")
             )
             if not is_hermes and len(argv) >= 2 and _python_interpreter_re.match(exe_name):
                 # Match against the actual known console-script entry points
@@ -1543,7 +1543,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
 
     if canon == "default":
         raise ValueError(
-            "Cannot delete the default profile (~/.hermes).\n"
+            "Cannot delete the default profile (~/.fool).\n"
             "To remove everything, use: fool uninstall"
         )
 
@@ -2268,7 +2268,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
 def _migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) -> None:
     """Rename Honcho host blocks for a renamed profile without changing peers."""
     old_host = f"hermes_{old_name}"
-    legacy_old_host = f"hermes.{old_name}"
+    legacy_old_host = f"fool.{old_name}"
     new_host = f"hermes_{new_name}"
 
     candidates = [

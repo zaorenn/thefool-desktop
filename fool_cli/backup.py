@@ -182,7 +182,7 @@ def _backup_operation_lock(hermes_home: Path, timeout_seconds: float = 0.25):
                     break
                 except (OSError, PermissionError):
                     if time.monotonic() >= deadline:
-                        raise BackupInProgressError("another Hermes backup is already running")
+                        raise BackupInProgressError("another The Fool backup is already running")
                     time.sleep(0.05)
         else:
             import fcntl
@@ -194,7 +194,7 @@ def _backup_operation_lock(hermes_home: Path, timeout_seconds: float = 0.25):
                     break
                 except (BlockingIOError, OSError):
                     if time.monotonic() >= deadline:
-                        raise BackupInProgressError("another Hermes backup is already running")
+                        raise BackupInProgressError("another The Fool backup is already running")
                     time.sleep(0.05)
 
         yield
@@ -630,7 +630,7 @@ def run_backup(args) -> None:
     hermes_root = get_default_hermes_root()
 
     if not hermes_root.is_dir():
-        print(f"Error: Hermes home directory not found at {hermes_root}")
+        print(f"Error: The Fool home directory not found at {hermes_root}")
         sys.exit(1)
 
     try:
@@ -650,10 +650,10 @@ def _run_backup_locked(args, hermes_root: Path) -> None:
         # If user gave a directory, put the zip inside it
         if out_path.is_dir():
             stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-            out_path = out_path / f"hermes-backup-{stamp}.zip"
+            out_path = out_path / f"fool-backup-{stamp}.zip"
     else:
         stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        out_path = Path.home() / f"hermes-backup-{stamp}.zip"
+        out_path = Path.home() / f"fool-backup-{stamp}.zip"
 
     # Ensure the suffix is .zip
     if out_path.suffix.lower() != ".zip":
@@ -865,7 +865,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 
     if not found:
         return False, (
-            "zip does not appear to be a Hermes backup "
+            "zip does not appear to be a Fool backup "
             "(no config.yaml, .env, or state databases found)"
         )
 
@@ -890,7 +890,7 @@ def _detect_prefix(zf: zipfile.ZipFile) -> str:
     if len(first_parts) == 1:
         prefix = first_parts.pop()
         # Only strip if it looks like a fool dir name
-        if prefix in {".hermes", "hermes"}:
+        if prefix in {".fool", "fool"}:
             return prefix + "/"
 
     return ""
@@ -1057,7 +1057,7 @@ def run_import(args) -> None:
 
         if (has_config or has_env) and not args.force:
             print()
-            print("Warning: Target directory already has Hermes configuration.")
+            print("Warning: Target directory already has The Fool configuration.")
             print("Importing will overwrite existing files with backup contents.")
             print()
             try:
@@ -1224,7 +1224,7 @@ def run_import(args) -> None:
                 # fool_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
                     print("\n  Profiles detected but aliases could not be created.")
-                    print("  Run: fool profile list  (after installing hermes)")
+                    print("  Run: fool profile list  (after installing fool)")
 
         # Guidance
         print()
@@ -1236,7 +1236,7 @@ def run_import(args) -> None:
             gw_profiles = [n for n, _ in restored_profiles]
             print("\nTo re-enable gateway services for profiles:")
             for pname in gw_profiles:
-                print(f"  hermes -p {pname} gateway install")
+                print(f"  fool -p {pname} gateway install")
 
         # Bring the restored install to life: the backup may contain bot
         # tokens and registered cron jobs, but they're inert without a
@@ -1254,7 +1254,7 @@ def run_import(args) -> None:
             print("\nStart the gateway to activate cron jobs and messaging:")
             print("  fool gateway install")
 
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your Fool configuration has been restored.")
 
 
 # ---------------------------------------------------------------------------

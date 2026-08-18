@@ -185,10 +185,10 @@ def _remove_env_source(provider: str, removed) -> RemovalResult:
     if shell_exported:
         result.hints.extend([
             f"Note: {env_var} is still set in your shell environment "
-            f"(not in ~/.hermes/.env).",
+            f"(not in ~/.fool/.env).",
             "  Unset it there (shell profile, systemd EnvironmentFile, "
-            "launchd plist, etc.) or it will keep being visible to Hermes.",
-            f"  The pool entry is now suppressed — Hermes will ignore "
+            "launchd plist, etc.) or it will keep being visible to The Fool.",
+            f"  The pool entry is now suppressed — The Fool will ignore "
             f"{env_var} until you run `fool auth add {provider}`.",
         ])
     else:
@@ -221,7 +221,7 @@ def _remove_hermes_pkce(provider: str, removed) -> RemovalResult:
     if oauth_file.exists():
         try:
             oauth_file.unlink()
-            result.cleaned.append("Cleared Hermes Anthropic OAuth credentials")
+            result.cleaned.append("Cleared The Fool Anthropic OAuth credentials")
         except OSError as exc:
             result.hints.append(f"Could not delete {oauth_file}: {exc}")
     return result
@@ -412,7 +412,7 @@ def _register_all_sources() -> None:
     register(RemovalStep(
         provider="anthropic", source_id="hermes_pkce",
         remove_fn=_remove_hermes_pkce,
-        description="~/.hermes/.anthropic_oauth.json",
+        description="~/.fool/.anthropic_oauth.json",
     ))
     register(RemovalStep(
         provider="nous", source_id="device_code",

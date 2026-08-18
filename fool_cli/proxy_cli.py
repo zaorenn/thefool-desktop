@@ -251,7 +251,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
         if loaded:
             console.print(
                 f"  [dim]Loaded {loaded} provider key name(s) from "
-                f"~/.hermes/.env for discovery.[/dim]"
+                f"~/.fool/.env for discovery.[/dim]"
             )
 
     discovered = ip.discover_provider_mappings(
@@ -277,7 +277,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
         if _sys.stdin.isatty():
             console.print(
                 "[yellow]⚠[/yellow]  --rotate-tokens will invalidate proxy "
-                "tokens in every running Hermes sandbox.  They will start "
+                "tokens in every running The Fool sandbox.  They will start "
                 "401-ing against upstreams until restarted."
             )
             try:

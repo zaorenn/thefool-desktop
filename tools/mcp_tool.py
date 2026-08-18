@@ -975,7 +975,7 @@ def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
         elif resolved_command in {"npx", "npm", "node"}:
             hermes_home = os.path.expanduser(
                 os.getenv(
-                    "FOOL_HOME", os.path.join(os.path.expanduser("~"), ".hermes")
+                    "FOOL_HOME", os.path.join(os.path.expanduser("~"), ".fool")
                 )
             )
             candidates = [
@@ -3261,7 +3261,7 @@ class MCPServerTask:
                             '"method":"initialize",'
                             '"params":{"protocolVersion":"2025-03-26",'
                             '"capabilities":{},'
-                            '"clientInfo":{"name":"hermes-probe",'
+                            '"clientInfo":{"name":"fool-probe",'
                             '"version":"0.1"}}}'
                         ),
                     )
@@ -4744,7 +4744,7 @@ def _handle_auth_error_and_retry(
     return tool_error(
         f"MCP server '{server_name}' requires re-authentication. "
         f"Run `fool mcp login {server_name}` (or delete the tokens "
-        f"file under ~/.hermes/mcp-tokens/ and restart). Do NOT retry "
+        f"file under ~/.fool/mcp-tokens/ and restart). Do NOT retry "
         f"this tool — ask the user to re-authenticate.",
         needs_reauth=True,
         server=server_name,

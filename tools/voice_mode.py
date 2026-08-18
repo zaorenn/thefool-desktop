@@ -302,7 +302,7 @@ def detect_audio_environment() -> dict:
             warnings.append(
                 "Running over SSH -- no audio devices available.\n"
                 "  If a sound server (PulseAudio/PipeWire) is running on this host,\n"
-                "  point Hermes at it, e.g.:\n"
+                "  point The Fool at it, e.g.:\n"
                 "    export XDG_RUNTIME_DIR=/run/user/$(id -u)\n"
                 "    # or: export PULSE_SERVER=unix:$XDG_RUNTIME_DIR/pulse/native"
             )
@@ -1727,7 +1727,7 @@ def _play_audio_file_impl(file_path: str) -> bool:
                 if _win_tmp_wsl:
                     # Unique suffix prevents concurrent TTS playback collision.
                     _unique = uuid.uuid4().hex[:8]
-                    _wsl_wav = os.path.join(_win_tmp_wsl, f"hermes-tts-{_unique}.wav")
+                    _wsl_wav = os.path.join(_win_tmp_wsl, f"fool-tts-{_unique}.wav")
                     _win_wav = subprocess.check_output(
                         ["wslpath", "-w", _wsl_wav],
                         stderr=subprocess.DEVNULL, timeout=3,

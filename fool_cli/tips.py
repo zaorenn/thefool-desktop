@@ -16,7 +16,7 @@ TIPS = [
     "/rollback lists filesystem checkpoints — restore files the agent modified to any prior state.",
     "/rollback diff 2 previews what changed since checkpoint 2 without restoring anything.",
     "/rollback 2 src/file.py restores a single file from a specific checkpoint.",
-    "/title \"my project\" names your session — resume it later with /resume or hermes -c.",
+    "/title \"my project\" names your session — resume it later with /resume or fool -c.",
     "/resume picks up where you left off in a previously named session.",
     "/queue <prompt> queues a message for the next turn without interrupting the current one.",
     "/undo removes the last user/assistant exchange from the conversation.",
@@ -56,24 +56,24 @@ TIPS = [
     # --- Keybindings ---
     "Alt+Enter inserts a newline for multi-line input. (Windows Terminal intercepts Alt+Enter — use Ctrl+Enter instead.)",
     "Ctrl+C interrupts the agent. Double-press within 2 seconds to force exit.",
-    "Ctrl+Z suspends Hermes to the background — run fg in your shell to resume.",
+    "Ctrl+Z suspends The Fool to the background — run fg in your shell to resume.",
     "Tab accepts auto-suggestion ghost text or autocompletes slash commands.",
     "Type a new message while the agent is working to interrupt and redirect it.",
     "Alt+V pastes an image from your clipboard into the conversation.",
     "Pasting 5+ lines auto-saves to a file and inserts a compact reference instead.",
 
     # --- CLI Flags ---
-    "hermes -c resumes your most recent CLI session. hermes -c \"project name\" resumes by title.",
-    "hermes -w creates an isolated git worktree — perfect for parallel agent workflows.",
-    "hermes -w -q \"Fix issue #42\" combines worktree isolation with a one-shot query.",
+    "fool -c resumes your most recent CLI session. fool -c \"project name\" resumes by title.",
+    "fool -w creates an isolated git worktree — perfect for parallel agent workflows.",
+    "fool -w -q \"Fix issue #42\" combines worktree isolation with a one-shot query.",
     "fool chat -t web,terminal enables only specific toolsets for a focused session.",
     "fool chat -s github-pr-workflow preloads a skill at launch.",
     "fool chat -q \"query\" runs a single non-interactive query and exits.",
     "fool chat --max-turns 1000 overrides the default 500-iteration limit per turn.",
     "fool chat --checkpoints enables filesystem snapshots before every destructive file change.",
-    "hermes --yolo bypasses all dangerous command approval prompts for the entire session.",
+    "fool --yolo bypasses all dangerous command approval prompts for the entire session.",
     "fool chat --source telegram tags the session for filtering in fool sessions list.",
-    "hermes -p work chat runs under a specific profile without changing your default.",
+    "fool -p work chat runs under a specific profile without changing your default.",
 
     # --- CLI Subcommands ---
     "fool doctor --fix diagnoses and auto-repairs config and dependency issues.",
@@ -89,15 +89,15 @@ TIPS = [
     "fool skills tap add myorg/skills-repo adds a custom GitHub skill source.",
     "fool skills snapshot export setup.json exports your skill configuration for backup or sharing.",
     "fool mcp add github --command npx adds MCP servers from the command line.",
-    "fool mcp serve runs Hermes itself as an MCP server for other agents.",
+    "fool mcp serve runs The Fool itself as an MCP server for other agents.",
     "fool auth add lets you add multiple API keys for credential pool rotation.",
     "fool completion bash >> ~/.bashrc enables tab completion for all commands and profiles.",
     "fool logs -f follows agent.log in real time. --level WARNING --since 1h filters output.",
-    "fool backup creates a zip backup of your entire Hermes home directory.",
+    "fool backup creates a zip backup of your entire Fool home directory.",
     "fool profile create coder creates an isolated profile that becomes its own command.",
     "fool profile create work --clone copies your current config and keys to a new profile.",
     "fool update syncs new bundled skills to ALL profiles automatically.",
-    "fool gateway install sets up Hermes as a system service (systemd/launchd).",
+    "fool gateway install sets up The Fool as a system service (systemd/launchd).",
     "fool memory setup lets you configure an external memory provider (Honcho, Mem0, etc.).",
     "fool webhook subscribe creates event-driven webhook routes with HMAC validation.",
     "Save money: fool tools disables unused tools, fool skills config trims skills down.",
@@ -118,7 +118,7 @@ TIPS = [
     "Set fallback_model in config.yaml to automatically fail over to a backup provider.",
     "Set privacy.redact_pii: true to hash user IDs and phone numbers before sending to the LLM.",
     "Set browser.record_sessions: true to auto-record browser sessions as WebM videos.",
-    "Set worktree: true in config.yaml to always create a git worktree (same as hermes -w).",
+    "Set worktree: true in config.yaml to always create a git worktree (same as fool -w).",
     "Set security.website_blocklist.enabled: true to block specific domains from web tools.",
     "Set cron.wrap_response: false to deliver raw agent output without the cron header/footer.",
     "FOOL_TIMEZONE overrides the server timezone with any IANA timezone string.",
@@ -128,7 +128,7 @@ TIPS = [
     "provider_routing controls OpenRouter provider sorting, whitelisting, and blacklisting.",
 
     # --- Tools & Capabilities ---
-    "execute_code runs Python scripts that call Hermes tools programmatically — results stay out of context.",
+    "execute_code runs Python scripts that call The Fool tools programmatically — results stay out of context.",
     "delegate_task spawns up to 3 concurrent sub-agents by default (delegation.max_concurrent_children) with isolated contexts for parallel work.",
     "web_extract works on PDF URLs — pass any PDF link and it converts to markdown.",
     "search_files is ripgrep-backed and faster than grep — use it instead of terminal grep.",
@@ -158,9 +158,9 @@ TIPS = [
     # --- Sessions ---
     "Sessions auto-generate descriptive titles after the first exchange — no manual naming needed.",
     "Session titles support lineage: \"my project\" → \"my project #2\" → \"my project #3\".",
-    "When exiting, Hermes prints a resume command with session ID and stats.",
+    "When exiting, The Fool prints a resume command with session ID and stats.",
     "fool sessions export backup.jsonl exports all sessions for backup or analysis.",
-    "hermes -r SESSION_ID resumes any specific past session by its ID.",
+    "fool -r SESSION_ID resumes any specific past session by its ID.",
 
     # --- Memory ---
     "Memory is a frozen snapshot — changes appear in the system prompt only at next session start.",
@@ -175,7 +175,7 @@ TIPS = [
     "Skills can restrict to specific OS platforms — some only load on macOS or Linux.",
     "skills.external_dirs in config.yaml lets you load skills from custom directories.",
     "The agent can create its own skills as procedural memory using skill_manage.",
-    "The plan skill saves markdown plans under .hermes/plans/ in the active workspace.",
+    "The plan skill saves markdown plans under .fool/plans/ in the active workspace.",
 
     # --- Cron & Scheduling ---
     "Cron jobs can attach skills: fool cron add --skill blogwatcher \"Check for new posts\".",
@@ -192,10 +192,10 @@ TIPS = [
     "Voice messages on Telegram, Discord, WhatsApp, and Slack are auto-transcribed.",
 
     # --- Gateway & Messaging ---
-    "Hermes runs on 21 messaging platforms: Telegram, Discord, Slack, WhatsApp, Signal, Matrix, IRC, Microsoft Teams, email, and more.",
+    "The Fool runs on 21 messaging platforms: Telegram, Discord, Slack, WhatsApp, Signal, Matrix, IRC, Microsoft Teams, email, and more.",
     "fool gateway install sets it up as a system service that starts on boot.",
     "DingTalk uses Stream Mode — no webhooks or public URL needed.",
-    "BlueBubbles brings iMessage to Hermes via a local macOS server.",
+    "BlueBubbles brings iMessage to The Fool via a local macOS server.",
     "Webhook routes support HMAC validation, rate limiting, and event filtering.",
     "The API server exposes an OpenAI-compatible endpoint compatible with Open WebUI and LibreChat.",
     "Discord voice channel mode: the bot joins VC, transcribes speech, and talks back.",
@@ -216,7 +216,7 @@ TIPS = [
     "Context auto-compresses when it reaches the threshold — memories are flushed and history summarized.",
     "The status bar turns yellow, then orange, then red as context fills up.",
     "SOUL.md is the agent's primary identity file — customize it to shape behavior.",
-    "Hermes loads project context from .hermes.md, AGENTS.md, CLAUDE.md, or .cursorrules (first match).",
+    "The Fool loads project context from .hermes.md, AGENTS.md, CLAUDE.md, or .cursorrules (first match).",
     "Subdirectory AGENTS.md files are discovered progressively as the agent navigates into folders.",
     "Context files are capped at 20,000 characters with smart head/tail truncation.",
 
@@ -259,7 +259,7 @@ TIPS = [
     "Slash commands support prefix matching: /h resolves to /help, /mod to /model.",
     "Dragging a file path into the terminal auto-attaches images or sends as context.",
     ".worktreeinclude in your repo root lists gitignored files to copy into worktrees.",
-    "fool acp runs Hermes as an ACP server for VS Code, Zed, and JetBrains integration.",
+    "fool acp runs The Fool as an ACP server for VS Code, Zed, and JetBrains integration.",
     "Custom providers: save named endpoints in config.yaml under custom_providers.",
     "FOOL_EPHEMERAL_SYSTEM_PROMPT injects a system prompt that's never persisted to history.",
     "credential_pool_strategies supports fill_first, round_robin, least_used, and random rotation.",
@@ -270,13 +270,13 @@ TIPS = [
 
     # --- Hidden Gems & Power-User Tricks ---
     "Cron jobs can attach a Python script (--script) whose stdout is injected into the prompt as context.",
-    "Cron scripts live in ~/.hermes/scripts/ and run before the agent — perfect for data collection pipelines.",
+    "Cron scripts live in ~/.fool/scripts/ and run before the agent — perfect for data collection pipelines.",
     "prefill_messages_file in config.yaml injects few-shot examples into every API call, never saved to history.",
     "SOUL.md completely replaces the agent's default identity — rewrite it to make Hermes your own.",
     "SOUL.md is auto-seeded with a default personality on first run. Edit it to customize.",
     "/compress <focus topic> allocates 60-70% of the summary budget to your topic and aggressively trims the rest.",
     "On second+ compression, the compressor updates the previous summary instead of starting from scratch.",
-    "Before a gateway session reset, Hermes auto-flushes important facts to memory in the background.",
+    "Before a gateway session reset, The Fool auto-flushes important facts to memory in the background.",
     "network.force_ipv4: true in config.yaml fixes hangs on servers with broken IPv6 — monkey-patches socket.",
     "The terminal tool annotates common exit codes: grep returning 1 = 'No matches found (not an error)'.",
     "Failed foreground terminal commands auto-retry up to 3 times with exponential backoff (2s, 4s, 8s).",
@@ -296,13 +296,13 @@ TIPS = [
     "agent.api_max_retries (default 3) controls how many times the agent retries a failed API call before surfacing the error — lower it for fast fallback.",
     "The gateway caches AIAgent instances per session — destroying this cache breaks Anthropic prompt caching.",
     "Any website can expose skills via /.well-known/skills/index.json — the skills hub discovers them automatically.",
-    "The skills audit log at ~/.hermes/skills/.hub/audit.log tracks every install and removal operation.",
+    "The skills audit log at ~/.fool/skills/.hub/audit.log tracks every install and removal operation.",
     "Stale git worktrees are auto-cleaned on startup: clean, fully-merged trees get pruned; dirty or unpushed work is always preserved.",
-    "Profiles scope Hermes state via FOOL_HOME; host tool subprocesses keep your real HOME unless terminal.home_mode is profile.",
+    "Profiles scope The Fool state via FOOL_HOME; host tool subprocesses keep your real HOME unless terminal.home_mode is profile.",
     "FOOL_HOME_MODE env var (octal, e.g. 0701) sets custom directory permissions for web server traversal.",
     "Container mode: place .container-mode in FOOL_HOME and the host CLI auto-execs into the container.",
     "Ctrl+C has 5 priority tiers: cancel recording → cancel prompts → cancel picker → interrupt agent → exit.",
-    "Every interrupt during an agent run is logged to ~/.hermes/interrupt_debug.log with timestamps.",
+    "Every interrupt during an agent run is logged to ~/.fool/interrupt_debug.log with timestamps.",
     "BROWSER_CDP_URL connects browser tools to any running Chromium-family browser — accepts WebSocket, HTTP, or host:port.",
     "BROWSERBASE_ADVANCED_STEALTH=true enables advanced anti-detection with custom Chromium (Scale Plan).",
     "The CLI auto-switches to compact mode in terminals narrower than 80 columns.",
@@ -334,24 +334,24 @@ TIPS = [
     "In interrupt mode, slash commands typed during agent execution bypass interrupt logic and run immediately.",
     "FOOL_DEV=1 bypasses container mode detection for local development.",
     "Each MCP server gets its own toolset (mcp-servername) that can be toggled independently via fool tools.",
-    "MCP ${ENV_VAR} placeholders in config are resolved at server spawn — including vars from ~/.hermes/.env.",
+    "MCP ${ENV_VAR} placeholders in config are resolved at server spawn — including vars from ~/.fool/.env.",
     "Skills from trusted repos (NousResearch) get a 'trusted' security level; community skills get extra scanning.",
-    "The skills quarantine at ~/.hermes/skills/.hub/quarantine/ holds skills pending security review.",
+    "The skills quarantine at ~/.fool/skills/.hub/quarantine/ holds skills pending security review.",
 
     # --- Advanced Slash Commands ---
     '/steer <prompt> injects a note after the next tool call — nudge direction mid-task without interrupting.',
-    '/goal <text> sets a standing Ralph-loop objective — Hermes auto-continues turn after turn until a judge says done.',
-    '/snapshot create [label] saves a full state snapshot of Hermes config; /snapshot restore <id> reverts later.',
+    '/goal <text> sets a standing Ralph-loop objective — The Fool auto-continues turn after turn until a judge says done.',
+    '/snapshot create [label] saves a full state snapshot of The Fool config; /snapshot restore <id> reverts later.',
     '/copy [N] copies the last assistant response to your clipboard, or the Nth-from-last with a number.',
     '/redraw forces a full UI repaint, fixing terminal drift after tmux resize or mouse selection artifacts.',
     '/agents (alias /tasks) shows active agents and running background tasks across the current session.',
     '/footer toggles the gateway footer on final replies showing model, context %, and cwd.',
-    '/busy queue|steer|interrupt controls what pressing Enter does while Hermes is working.',
+    '/busy queue|steer|interrupt controls what pressing Enter does while The Fool is working.',
     '/topic in Telegram DMs enables user-managed multi-session topic mode — /topic <id> restores past sessions inline.',
     '/approve session|always runs a pending dangerous command with your chosen trust scope; /deny rejects it.',
     '/restart gracefully restarts the gateway after draining active runs, then pings the requester when back up.',
     '/kanban boards switch <slug> changes the active multi-project Kanban board from inside chat.',
-    '/reload reloads ~/.hermes/.env into the running session — pick up new API keys without restarting.',
+    '/reload reloads ~/.fool/.env into the running session — pick up new API keys without restarting.',
 
     # --- Cron (no-agent & scripts) ---
     'cronjob with no_agent=True runs a script on schedule and sends its stdout directly — zero tokens, zero LLM.',
@@ -359,9 +359,9 @@ TIPS = [
     "FOOL_CRON_MAX_PARALLEL (default 4) caps how many cron jobs run per tick so bursts don't saturate your keys.",
 
     # --- Gateway Hooks ---
-    'Gateway hooks live under ~/.hermes/hooks/<name>/ with HOOK.yaml + handler.py — handler must be named `handle`.',
+    'Gateway hooks live under ~/.fool/hooks/<name>/ with HOOK.yaml + handler.py — handler must be named `handle`.',
     'Hook events include gateway:startup, session:start, agent:step, and command:* wildcard subscriptions.',
-    'Drop a ~/.hermes/BOOT.md checklist and a gateway:startup hook runs it as a one-shot agent every boot.',
+    'Drop a ~/.fool/BOOT.md checklist and a gateway:startup hook runs it as a one-shot agent every boot.',
 
     # --- Curator ---
     'fool curator run --dry-run previews what the curator would archive or consolidate without mutating anything.',
@@ -381,9 +381,9 @@ TIPS = [
     'Ctrl+G or Ctrl+X Ctrl+E in the TUI opens the input buffer in $EDITOR for long multi-line prompts.',
     'The TUI renders LaTeX inline — $E=mc^2$ becomes Unicode math instead of raw TeX.',
     'fool dashboard launches a local web UI at 127.0.0.1:9119 — zero data leaves localhost.',
-    'fool dashboard embeds the full Hermes TUI in your browser via xterm.js and a WebSocket PTY.',
-    'Drop a YAML in ~/.hermes/dashboard-themes/ with two palette colors to reskin the entire dashboard.',
-    'Dashboard plugins are drop-in: manifest.json + JS bundle in ~/.hermes/dashboard-plugins/ — no npm build required.',
+    'fool dashboard embeds the full Fool TUI in your browser via xterm.js and a WebSocket PTY.',
+    'Drop a YAML in ~/.fool/dashboard-themes/ with two palette colors to reskin the entire dashboard.',
+    'Dashboard plugins are drop-in: manifest.json + JS bundle in ~/.fool/dashboard-plugins/ — no npm build required.',
     'layoutVariant: cockpit in a dashboard theme adds a 260px left rail that plugins can populate via the sidebar slot.',
 
     # --- Env Vars & Config Gates ---
@@ -396,7 +396,7 @@ TIPS = [
     'Checkpoints skip directories with more than 50,000 files to avoid slow git operations on massive monorepos.',
 
     # --- TTS ---
-    'tts.provider: piper runs 44-language local TTS on CPU — voices auto-download to ~/.hermes/cache/piper-voices/.',
+    'tts.provider: piper runs 44-language local TTS on CPU — voices auto-download to ~/.fool/cache/piper-voices/.',
     'tts.providers.<name>.type: command wires any CLI TTS engine with {input_path} and {output_path} placeholders.',
 
     # --- API Server & Proxy ---
@@ -421,7 +421,7 @@ TIPS = [
     '/commands paginates the full slash-command + installed-skill list — useful on platforms without tab completion.',
     '/toolsets lists every available toolset so you know what -t/--toolsets accepts.',
     '/voice tts toggles TTS-only mode — agent replies out loud but you still type your prompts.',
-    '/reload-skills re-scans ~/.hermes/skills/ so drop-in skills appear without restarting the session.',
+    '/reload-skills re-scans ~/.fool/skills/ so drop-in skills appear without restarting the session.',
     '/indicator kaomoji|emoji|unicode|ascii picks the TUI busy-indicator style shown during agent runs.',
     '/debug uploads a support bundle (system info + logs) and returns shareable links — works in chat too.',
 
@@ -433,7 +433,7 @@ TIPS = [
     "fool chat --source tool tags programmatic chats so they don't clutter fool sessions list.",
     'fool dump --show-keys includes redacted API key fingerprints for deeper support debugging.',
     'fool sessions rename <ID> "new title" renames any past session; fool sessions delete <ID> removes one.',
-    'fool import restores a full Hermes backup zip; session JSON/JSONL exports import from the dashboard Sessions page.',
+    'fool import restores a full Fool backup zip; session JSON/JSONL exports import from the dashboard Sessions page.',
     'fool fallback manages the fallback_model chain interactively — no hand-editing config.yaml.',
     'fool pairing rotates the DM pairing token — the first messager after rotation claims access to the bot.',
     'fool setup walks first-time users through provider, keys, and platform wiring in one interactive flow.',
@@ -441,7 +441,7 @@ TIPS = [
 
     # --- Agent Behavior Env Vars ---
     'FOOL_AGENT_TIMEOUT=0 disables the gateway inactivity kill for a running agent — use for long research runs.',
-    'FOOL_ENABLE_PROJECT_PLUGINS=1 auto-loads repo-local plugins from ./.hermes/plugins/ — trust-gated by design.',
+    'FOOL_ENABLE_PROJECT_PLUGINS=1 auto-loads repo-local plugins from ./.fool/plugins/ — trust-gated by design.',
     "FOOL_DISABLE_FILE_STATE_GUARD=1 turns off the 'file changed since you read it' guard on patch and write_file.",
     'FOOL_ALLOW_PRIVATE_URLS=true lets web tools hit localhost and private networks — off by default in gateway mode.',
     'FOOL_OPTIONAL_SKILLS=name1,name2 auto-installs extra optional-catalog skills on first run per profile.',
@@ -462,7 +462,7 @@ TIPS = [
     'AUXILIARY_VISION_BASE_URL + AUXILIARY_VISION_API_KEY point vision analysis at any OpenAI-compatible endpoint.',
 
     # --- Security ---
-    'security.tirith_fail_open: false makes Hermes block commands when the tirith scanner itself errors out.',
+    'security.tirith_fail_open: false makes The Fool block commands when the tirith scanner itself errors out.',
     'TIRITH_FAIL_OPEN env var overrides the tirith_fail_open config — a quick toggle without editing config.yaml.',
 
     # --- Sessions & Source Tags ---
@@ -471,7 +471,7 @@ TIPS = [
 
     # --- Misc ---
     'API_SERVER_MODEL_NAME customizes the model name on /v1/models — essential for multi-profile Open WebUI setups.',
-    'Dashboard plugins are served from /dashboard-plugins/<name>/ — drop files into ~/.hermes/dashboard-plugins/.',
+    'Dashboard plugins are served from /dashboard-plugins/<name>/ — drop files into ~/.fool/dashboard-plugins/.',
 ]
 
 

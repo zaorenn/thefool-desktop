@@ -88,7 +88,7 @@ def _warn_memory_provider_unavailable(name: str, reason: str = "") -> None:
         "Memory provider %r is selected but reports unavailable — external memory "
         "is disabled for this session (built-in memory still works). Check the "
         "provider's credentials/config with 'fool memory status'. Note: "
-        "systemd/gateway services do not inherit ~/.hermes/.env automatically; set "
+        "systemd/gateway services do not inherit ~/.fool/.env automatically; set "
         "any required variables in the service environment.%s",
         name,
         f" {reason}" if reason else "",
@@ -1837,7 +1837,7 @@ def init_agent(
                         from fool_cli.profiles import get_active_profile_name
                         _profile = get_active_profile_name()
                         _init_kwargs["agent_identity"] = _profile
-                        _init_kwargs["agent_workspace"] = "hermes"
+                        _init_kwargs["agent_workspace"] = "fool"
                     except Exception:
                         pass
                     # NOTE: status_callback (for the deterministic retain
@@ -2168,10 +2168,10 @@ def init_agent(
     codex_app_server_auto_compaction = str(
         _compression_cfg.get("codex_app_server_auto", "native") or "native"
     ).lower()
-    if codex_app_server_auto_compaction not in {"native", "hermes", "off"}:
+    if codex_app_server_auto_compaction not in {"native", "fool", "off"}:
         _ra().logger.warning(
             "Invalid compression.codex_app_server_auto=%r; using 'native'. "
-            "Valid values are: native, hermes, off.",
+            "Valid values are: native, fool, off.",
             codex_app_server_auto_compaction,
         )
         codex_app_server_auto_compaction = "native"
@@ -2702,7 +2702,7 @@ def init_agent(
             _hermes_warn = _check_hermes_model_warning(agent.model or "")
             if _hermes_warn:
                 _user_msg = (
-                    "⚠ Nous Research Hermes 3 & 4 models are NOT agentic — they "
+                    "⚠ Fool Labs The Fool 3 & 4 models are NOT agentic — they "
                     "lack reliable tool-calling for agent workflows (delegation, "
                     "cron, proactive tools). Consider an agentic model instead "
                     "(Claude, GPT, Gemini, Qwen-Coder, etc.)."

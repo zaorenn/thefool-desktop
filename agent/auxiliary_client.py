@@ -504,7 +504,7 @@ def _run_protected_sync_provider_call(
     threading.Thread(
         target=provider_context.run,
         args=(_provider_worker,),
-        name="hermes-protected-aux-provider",
+        name="fool-protected-aux-provider",
         daemon=True,
     ).start()
 
@@ -1210,7 +1210,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (Hermes Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (Fool Agent)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():
@@ -5784,7 +5784,7 @@ def _resolve_auto_route(
                 "OPENAI_BASE_URL is set (%s) but model.provider is '%s'. "
                 "Auxiliary clients may route to the wrong endpoint. "
                 "Run: fool model to reconfigure, or remove "
-                "OPENAI_BASE_URL from ~/.hermes/.env",
+                "OPENAI_BASE_URL from ~/.fool/.env",
                 _env_base, _cfg_provider,
             )
             _stale_base_url_warned = True

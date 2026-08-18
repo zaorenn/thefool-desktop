@@ -29,6 +29,12 @@ DEFAULT_SOUL_MD = (
 _LEGACY_TEMPLATE_SOULS = (
     # FOOL-SEAM: agent-identity
     #
+    # DIKKAT: asagidaki metinler MARKALANMAZ. Burasi upstream'in eski
+    # sablonunu TANIMAK icin var; "Hermes" yerine "The Fool" yazmak listeyi
+    # kor eder ve eski SOUL.md sessizce yerinde kalir -- yani ajan arayuzdeki
+    # her yazi The Fool olsa bile kendini Hermes Agent sanmaya devam eder.
+    # Toplu marka temizliginde bir kez bu sekilde bozuldu; testi o yakaladi.
+    #
     # Upstream'in eski varsayilan kimligi. Bunu buraya eklemek yukaridaki
     # guvenlik garantisini BOZMAZ: bu metin kullanicinin yazdigi bir sey degil,
     # kurulumun makinece serdigi sablonun ta kendisi -- sifir kullanici niyeti
@@ -48,12 +54,12 @@ _LEGACY_TEMPLATE_SOULS = (
         "Be targeted and efficient in your exploration and investigations."
     ),
     (
-        "# Hermes Agent Persona\n"
+        "# Fool Agent Persona\n"
         "\n"
         "<!--\n"
         "This file defines the agent's personality and tone.\n"
         "The agent will embody whatever you write here.\n"
-        "Edit this to customize how Hermes communicates with you.\n"
+        "Edit this to customize how The Fool communicates with you.\n"
         "\n"
         "Examples:\n"
         '  - "You are a warm, playful assistant who uses kaomoji occasionally."\n'
@@ -68,12 +74,12 @@ _LEGACY_TEMPLATE_SOULS = (
     # block / trailing newline in some historical revisions; the bare scaffold
     # (no Examples block) was also shipped briefly.
     (
-        "# Hermes Agent Persona\n"
+        "# Fool Agent Persona\n"
         "\n"
         "<!--\n"
         "This file defines the agent's personality and tone.\n"
         "The agent will embody whatever you write here.\n"
-        "Edit this to customize how Hermes communicates with you.\n"
+        "Edit this to customize how The Fool communicates with you.\n"
         "\n"
         "This file is loaded fresh each message -- no restart needed.\n"
         "Delete the contents (or this file) to use the default personality.\n"

@@ -31,7 +31,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 
 # Ensure FOOL_HOME is set for imports that touch it at module level.
-os.environ.setdefault("FOOL_HOME", os.path.join(os.path.expanduser("~"), ".hermes"))
+os.environ.setdefault("FOOL_HOME", os.path.join(os.path.expanduser("~"), ".fool"))
 
 from fool_cli.models import (  # noqa: E402
     OPENROUTER_MODELS,

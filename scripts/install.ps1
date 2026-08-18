@@ -30,8 +30,8 @@ param(
     # existing tree pass -ForceCommit.
     [switch]$ForceCommit,
     [string]$Tag = "",
-    [string]$HermesHome = $(if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\hermes" }),
-    [string]$InstallDir = $(if ($env:FOOL_HOME) { "$env:FOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }),
+    [string]$HermesHome = $(if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }),
+    [string]$InstallDir = $(if ($env:FOOL_HOME) { "$env:FOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\fool\hermes-agent" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -161,7 +161,7 @@ function Write-PathDiag {
     # produced nothing there under a non-interactive host.
     param([string]$Message)
     if ($ShowResolvedPaths) { return }
-    [Console]::Error.WriteLine("[hermes] $Message")
+    [Console]::Error.WriteLine("[fool] $Message")
 }
 
 function Get-LongProfileRoot {
@@ -336,14 +336,14 @@ if ($PSBoundParameters.ContainsKey('HermesHome')) {
     $HermesHome = ConvertTo-LongPath $HermesHome
 } else {
     $HermesHome = ConvertTo-LongPath $(
-        if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\hermes" }
+        if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }
     )
 }
 if ($PSBoundParameters.ContainsKey('InstallDir')) {
     $InstallDir = ConvertTo-LongPath $InstallDir
 } else {
     $InstallDir = ConvertTo-LongPath $(
-        if ($env:FOOL_HOME) { "$env:FOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }
+        if ($env:FOOL_HOME) { "$env:FOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\fool\hermes-agent" }
     )
 }
 if ($script:NormalizedProfilePaths) {
@@ -978,7 +978,7 @@ function Update-ManagedNpm {
 
     Write-Info "Upgrading bundled npm to satisfy $range ..."
 
-    $tmpCwd = Join-Path $env:TEMP ("hermes-npm-upgrade-" + [Guid]::NewGuid().ToString("N"))
+    $tmpCwd = Join-Path $env:TEMP ("fool-npm-upgrade-" + [Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $tmpCwd | Out-Null
     $prevAge = $env:npm_config_min_release_age
     $prevCI = $env:CI
@@ -1629,7 +1629,7 @@ function Test-Node {
         if ($zipName) {
             $downloadUrl = "${indexUrl}${zipName}"
             $tmpZip = "$env:TEMP\$zipName"
-            $tmpDir = "$env:TEMP\hermes-node-extract"
+            $tmpDir = "$env:TEMP\fool-node-extract"
 
             Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpZip -UseBasicParsing
             if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
@@ -2077,7 +2077,7 @@ function Install-Repository {
                         Write-Info "Clearing unmerged index entries from a previous conflict..."
                         git -c windows.appendAtomically=false reset -q 2>$null
                     }
-                    $stashName = "hermes-install-autostash-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+                    $stashName = "fool-install-autostash-" + (Get-Date -Format "yyyyMMdd-HHmmss")
                     Write-Info "Local changes detected, stashing before update..."
                     git -c windows.appendAtomically=false stash push --include-untracked -m "$stashName"
                     if ($LASTEXITCODE -eq 0) { $autostashRef = "stash@{0}" }
@@ -3099,7 +3099,7 @@ function Write-BootstrapMarker {
         $pinnedBranch = "main"  # install.ps1's own default for -Branch
     }
 
-    $markerPath = Join-Path $InstallDir ".hermes-bootstrap-complete"
+    $markerPath = Join-Path $InstallDir ".fool-bootstrap-complete"
     $marker = [ordered]@{
         schemaVersion = 1
         pinnedCommit  = $pinnedCommit

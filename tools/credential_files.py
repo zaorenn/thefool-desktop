@@ -61,7 +61,7 @@ def _resolve_hermes_home() -> Path:
 
 def register_credential_file(
     relative_path: str,
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> bool:
     """Register a credential file for mounting into remote sandboxes.
 
@@ -150,7 +150,7 @@ def register_credential_file(
 
 def register_credential_files(
     entries: list,
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> List[str]:
     """Register multiple credential files from skill frontmatter entries.
 
@@ -206,7 +206,7 @@ def _load_config_files() -> List[Dict[str, str]]:
                         continue
                     resolved_path = host_path.resolve()
                     if resolved_path.is_file():
-                        container_path = f"/root/.hermes/{rel}"
+                        container_path = f"/root/.fool/{rel}"
                         result.append({
                             "host_path": str(resolved_path),
                             "container_path": container_path,
@@ -245,7 +245,7 @@ def get_credential_file_mounts() -> List[Dict[str, str]]:
 
 
 def get_skills_directory_mount(
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> list[Dict[str, str]]:
     """Return mount info for all skill directories (local + external).
 
@@ -312,7 +312,7 @@ def _safe_skills_path(skills_dir: Path) -> str:
     if _safe_skills_tempdir and _safe_skills_tempdir.is_dir():
         shutil.rmtree(_safe_skills_tempdir, ignore_errors=True)
 
-    safe_dir = Path(tempfile.mkdtemp(prefix="hermes-skills-safe-"))
+    safe_dir = Path(tempfile.mkdtemp(prefix="fool-skills-safe-"))
     _safe_skills_tempdir = safe_dir
 
     for item in skills_dir.rglob("*"):
@@ -336,7 +336,7 @@ def _safe_skills_path(skills_dir: Path) -> str:
 
 
 def iter_skills_files(
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> List[Dict[str, str]]:
     """Yield individual (host_path, container_path) entries for skills files.
 
@@ -409,7 +409,7 @@ _CACHE_DIRS: list[tuple[str, str]] = [
 
 
 def get_cache_directory_mounts(
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> List[Dict[str, str]]:
     """Return mount entries for each cache directory that exists on disk.
 
@@ -446,7 +446,7 @@ def get_cache_directory_mounts(
 
 def map_cache_path_to_container(
     host_path: str,
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> Optional[str]:
     """Map a host cache path to its mounted path under *container_base*.
 
@@ -470,7 +470,7 @@ def map_cache_path_to_container(
 
 def from_agent_visible_cache_path(
     container_path: str,
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> str:
     """Translate a sandbox/container cache path back to its host path.
 
@@ -494,7 +494,7 @@ def from_agent_visible_cache_path(
 
 def to_agent_visible_cache_path(
     host_path: str,
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> str:
     """Translate a host cache path to its mounted path inside the sandbox.
 
@@ -524,7 +524,7 @@ def to_agent_visible_cache_path(
     if backend in ("docker", "modal"):
         pass  # /root/.fool default
     elif backend in ("ssh", "daytona", "vercel_sandbox"):
-        container_base = "~/.hermes"
+        container_base = "~/.fool"
     else:
         return host_path  # local, singularity, unknown: host path is correct
 
@@ -533,7 +533,7 @@ def to_agent_visible_cache_path(
 
 
 def iter_cache_files(
-    container_base: str = "/root/.hermes",
+    container_base: str = "/root/.fool",
 ) -> List[Dict[str, str]]:
     """Return individual (host_path, container_path) entries for cache files.
 

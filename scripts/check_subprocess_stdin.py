@@ -191,7 +191,7 @@ def main() -> int:
     # subprocesses with inherited stdin — #67639).
     plugin_roots: list[Path] = [get_hermes_home() / "plugins"]
     if os.environ.get("FOOL_ENABLE_PROJECT_PLUGINS"):
-        plugin_roots.append(Path.cwd() / ".hermes" / "plugins")
+        plugin_roots.append(Path.cwd() / ".fool" / "plugins")
     seen_roots: set[Path] = set()
     for plugin_root in plugin_roots:
         resolved = plugin_root.resolve()

@@ -196,31 +196,31 @@ def _check_metadata_block(frontmatter: Dict[str, Any]) -> List[LintFinding]:
                 )
             )
     meta = frontmatter.get("metadata")
-    hermes_meta = meta.get("hermes") if isinstance(meta, dict) else None
+    hermes_meta = meta.get("fool") if isinstance(meta, dict) else None
     if not isinstance(hermes_meta, dict):
         findings.append(
             LintFinding(
                 WARNING,
                 "missing-metadata",
-                "frontmatter is missing metadata.hermes.{tags, related_skills}.",
+                "frontmatter is missing metadata.fool.{tags, related_skills}.",
             )
         )
     else:
         if "tags" not in hermes_meta:
             findings.append(
                 LintFinding(
-                    WARNING, "missing-metadata", "metadata.hermes.tags is missing."
+                    WARNING, "missing-metadata", "metadata.fool.tags is missing."
                 )
             )
     author = str(frontmatter.get("author", ""))
-    if author and author.strip().lower() in ("hermes", "agent", "fool agent") and (
-        author != "Hermes Agent"
+    if author and author.strip().lower() in ("fool", "agent", "fool agent") and (
+        author != "Fool Agent"
     ):
         findings.append(
             LintFinding(
                 WARNING,
                 "author-caps",
-                f"author '{author}' should be 'Hermes Agent' (proper caps) "
+                f"author '{author}' should be 'Fool Agent' (proper caps) "
                 f"or a real contributor name.",
             )
         )

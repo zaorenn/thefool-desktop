@@ -182,7 +182,7 @@ def build_dashboard_parser(
         description=(
             "Register this install as a self-hosted dashboard with your Nous "
             "Portal account. Creates an OAuth client, writes "
-            "FOOL_DASHBOARD_OAUTH_CLIENT_ID into ~/.hermes/.env, and prints "
+            "FOOL_DASHBOARD_OAUTH_CLIENT_ID into ~/.fool/.env, and prints "
             "how to engage the login gate. Requires being logged in (fool setup)."
         ),
     )
@@ -197,7 +197,7 @@ def build_dashboard_parser(
         default=None,
         help=(
             "Optional public HTTPS OAuth redirect URI for the dashboard, e.g. "
-            "https://hermes.example.com/auth/callback. Omit for localhost-only use."
+            "https://fool.example.com/auth/callback. Omit for localhost-only use."
         ),
     )
     dashboard_register_parser.add_argument(

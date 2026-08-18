@@ -224,7 +224,7 @@ def _find_uv_binary() -> str | None:
     """
     exe = "uv.exe" if sys.platform == "win32" else "uv"
     candidates = [
-        Path.home() / ".hermes" / "bin" / exe,
+        Path.home() / ".fool" / "bin" / exe,
         Path.home() / ".local" / "bin" / exe,
         Path.home() / ".cargo" / "bin" / exe,
     ]

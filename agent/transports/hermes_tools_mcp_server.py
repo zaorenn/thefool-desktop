@@ -171,7 +171,7 @@ def _build_server() -> Any:
     )
 
     mcp = MCPServer(
-        "hermes-tools",
+        "fool-tools",
         instructions=(
             "Fool Agent's tool surface, exposed for use inside a Codex "
             "session. Use these for capabilities Codex's built-in toolset "
@@ -243,7 +243,7 @@ def _build_server() -> Any:
         exposed_count += 1
 
     logger.info(
-        "hermes-tools MCP server registered %d/%d tools",
+        "fool-tools MCP server registered %d/%d tools",
         exposed_count,
         len(EXPOSED_TOOLS),
     )
@@ -269,7 +269,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     try:
         server = _build_server()
     except ImportError as exc:
-        sys.stderr.write(f"hermes-tools MCP server cannot start: {exc}\n")
+        sys.stderr.write(f"fool-tools MCP server cannot start: {exc}\n")
         return 2
 
     # MCPServer.run() defaults to stdio transport, which is what codex
@@ -279,8 +279,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     except KeyboardInterrupt:
         return 0
     except Exception as exc:
-        logger.exception("hermes-tools MCP server crashed")
-        sys.stderr.write(f"hermes-tools MCP server error: {exc}\n")
+        logger.exception("fool-tools MCP server crashed")
+        sys.stderr.write(f"fool-tools MCP server error: {exc}\n")
         return 1
     return 0
 

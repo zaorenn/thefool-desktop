@@ -288,7 +288,7 @@ def cmd_setup(args) -> None:
 
     if not providers:
         print("\n  No memory provider plugins detected.")
-        print("  Install a plugin to ~/.hermes/plugins/ and try again.\n")
+        print("  Install a plugin to ~/.fool/plugins/ and try again.\n")
         return
 
     # Build picker items
@@ -547,7 +547,7 @@ def cmd_status(args) -> None:
                             line += f"  → {url}"
                         print(line)
                 print(
-                    "  Note: systemd/gateway services do not inherit ~/.hermes/.env —"
+                    "  Note: systemd/gateway services do not inherit ~/.fool/.env —"
                 )
                 print(
                     "        set any variables above in the service environment."

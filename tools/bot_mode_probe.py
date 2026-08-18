@@ -67,13 +67,13 @@ def _is_bot_managed(profile_dir: Path) -> bool:
         if not meta.is_file():
             return False
         raw = meta.read_text(encoding="utf-8", errors="replace")
-        if "hermes-bots" not in raw:
+        if "fool-bots" not in raw:
             return False
         import yaml
 
         data = yaml.safe_load(raw)
         ui_meta = data.get("ui_meta") if isinstance(data, dict) else None
-        return isinstance(ui_meta, dict) and isinstance(ui_meta.get("hermes-bots"), dict)
+        return isinstance(ui_meta, dict) and isinstance(ui_meta.get("fool-bots"), dict)
     except Exception:
         return False
 
@@ -102,7 +102,7 @@ def _soul_has_protocol(profile_dir: Path) -> bool:
 
 def _handle(name: str) -> str:
     # The mention middleware aliases the default profile as @hermes.
-    return "hermes" if name == "default" else name
+    return "fool" if name == "default" else name
 
 
 def _build_section(home: Path) -> str:
@@ -124,7 +124,7 @@ def _build_section(home: Path) -> str:
 
     return (
         f"{_PROTOCOL_HEADING}\n"
-        "This install runs Bot Mode: each Hermes profile is an agent teammate with "
+        "This install runs Bot Mode: each The Fool profile is an agent teammate with "
         'one canonical "Bot Chat" conversation. To message a teammate, run on the '
         "terminal tool (background=true, notify_on_complete=true), then finish your "
         "turn — the reply arrives later as a new message:\n"
@@ -148,7 +148,7 @@ def get_bot_mode_protocol_section(home: str | os.PathLike | None = None, *, forc
     not the ambient FOOL_HOME — build threads can lose the ContextVar
     override and the env var would then name the wrong profile.
     """
-    resolved = str(home) if home else (os.getenv("FOOL_HOME") or os.path.expanduser("~/.hermes"))
+    resolved = str(home) if home else (os.getenv("FOOL_HOME") or os.path.expanduser("~/.fool"))
     with _lock:
         if force_refresh or resolved not in _cached:
             try:
@@ -188,7 +188,7 @@ def capability_fingerprint(home: str | os.PathLike | None = None) -> str:
     import hashlib
     import json
 
-    resolved = Path(str(home) if home else (os.getenv("FOOL_HOME") or os.path.expanduser("~/.hermes")))
+    resolved = Path(str(home) if home else (os.getenv("FOOL_HOME") or os.path.expanduser("~/.fool")))
     surface: dict = {}
     try:
         # Canonical loader (managed overlay + env expansion + normalization),

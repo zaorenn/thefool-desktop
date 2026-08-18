@@ -254,25 +254,25 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
     top_cmds_str = " ".join(top_cmds)
 
     lines: list[str] = [
-        "# Hermes Agent fish completion",
+        "# Fool Agent fish completion",
         "# Add to your config:",
         "#   fool completion fish | source",
         "",
         "# Helper: list available profiles",
         "function __hermes_profiles",
         "    echo default",
-        "    if test -d $HOME/.hermes/profiles",
-        "        for d in $HOME/.hermes/profiles/*/",
+        "    if test -d $HOME/.fool/profiles",
+        "        for d in $HOME/.fool/profiles/*/",
         "            basename $d",
         "        end",
         "    end",
         "end",
         "",
         "# Disable file completion by default",
-        "complete -c hermes -f",
+        "complete -c fool -f",
         "",
         "# Complete profile names after -p / --profile",
-        "complete -c hermes -f -s p -l profile"
+        "complete -c fool -f -s p -l profile"
         " -d 'Profile name' -xa '(__hermes_profiles)'",
         "",
         "# Top-level subcommands",
@@ -282,7 +282,7 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
         info = tree["subcommands"][cmd]
         help_text = _clean(info.get("help", ""))
         lines.append(
-            f"complete -c hermes -f "
+            f"complete -c fool -f "
             f"-n 'not __fish_seen_subcommand_from {top_cmds_str}' "
             f"-a {cmd} -d '{help_text}'"
         )
@@ -301,7 +301,7 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
             sinfo = info["subcommands"][sc]
             sh = _clean(sinfo.get("help", ""))
             lines.append(
-                f"complete -c hermes -f "
+                f"complete -c fool -f "
                 f"-n '__fish_seen_subcommand_from {cmd}' "
                 f"-a {sc} -d '{sh}'"
             )
@@ -309,7 +309,7 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
         if cmd == "profile":
             for action in sorted(profile_name_actions):
                 lines.append(
-                    f"complete -c hermes -f "
+                    f"complete -c fool -f "
                     f"-n '__fish_seen_subcommand_from {action}; "
                     f"and __fish_seen_subcommand_from profile' "
                     f"-a '(__hermes_profiles)' -d 'Profile name'"

@@ -205,7 +205,7 @@ def _validate_critical_files_syntax(root) -> tuple[bool, str | None, str | None]
     import tempfile
 
     root = Path(root)
-    with tempfile.TemporaryDirectory(prefix="hermes-syntax-check-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="fool-syntax-check-") as tmpdir:
         for relpath in _UPDATE_CRITICAL_FILES:
             path = root / relpath
             if not path.exists():
@@ -727,8 +727,8 @@ def _stage_replacement(src: str, dst: str) -> str:
     files. Touches nothing live, so a failure here leaves the whole install
     untouched.
     """
-    staging = f"{dst}.hermes-update-staging"
-    backup = f"{dst}.hermes-update-old"
+    staging = f"{dst}.fool-update-staging"
+    backup = f"{dst}.fool-update-old"
     # A previous run may have died between "move dst aside" and "move staging
     # in" — leaving dst missing and the backup as the ONLY copy of that entry.
     # Restore it before clearing leftovers: deleting the backup first and then
@@ -794,7 +794,7 @@ def _commit_staged_replacements(staged) -> None:
     swapped: list[tuple[str, str]] = []  # (dst, backup) in swap order; "" = absent
     try:
         for staging, dst in staged:
-            backup = f"{dst}.hermes-update-old"
+            backup = f"{dst}.fool-update-old"
             if os.path.exists(dst):
                 os.rename(dst, backup)
                 swapped.append((dst, backup))
@@ -835,7 +835,7 @@ def _print_update_completion(message: str) -> None:
     print(message)
     action_id = os.environ.get("FOOL_ACTION_ID", "")
     if len(action_id) == 32 and all(char in "0123456789abcdef" for char in action_id):
-        print(f"=== hermes-update completed {action_id} ===")
+        print(f"=== fool-update completed {action_id} ===")
 
 
 def _read_project_version() -> str | None:
@@ -914,7 +914,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False):
     )
 
     print("→ Downloading latest version...")
-    tmp_dir = tempfile.mkdtemp(prefix="hermes-update-")
+    tmp_dir = tempfile.mkdtemp(prefix="fool-update-")
     try:
         zip_path = os.path.join(tmp_dir, f"hermes-agent-{branch}.zip")
         urlretrieve(zip_url, zip_path)
@@ -1286,7 +1286,7 @@ def _stash_local_changes_if_needed(git_cmd: list[str], cwd: Path) -> Optional[st
     from datetime import datetime, timezone
 
     stash_name = datetime.now(timezone.utc).strftime(
-        "hermes-update-autostash-%Y%m%d-%H%M%S"
+        "fool-update-autostash-%Y%m%d-%H%M%S"
     )
     print("→ Local changes detected — stashing before update...")
     prev_stash = subprocess.run(
@@ -1881,7 +1881,7 @@ def _format_concurrent_instances_message(
     lines.append(f"  Updating now would fail to overwrite {shim} because")
     lines.append("  Windows blocks REPLACE on a running executable.")
     lines.append("")
-    lines.append("  Close Hermes Desktop, exit any open `hermes` REPLs, and")
+    lines.append("  Close The Fool Desktop, exit any open `fool` REPLs, and")
     lines.append("  stop the gateway (`fool gateway stop`) before retrying.")
     lines.append("")
     if matches:
@@ -1932,7 +1932,7 @@ def _capture_active_tool_dependencies() -> list[str]:
 
         return tools_config.active_restorable_python_tool_dependencies()
     except Exception as exc:
-        logger.debug("Could not snapshot active Hermes Tools dependencies: %s", exc)
+        logger.debug("Could not snapshot active The Fool Tools dependencies: %s", exc)
         return []
 
 
@@ -1955,7 +1955,7 @@ def _restore_active_tool_dependencies(
     try:
         from fool_cli import tools_config
     except Exception as exc:
-        logger.debug("Hermes Tools dependency restore skipped (import failed): %s", exc)
+        logger.debug("The Fool Tools dependency restore skipped (import failed): %s", exc)
         return
 
     target_python = _m()._resolve_install_target_python(install_cmd_prefix, env)
@@ -2739,7 +2739,7 @@ def _ensure_fhs_path_guard() -> None:
         return
     # Only act when this is actually an FHS-layout install (command link at
     # /usr/local/bin/hermes, code at /usr/local/lib/hermes-agent).
-    fhs_link = Path("/usr/local/bin/hermes")
+    fhs_link = Path("/usr/local/bin/fool")
     if not fhs_link.is_symlink() and not fhs_link.exists():
         return
 
@@ -2757,7 +2757,7 @@ def _ensure_fhs_path_guard() -> None:
                 "bash",
                 "-i",
                 "-c",
-                "command -v hermes",
+                "command -v fool",
             ],
             capture_output=True,
             text=True, encoding="utf-8", errors="replace",
@@ -2770,7 +2770,7 @@ def _ensure_fhs_path_guard() -> None:
 
     path_line = 'export PATH="/usr/local/bin:$PATH"'
     path_comment = (
-        "# Hermes Agent — ensure /usr/local/bin is on PATH " "(RHEL non-login shells)"
+        "# Fool Agent — ensure /usr/local/bin is on PATH " "(RHEL non-login shells)"
     )
     wrote_any = False
     for candidate in (".bashrc", ".bash_profile"):
@@ -2827,8 +2827,8 @@ def _ensure_acp_launcher() -> None:
     if _m().sys.platform == "win32":
         return
     for bin_dir in (Path.home() / ".local" / "bin", Path("/usr/local/bin")):
-        hermes_cmd = bin_dir / "hermes"
-        acp_cmd = bin_dir / "hermes-acp"
+        hermes_cmd = bin_dir / "fool"
+        acp_cmd = bin_dir / "fool-acp"
         try:
             if not (hermes_cmd.is_file() or hermes_cmd.is_symlink()):
                 continue
@@ -2840,7 +2840,7 @@ def _ensure_acp_launcher() -> None:
                 continue
             shim = (
                 "#!/usr/bin/env bash\n"
-                "# Hermes Agent — ACP launcher (written by `fool update`).\n"
+                "# Fool Agent — ACP launcher (written by `fool update`).\n"
                 "# ACP hosts (Zed, JetBrains, Buzz) resolve the agent by this\n"
                 "# command name on the login-shell PATH.\n"
                 f'exec "{hermes_cmd}" acp "$@"\n'
@@ -2849,7 +2849,7 @@ def _ensure_acp_launcher() -> None:
             acp_cmd.chmod(acp_cmd.stat().st_mode | 0o755)
         except OSError:
             continue
-        print(f"  ✓ Installed hermes-acp launcher → {acp_cmd}")
+        print(f"  ✓ Installed fool-acp launcher → {acp_cmd}")
 
 _PRE_UPDATE_SNAPSHOT_KEEP = 1
 
@@ -3153,7 +3153,7 @@ def _venv_core_imports_healthy() -> tuple[bool, str]:
         # the old venv was moved aside, and "Already up to date!" would
         # gaslight the user while nothing can run.
         managed_markers = (
-            _m().PROJECT_ROOT / ".hermes-bootstrap-complete",
+            _m().PROJECT_ROOT / ".fool-bootstrap-complete",
             _m()._update_marker_path(),
         )
         if any(m.exists() for m in managed_markers):
@@ -3443,7 +3443,7 @@ def _defer_update_for_self_lock(loaded: list[str]) -> None:
     print()
     print("  On Windows a mapped extension cannot be replaced by the process")
     print("  holding it. The code update has been applied; only the dependency")
-    print("  sync has been deferred: the next `hermes` launch will complete it")
+    print("  sync has been deferred: the next `fool` launch will complete it")
     print("  in a fresh process before anything imports these modules.")
     _m()._write_update_incomplete_marker()
 
@@ -3940,10 +3940,10 @@ def _for_each_systemd_gateway_unit(
         # unrelated ``hermes-server.service`` — require the exact base unit
         # or the hyphenated profile family instead (review on #83595).
         if not (
-            unit == "hermes-gateway.service"
-            or unit.startswith("hermes-gateway-")
-            or unit == "hermes-serve.service"
-            or unit.startswith("hermes-serve-")
+            unit == "fool-gateway.service"
+            or unit.startswith("fool-gateway-")
+            or unit == "fool-serve.service"
+            or unit.startswith("fool-serve-")
         ):
             continue
         svc_name = unit.removesuffix(".service")
@@ -3967,7 +3967,7 @@ def _service_unit_supports_graceful_sigusr1_restart(svc_name: str) -> bool:
     ``hermes-gateway-<profile>`` — but ``hermes-gatewayd``-style names are
     not) can't be sent a SIGUSR1 it doesn't handle.
     """
-    return svc_name == "hermes-gateway" or svc_name.startswith("hermes-gateway-")
+    return svc_name == "fool-gateway" or svc_name.startswith("fool-gateway-")
 
 
 def _warn_incomplete_gateway_fleet_restart(failed_units: list) -> None:
@@ -4929,7 +4929,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     "⚠ Restart required to finish the managed Python runtime repair."
                 )
                 print(
-                    "  Any running Hermes gateways, Desktop backends, or other "
+                    "  Any running The Fool gateways, Desktop backends, or other "
                     "long-lived processes still use the previous runtime."
                 )
                 print("  Restart each of them to pick up the repaired runtime.")
@@ -5206,7 +5206,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             _m()._clear_lazy_refresh_incomplete_marker()
         else:
             print(
-                "  ⚠ Lazy-refresh recovery incomplete — run `hermes` again "
+                "  ⚠ Lazy-refresh recovery incomplete — run `fool` again "
                 "to finish import-based venv repair."
             )
 
@@ -5673,7 +5673,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         try:
             _ensure_acp_launcher()
         except Exception as e:
-            logger.debug("hermes-acp launcher self-heal failed: %s", e)
+            logger.debug("fool-acp launcher self-heal failed: %s", e)
 
         # Refresh the cua-driver binary used by the Computer Use toolset.
         # The upstream installer is gated on supported platforms and on the
@@ -5962,8 +5962,8 @@ def _cmd_update_impl(args, gateway_mode: bool):
                             scope_cmd
                             + [
                                 "list-units",
-                                "hermes-gateway*",
-                                "hermes-serve*",
+                                "fool-gateway*",
+                                "fool-serve*",
                                 "--plain",
                                 "--no-legend",
                                 "--no-pager",
@@ -6421,7 +6421,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     print("    Restart manually: fool gateway run")
                     if unmapped_count > 1:
                         print(
-                            "    (or: hermes -p <profile> gateway run  for each profile)"
+                            "    (or: fool -p <profile> gateway run  for each profile)"
                         )
 
             if failed_or_stale_units:
@@ -6526,8 +6526,8 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     scope = "system" if is_sys else "user"
                     print(f"    {path}  ({scope} scope)")
                 print()
-                print("  These pre-rename units (hermes.service) fight the current")
-                print("  hermes-gateway.service for the bot token and cause SIGTERM")
+                print("  These pre-rename units (fool.service) fight the current")
+                print("  fool-gateway.service for the bot token and cause SIGTERM")
                 print("  flap loops. Remove them with:")
                 print()
                 print("    fool gateway migrate-legacy")

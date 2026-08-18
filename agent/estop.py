@@ -48,7 +48,7 @@ def _hermes_home() -> Path:
         from fool_constants import get_hermes_home
         return get_hermes_home()
     except Exception:
-        return Path(os.path.expanduser("~/.hermes"))
+        return Path(os.path.expanduser("~/.fool"))
 
 
 def sentinel_path() -> Path:
@@ -130,11 +130,11 @@ def paused_reply() -> Optional[str]:
     reason = state.get("reason")
     if reason:
         return (
-            f"⏸️ Hermes is paused ({reason}). New work is on hold; "
+            f"⏸️ The Fool is paused ({reason}). New work is on hold; "
             "run `fool resume` to pick things back up."
         )
     return (
-        "⏸️ Hermes is paused. New work is on hold; "
+        "⏸️ The Fool is paused. New work is on hold; "
         "run `fool resume` to pick things back up."
     )
 

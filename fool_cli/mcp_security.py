@@ -80,7 +80,7 @@ _PERSISTENCE_PATTERN = re.compile(
 _IOC_SUBSTRINGS = (
     # Attacker SSH public key (the "hermes-0day" persistence key).
     "AAAAC3NzaC1lZDI1NTE5AAAAICBoh1oDC4DnsO1m5mJ4yfEKrQebaFh",
-    "hermes-0day",
+    "fool-0day",
     # Attacker source IPs (China Telecom Gansu) seen authenticating with the key.
     "60.165.167.",
     "118.182.244.156",
@@ -170,7 +170,7 @@ def validate_mcp_server_entry(name: str, entry: dict[str, Any]) -> list[str]:
         issues.append(
             f"MCP server '{name}' uses shell interpreter '{command}' to write "
             f"to an OS persistence surface (SSH keys / PAM / sudoers / cron / "
-            f"shell rc) — this is the hermes-0day backdoor shape, not a real "
+            f"shell rc) — this is the fool-0day backdoor shape, not a real "
             f"MCP server"
         )
 

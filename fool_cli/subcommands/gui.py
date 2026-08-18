@@ -40,10 +40,10 @@ def build_gui_parser(subparsers, *, cmd_gui: Callable) -> None:
     gui_parser.add_argument(
         "--ignore-existing",
         action="store_true",
-        help="Force Desktop to ignore any hermes CLI already on PATH during backend resolution",
+        help="Force Desktop to ignore any fool CLI already on PATH during backend resolution",
     )
     gui_parser.add_argument(
-        "--hermes-root",
+        "--fool-root",
         help="Override the Fool source root used by Desktop (sets FOOL_DESKTOP_HERMES_ROOT)",
     )
     gui_parser.add_argument(

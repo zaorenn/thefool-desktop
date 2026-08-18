@@ -100,7 +100,7 @@ def hermes_client_tag() -> str:
 
     Format: ``client=hermes-client-v<MAJOR>.<MINOR>.<PATCH>``.
     """
-    return f"client=hermes-client-v{_hermes_version()}"
+    return f"client=fool-client-v{_hermes_version()}"
 
 
 def conversation_tag(session_id: str) -> str:

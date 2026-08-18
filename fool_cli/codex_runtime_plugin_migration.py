@@ -84,7 +84,7 @@ class MigrationReport:
                 )
                 lines.append(f"  - {name}{note}")
         else:
-            lines.append("No MCP servers found in Hermes config.")
+            lines.append("No MCP servers found in The Fool config.")
         if self.migrated_plugins:
             lines.append(
                 f"Migrated {len(self.migrated_plugins)} native Codex plugin(s):"
@@ -191,7 +191,7 @@ def _translate_one_server(
         if key in _KEYS_DROPPED_WITH_WARNING:
             skipped.append(f"{key} (no codex equivalent)")
         elif key not in _KNOWN_HERMES_KEYS:
-            skipped.append(f"{key} (unknown Hermes key)")
+            skipped.append(f"{key} (unknown The Fool key)")
 
     return out, skipped
 
@@ -263,7 +263,7 @@ def render_codex_toml_section(
     """
     out = [MIGRATION_MARKER]
     if not servers and not plugins and not default_permission_profile:
-        out.append("# (no MCP servers, plugins, or permissions configured by Hermes)")
+        out.append("# (no MCP servers, plugins, or permissions configured by The Fool)")
         out.append(MIGRATION_END_MARKER)
         return "\n".join(out) + "\n"
 
@@ -471,7 +471,7 @@ def _query_codex_plugins(
         with CodexAppServerClient(
             codex_home=str(codex_home) if codex_home else None
         ) as client:
-            client.initialize(client_name="hermes-migration")
+            client.initialize(client_name="fool-migration")
             resp = client.request("plugin/list", {}, timeout=timeout)
     except Exception as exc:
         return [], f"plugin/list query failed: {exc}"
@@ -649,7 +649,7 @@ def migrate(
     hermes_servers = (hermes_config or {}).get("mcp_servers") or {}
     if not isinstance(hermes_servers, dict):
         report.errors.append(
-            "mcp_servers in Hermes config is not a dict; cannot migrate."
+            "mcp_servers in The Fool config is not a dict; cannot migrate."
         )
         return report
 
@@ -694,9 +694,9 @@ def migrate(
     # The server itself is agent/transports/hermes_tools_mcp_server.py
     # and is launched on demand by codex (stdio MCP).
     if expose_hermes_tools:
-        translated["hermes-tools"] = _build_hermes_tools_mcp_entry()
-        if "hermes-tools" not in report.migrated:
-            report.migrated.append("hermes-tools")
+        translated["fool-tools"] = _build_hermes_tools_mcp_entry()
+        if "fool-tools" not in report.migrated:
+            report.migrated.append("fool-tools")
 
     # Build the new managed block
     managed_block = render_codex_toml_section(

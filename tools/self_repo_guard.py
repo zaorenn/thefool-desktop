@@ -723,13 +723,13 @@ def _block_message(operation: str, root: Path) -> str:
         "clones that install node/python deps: /tmp is usually RAM-backed "
         "tmpfs and a few dependency installs can fill it and ENOSPC other "
         "work. Delete the clone when the branch is pushed. To change this "
-        "checkout, stop Hermes, run the command externally, then restart "
-        "Hermes."
+        "checkout, stop The Fool, run the command externally, then restart "
+        "The Fool."
     )
 
 
 def _scratch_dir_hint() -> str:
     """Disk-backed scratch location suggested to agents for temporary clones."""
     hermes_home = os.environ.get("FOOL_HOME", "").strip()
-    base = Path(hermes_home).expanduser() if hermes_home else Path.home() / ".hermes"
+    base = Path(hermes_home).expanduser() if hermes_home else Path.home() / ".fool"
     return str(base / "scratch")

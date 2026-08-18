@@ -40,7 +40,7 @@ from fool_cli.sqlite_runtime import SQLiteRuntimeInfo, probe_sqlite_runtime
 logger = logging.getLogger(__name__)
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_RUNTIME_DIR_NAME = ".hermes-runtime"
+_RUNTIME_DIR_NAME = ".fool-runtime"
 _VENV_NAME = "venv"
 _ALT_VENV_NAME = ".venv"
 _REPAIR_LOCK_NAME = "runtime-repair.lock"
@@ -144,7 +144,7 @@ def _report_runtime_repair_failure(repair: RuntimeRepairResult) -> None:
             f"the existing venv is unchanged ({repair.detail})."
         )
         print(
-            "    Sessions stay protected meanwhile: Hermes keeps databases "
+            "    Sessions stay protected meanwhile: The Fool keeps databases "
             "out of WAL mode on this SQLite build. The next `fool update` "
             "will retry."
         )
@@ -592,7 +592,7 @@ def _attempt_install_generation(
     try:
         python.resolve().relative_to(generation.resolve())
     except (OSError, ValueError):
-        logger.warning("uv resolved Python outside the Hermes generation: %s", python)
+        logger.warning("uv resolved Python outside the Fool generation: %s", python)
         _remove_tree(generation, boundary=python_root)
         return None
 
@@ -1024,7 +1024,7 @@ def _windows_runtime_holders() -> tuple[bool, str]:
         return True, f"could not verify Windows venv holders: {exc}"
     if holders:
         pids = ", ".join(str(item[0]) for item in holders[:6])
-        return True, f"other Hermes processes still hold the venv (PID {pids})"
+        return True, f"other The Fool processes still hold the venv (PID {pids})"
     return False, ""
 
 
@@ -1223,7 +1223,7 @@ def repair_vulnerable_runtime(
             )
 
         print(
-            "  ⚠ Hermes venv links SQLite "
+            "  ⚠ The Fool venv links SQLite "
             f"{current.sqlite_version_string}, which has the WAL-reset bug."
         )
         provisioned = _install_safe_python_generation(

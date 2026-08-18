@@ -193,7 +193,7 @@ COMMIT="$(git -C "$GIT_ROOT" rev-parse --verify 'HEAD^{commit}')" || {
   echo "error: current folder has no HEAD commit" >&2
   exit 1
 }
-SANDBOX_DIR_NAME="${FOOL_DEV_SANDBOX_DIR:-.hermes-sandbox}"
+SANDBOX_DIR_NAME="${FOOL_DEV_SANDBOX_DIR:-.fool-sandbox}"
 PERSISTENT_ROOT="$GIT_ROOT/$SANDBOX_DIR_NAME"
 
 if [ "$DELETE" = true ]; then
@@ -212,7 +212,7 @@ fi
 if [ "$PERSISTENT" = true ]; then
   SANDBOX_ROOT="$PERSISTENT_ROOT"
 else
-  SANDBOX_ROOT="$(mktemp -d -t hermes-sandbox.XXXXXX)"
+  SANDBOX_ROOT="$(mktemp -d -t fool-sandbox.XXXXXX)"
   cleanup() { chmod -R u+w "$SANDBOX_ROOT"; rm -rf -- "$SANDBOX_ROOT"; }
   trap cleanup EXIT INT TERM
 fi
@@ -222,7 +222,7 @@ UPSTREAM_REPO=""
 UPSTREAM_COMMIT=""
 if [ -n "$INSTALL_REF" ]; then
   echo "[sandbox] fetching upstream $INSTALL_REF for installer/update test" >&2
-  UPSTREAM_REPO="$(mktemp -d -t hermes-sandbox-upstream.XXXXXX)"
+  UPSTREAM_REPO="$(mktemp -d -t fool-sandbox-upstream.XXXXXX)"
   git -C "$UPSTREAM_REPO" init -q
   # Fetch the ref as given. A branch or tag name resolves on its own; a raw SHA
   # needs the remote to allow fetching it directly, so fall back to fetching
@@ -389,10 +389,10 @@ if [ -n "$INSTALL_REF" ]; then
 fi
 if [ -n "$(git -C "$GIT_ROOT" status --porcelain)" ]; then
   echo '[sandbox] warning: current folder is dirty; creating a temporary fake commit for main' >&2
-  SNAPSHOT_REPO="$(mktemp -d -t hermes-sandbox-snapshot.XXXXXX)"
+  SNAPSHOT_REPO="$(mktemp -d -t fool-sandbox-snapshot.XXXXXX)"
   git -C "$SNAPSHOT_REPO" init -q
   git -C "$SNAPSHOT_REPO" fetch -q "$GIT_ROOT" "$COMMIT"
-  git -C "$SNAPSHOT_REPO" config user.name 'Hermes sandbox'
+  git -C "$SNAPSHOT_REPO" config user.name 'The Fool sandbox'
   git -C "$SNAPSHOT_REPO" config user.email 'sandbox@invalid'
   GIT_DIR="$SNAPSHOT_REPO/.git" GIT_WORK_TREE="$GIT_ROOT" git read-tree "$COMMIT"
   GIT_DIR="$SNAPSHOT_REPO/.git" GIT_WORK_TREE="$GIT_ROOT" \
@@ -410,7 +410,7 @@ fi
 
 if [ -n "$INSTALL_REF" ]; then
   git --git-dir="$FAKE_REPO" fetch -q --force "$SOURCE_REPO" \
-    "$SOURCE_REF:refs/hermes-sandbox/next"
+    "$SOURCE_REF:refs/fool-sandbox/next"
   printf '%s\n' "$SOURCE_REF" > "$SANDBOX_ROOT/root/promote-main"
 else
   git --git-dir="$FAKE_REPO" fetch -q --force "$SOURCE_REPO" \
@@ -435,7 +435,7 @@ cp "$SANDBOX_ASSETS/openssl.cnf" "$SANDBOX_ROOT/root/certs/openssl.cnf"
 if [ ! -f "$SANDBOX_ROOT/root/certs/ca.pem" ]; then
   if ! ca_error="$(OPENSSL_CONF="$SANDBOX_ROOT/root/certs/openssl.cnf" \
     openssl req -x509 -newkey rsa:2048 -nodes -days 2 \
-    -subj '/CN=Hermes dev sandbox CA' \
+    -subj '/CN=The Fool dev sandbox CA' \
     -extensions sandbox_ca_ext \
     -keyout "$SANDBOX_ROOT/root/certs/ca.key" \
     -out "$SANDBOX_ROOT/root/certs/ca.pem" 2>&1 >/dev/null)"; then

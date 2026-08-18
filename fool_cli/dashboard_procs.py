@@ -652,7 +652,7 @@ def _is_desktop_local_serve_cmdline(command: str) -> bool:
     cmd = command.lower()
     if "serve" not in cmd:
         return False
-    if "hermes" not in cmd and "fool_cli" not in cmd:
+    if "fool" not in cmd and "fool_cli" not in cmd:
         return False
     # Ephemeral desktop bind: host loopback + port 0 (exact tokens).
     has_loopback = (
@@ -735,7 +735,7 @@ def _hermes_home_dir() -> Path:
     override = os.environ.get("FOOL_HOME", "").strip()
     if override:
         return Path(override).expanduser()
-    return Path.home() / ".hermes"
+    return Path.home() / ".fool"
 
 
 def _valid_lockfile_payload(parsed: object, ownership_id: str) -> bool:

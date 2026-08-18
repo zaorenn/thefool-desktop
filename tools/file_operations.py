@@ -1197,7 +1197,7 @@ class ShellFileOperations(FileOperations):
         # template basename: hidden so it doesn't show up in casual `ls`,
         # carries a marker so an orphaned temp (only possible on a hard
         # crash *between* cat and mv) is identifiable.
-        tmpl = self._escape_shell_arg(".hermes-tmp.XXXXXX")
+        tmpl = self._escape_shell_arg(".fool-tmp.XXXXXX")
 
         # One shell script, fully quoted. Notes:
         #  - `mkdir -p "$d"` is folded in here so the parent directory is
@@ -1242,8 +1242,8 @@ class ShellFileOperations(FileOperations):
             # the one created/confirmed.
             'mkdir -p "$d"; '
             'tmp="$(mktemp -p "$d" ' + tmpl + ' 2>/dev/null '
-            '|| mktemp "$d/.hermes-tmp.$$.XXXXXX" 2>/dev/null '
-            '|| { tmp="$d/.hermes-tmp.$$"; : > "$tmp" && echo "$tmp"; })"; '
+            '|| mktemp "$d/.fool-tmp.$$.XXXXXX" 2>/dev/null '
+            '|| { tmp="$d/.fool-tmp.$$"; : > "$tmp" && echo "$tmp"; })"; '
             '[ -n "$tmp" ] || { echo "atomic write: could not create temp file" >&2; exit 1; }; '
             "trap 'rm -f \\\"$tmp\\\"' EXIT; "
             # preserve mode of an existing target (best-effort, never fatal)

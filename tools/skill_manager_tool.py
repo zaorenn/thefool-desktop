@@ -822,7 +822,7 @@ def _skill_not_found_error(name: str, suffix: str = "") -> str:
             base += (
                 f" A skill by that name exists in profile "
                 f"'{other_profile}' ({other_path}). To edit a skill in "
-                f"another profile, switch profiles (`hermes -p "
+                f"another profile, switch profiles (`fool -p "
                 f"{other_profile}`) or operate via explicit file tools "
                 f"with ``cross_profile=True``."
             )
@@ -830,7 +830,7 @@ def _skill_not_found_error(name: str, suffix: str = "") -> str:
             names = ", ".join(f"'{p}'" for p, _ in others)
             base += (
                 f" Skills by that name exist in other profiles: {names}. "
-                f"Switch profiles (`hermes -p <name>`) to edit there, or "
+                f"Switch profiles (`fool -p <name>`) to edit there, or "
                 f"operate via explicit file tools with ``cross_profile=True``."
             )
     else:
@@ -999,7 +999,7 @@ def _attach_lint_findings(result: Dict[str, Any], skill_md: Path) -> None:
     result["lint_hint"] = (
         "The skill was created. These are advisory authoring-convention "
         "findings (not blockers) — fix them with skill_manage(action='patch') "
-        "to match Hermes skill standards."
+        "to match The Fool skill standards."
     )
 
 

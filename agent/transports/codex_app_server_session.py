@@ -323,7 +323,7 @@ class CodexAppServerSession:
                 codex_bin=self._codex_bin, codex_home=self._codex_home
             )
         self._client.initialize(
-            client_name="hermes",
+            client_name="fool",
             client_title="Fool Agent",
             client_version=_get_hermes_version(),
         )
@@ -1035,7 +1035,7 @@ class CodexAppServerSession:
             # servers we decline so the user explicitly opts in via
             # codex's own auth flow.
             server_name = params.get("serverName") or ""
-            if server_name == "hermes-tools":
+            if server_name == "fool-tools":
                 self._client.respond(
                     rid,
                     {"action": "accept", "content": None, "_meta": None},

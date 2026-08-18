@@ -1556,7 +1556,7 @@ def run_hermes_oauth_login_pure() -> Optional[Dict[str, Any]]:
     auth_url = f"https://claude.ai/oauth/authorize?{urlencode(params)}"
 
     print()
-    print("Authorize Hermes with your Claude Pro/Max subscription.")
+    print("Authorize The Fool with your Claude Pro/Max subscription.")
     print()
     print("╭─ Claude Pro/Max Authorization ────────────────────╮")
     print("│                                                   │")
@@ -1671,7 +1671,7 @@ def read_hermes_oauth_credentials() -> Optional[Dict[str, Any]]:
             if data.get("accessToken"):
                 return data
         except (json.JSONDecodeError, OSError, IOError) as e:
-            logger.debug("Failed to read Hermes OAuth credentials: %s", e)
+            logger.debug("Failed to read The Fool OAuth credentials: %s", e)
     return None
 
 
@@ -2969,10 +2969,10 @@ def build_anthropic_kwargs(
                 # adlari da kaliyor (baglam dosyalarinda hala gecebilir).
                 text = text.replace("Fool Agent", "Claude Code")
                 text = text.replace("The Fool", "Claude Code")
-                text = text.replace("Hermes Agent", "Claude Code")
-                text = text.replace("Hermes agent", "Claude Code")
+                text = text.replace("Fool Agent", "Claude Code")
+                text = text.replace("The Fool agent", "Claude Code")
                 text = text.replace("hermes-agent", "claude-code")
-                text = text.replace("Nous Research", "Anthropic")
+                text = text.replace("Fool Labs", "Anthropic")
                 block["text"] = text
 
         # 3. Normalize tool names so NOTHING goes on the OAuth wire with a

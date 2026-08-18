@@ -347,7 +347,7 @@ class VercelSandboxEnvironment(BaseEnvironment):
         self._remote_home = self._detect_remote_home()
 
         if self._remote_home == "/":
-            container_base = "/.hermes"
+            container_base = "/.fool"
         else:
             container_base = f"{self._remote_home.rstrip('/')}/.hermes"
         self._sync_manager = FileSyncManager(
@@ -553,7 +553,7 @@ class VercelSandboxEnvironment(BaseEnvironment):
 
     def _vercel_bulk_download(self, dest_tar_path: Path) -> None:
         remote_hermes = (
-            "/.hermes"
+            "/.fool"
             if self._remote_home == "/"
             else f"{self._remote_home.rstrip('/')}/.hermes"
         )

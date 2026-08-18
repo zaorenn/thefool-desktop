@@ -153,8 +153,8 @@ function Invoke-Normalization {
         }
         $exitCode = $LASTEXITCODE
         $raw = @(Get-Content -LiteralPath $outFile -ErrorAction SilentlyContinue)
-        $stderr = ($raw | Where-Object { $_ -like '`[hermes`]*' }) -join "`n"
-        $stdout = ($raw | Where-Object { $_ -notlike '`[hermes`]*' }) -join "`n"
+        $stderr = ($raw | Where-Object { $_ -like '`[fool`]*' }) -join "`n"
+        $stdout = ($raw | Where-Object { $_ -notlike '`[fool`]*' }) -join "`n"
     } finally {
         foreach ($key in $saved.Keys) {
             if ($null -eq $saved[$key]) {
@@ -288,7 +288,7 @@ foreach ($name in @('TEMP', 'TMP', 'LOCALAPPDATA', 'APPDATA', 'USERPROFILE')) {
 # This is the difference between "the build works" and "the installer stops
 # claiming a successful build failed". Composed with literal backslashes
 # because that is how install.ps1 itself builds the default Windows path.
-$expectedInstallDir = "$($longRoot)${sep}AppData${sep}Local" + '\hermes\hermes-agent'
+$expectedInstallDir = "$($longRoot)${sep}AppData${sep}Local" + '\fool\hermes-agent'
 Assert-Equal -Expected $expectedInstallDir -Actual $result.InstallDir -Label "InstallDir is re-derived from the long LOCALAPPDATA"
 
 Write-Host ""
@@ -309,8 +309,8 @@ Write-Host ""
 Write-Host "-- an explicit -InstallDir is normalized, never replaced --"
 
 $result = Invoke-Normalization -Environment @{ TEMP = $shortTemp; TMP = $shortTemp } `
-    -ExtraArgs @('-InstallDir', (Join-Path $shortProfile 'custom-hermes'))
-Assert-Equal -Expected (Join-Path $longRoot 'custom-hermes') -Actual $result.InstallDir -Label "explicit -InstallDir keeps the caller's directory, on the long root"
+    -ExtraArgs @('-InstallDir', (Join-Path $shortProfile 'custom-fool'))
+Assert-Equal -Expected (Join-Path $longRoot 'custom-fool') -Actual $result.InstallDir -Label "explicit -InstallDir keeps the caller's directory, on the long root"
 
 # --- Summary ---------------------------------------------------------------
 Write-Host ""

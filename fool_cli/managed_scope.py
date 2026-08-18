@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # POSIX default. Other-platform locations are a deliberate v2 item; when added,
 # they belong ONLY inside get_managed_dir().
-_DEFAULT_MANAGED_DIR = Path("/etc/hermes")
+_DEFAULT_MANAGED_DIR = Path("/etc/fool")
 
 _CACHE_LOCK = threading.Lock()
 # path_key -> (mtime_ns, size, parsed)

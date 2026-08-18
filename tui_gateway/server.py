@@ -3813,7 +3813,7 @@ def _ensure_skin_watcher() -> None:
             _broadcast_skin_if_changed()
             _broadcast_watched_changes()
 
-    threading.Thread(target=_loop, name="hermes-change-watcher", daemon=True).start()
+    threading.Thread(target=_loop, name="fool-change-watcher", daemon=True).start()
 
 
 def _resolve_model() -> str:
@@ -13175,7 +13175,7 @@ def _rank_slash_completions(
 def _cli_exec_blocked(argv: list[str]) -> str | None:
     """Return user hint if this argv must not run headless in the gateway process."""
     if not argv:
-        return "bare `hermes` is interactive — use `/fool chat -q …` or run `hermes` in another terminal"
+        return "bare `fool` is interactive — use `/fool chat -q …` or run `fool` in another terminal"
     a0 = argv[0].lower()
     if a0 == "setup":
         return "`fool setup` needs a full terminal — run it outside the TUI"
@@ -13611,7 +13611,7 @@ def _format_live_history_output(session: dict) -> str:
     lines = ["Conversation History", "────────────────────────────────────────"]
     for idx, message in enumerate(messages, start=1):
         role = str(message.get("role") or "unknown")
-        label = "You" if role == "user" else "Hermes" if role == "assistant" else role.title()
+        label = "You" if role == "user" else "The Fool" if role == "assistant" else role.title()
         text = str(message.get("text") or message.get("context") or "").strip()
         if len(text) > 400:
             text = f"{text[:400]}..."

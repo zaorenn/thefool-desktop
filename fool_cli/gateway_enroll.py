@@ -52,7 +52,7 @@ def _default_gateway_id() -> str:
         host = socket.gethostname().strip()
     except Exception:
         host = ""
-    return f"gw-{host or 'hermes'}"
+    return f"gw-{host or 'fool'}"
 
 
 def _resolve_connector_url(override: Optional[str]) -> Optional[str]:

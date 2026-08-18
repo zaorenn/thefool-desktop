@@ -74,11 +74,11 @@ def _(rid, params: dict) -> dict:
                             "meta": desc or "agent profile",
                         }
                     )
-            if "hermes".startswith(prefix.lower()) and "hermes" not in seen:
+            if "fool".startswith(prefix.lower()) and "fool" not in seen:
                 out.append(
                     {
-                        "text": "@hermes",
-                        "display": "@hermes",
+                        "text": "@fool",
+                        "display": "@fool",
                         "meta": "agent profile (primary)",
                     }
                 )

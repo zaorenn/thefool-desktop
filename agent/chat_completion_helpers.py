@@ -2016,7 +2016,7 @@ def build_api_kwargs(agent, api_messages: list, tools_for_api: list | None = Non
     _qwen_meta = None
     if _is_qwen:
         _qwen_meta = {
-            "sessionId": agent.session_id or "hermes",
+            "sessionId": agent.session_id or "fool",
             "promptId": str(uuid.uuid4()),
         }
 

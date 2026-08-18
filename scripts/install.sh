@@ -46,7 +46,7 @@ BOLD='\033[1m'
 # FOOL-SEAM: bootstrap-repo
 REPO_URL_SSH="git@github.com:zaorenn/thefool-desktop.git"
 REPO_URL_HTTPS="https://github.com/zaorenn/thefool-desktop.git"
-FOOL_HOME="${FOOL_HOME:-$HOME/.hermes}"
+FOOL_HOME="${FOOL_HOME:-$HOME/.fool}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
 # explicit directory — if so we never override it.
@@ -185,17 +185,17 @@ while [[ $# -gt 0 ]]; do
             echo "  --non-interactive  Skip stages that require user input"
             echo "  --include-desktop  Also build the desktop app (apps/desktop -> The Fool.app)"
             echo "  --dir PATH     Installation directory"
-            echo "                   default (non-root):  ~/.hermes/hermes-agent"
+            echo "                   default (non-root):  ~/.fool/hermes-agent"
             echo "                   default (root, Linux): /usr/local/lib/hermes-agent"
-            echo "  --hermes-home PATH  Data directory (default: ~/.hermes, or \$FOOL_HOME)"
+            echo "  --fool-home PATH  Data directory (default: ~/.fool, or \$FOOL_HOME)"
             echo "  -h, --help     Show this help"
             echo ""
             echo "Notes:"
             echo "  When running as root on Linux, The Fool installs the code under"
             echo "  /usr/local/lib/hermes-agent and links the command into"
-            echo "  /usr/local/bin/hermes (FHS layout — matches Claude Code / Codex CLI)."
+            echo "  /usr/local/bin/fool (FHS layout — matches Claude Code / Codex CLI)."
             echo "  Data, config, sessions, and logs still live in \$FOOL_HOME"
-            echo "  (default /root/.hermes).  This keeps Docker bind-mounted volumes"
+            echo "  (default /root/.fool).  This keeps Docker bind-mounted volumes"
             echo "  small and ensures the command is on PATH for all shells."
             echo "  Existing installs at \$FOOL_HOME/hermes-agent are preserved in-place."
             echo "  --ensure DEPS  Install only specified deps (comma-separated)"
@@ -444,7 +444,7 @@ resolve_install_layout() {
         export UV_PYTHON_BIN_DIR="${UV_PYTHON_BIN_DIR:-/usr/local/share/uv/bin}"
         log_info "Root install on Linux — using FHS layout"
         log_info "  Code:    $INSTALL_DIR"
-        log_info "  Command: /usr/local/bin/hermes"
+        log_info "  Command: /usr/local/bin/fool"
         log_info "  Data:    $FOOL_HOME (unchanged)"
         log_info "  uv Python: $UV_PYTHON_INSTALL_DIR (world-readable)"
         return 0
@@ -950,7 +950,7 @@ install_node() {
         return 0
     fi
 
-    log_info "Extracting to ~/.hermes/node/..."
+    log_info "Extracting to ~/.fool/node/..."
     if [[ "$tarball_name" == *.tar.xz ]]; then
         tar xf "$tmp_dir/$tarball_name" -C "$tmp_dir"
     else
@@ -988,7 +988,7 @@ install_node() {
 
     local installed_ver
     installed_ver=$("$FOOL_HOME/node/bin/node" --version 2>/dev/null)
-    log_success "Node.js $installed_ver installed to ~/.hermes/node/"
+    log_success "Node.js $installed_ver installed to ~/.fool/node/"
     HAS_NODE=true
 }
 
@@ -1280,7 +1280,7 @@ clone_repo() {
                     git reset -q
                 fi
                 local stash_name
-                stash_name="hermes-install-autostash-$(date -u +%Y%m%d-%H%M%S)"
+                stash_name="fool-install-autostash-$(date -u +%Y%m%d-%H%M%S)"
                 log_info "Local changes detected, stashing before update..."
                 git stash push --include-untracked -m "$stash_name"
                 autostash_ref="stash@{0}"
@@ -1735,9 +1735,9 @@ setup_path() {
 
     if [ "$USE_VENV" = true ]; then
         FOOL_BIN="$INSTALL_DIR/venv/bin/python"
-        FOOL_ENTRYPOINT="$INSTALL_DIR/hermes"
+        FOOL_ENTRYPOINT="$INSTALL_DIR/fool"
     else
-        FOOL_BIN="$(which hermes 2>/dev/null || echo "")"
+        FOOL_BIN="$(which fool 2>/dev/null || echo "")"
         if [ -z "$FOOL_BIN" ]; then
             log_warn "fool not found on PATH after install"
             return 0
@@ -1837,7 +1837,7 @@ exec "$FOOL_BIN" acp "\$@"
 EOF
     fi
     chmod +x "$command_link_dir/fool-acp"
-    log_success "Installed hermes-acp launcher → $command_link_display_dir/fool-acp"
+    log_success "Installed fool-acp launcher → $command_link_display_dir/fool-acp"
 
     if [ "$DISTRO" = "termux" ]; then
         export PATH="$command_link_dir:$PATH"
@@ -1857,7 +1857,7 @@ EOF
         # Probe a fresh non-login interactive bash the way the user will use it.
         # `bash -i -c` sources ~/.bashrc but NOT ~/.bash_profile or /etc/profile,
         # which is the exact scenario where RHEL root loses /usr/local/bin.
-        if env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -i -c 'command -v hermes' \
+        if env -i HOME="$HOME" TERM="${TERM:-dumb}" bash -i -c 'command -v fool' \
                 >/dev/null 2>&1; then
             log_info "/usr/local/bin is already on PATH for all shells"
             log_success "fool command ready"
@@ -1963,13 +1963,13 @@ copy_config_templates() {
     if [ ! -f "$FOOL_HOME/.env" ]; then
         if [ -f "$INSTALL_DIR/.env.example" ]; then
             cp "$INSTALL_DIR/.env.example" "$FOOL_HOME/.env"
-            log_success "Created ~/.hermes/.env from template"
+            log_success "Created ~/.fool/.env from template"
         else
             touch "$FOOL_HOME/.env"
-            log_success "Created ~/.hermes/.env"
+            log_success "Created ~/.fool/.env"
         fi
     else
-        log_info "~/.hermes/.env already exists, keeping it"
+        log_info "~/.fool/.env already exists, keeping it"
     fi
     # Restrict .env permissions — this file holds API keys and tokens.
     # 0600 ensures only the file owner can read/write, matching standard
@@ -1981,10 +1981,10 @@ copy_config_templates() {
     if [ ! -f "$FOOL_HOME/config.yaml" ]; then
         if [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
             cp "$INSTALL_DIR/cli-config.yaml.example" "$FOOL_HOME/config.yaml"
-            log_success "Created ~/.hermes/config.yaml from template"
+            log_success "Created ~/.fool/config.yaml from template"
         fi
     else
-        log_info "~/.hermes/config.yaml already exists, keeping it"
+        log_info "~/.fool/config.yaml already exists, keeping it"
     fi
 
     # Create SOUL.md if it doesn't exist (global persona file).
@@ -1996,10 +1996,10 @@ copy_config_templates() {
         cat > "$FOOL_HOME/SOUL.md" << 'SOUL_EOF'
 You are Fool Agent, an intelligent AI assistant. You are helpful, knowledgeable, and direct. You assist users with a wide range of tasks including answering questions, writing and editing code, analyzing information, creative work, and executing actions via your tools. You communicate clearly, admit uncertainty when appropriate, and prioritize being genuinely useful over being verbose unless otherwise directed below. Be targeted and efficient in your exploration and investigations.
 SOUL_EOF
-        log_success "Created ~/.hermes/SOUL.md (edit to customize personality)"
+        log_success "Created ~/.fool/SOUL.md (edit to customize personality)"
     fi
 
-    log_success "Configuration directory ready: ~/.hermes/"
+    log_success "Configuration directory ready: ~/.fool/"
 
     # Seed bundled skills into ~/.hermes/skills/ (manifest-based, one-time per skill)
     if [ "$NO_SKILLS" = true ]; then
@@ -2013,14 +2013,14 @@ SOUL_EOF
         log_info "Skipping bundled skills (--no-skills). Wrote $FOOL_HOME/.no-bundled-skills"
         log_info "  Future 'fool update' runs will not inject bundled skills. Delete the marker to opt back in."
     else
-        log_info "Syncing bundled skills to ~/.hermes/skills/ ..."
+        log_info "Syncing bundled skills to ~/.fool/skills/ ..."
         if "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" 2>/dev/null; then
-            log_success "Skills synced to ~/.hermes/skills/"
+            log_success "Skills synced to ~/.fool/skills/"
         else
             # Fallback: simple directory copy if Python sync fails
             if [ -d "$INSTALL_DIR/skills" ] && [ ! "$(ls -A "$FOOL_HOME/skills/" 2>/dev/null | grep -v '.bundled_manifest')" ]; then
                 cp -r "$INSTALL_DIR/skills/"* "$FOOL_HOME/skills/" 2>/dev/null || true
-                log_success "Skills copied to ~/.hermes/skills/"
+                log_success "Skills copied to ~/.fool/skills/"
             fi
         fi
     fi
@@ -2703,7 +2703,7 @@ maybe_start_gateway() {
             fi
             nohup $FOOL_CMD gateway > "$FOOL_HOME/logs/gateway.log" 2>&1 &
             GATEWAY_PID=$!
-            log_success "Gateway started (PID $GATEWAY_PID). Logs: ~/.hermes/logs/gateway.log"
+            log_success "Gateway started (PID $GATEWAY_PID). Logs: ~/.fool/logs/gateway.log"
             log_info "To stop: kill $GATEWAY_PID"
             log_info "To restart later: fool gateway"
             if [ "$DISTRO" = "termux" ]; then
@@ -2745,7 +2745,7 @@ write_bootstrap_marker() {
         return 0
     fi
 
-    local marker_path="$INSTALL_DIR/.hermes-bootstrap-complete"
+    local marker_path="$INSTALL_DIR/.fool-bootstrap-complete"
     local tmp_path="$marker_path.tmp"
 
     # Atomic publish: the macOS launcher predicate only checks existence, so a
@@ -2779,7 +2779,7 @@ print_success() {
     echo ""
     echo -e "${CYAN}${BOLD}🚀 Commands:${NC}"
     echo ""
-    echo -e "   ${GREEN}hermes${NC}              Start chatting"
+    echo -e "   ${GREEN}fool${NC}              Start chatting"
     echo -e "   ${GREEN}fool setup${NC}        Configure API keys & settings"
     echo -e "   ${GREEN}fool config${NC}       View/edit configuration"
     echo -e "   ${GREEN}fool config edit${NC}  Open config in editor"
@@ -2790,13 +2790,13 @@ print_success() {
     echo -e "${CYAN}─────────────────────────────────────────────────────────${NC}"
     echo ""
     if [ "$DISTRO" = "termux" ]; then
-        echo -e "${YELLOW}⚡ 'hermes' was linked into $(get_command_link_display_dir), which is already on PATH in Termux.${NC}"
+        echo -e "${YELLOW}⚡ 'fool' was linked into $(get_command_link_display_dir), which is already on PATH in Termux.${NC}"
         echo ""
     elif [ "$ROOT_FHS_LAYOUT" = true ]; then
-        echo -e "${YELLOW}⚡ 'hermes' was linked into /usr/local/bin and is ready to use — no shell reload needed.${NC}"
+        echo -e "${YELLOW}⚡ 'fool' was linked into /usr/local/bin and is ready to use — no shell reload needed.${NC}"
         echo ""
     else
-        echo -e "${YELLOW}⚡ Reload your shell to use 'hermes' command:${NC}"
+        echo -e "${YELLOW}⚡ Reload your shell to use 'fool' command:${NC}"
         echo ""
         LOGIN_SHELL="$(basename "${SHELL:-/bin/bash}")"
         if [ "$LOGIN_SHELL" = "zsh" ]; then
@@ -3245,8 +3245,8 @@ install_desktop() {
     if [ "$OS" = "linux" ]; then
         if [ -x "$desktop_dir/release/linux-unpacked/The Fool" ]; then
             app="$desktop_dir/release/linux-unpacked/The Fool"
-        elif [ -x "$desktop_dir/release/linux-unpacked/hermes" ]; then
-            app="$desktop_dir/release/linux-unpacked/hermes"
+        elif [ -x "$desktop_dir/release/linux-unpacked/fool" ]; then
+            app="$desktop_dir/release/linux-unpacked/fool"
         fi
     else
         local cand

@@ -1215,7 +1215,7 @@ def _download_url_with_cap(url: str, max_bytes: int) -> tuple[bytes, Optional[st
         with httpx.stream(
             "GET",
             current_url,
-            headers={"User-Agent": "hermes-kanban/attach"},
+            headers={"User-Agent": "fool-kanban/attach"},
             timeout=30,
             follow_redirects=False,
         ) as resp:
@@ -2074,7 +2074,7 @@ KANBAN_ATTACH_SCHEMA = {
 KANBAN_ATTACH_URL_SCHEMA = {
     "name": "kanban_attach_url",
     "description": (
-        "Attach a file to a task by URL — Hermes downloads it server-side "
+        "Attach a file to a task by URL — The Fool downloads it server-side "
         "and stores it as a real attachment (capped at 25 MB). Use when "
         "you have a link rather than the bytes. Only http/https URLs are "
         "accepted."

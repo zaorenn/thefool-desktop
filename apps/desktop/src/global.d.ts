@@ -94,6 +94,8 @@ declare global {
         open: () => Promise<{ ok: boolean }>
         close: () => Promise<{ ok: boolean }>
         toggle: () => Promise<{ ok: boolean; open: boolean }>
+        /** Hangi global kisayolun GERCEKTEN kayitli oldugu (aday merdiveni). */
+        shortcut: () => Promise<{ shortcut: null | string }>
         /** Ana surec global kisayoldan dinlemeyi istedi. */
         onListenRequest: (callback: () => void) => () => void
       }

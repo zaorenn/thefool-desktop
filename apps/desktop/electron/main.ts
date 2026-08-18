@@ -12286,6 +12286,10 @@ ipcMain.handle('fool:notch:open', async () => {
   return { ok: true }
 })
 
+// Notch arayuzu hangi kisayolun GERCEKTEN kayitli oldugunu gosterebilsin --
+// aday merdiveni yuzunden bu makineden makineye degisiyor.
+ipcMain.handle('fool:notch:shortcut', async () => ({ shortcut: notchShortcut }))
+
 ipcMain.handle('fool:notch:close', async () => {
   closeNotchWindow()
 
@@ -12301,28 +12305,52 @@ ipcMain.handle('fool:notch:close', async () => {
 // Bu yuzden global kisayol TEK DOKUNUS: notch'u acar, odagi verir ve dinlemeyi
 // baslatir. Kullanici sonra ya sag Ctrl'yi birakir gibi tekrar basar, ya da
 // notch artik odakta oldugu icin gercek bas-konus zaten calisir.
-const NOTCH_LISTEN_SHORTCUT = 'CommandOrControl+Shift+Space'
+// Aday merdiveni. TEK bir kisayola bagli kalmak calismiyordu: Windows'ta
+// Ctrl+Shift+Space'i klavye duzeni degistirme ve bircok IME zaten tutuyor,
+// ve Electron'un register()'i bu durumda sessizce false donuyor -- kullanici
+// tusa basiyor, hicbir sey olmuyor, sebebini ogrenemiyor (olculdu: gunlukte
+// "NOT registered").
+//
+// Sirayla denenip ILK bos olan aliniyor ve hangisinin kazandigi hem gunluge
+// hem de notch'un kendi arayuzune yaziliyor.
+const NOTCH_SHORTCUT_CANDIDATES = [
+  'CommandOrControl+Shift+Space',
+  'CommandOrControl+Alt+Space',
+  'CommandOrControl+Shift+Semicolon',
+  'CommandOrControl+Alt+V',
+  'F13'
+]
+
+let notchShortcut = null
 
 function registerNotchShortcut() {
-  try {
-    if (globalShortcut.isRegistered(NOTCH_LISTEN_SHORTCUT)) {
-      return false
-    }
+  const onFire = () => {
+    const win = openNotchWindow()
 
-    return globalShortcut.register(NOTCH_LISTEN_SHORTCUT, () => {
-      const win = openNotchWindow()
-
-      // Odagi vermek SART: bunun ardindan gelen sag Ctrl basisi ancak notch
-      // odaktaysa renderer'a ulasir.
-      win.show()
-      win.focus()
-      win.webContents.send('fool:notch:listen')
-    })
-  } catch {
-    // Baska bir uygulama kisayolu tutuyorsa notch yine de elle acilabilir;
-    // kayit basarisizligi uygulamayi engellememeli.
-    return false
+    // Odagi vermek SART: bunun ardindan gelen sag Ctrl basisi ancak notch
+    // odaktaysa renderer'a ulasir.
+    win.show()
+    win.focus()
+    win.webContents.send('fool:notch:listen')
   }
+
+  for (const accelerator of NOTCH_SHORTCUT_CANDIDATES) {
+    try {
+      if (globalShortcut.isRegistered(accelerator)) {
+        continue
+      }
+
+      if (globalShortcut.register(accelerator, onFire)) {
+        notchShortcut = accelerator
+
+        return accelerator
+      }
+    } catch {
+      // Gecersiz/tutulmus hizlandirici bir sonrakini denemeyi engellememeli.
+    }
+  }
+
+  return null
 }
 
 ipcMain.handle('fool:notch:toggle', async () => {
@@ -14975,7 +15003,17 @@ app.whenReady().then(() => {
   // FOOL-SEAM: notch-shortcut
   // Quick Entry ile ayni yerde kaydediliyor: ikisi de global kisayol ve
   // ikisinin de sahibi ana surec.
-  registerNotchShortcut()
+  //
+  // Sonuc GUNLUGE yaziliyor: kayit sessizce basarisiz olabiliyor (baska bir
+  // uygulama kisayolu tutuyorsa) ve o durumda kullanici tusa basip hicbir sey
+  // olmadigini goruyor, sebebini ogrenemiyor.
+  const notchAccelerator = registerNotchShortcut()
+
+  rememberLog(
+    notchAccelerator
+      ? `[notch] global shortcut registered: ${notchAccelerator}`
+      : `[notch] NO global shortcut available (all candidates taken): ${NOTCH_SHORTCUT_CANDIDATES.join(', ')}`
+  )
 
   if (IS_MAC) {
     const reposition = () => wakeIndicatorController.reposition()

@@ -63,6 +63,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     open: () => ipcRenderer.invoke('fool:notch:open'),
     close: () => ipcRenderer.invoke('fool:notch:close'),
     toggle: () => ipcRenderer.invoke('fool:notch:toggle'),
+    shortcut: () => ipcRenderer.invoke('fool:notch:shortcut'),
     onListenRequest: (callback: () => void) => {
       const listener = () => callback()
 

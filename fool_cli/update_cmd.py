@@ -1429,7 +1429,7 @@ def _restore_stashed_changes(
         print(
             "  Restoring them may reapply local customizations onto the updated codebase."
         )
-        print("  Review the result afterward if Hermes behaves unexpectedly.")
+        print("  Review the result afterward if The Fool behaves unexpectedly.")
         print("Restore local changes now? [Y/n]")
         if input_fn is not None:
             response = input_fn("Restore local changes now? [Y/n]", "y")
@@ -1540,7 +1540,7 @@ def _restore_stashed_changes(
             _print_stash_cleanup_guidance(stash_ref, stash_selector)
 
     print("⚠ Local changes were restored on top of the updated codebase.")
-    print("  Review `git diff` / `git status` if Hermes behaves unexpectedly.")
+    print("  Review `git diff` / `git status` if The Fool behaves unexpectedly.")
     return True
 
 def _discard_stashed_changes(
@@ -1725,7 +1725,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
 
         # Ask user if they want to add upstream
         print()
-        print("ℹ Your fork is not tracking the official Hermes repository.")
+        print("ℹ Your fork is not tracking the official Fool repository.")
         print("  This means you may miss updates from NousResearch/hermes-agent.")
         print()
         try:
@@ -1991,7 +1991,7 @@ def _restore_active_tool_dependencies(
         return
 
     print()
-    print(f"→ Restoring {len(missing)} Hermes Tools dependency set(s)...")
+    print(f"→ Restoring {len(missing)} The Fool Tools dependency set(s)...")
     restored: list[str] = []
     failed: list[tuple[str, str]] = []
     for name, install_args in missing:
@@ -3451,13 +3451,13 @@ def _defer_update_for_self_lock(loaded: list[str]) -> None:
 def _format_venv_python_holders_message(matches: list[tuple[int, str, str]]) -> str:
     """Explain which venv processes block the update and how to clear them."""
     lines = [
-        "✗ Other Hermes processes are running from this install's venv:",
+        "✗ Other The Fool processes are running from this install's venv:",
     ]
     for pid, name, cmdline in matches[:6]:
         hint = ""
         low = cmdline.lower()
         if "serve" in low or "dashboard" in low:
-            hint = "  ← Hermes Desktop backend (close the desktop app)"
+            hint = "  ← The Fool Desktop backend (close the desktop app)"
         elif "gateway" in low:
             hint = "  ← gateway"
         lines.append(f"  PID {pid}  {name}  {cmdline[:120]}{hint}")
@@ -3471,7 +3471,7 @@ def _format_venv_python_holders_message(matches: list[tuple[int, str, str]]) -> 
         "  dependency update would fail partway and leave a broken install."
     )
     lines.append(
-        "  Close the Hermes desktop app / other Hermes terminals, then re-run:"
+        "  Close The Fool desktop app / other Fool terminals, then re-run:"
     )
     lines.append("    fool update")
     lines.append("  (or use `fool update --force-venv` to proceed anyway at your own risk)")
@@ -3802,7 +3802,7 @@ def _pause_windows_gateways_for_update() -> dict | None:
     # update even though the gateway itself is stopped.
     launcher_pids = _m()._venv_launcher_ancestors(mapped_pids)
 
-    print("→ Stopping Windows gateway process(es) before updating Hermes...")
+    print("→ Stopping Windows gateway process(es) before updating The Fool...")
     try:
         drain_timeout = max(float(_get_restart_drain_timeout()), 1.0)
     except Exception:
@@ -4484,7 +4484,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("Could not read updates.non_interactive_local_changes: %s", exc)
             discard_local_changes = False
 
-    print("⚕ Updating Hermes Agent...")
+    print("⚕ Updating Fool Agent...")
     print()
 
     # On Windows, abort early if another hermes.exe is holding the venv shim
@@ -4920,7 +4920,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     _print_update_completion("✓ Update complete!")
                 else:
                     print(f"⚠ Venv still unhealthy after repair: {detail_after}")
-                    print("  Close all Hermes windows/gateways and re-run: fool update")
+                    print("  Close all The Fool windows/gateways and re-run: fool update")
             else:
                 _repair_node_deps_on_current_checkout(_print_update_completion)
             if runtime_repaired is not None and not _m()._is_windows():
@@ -6521,7 +6521,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
             if supports_systemd_services() and has_legacy_hermes_units():
                 print()
-                print("⚠ Legacy Hermes gateway unit(s) detected:")
+                print("⚠ Legacy The Fool gateway unit(s) detected:")
                 for name, path, is_sys in _find_legacy_hermes_units():
                     scope = "system" if is_sys else "user"
                     print(f"    {path}  ({scope} scope)")

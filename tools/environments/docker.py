@@ -160,7 +160,7 @@ def reap_orphan_containers(
       belong to a sibling Hermes process whose reuse path will pick them
       up; killing them would crash the sibling mid-command)
     * (optional) ``label=hermes-profile=<profile_filter>`` (sweep only the
-      caller's profile by default; a hermes process in profile A must not
+      caller's profile by default; a fool process in profile A must not
       tear down profile B's containers)
     * ``State.FinishedAt`` older than *max_age_seconds* ago (so a sibling
       process that just exited and is about to be replaced doesn't get
@@ -1856,7 +1856,7 @@ class DockerEnvironment(BaseEnvironment):
                 # post-filter in Python: reject containers whose
                 # hermes-egress label is present and not "off".  Without
                 # this, a container created with egress=on can be silently
-                # reused after the operator runs "hermes egress disable",
+                # reused after the operator runs "fool egress disable",
                 # preserving baked-in proxy env and CA mounts.
                 fmt = '{{.ID}}\t{{.State}}\t{{.Label "' + _EGRESS_LABEL_KEY + '"}}'
             result = subprocess.run(

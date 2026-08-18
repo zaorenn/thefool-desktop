@@ -296,7 +296,7 @@ def _read_container_argv() -> tuple[str, ...]:
 
 
 def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
-    """Strip the s6/wrapper prefix off the container argv, leaving the hermes args.
+    """Strip the s6/wrapper prefix off the container argv, leaving the fool args.
 
     Two container-command argv shapes are handled:
 
@@ -507,13 +507,13 @@ def _register_service(scandir: Path, profile: str, *, start: bool) -> None:
         if not start:
             (tmp_dir / "down").touch()
 
-        # Pre-create the supervise/ skeleton with hermes ownership
+        # Pre-create the supervise/ skeleton with fool ownership
         # BEFORE we publish the slot. Mirrors the same pre-creation
         # step in S6ServiceManager.register_profile_gateway — when
         # s6-svscan picks the published slot up, the s6-supervise it
         # spawns will EEXIST our dirs/FIFOs and inherit hermes
         # ownership, so runtime s6-svc / s6-svstat / s6-svwait calls
-        # (all dispatched as the hermes user) won't hit EACCES. See
+        # (all dispatched as the fool user) won't hit EACCES. See
         # ``_seed_supervise_skeleton`` in service_manager.py for the
         # full rationale.
         _seed_supervise_skeleton(tmp_dir)

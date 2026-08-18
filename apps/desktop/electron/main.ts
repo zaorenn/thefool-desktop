@@ -196,6 +196,7 @@ import {
 import { cursorPointInWindow } from './hud-cursor'
 import { snapHudBounds } from './hud-snap'
 import { createHudSnapShortcut } from './hud-snap-shortcut'
+import { buildNotchWindowUrl, notchBounds } from './fool-notch'
 import { buildHudWindowUrl } from './hud-url'
 import { imageContextMenuItems } from './image-context-menu'
 import { createLinkTitleWindow, guardLinkTitleSession, readLinkTitleWindowTitle } from './link-title-window'
@@ -12161,6 +12162,170 @@ ipcMain.handle('fool:hud:close', async () => {
 
   return { ok: true }
 })
+
+// FOOL-SEAM: notch-window
+// Ses notch'u: ekranin ust kenarina yapisik, cerceve siz, hep-ustte kucuk bir
+// pencere. HUD'un pencere makinesiyle AYNI desen -- ayrisirsa birinin bozulmasi
+// digerinde gorunmez kalir.
+let notchWindow = null
+
+function spawnNotchWindow() {
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
+  const bounds = notchBounds(display?.bounds ?? { x: 0, y: 0, width: 1280, height: 800 })
+
+  const win = new BrowserWindow({
+    ...bounds,
+    frame: false,
+    transparent: true,
+    // Notch YENIDEN BOYUTLANMAZ. Acilip kapanma animasyonu pencere icinde,
+    // CSS tarafinda oluyor; setBounds ile buyutmek Windows'ta kare atlatiyor
+    // ve saydam kenarlar titriyor (bkz. electron/fool-notch.ts).
+    resizable: false,
+    // Ekranin centigi surukleneMEZ: yeri sabit olmasi tam da onu notch yapan
+    // sey. Suruklenebilir olsaydi kullanici onu yanlislikla ortaya tasir ve
+    // bir daha ust kenara oturtamazdi.
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: !IS_MAC,
+    hasShadow: false,
+    alwaysOnTop: true,
+    type: IS_MAC ? 'panel' : undefined,
+    roundedCorners: false,
+    visualEffectState: 'active',
+    hiddenInMissionControl: IS_MAC,
+    show: false,
+    backgroundColor: '#00000000',
+    webPreferences: chatWindowWebPreferences(PRELOAD_PATH)
+  })
+
+  // Tam ekran bir uygulamanin (video, sunum) USTUNDE kalmali: notch'un anlami
+  // her zaman erisilebilir olmasi.
+  win.setAlwaysOnTop(true, IS_MAC ? 'screen-saver' : 'screen-saver')
+  win.setHiddenInMissionControl?.(true)
+
+  try {
+    win.setVisibleOnAllWorkspaces(
+      true,
+      IS_MAC ? { visibleOnFullScreen: true, skipTransformProcessType: true } : undefined
+    )
+  } catch {
+    // Her yerde desteklenmiyor -- elden gelen.
+  }
+
+  streamThrottle.register(win)
+  wireCommonWindowHandlers(win, zoomWiringForWindowKind('chat'))
+
+  wireWindowReveal(win, {
+    show: () => {
+      win.show()
+      // Odak SART: bas-konus renderer'in keydown/keyup olaylarina dayaniyor ve
+      // odaklanmamis bir pencere hicbir tus olayi almaz. Notch acildiginda
+      // odagi almazsa sag Ctrl hicbir sey yapmaz.
+      win.focus()
+    }
+  })
+
+  win.on('closed', () => {
+    if (notchWindow === win) {
+      notchWindow = null
+    }
+  })
+
+  attachRendererConsoleCapture(win, 'notch', rememberLog)
+  installWindowRendererLifecycle(win, { kind: 'notch', callbacks: { log: rememberLog } })
+  loadWindowUrl(
+    win,
+    buildNotchWindowUrl({
+      devServer: DEV_SERVER,
+      rendererIndexPath: DEV_SERVER ? undefined : resolveRendererIndex()
+    }),
+    'Notch'
+  )
+
+  return win
+}
+
+function openNotchWindow() {
+  if (notchWindow && !notchWindow.isDestroyed()) {
+    notchWindow.show()
+    notchWindow.focus()
+
+    return notchWindow
+  }
+
+  notchWindow = spawnNotchWindow()
+
+  return notchWindow
+}
+
+function closeNotchWindow() {
+  const win = notchWindow
+
+  notchWindow = null
+
+  if (win && !win.isDestroyed()) {
+    win.close()
+  }
+}
+
+ipcMain.handle('fool:notch:open', async () => {
+  openNotchWindow()
+
+  return { ok: true }
+})
+
+ipcMain.handle('fool:notch:close', async () => {
+  closeNotchWindow()
+
+  return { ok: true }
+})
+
+// FOOL-SEAM: notch-shortcut
+// Notch ODAKTA DEGILKEN bas-konus calisamaz: renderer keydown/keyup'a dayaniyor
+// ve odaklanmamis bir pencere hicbir tus olayi almaz. Electron'un
+// globalShortcut'i da yalnizca basma bildiriyor, birakma bildirmiyor -- yani
+// "basili tut" global olarak imkansiz (yerel bir tus kancasi eklemeden).
+//
+// Bu yuzden global kisayol TEK DOKUNUS: notch'u acar, odagi verir ve dinlemeyi
+// baslatir. Kullanici sonra ya sag Ctrl'yi birakir gibi tekrar basar, ya da
+// notch artik odakta oldugu icin gercek bas-konus zaten calisir.
+const NOTCH_LISTEN_SHORTCUT = 'CommandOrControl+Shift+Space'
+
+function registerNotchShortcut() {
+  try {
+    if (globalShortcut.isRegistered(NOTCH_LISTEN_SHORTCUT)) {
+      return false
+    }
+
+    return globalShortcut.register(NOTCH_LISTEN_SHORTCUT, () => {
+      const win = openNotchWindow()
+
+      // Odagi vermek SART: bunun ardindan gelen sag Ctrl basisi ancak notch
+      // odaktaysa renderer'a ulasir.
+      win.show()
+      win.focus()
+      win.webContents.send('fool:notch:listen')
+    })
+  } catch {
+    // Baska bir uygulama kisayolu tutuyorsa notch yine de elle acilabilir;
+    // kayit basarisizligi uygulamayi engellememeli.
+    return false
+  }
+}
+
+ipcMain.handle('fool:notch:toggle', async () => {
+  const isOpen = Boolean(notchWindow && !notchWindow.isDestroyed())
+
+  if (isOpen) {
+    closeNotchWindow()
+  } else {
+    openNotchWindow()
+  }
+
+  return { ok: true, open: !isOpen }
+})
 ipcMain.handle('fool:bootstrap:reset', async () => {
   // Renderer's "Reload and retry" path. Clear the latched failure and
   // reset connection state so the next startHermes() call restarts the
@@ -14796,6 +14961,11 @@ app.whenReady().then(() => {
   // it without the renderer visiting Settings. A failed registration is logged
   // here and surfaced in Settings via the IPC state (never silent).
   applyQuickEntrySettings(readQuickEntrySettings())
+
+  // FOOL-SEAM: notch-shortcut
+  // Quick Entry ile ayni yerde kaydediliyor: ikisi de global kisayol ve
+  // ikisinin de sahibi ana surec.
+  registerNotchShortcut()
 
   if (IS_MAC) {
     const reposition = () => wakeIndicatorController.reposition()

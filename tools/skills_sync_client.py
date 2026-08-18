@@ -9,7 +9,7 @@ plane (push objects + CAS a ref, pull the owner's HEAD, three-way merge on a
 
   * a debounced push hook in ``skill_manage`` (after the write-gate passes),
   * a periodic pull hook (``maybe_pull_skills``) at the curator tick sites,
-  * the ``hermes sync status|pull|push|now`` CLI.
+  * the ``fool sync status|pull|push|now`` CLI.
 
 It lives beside ``tools/skills_sync.py`` (NOT under ``fool_cli/``) so the
 low-level sync layer never imports the CLI -- same rule the bundled-skills
@@ -41,7 +41,7 @@ check, or a per-cohort feature flag) before shipping to users.
 
 --- OPT-IN DEFAULT (M1-D, provisional) -----------------------------------
 Nothing syncs unless the user marks a skill for sync. The user's local intent
-is toggled via ``hermes sync enable/disable`` (a ``sync`` flag on the skill's
+is toggled via ``fool sync enable/disable`` (a ``sync`` flag on the skill's
 ``.usage.json`` sidecar, alongside ``pinned``/``created_by``), but the DURABLE,
 CROSS-DEVICE opt-in state is a committed ``sync-manifest`` object in the sync
 plane (design.md §2.8): a root-level blob in the tree at
@@ -406,7 +406,7 @@ def sync_org_auto_propose() -> bool:
     ``FOOL_SYNC_ORG_AUTO_PROPOSE`` -> ``sync.org_auto_propose`` -> False.
 
     False (default): edits to an org-shared skill stay LOCAL until the user
-    runs ``hermes sync propose <skill>``. The skill keeps working with the
+    runs ``fool sync propose <skill>``. The skill keeps working with the
     edit applied; the organisation just doesn't see it yet.
 
     True: every local edit to an org skill is submitted to the org as a
@@ -1260,7 +1260,7 @@ def push_skills(
     *,
     skill_names: Optional[List[str]] = None,
     identity: Optional[Dict[str, Any]] = None,
-    message: str = "hermes skill sync",
+    message: str = "fool skill sync",
 ) -> Dict[str, Any]:
     """Push opted-in skills to the owner's HEAD (sync contract).
 
@@ -1412,7 +1412,7 @@ def _resolve_push_conflict(
             "actual_head": actual_head,
             "message": (
                 f"{len(overlaps)} skill(s) changed on both sides; wrote "
-                f"{conflict_ref}. Resolve out-of-band (hermes sync / NAS UI)."
+                f"{conflict_ref}. Resolve out-of-band (fool sync / NAS UI)."
             ),
         }
 
@@ -1610,7 +1610,7 @@ def _opted_in_rel_paths() -> List[str]:
 # (no push, no pull, no-op) unless the signed-in user is a Nous admin.
 # ---------------------------------------------------------------------------
 
-def maybe_push_skills(*, message: str = "hermes skill sync") -> Optional[Dict[str, Any]]:
+def maybe_push_skills(*, message: str = "fool skill sync") -> Optional[Dict[str, Any]]:
     """Best-effort push if all gates pass. Returns a result dict or None.
     Never raises. Called from the debounced skill_manage push hook."""
     try:

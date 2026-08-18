@@ -53,7 +53,7 @@ def _hermes_meta(fm: dict[str, Any]) -> dict[str, Any]:
     that ``parse_frontmatter``'s malformed-YAML fallback produces."""
     meta = fm.get("metadata")
     hermes = meta.get("hermes") if isinstance(meta, dict) else None
-    return hermes if isinstance(hermes, dict) else {}
+    return fool if isinstance(hermes, dict) else {}
 
 
 def _related(fm: dict[str, Any]) -> list[str]:

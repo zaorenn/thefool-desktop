@@ -157,14 +157,14 @@ def _render_text(verdict: dict) -> None:
 
 
 def approvals_test_command(args) -> int:
-    """Handle ``hermes approvals test <command...>``. Returns the exit code."""
+    """Handle ``fool approvals test <command...>``. Returns the exit code."""
     words = list(getattr(args, "command_words", None) or [])
     # argparse REMAINDER keeps a leading "--" separator; it is not part of
     # the command being evaluated.
     if words and words[0] == "--":
         words = words[1:]
     if not words:
-        print("usage: hermes approvals test [--env-type TYPE] [--json] -- <command...>")
+        print("usage: fool approvals test [--env-type TYPE] [--json] -- <command...>")
         return EXIT_USAGE
     command = " ".join(words)
     env_type = getattr(args, "env_type", None) or "local"

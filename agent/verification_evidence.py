@@ -587,7 +587,7 @@ def record_verify_run(
     root: str | Path,
     session_id: str | None = None,
     ok: bool,
-    command: str = "hermes verify",
+    command: str = "fool verify",
     scope: str = "full",
     output: str = "",
 ) -> Optional[dict[str, Any]]:
@@ -614,7 +614,7 @@ def record_verify_run(
     resolved = str(Path(root).resolve())
     evidence = VerificationEvidence(
         command=command,
-        canonical_command="hermes verify",
+        canonical_command="fool verify",
         kind="verify",
         scope=scope if scope in {"full", "targeted"} else "full",
         status="passed" if ok else "failed",

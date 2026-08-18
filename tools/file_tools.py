@@ -93,7 +93,7 @@ def _truncate_to_char_budget(content: str, max_chars: int) -> tuple[str, int, bo
     """Trim line-numbered ``read_file`` content to fit a char budget.
 
     Ported in spirit from nearai/ironclaw#5029 (dual line/byte cap on
-    ``read_file``). Where hermes previously hard-rejected an oversized read
+    ``read_file``). Where fool previously hard-rejected an oversized read
     (forcing the model to guess a smaller ``limit`` and burn a round-trip
     returning nothing), this trims the content to the last *complete line*
     that fits within ``max_chars`` and reports how many lines were kept so
@@ -805,7 +805,7 @@ def _protected_instruction_reason(filepath: str, task_id: str = "default",
     except (OSError, ValueError, RuntimeError):
         resolved = os.path.realpath(normalized)
 
-    # The authoritative ~/.hermes home is governed by its own guards
+    # The authoritative ~/.fool home is governed by its own guards
     # (config.yaml hard-block, cross-profile guard, write_approval); this
     # gate targets PROJECT-LOCAL instruction files only. Checked before the
     # ``.hermes`` component rule below, which would otherwise match the
@@ -827,7 +827,7 @@ def _protected_instruction_reason(filepath: str, task_id: str = "default",
         # Project-local .fool config dirs (e.g. <repo>/.hermes/config.yaml)
         # are loaded as project context and steer behavior the same way.
         # Scope: the file's IMMEDIATE parent must be ``.hermes`` — matching
-        # any ancestor named .hermes would gate every write inside a
+        # any ancestor named .fool would gate every write inside a
         # checkout that happens to live under ~/.hermes (e.g. the
         # hermes-agent repo itself at ~/.hermes/hermes-agent).
         parts = candidate.replace("\\", "/").rstrip("/").split("/")

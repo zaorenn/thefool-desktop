@@ -369,7 +369,7 @@ class ModalEnvironment(BaseEnvironment):
     def _modal_bulk_download(self, dest: Path) -> None:
         """Download remote .hermes/ as a tar archive.
 
-        Modal sandboxes always run as root, so /root/.hermes is hardcoded
+        Modal sandboxes always run as root, so /root/.fool is hardcoded
         (consistent with iter_sync_files call on line 269).
         """
         async def _download():

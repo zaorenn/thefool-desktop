@@ -9,7 +9,7 @@ kanban tools in its schema unless configured.
 Why tools instead of just shelling out to ``fool kanban``?
 
 1. **Backend portability.** A worker whose terminal tool points at Docker
-   / Modal / Singularity / SSH would run ``hermes kanban complete …``
+   / Modal / Singularity / SSH would run ``fool kanban complete …``
    inside the container, where ``hermes`` isn't installed and the DB
    isn't mounted. Tools run in the agent's Python process, so they
    always reach ``~/.hermes/kanban.db`` regardless of terminal backend.
@@ -20,7 +20,7 @@ Why tools instead of just shelling out to ``fool kanban``?
 3. **Better errors.** Tool-call failures return structured JSON the
    model can reason about, not stderr strings it has to parse.
 
-Humans continue to use the CLI (``hermes kanban …``), the dashboard
+Humans continue to use the CLI (``fool kanban …``), the dashboard
 (``fool dashboard``), and the slash command (``/kanban …``) — all
 three bypass the agent entirely. The tools are for dispatcher-spawned
 worker handoffs and for configured orchestrator profiles that route work

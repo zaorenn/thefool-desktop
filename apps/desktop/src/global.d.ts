@@ -89,6 +89,14 @@ declare global {
       // own gateway (like an instance window), sized and skinned as a floating
       // bar — so it mounts the real composer rather than a lookalike. Main
       // owns the window; `onChanged` keeps every window's toggle truthful.
+      // FOOL-SEAM: notch-ipc
+      notch?: {
+        open: () => Promise<{ ok: boolean }>
+        close: () => Promise<{ ok: boolean }>
+        toggle: () => Promise<{ ok: boolean; open: boolean }>
+        /** Ana surec global kisayoldan dinlemeyi istedi. */
+        onListenRequest: (callback: () => void) => () => void
+      }
       hud?: {
         open: (request?: { sessionId?: null | string; profile?: null | string }) => Promise<{ ok: boolean }>
         close: () => Promise<{ ok: boolean }>

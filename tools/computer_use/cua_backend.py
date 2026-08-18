@@ -1098,7 +1098,7 @@ def cua_driver_runtime_contract_status(binary: Optional[str] = None) -> Dict[str
             "ready": False,
             "binary": resolved,
             "version": raw_version,
-            "reason": "Hermes computer use requires cua-driver 0.20.0 or newer",
+            "reason": "The Fool computer use requires cua-driver 0.20.0 or newer",
         }
 
     invocation = manifest.get("mcp_invocation")
@@ -2215,7 +2215,7 @@ class _CuaDriverSession:
     def _unknown_transport_outcome(name: str, exc: Exception) -> Dict[str, Any]:
         message = (
             f"cua-driver transport failed during {name}; the action outcome is "
-            "unknown, so Hermes did not replay it. Take fresh state before "
+            "unknown, so The Fool did not replay it. Take fresh state before "
             "deciding whether to act again."
         )
         return {

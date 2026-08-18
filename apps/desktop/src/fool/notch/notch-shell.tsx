@@ -1,0 +1,264 @@
+/**
+ * macOS tarzı ses notch'u.
+ *
+ * Biçim
+ * -----
+ * Ekranın üst kenarına YAPIŞIK, yatayda ortalı, yalnızca ALT köşeleri yuvarlak
+ * bir kabuk — ekrana oyulmuş bir çentik gibi. Üst köşeler bilerek düz: yuvarlak
+ * olsalardı çentik değil, havada duran bir hap gibi görünürdü.
+ *
+ * Pencere HİÇ yeniden boyutlanmıyor
+ * ---------------------------------
+ * Açılıp kapanırken OS penceresini büyütmek Windows'ta kare atlatıyor ve saydam
+ * çerçevesiz pencerede kenarlar titriyor. Pencere her zaman en büyük ölçüde
+ * duruyor (bkz. ``electron/fool-notch.ts``); animasyon tamamen burada, yay
+ * fiziğiyle oluyor. Pencerenin geri kalanı saydam ve fareyi geçiriyor.
+ *
+ * Zone A: upstream bu dosyayı bilmiyor.
+ */
+
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
+
+import { Mic } from '@/lib/icons'
+
+import {
+  createPushToTalkState,
+  onBlur as ptOnBlur,
+  onKeyDown as ptOnKeyDown,
+  onKeyUp as ptOnKeyUp
+} from './push-to-talk'
+import { type NotchStatus, useNotchVoice } from './use-notch-voice'
+
+const COLLAPSED_WIDTH = 168
+const COLLAPSED_HEIGHT = 32
+const EXPANDED_WIDTH = 400
+const EXPANDED_HEIGHT = 132
+
+/** Tur bittikten sonra yazının ekranda kalma süresi. */
+const LINGER_MS = 6000
+
+/** Yay: hafif taşan ama salınmayan bir açılış. macOS'un çentik hissi bu. */
+const SPRING = { damping: 26, mass: 0.9, stiffness: 380, type: 'spring' } as const
+
+const LABEL: Record<NotchStatus, string> = {
+  idle: 'Sağ Ctrl ile konuş',
+  listening: 'Dinliyorum…',
+  speaking: 'Yanıtlıyor',
+  thinking: 'Düşünüyor…',
+  transcribing: 'Yazıya dökülüyor…'
+}
+
+/**
+ * Canlı dalga formu.
+ *
+ * Çubuk sayısı sabit ve seviye SAĞDAN sola kaydırılıyor: yeni ses hep aynı
+ * kenardan giriyor, böylece konuşmanın akış yönü gözle takip edilebiliyor.
+ * Rastgele animasyon değil — gerçekten mikrofondan gelen seviyeyi çiziyor.
+ */
+function Waveform({ active, level }: { active: boolean; level: number }) {
+  const [bars, setBars] = useState<number[]>(() => Array.from({ length: 28 }, () => 0))
+  const levelRef = useRef(level)
+
+  levelRef.current = level
+
+  useEffect(() => {
+    if (!active) {
+      setBars(previous => previous.map(() => 0))
+
+      return
+    }
+
+    // 24 fps yeterli: daha hızlısı gözle ayırt edilmiyor ama her karede bir
+    // React render'ı demek.
+    const timer = setInterval(() => {
+      setBars(previous => [...previous.slice(1), Math.min(1, levelRef.current)])
+    }, 42)
+
+    return () => clearInterval(timer)
+  }, [active])
+
+  return (
+    <div className="flex h-8 items-center justify-center gap-[3px]">
+      {bars.map((value, index) => (
+        <motion.span
+          animate={{
+            // Taban 3px: sessizlikte de ince bir çizgi kalsın, çubuklar
+            // tamamen kaybolup arayüz "bozulmuş" gibi görünmesin.
+            height: 3 + value * 26
+          }}
+          className="w-[3px] rounded-full bg-(--theme-primary)"
+          // Kayan pencere sabit uzunlukta ve cubugun KIMLIGI konumu:
+          // 3. cubuk her zaman 3. cubuk. Icerige gore anahtar vermek
+          // her karede tum listeyi yeniden monte ederdi.
+          key={`bar-${index}`}
+          transition={{ damping: 20, stiffness: 500, type: 'spring' }}
+        />
+      ))}
+    </div>
+  )
+}
+
+export function NotchShell() {
+  const voice = useNotchVoice()
+  const [hovered, setHovered] = useState(false)
+
+  // Tur bittikten SONRA da bir süre açık kal.
+  //
+  // Neden: durum `idle`'a döndüğü anda daraltmak, kullanıcının az önce ne
+  // söylediğini ekrandan siliyordu — yanlış anlaşılmayı fark etme şansı
+  // kalmıyordu. Konuşma bitti diye kanıtı da kaldırmak yanlış.
+  const [lingering, setLingering] = useState(false)
+
+  useEffect(() => {
+    if (voice.status !== 'idle') {
+      setLingering(true)
+
+      return
+    }
+
+    if (!voice.transcript) {
+      setLingering(false)
+
+      return
+    }
+
+    const timer = setTimeout(() => setLingering(false), LINGER_MS)
+
+    return () => clearTimeout(timer)
+  }, [voice.status, voice.transcript])
+
+  const expanded = voice.status !== 'idle' || lingering
+
+  // Bas-konuş durumu bir ref'te: klavye olayları render döngüsünün dışında
+  // geliyor ve state kullanmak her tuş olayında bir render daha demek olurdu.
+  const ptt = useRef(createPushToTalkState())
+
+  useEffect(() => {
+    const onDown = (event: KeyboardEvent) => {
+      const action = ptOnKeyDown(ptt.current, event, Date.now())
+
+      if (action?.type === 'start') {
+        // Tuşun varsayılan davranışını yutuyoruz ki basılı tutuş başka bir
+        // kısayolu tetiklemesin.
+        event.preventDefault()
+        voice.begin()
+      }
+    }
+
+    const onUp = (event: KeyboardEvent) => {
+      const action = ptOnKeyUp(ptt.current, event, Date.now())
+
+      if (action?.type === 'commit') {
+        voice.commit()
+      } else if (action?.type === 'cancel') {
+        voice.cancel()
+      }
+    }
+
+    // Odak kaybı bırakma sayılıyor: tuş hâlâ basılı olsa bile ``keyup`` artık
+    // bize gelmeyecek, o olay odağı alan uygulamaya gider. Basılı saymaya devam
+    // etmek mikrofonu sonsuza kadar açık bırakırdı.
+    const onWindowBlur = () => {
+      if (ptOnBlur(ptt.current)) {
+        voice.cancel()
+      }
+    }
+
+    // Global kisayol (notch ODAKTA DEGILKEN): tek dokunus dinlemeyi acar,
+    // ikinci dokunus gonderir. Basili tutus burada kullanilamaz -- Electron'un
+    // globalShortcut'i tus birakmayi bildirmiyor.
+    const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(() => {
+      if (voice.status === 'listening') {
+        voice.commit()
+      } else if (voice.status === 'idle') {
+        voice.begin()
+      }
+      // Diger durumlar (yaziya dokuluyor / dusunuyor / konusuyor) bilerek
+      // yok sayiliyor: o sirada yeni bir kayit acmak suren turu bozar.
+    })
+
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    window.addEventListener('blur', onWindowBlur)
+
+    return () => {
+      stopListenRequest?.()
+      window.removeEventListener('keydown', onDown)
+      window.removeEventListener('keyup', onUp)
+      window.removeEventListener('blur', onWindowBlur)
+    }
+  }, [voice])
+
+  return (
+    <div className="flex h-screen w-screen justify-center bg-transparent" data-fool-notch>
+      <motion.div
+        animate={{
+          height: expanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+          // Genişlik pencereye göre KIRPILMAZ: kullanıcının yakınlaştırma
+          // ayarı 110% iken pencere 460 fiziksel piksel ama yalnızca 418 CSS
+          // pikseli; sabit 420 px istemek çentiği kenardan kesiyordu.
+          opacity: hovered ? 0 : expanded ? 1 : 0.72,
+          width: expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH
+        }}
+        // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
+        //
+        // Renkler TEMADAN geliyor, sabit siyah değil: uygulamanın vurgu rengi
+        // değiştiğinde çentik de onunla değişmeli, yoksa ekranın tepesinde
+        // temaya ait olmayan bir kara leke kalıyor.
+        className="max-w-full overflow-hidden rounded-b-[22px] border-x border-b border-(--stroke-nous) bg-(--ui-bg-chrome)/85 text-(--ui-text-primary) shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+        initial={false}
+        // Fare üzerine gelince TAMAMEN görünmez: çentik ekranın en üstünde
+        // duruyor ve oradaki sekmeleri/menüleri kapatmamalı. Görünmezken
+        // fareyi de geçiriyor (pointer-events), yani altındaki şeye tıklanır.
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        style={{ pointerEvents: hovered ? 'none' : 'auto' }}
+        transition={hovered ? { duration: 0.18 } : SPRING}
+      >
+        <AnimatePresence initial={false} mode="wait">
+          {expanded ? (
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="flex h-full flex-col items-center justify-center gap-1 px-5"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key="expanded"
+              transition={{ duration: 0.12 }}
+            >
+              <Waveform active={voice.status === 'listening'} level={voice.level} />
+
+              <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
+                {voice.status === 'idle' ? LABEL.idle : LABEL[voice.status]}
+              </div>
+
+              {/* Yazıya dökülen metin: kullanıcı ne anlaşıldığını GÖRMELİ.
+                  Görmezse yanlış anlaşılmayı ancak cevaptan fark eder. */}
+              {voice.transcript && voice.status !== 'listening' && (
+                <div className="line-clamp-2 max-w-full text-center text-[0.78rem] text-(--ui-text-primary)">
+                  {voice.transcript}
+                </div>
+              )}
+
+              {voice.error && (
+                <div className="line-clamp-1 text-[0.7rem] text-(--theme-warm)">{voice.error}</div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="flex h-full items-center justify-center gap-2 px-4"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key="collapsed"
+              transition={{ duration: 0.12 }}
+            >
+              <Mic className="size-3 text-(--theme-primary)" />
+              <span className="text-[0.66rem] tracking-wide text-(--ui-text-tertiary)">{LABEL.idle}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  )
+}

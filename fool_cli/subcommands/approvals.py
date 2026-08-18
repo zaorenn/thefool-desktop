@@ -87,7 +87,7 @@ def build_approvals_parser(subparsers, *, cmd_approvals: Callable) -> None:
             "executing the command, prompting anyone, or persisting anything. "
             "Exit codes: 0 allow, 2 ask-approval, 3 deny (hardline or user "
             "deny rule). Tip: use `--` before the command so its own flags "
-            "aren't parsed: hermes approvals test -- rm -rf /tmp/x"
+            "aren't parsed: fool approvals test -- rm -rf /tmp/x"
         ),
     )
     test_parser.add_argument(

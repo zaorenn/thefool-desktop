@@ -332,7 +332,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
         "httpx2==2.7.0",  # mcp 2.x HTTP stack — keep in sync with pyproject [computer-use]
         "starlette==1.3.1",  # CVE-2026-48710 — keep in sync with pyproject [computer-use]
     ),
-    # HF Agent Trace Viewer upload (hermes trace upload / /upload-trace).
+    # HF Agent Trace Viewer upload (fool trace upload / /upload-trace).
     #
     # huggingface-hub is a SHARED dependency: transformers (pulled by
     # sentence-transformers for local Hindsight embeddings) requires

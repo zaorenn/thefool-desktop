@@ -218,7 +218,7 @@ def _check_disk_usage_warning():
     try:
         scratch_dir = _get_scratch_dir()
 
-        # Get total size of hermes directories
+        # Get total size of fool directories
         total_bytes = 0
         import glob
         for path in glob.glob(str(scratch_dir / "hermes-*")):

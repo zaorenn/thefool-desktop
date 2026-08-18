@@ -522,7 +522,7 @@ def to_agent_visible_cache_path(
     """
     backend = (os.environ.get("TERMINAL_ENV") or "local").strip().lower()
     if backend in ("docker", "modal"):
-        pass  # /root/.hermes default
+        pass  # /root/.fool default
     elif backend in ("ssh", "daytona", "vercel_sandbox"):
         container_base = "~/.hermes"
     else:

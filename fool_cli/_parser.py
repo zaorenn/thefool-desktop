@@ -49,15 +49,15 @@ Examples:
     hermes --resume latest        Resume the most recent session (same as -c)
     hermes --tui --resume latest --in ./dir   Resume ./dir's latest session in the TUI
     fool setup                  Run setup wizard
-    hermes logout                 Clear stored authentication
+    fool logout                 Clear stored authentication
     fool auth add <provider>    Add a pooled credential
     fool auth list              List pooled credentials
     fool auth remove <p> <t>    Remove pooled credential by index, id, or label
     fool auth reset <provider>  Clear exhaustion status for a provider
     fool model                  Select default model
-    hermes fallback [list]        Show fallback provider chain
-    hermes fallback add           Add a fallback provider (same picker as `fool model`)
-    hermes fallback remove        Remove a fallback provider from the chain
+    fool fallback [list]        Show fallback provider chain
+    fool fallback add           Add a fallback provider (same picker as `fool model`)
+    fool fallback remove        Remove a fallback provider from the chain
     fool config                 View configuration
     fool config edit            Edit config in $EDITOR
     fool config set model gpt-4 Set a config value

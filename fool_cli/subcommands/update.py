@@ -16,7 +16,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     # =========================================================================
     update_parser = subparsers.add_parser(
         "update",
-        help="Update Hermes Agent to the latest version",
+        help="Update Fool Agent to the latest version",
         description="Pull the latest changes from git and reinstall dependencies",
     )
     update_parser.add_argument(
@@ -56,7 +56,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
         metavar="NAME",
         help=(
             "Update against this branch instead of the default (main). "
-            "If the local checkout is on a different branch, hermes will "
+            "If the local checkout is on a different branch, fool will "
             "switch to the requested branch first (auto-stashing any "
             "uncommitted changes)."
         ),

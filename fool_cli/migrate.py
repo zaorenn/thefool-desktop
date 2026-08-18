@@ -1,4 +1,4 @@
-"""CLI handlers for ``hermes migrate ...``.
+"""CLI handlers for ``fool migrate ...``.
 
 Currently exposes only ``fool migrate xai`` — diagnoses and (with --apply)
 rewrites references to xAI models retired on May 15, 2026.
@@ -14,12 +14,12 @@ from fool_cli.config import load_config
 
 
 def cmd_migrate(args: Any) -> int:
-    """Dispatcher for ``hermes migrate <subtype>``."""
+    """Dispatcher for ``fool migrate <subtype>``."""
     sub = getattr(args, "migrate_type", None)
     if sub == "xai":
         return cmd_migrate_xai(args)
 
-    print("usage: hermes migrate xai [--apply] [--no-backup]", file=sys.stderr)
+    print("usage: fool migrate xai [--apply] [--no-backup]", file=sys.stderr)
     return 2
 
 

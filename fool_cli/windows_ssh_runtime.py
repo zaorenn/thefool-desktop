@@ -309,7 +309,7 @@ def process_state(pid: int, creation_time_ns: int, hermes_path: str, spawn_nonce
         return {"alive": True, "owned": False, "indeterminate": True, "reason": "argv-unavailable"}
     expected = os.path.normcase(os.path.abspath(hermes_path))
     arg0 = os.path.normcase(os.path.abspath(argv[0]))
-    # argv[0] is either the hermes exe directly, or (normal case) the base Python
+    # argv[0] is either the fool exe directly, or (normal case) the base Python
     # interpreter -- its exact path varies by venv/uv layout, so match on "a python
     # running our module". We launch via `-c` bootstrap, so it shows as
     # `-c <bootstrap that runs fool_cli.main>`; also accept a plain `-m` launch.

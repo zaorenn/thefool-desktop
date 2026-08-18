@@ -560,7 +560,7 @@ def _build_hermes_tools_mcp_entry() -> dict:
     this for browser/web/delegate_task/vision/memory/skills tools.
 
     The command runs the worktree's Python via the current sys.executable
-    so a hermes installed under /opt/, /usr/local/, or a venv all work.
+    so a fool installed under /opt/, /usr/local/, or a venv all work.
     FOOL_HOME and PYTHONPATH are passed through so the spawned process
     sees the same config + module layout the user is running."""
     import sys
@@ -584,7 +584,7 @@ def _build_hermes_tools_mcp_entry() -> dict:
         hermes_home = ""
     if hermes_home:
         env["FOOL_HOME"] = hermes_home
-    # PYTHONPATH passes through so a worktree-launched hermes finds the
+    # PYTHONPATH passes through so a worktree-launched fool finds the
     # branch's modules instead of the installed package.
     pythonpath = os.environ.get("PYTHONPATH")
     if pythonpath:

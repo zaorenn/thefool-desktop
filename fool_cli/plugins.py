@@ -2066,7 +2066,7 @@ class PluginContext:
         handler_fn: Callable | None = None,
         description: str = "",
     ) -> PluginRegistration:
-        """Register a CLI subcommand (e.g. ``hermes honcho ...``).
+        """Register a CLI subcommand (e.g. ``fool honcho ...``).
 
         The *setup_fn* receives an argparse subparser and should add any
         arguments/sub-subparsers.  If *handler_fn* is provided it is set
@@ -3443,7 +3443,7 @@ class PluginManager:
         # Multi-profile constraint (#65593): several process-global registries
         # (tools, platforms, providers) are shared across profiles while
         # multiple PluginManager instances may coexist in one process (keyed
-        # by resolved hermes home). The ledger is therefore keyed per manager
+        # by resolved fool home). The ledger is therefore keyed per manager
         # — i.e. per (hermes_home, plugin_id) — and every release/restore
         # closure is identity-conditional, so one profile's unload can never
         # clear another profile's registrations. Registry overlays keyed by
@@ -3941,7 +3941,7 @@ class PluginManager:
                 )
                 continue
 
-            # Built-in backends auto-load — they ship with hermes and must
+            # Built-in backends auto-load — they ship with fool and must
             # just work. Selection among them (e.g. which image_gen backend
             # services calls) is driven by ``<category>.provider`` config,
             # enforced by the tool wrapper.

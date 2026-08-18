@@ -1,4 +1,4 @@
-"""CLI handlers for ``hermes egress ...``.
+"""CLI handlers for ``fool egress ...``.
 
 Subcommands:
     install  — download the pinned iron-proxy binary
@@ -509,7 +509,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
                 f"config: {exc}[/yellow]"
             )
             console.print(
-                "  Run [cyan]hermes egress start[/cyan] manually before "
+                "  Run [cyan]fool egress start[/cyan] manually before "
                 "launching new Docker sandboxes."
             )
         else:
@@ -522,7 +522,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
     elif was_running:
         console.print(
             "  [yellow]⚠ stopped the running iron-proxy; config or tokens "
-            "changed.  Run [cyan]hermes egress restart[/cyan] (or "
+            "changed.  Run [cyan]fool egress restart[/cyan] (or "
             "[cyan]start[/cyan]) before launching new Docker sandboxes.[/yellow]"
         )
 
@@ -532,13 +532,13 @@ def cmd_setup(args: argparse.Namespace) -> int:
         "Sandboxes will route outbound traffic through it."
     )
     console.print(
-        "  Start:   [cyan]hermes egress start[/cyan]\n"
-        "  Restart: [cyan]hermes egress restart[/cyan]  (after any re-setup)\n"
-        "  Reload:  [cyan]hermes egress reload[/cyan]   (apply ruleset edits "
+        "  Start:   [cyan]fool egress start[/cyan]\n"
+        "  Restart: [cyan]fool egress restart[/cyan]  (after any re-setup)\n"
+        "  Reload:  [cyan]fool egress reload[/cyan]   (apply ruleset edits "
         "in-place, no restart)\n"
-        "  Status:  [cyan]hermes egress status[/cyan]\n"
-        "  Stop:    [cyan]hermes egress stop[/cyan]\n"
-        "  Disable: [cyan]hermes egress disable[/cyan]"
+        "  Status:  [cyan]fool egress status[/cyan]\n"
+        "  Stop:    [cyan]fool egress stop[/cyan]\n"
+        "  Disable: [cyan]fool egress disable[/cyan]"
     )
     return 0
 
@@ -587,7 +587,7 @@ def cmd_start(args: argparse.Namespace) -> int:
             )
             console.print(
                 "  Re-enable it (`secrets.bitwarden.enabled: true`), switch "
-                "back to env credentials with `hermes egress setup "
+                "back to env credentials with `fool egress setup "
                 "--no-bitwarden`, or set `proxy.allow_env_fallback: true` "
                 "to opt into the host-env fallback."
             )
@@ -633,7 +633,7 @@ def cmd_start(args: argparse.Namespace) -> int:
             )
             console.print(
                 "  Run `fool secrets bitwarden setup` to configure the "
-                "project, or switch back via `hermes egress setup "
+                "project, or switch back via `fool egress setup "
                 "--no-bitwarden`."
             )
             return 1
@@ -838,7 +838,7 @@ def cmd_disable(args: argparse.Namespace) -> int:
     if ip.get_status().pid is not None:
         console.print(
             "  iron-proxy is still running — stop it with "
-            "[cyan]hermes egress stop[/cyan] if you want it down too."
+            "[cyan]fool egress stop[/cyan] if you want it down too."
         )
     return 0
 

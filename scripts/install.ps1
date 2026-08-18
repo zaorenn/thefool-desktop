@@ -71,7 +71,7 @@ param(
     #     on disk and fail. The recursive path omits the flag.
     #   * The canonical CLI one-liner (irm | iex) omits the flag too;
     #     terminal users don't need a desktop binary built for them, and
-    #     `hermes desktop` already builds on demand.
+    #     `fool desktop` already builds on demand.
     [switch]$IncludeDesktop
 )
 
@@ -2227,7 +2227,7 @@ function Install-Repository {
             } catch {
                 Write-Err "Could not move $InstallDir aside : $_"
                 Write-Info "Close any programs that might be using files in $InstallDir (editors,"
-                Write-Info "terminals, running hermes processes) and try again."
+                Write-Info "terminals, running fool processes) and try again."
                 throw
             }
         }
@@ -2440,14 +2440,14 @@ function Install-Venv {
         $venvHadExistingVenv = $true
         Write-Info "Virtual environment already exists, recreating..."
         # On Windows, native Python extensions (e.g. _bcrypt.pyd, tornado's
-        # speedups.pyd) are loaded as DLLs by any running hermes process.
+        # speedups.pyd) are loaded as DLLs by any running fool process.
         # Windows denies deletion of loaded DLLs, so every process running out
         # of this venv must be stopped before retiring it. This keeps cleanup
         # from accumulating locked stale trees and avoids carrying a live
         # gateway into the replacement venv.
         if ($env:OS -eq "Windows_NT") {
             $myPid = $PID
-            Write-Info "Stopping any running hermes processes before recreating venv..."
+            Write-Info "Stopping any running fool processes before recreating venv..."
             # Disarm the respawner FIRST: the gateway autostart Scheduled Task
             # relaunches a killed gateway within seconds, and losing that race
             # re-locks the venv's .pyd files between our kill sweep and
@@ -2984,7 +2984,7 @@ function Set-PathVariable {
     if ($NoVenv) {
         $hermesBin = "$InstallDir"
     } else {
-        # Expose ONLY the hermes launchers on PATH -- never the whole
+        # Expose ONLY the fool launchers on PATH -- never the whole
         # venv\Scripts directory. venv\Scripts contains python.exe /
         # pythonw.exe / pip.exe, and putting it on the user PATH silently
         # hijacks the `python` command in every terminal on the machine
@@ -3017,7 +3017,7 @@ function Set-PathVariable {
         $cleaned = ($currentPath -split ';' | Where-Object { $_ -and $_ -ne $legacyBin }) -join ';'
         [Environment]::SetEnvironmentVariable("Path", $cleaned, "User")
         $currentPath = $cleaned
-        Write-Info "Removed legacy venv\Scripts from user PATH (kept hermes via $hermesBin)"
+        Write-Info "Removed legacy venv\Scripts from user PATH (kept fool via $hermesBin)"
     }
     
     if ($currentPath -notlike "*$hermesBin*") {
@@ -3032,7 +3032,7 @@ function Set-PathVariable {
     }
     
     # Set FOOL_HOME so the Python code finds config/data in the right place.
-    # Only needed on Windows where we install to %LOCALAPPDATA%\hermes instead
+    # Only needed on Windows where we install to %LOCALAPPDATA%\fool instead
     # of the Unix default ~/.hermes
     $currentHermesHome = [Environment]::GetEnvironmentVariable("FOOL_HOME", "User")
     if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
@@ -4103,7 +4103,7 @@ function Install-Desktop {
     }
 
     # 4. Create Start Menu + Desktop shortcuts pointing DIRECTLY at the packed
-    #    The Fool.exe. We deliberately do NOT point them at `hermes desktop`: that
+    #    The Fool.exe. We deliberately do NOT point them at `fool desktop`: that
     #    command rebuilds (npm install + electron-builder) on every launch,
     #    which would cost minutes each time. The packed exe is the consumer --
     #    launching it directly is instant, and updates flow through the
@@ -4335,7 +4335,7 @@ function Start-GatewayIfConfigured {
     if ($whatsappEnabled -and -not (Test-Path $whatsappSession)) {
         Write-Host ""
         Write-Info "WhatsApp is enabled but not yet paired."
-        Write-Info "Running 'hermes whatsapp' to pair via QR code..."
+        Write-Info "Running 'fool whatsapp' to pair via QR code..."
         Write-Host ""
         # Non-interactive callers (GUI installer, CI) skip the QR-pair prompt;
         # WhatsApp pairing requires a human looking at a phone camera, so the

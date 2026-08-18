@@ -212,7 +212,7 @@ class SecretSource(ABC):
     def remediation(self, kind: Optional["ErrorKind"], cfg: dict) -> str:
         """One-line, actionable next step for a failed fetch.
 
-        Called by the startup status printer (and ``hermes secrets ...
+        Called by the startup status printer (and ``fool secrets ...
         status``) right after a fetch error is surfaced, so the user sees
         *what to run* next to fix it — not just what broke.  Sources
         should override this to point at their own CLI verbs (e.g.
@@ -224,17 +224,17 @@ class SecretSource(ABC):
         """
         generic = {
             ErrorKind.NOT_CONFIGURED: (
-                f"Run `hermes secrets {self.name} setup` to finish configuration."
+                f"Run `fool secrets {self.name} setup` to finish configuration."
             ),
             ErrorKind.BINARY_MISSING: (
-                f"Run `hermes secrets {self.name} setup` to install the helper CLI."
+                f"Run `fool secrets {self.name} setup` to install the helper CLI."
             ),
             ErrorKind.AUTH_FAILED: (
-                f"Credentials rejected — run `hermes secrets {self.name} setup` "
+                f"Credentials rejected — run `fool secrets {self.name} setup` "
                 "to re-authenticate."
             ),
             ErrorKind.AUTH_EXPIRED: (
-                f"Credentials expired — run `hermes secrets {self.name} setup` "
+                f"Credentials expired — run `fool secrets {self.name} setup` "
                 "to re-authenticate."
             ),
             ErrorKind.NETWORK: (

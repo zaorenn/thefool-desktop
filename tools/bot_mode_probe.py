@@ -45,7 +45,7 @@ _cached: dict[str, str] = {}
 
 
 def _hermes_root(home: Path) -> Path:
-    """Root ~/.hermes for both the default profile and named profiles."""
+    """Root ~/.fool for both the default profile and named profiles."""
     if home.parent.name == "profiles":
         return home.parent.parent
     return home

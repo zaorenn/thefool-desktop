@@ -3448,6 +3448,25 @@ def _defer_update_for_self_lock(loaded: list[str]) -> None:
     _m()._write_update_incomplete_marker()
 
 
+def _await_venv_release(timeout: float = 12.0, step: float = 0.75):
+    """Venv'i tutan surecler cikana kadar bekle; kalanlari dondur.
+
+    Neden tek bir ``sleep(1.0)`` yetmiyor: Windows'ta yerel uzanti (.pyd)
+    yuklemis bir Python sureci SIGTERM'den sonra genelde bir saniyeden gec
+    kapaniyor. Tek seferlik kontrol onu "hala calisiyor" sayip guncellemeyi
+    iptal ediyordu -- kullanici hicbir sey acik olmadigi halde
+    "close The Fool desktop app" mesajini goruyor ve guncelleme HIC olmuyor.
+    """
+    import time as _t
+
+    deadline = _t.monotonic() + timeout
+    holders = _m()._detect_venv_python_processes()
+    while holders and _t.monotonic() < deadline:
+        _t.sleep(step)
+        holders = _m()._detect_venv_python_processes()
+    return holders
+
+
 def _format_venv_python_holders_message(matches: list[tuple[int, str, str]]) -> str:
     """Explain which venv processes block the update and how to clear them."""
     lines = [
@@ -4548,8 +4567,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                         logger.debug(
                             "Could not stop leftover gateway %s: %s", _pid, exc
                         )
-                _time.sleep(1.0)
-                _venv_holders = _m()._detect_venv_python_processes()
+                _venv_holders = _await_venv_release()
         if _venv_holders:
             _orphan_backends = _m()._orphaned_desktop_backend_pids(_venv_holders)
             if _orphan_backends:
@@ -4568,8 +4586,34 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     "process(es) still hold the venv; stopping their trees"
                 )
                 _m()._stop_process_trees(_orphan_backends)
-                _time.sleep(1.0)
-                _venv_holders = _m()._detect_venv_python_processes()
+                _venv_holders = _await_venv_release()
+        if _venv_holders:
+            # BAGIMSIZ gateway surecleri (``gateway run``) de reap edilir.
+            #
+            # Yukaridaki dal yalnizca SAHIPSIZ masaustu arka uclarini ele
+            # aliyor; ``fool gateway run`` ile baslatilmis bir surec o kaliba
+            # uymuyor ve guncelleme cikmaza giriyordu. Kullanici hicbir sey
+            # acik olmadigi halde "close The Fool desktop app" mesajini
+            # goruyor, guncelleme HIC olmuyor ve ardindan updater ayni
+            # gateway'i kendisi yeniden baslatiyordu -- yani sikayet ettigi
+            # sureci geri getiriyor.
+            #
+            # Bagimsiz bir gateway'i supervise eden hicbir sey yok: updater
+            # onu zaten duraklatti ve is bitince kendisi geri getiriyor.
+            _standalone_gateways = [
+                pid
+                for pid, _name, cmdline in _venv_holders
+                if "gateway" in cmdline and " run" in cmdline and "serve" not in cmdline
+            ]
+
+            if _standalone_gateways:
+                print(
+                    f"  ⚠ {len(_standalone_gateways)} standalone gateway "
+                    "process(es) still hold the venv; stopping their trees"
+                )
+                _m()._stop_process_trees(_standalone_gateways)
+                _venv_holders = _await_venv_release()
+
         if _venv_holders:
             print(_format_venv_python_holders_message(_venv_holders))
             _m()._resume_windows_gateways_after_update(_windows_gateway_resume)

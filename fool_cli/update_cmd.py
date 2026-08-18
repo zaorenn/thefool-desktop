@@ -4440,10 +4440,19 @@ def _rebuild_desktop_after_update(
     from fool_constants import with_hermes_node_path
 
     build_env = with_hermes_node_path()
+
+    # Cikti YAKALANIYOR (gunluge gidiyor), yani bu adim boyunca ekranda
+    # hicbir sey gorunmuyor. Electron paketleme 5-10 dakika suruyor ve
+    # kullanici icin bunun "donmus"tan farki yok -- gercekten oyle
+    # bildirildi. En azindan ne oldugunu ve ne kadar surecegini soyle.
+    print("  → Building the desktop app. This takes several minutes and prints")
+    print("    nothing while it runs (output goes to the update log).")
+
     build_result = _m()._run_logged_subprocess(
         desktop_build_cmd, cwd=_m().PROJECT_ROOT, env=build_env
     )
     if build_result.returncode != 0:
+        print("  ⚠ First build attempt failed; retrying once (same duration).")
         build_result = _m()._run_logged_subprocess(
             desktop_build_cmd, cwd=_m().PROJECT_ROOT, env=build_env
         )

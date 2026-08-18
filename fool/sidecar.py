@@ -138,6 +138,73 @@ def has_cuda_torch(name: str) -> bool:
     return completed.returncode == 0
 
 
+def installed_version(name: str, package: str) -> str:
+    """Sidecar icindeki bir paketin surumu ("" = kurulu degil)."""
+    python = sidecar_python(name)
+    if not python.exists():
+        return ""
+
+    code = (
+        "import importlib.metadata as m;"
+        f"print(m.version({package!r}))"
+    )
+    try:
+        done = subprocess.run(
+            [str(python), "-c", code],
+            capture_output=True,
+            text=True,
+            env=_isolated_env(),
+            timeout=60,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def pip_install(
+    name: str,
+    specs: Sequence[str],
+    *,
+    index_url: str = "",
+    timeout: int = 1800,
+    on_output: Callable[[str], None] | None = None,
+) -> None:
+    """Kurulu bir sidecar'a paket kur/degistir."""
+    python = sidecar_python(name)
+    if not python.exists():
+        raise RuntimeError(f"{name} sidecar ortami kurulu degil")
+
+    argv = [_uv(), "pip", "install", "--python", str(python)]
+    if index_url:
+        argv += ["--index-url", index_url]
+    argv += list(specs)
+
+    process = subprocess.Popen(
+        argv,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        env=_isolated_env(),
+        errors="replace",
+    )
+    tail: list[str] = []
+    assert process.stdout is not None
+    for line in process.stdout:
+        line = line.rstrip()
+        if not line:
+            continue
+        tail.append(line)
+        del tail[:-40]
+        if on_output:
+            on_output(line)
+
+    if process.wait(timeout=timeout) != 0:
+        last = tail[-1] if tail else "bilinmeyen hata"
+        raise RuntimeError(f"{name}: kurulum basarisiz: {last}")
+
+
 def _uv() -> str:
     """Depoya ait uv ikilisi.
 

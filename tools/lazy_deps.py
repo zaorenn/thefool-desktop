@@ -169,6 +169,10 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
 
     # ─── Speech-to-text providers ──────────────────────────────────────────
     "stt.mistral": ("mistralai==2.4.8",),
+    # CUDA kutuphaneleri: bunlar OLMADAN CTranslate2 device="cuda" istegini
+    # "cublas64_12.dll not found" ile reddediyor ve Whisper sessizce CPU'ya
+    # dusuyor -- olculdu: 15,16 sn vs 0,23 sn.
+    "stt.cuda": ("nvidia-cublas-cu12==12.9.1.4", "nvidia-cudnn-cu12==9.13.1.26"),
     "stt.faster_whisper": (
         "faster-whisper==1.2.1",
         "sounddevice==0.5.5",

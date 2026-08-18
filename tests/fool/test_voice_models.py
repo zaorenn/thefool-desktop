@@ -338,3 +338,60 @@ class TestSidecarIzolasyonu:
         assert source.count("_isolated_env()") >= runs, (
             "bir alt surec cagrisi temiz ortam kullanmiyor"
         )
+
+
+class TestCudaKutuphaneleri:
+    """CTranslate2'nin CUDA kutuphanelerini bulabilmesi.
+
+    Bu olmadan Whisper SESSIZCE CPU'da calisiyor ve kimse soylemiyor.
+    Olculdu (2,80 sn'lik kayit, large-v3-turbo):
+
+        CPU  / int8     15,16 sn  -> gercek zamanin 0,2 kati
+        CUDA / float16   0,23 sn  -> gercek zamanin 12 kati
+
+    Paketler kurulu olsa bile Windows ``site-packages/nvidia/*/bin``e bakmiyor;
+    DLL arama yolu ayrica ayarlanmali. pip bunu yapmiyor.
+    """
+
+    def test_fool_ithali_dll_yolunu_kurar(self):
+        """``import fool`` tek basina yeterli olmali.
+
+        faster_whisper DLL'i ILK import'ta yukluyor, yani ayar ondan once
+        kosmali. ``fool`` her yerden ithal edildigi icin en erken guvenli nokta.
+        """
+        import fool  # noqa: F401
+        from fool.cuda_runtime import _APPLIED, _candidate_dirs
+
+        if not _candidate_dirs():
+            pytest.skip("bu ortamda nvidia kutuphaneleri kurulu degil")
+
+        assert _APPLIED, "fool ithali CUDA DLL yolunu kurmadi"
+
+    def test_dizinler_PATH_e_eklendi(self):
+        import os
+
+        from fool.cuda_runtime import _candidate_dirs, enable
+
+        dirs = _candidate_dirs()
+        if not dirs:
+            pytest.skip("bu ortamda nvidia kutuphaneleri kurulu degil")
+
+        enable()
+        path = os.environ.get("PATH", "").lower()
+
+        for d in dirs:
+            assert str(d).lower() in path, f"{d} PATH'e eklenmedi"
+
+    def test_asla_yukselmez(self, monkeypatch):
+        """Bu bir hizlandirma, gereklilik degil: hata uygulamayi dusurmemeli."""
+        from fool import cuda_runtime
+
+        monkeypatch.setattr(cuda_runtime, "_candidate_dirs", lambda: (_ for _ in ()).throw(OSError("disk")))
+        monkeypatch.setattr(cuda_runtime, "_APPLIED", False)
+
+        try:
+            cuda_runtime.enable()
+        except OSError:
+            pytest.fail("enable() yukseldi; CPU'ya dusmeli")
+        except Exception:
+            pytest.fail("enable() beklenmedik sekilde yukseldi")

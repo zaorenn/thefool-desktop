@@ -12217,6 +12217,16 @@ function spawnNotchWindow() {
   streamThrottle.register(win)
   wireCommonWindowHandlers(win, zoomWiringForWindowKind('chat'))
 
+  // Notch masaustunu ASLA isgal etmemeli. Saydam bir pencere bile sinirlari
+  // icindeki tum fare olaylarini yutuyor -- centik ekranin en ustunde durdugu
+  // icin oradaki sekmeler ve menuler tiklanamaz hale geliyordu.
+  //
+  // ``forward: true`` onemli: tiklamalar altta kalana gidiyor AMA renderer
+  // fare hareketini gormeye devam ediyor, yani uzerine gelince solup kaybolma
+  // davranisi calisiyor. Notch'un tiklanacak bir parcasi zaten yok; klavyeyle
+  // suruluyor.
+  win.setIgnoreMouseEvents(true, { forward: true })
+
   wireWindowReveal(win, {
     show: () => {
       win.show()

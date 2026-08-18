@@ -57,33 +57,49 @@ _VOICES: tuple[tuple[str, str], ...] = (
 
 DEFAULT_VOICE = "af_heart"
 
-#: Alt süreçte çalışan sentez betiği.
-_SYNTH = r"""
-import sys, json
-text, out_path, voice, device, speed = sys.argv[1:6]
-
-import torch
+#: Kalıcı motor sürecinin AÇILIŞ kodu.
+#:
+#: Model burada BİR KEZ yükleniyor ve süreç açık kaldığı sürece bellekte
+#: kalıyor. Önceki tasarımda her cümle için yeni bir süreç açılıyor, torch
+#: içe aktarılıyor ve model diskten yeniden yükleniyordu — ölçüldü: beş
+#: kelime için 48,7 sn.
+_SETUP = """
 import numpy as np
 import soundfile as sf
+import torch
 from kokoro import KPipeline
 
-if device == "auto":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+_device = "cuda" if (DEVICE == "auto" and torch.cuda.is_available()) else DEVICE
+if _device == "cuda" and not torch.cuda.is_available():
+    _device = "cpu"
 
-# lang_code sesin ilk harfinden geliyor: 'a' Amerikan, 'b' Ingiliz.
-pipeline = KPipeline(lang_code=voice[0], device=device)
+# lang_code sesin ilk harfinden geliyor: 'a' Amerikan, 'b' Ingiliz. Farkli
+# harfli bir ses istendiginde boru hattinin yeniden kurulmasi gerekiyor, o
+# yuzden harf basina onbellege aliniyor.
+_pipelines = {}
 
-chunks = []
-for _, _, audio in pipeline(text, voice=voice, speed=float(speed or 1.0)):
-    chunks.append(audio)
 
-if not chunks:
-    raise SystemExit("kokoro ses uretmedi")
+def _pipeline(voice):
+    code = voice[0]
+    if code not in _pipelines:
+        _pipelines[code] = KPipeline(lang_code=code, device=_device)
+    return _pipelines[code]
 
-wav = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
-sample_rate = 24000
-sf.write(out_path, wav, sample_rate)
-print(json.dumps({"ok": True, "path": out_path, "device": device, "sample_rate": sample_rate}))
+
+def handle(req):
+    chunks = []
+    for _, _, audio in _pipeline(req["voice"])(
+        req["text"], voice=req["voice"], speed=float(req.get("speed") or 1.0)
+    ):
+        chunks.append(audio)
+
+    if not chunks:
+        raise RuntimeError("kokoro ses uretmedi")
+
+    wav = np.concatenate(chunks) if len(chunks) > 1 else chunks[0]
+    sf.write(req["out"], wav, 24000)
+
+    return {"path": req["out"], "device": _device, "sample_rate": 24000}
 """
 
 
@@ -125,8 +141,9 @@ class KokoroTTSProvider(TTSProvider):
         format: str = "wav",
         **extra: Any,
     ) -> str:
+        from fool import engine_host
+
         from fool import sidecar
-        from fool.tts_device import resolve as resolve_device
 
         if not sidecar.is_ready(SIDECAR_NAME, "kokoro"):
             raise RuntimeError("Kokoro kurulu degil. Ayarlar > Voice altindan indirin.")
@@ -135,7 +152,18 @@ class KokoroTTSProvider(TTSProvider):
         cfg = config.get("kokoro") if isinstance(config, dict) else {}
         cfg = cfg if isinstance(cfg, dict) else {}
 
-        device = resolve_device(cfg, provider="kokoro")
+        # HAM tercih gonderiliyor, ``resolve()`` DEGIL.
+        #
+        # ``resolve()`` ana surecte ``cuda_available()`` soruyor ve ana ortamda
+        # CUDA'li torch YOK -- yani her zaman False. Sonuc: kullanici "cuda"
+        # secmis olsa bile istek "cpu" olarak sidecar'a gidiyordu ve motor,
+        # kendi CUDA torch'u dururken CPU'da kosuyordu. Olculdu: Qwen'de 8,2 sn
+        # yerine CUDA'da olmasi gereken sure.
+        #
+        # Karar sidecar'a ait: yetkili torch orada.
+        device = str(cfg.get("device") or "auto").strip().lower()
+        if device not in ("auto", "cpu", "cuda"):
+            device = "auto"
 
         selected = voice or cfg.get("voice") or DEFAULT_VOICE
         known = {voice_id for voice_id, _ in _VOICES}
@@ -149,18 +177,11 @@ class KokoroTTSProvider(TTSProvider):
         if not target.lower().endswith(".wav"):
             target = os.path.splitext(output_path)[0] + ".wav"
 
-        stdout = sidecar.run_script(
+        result = engine_host.request(
             SIDECAR_NAME,
-            _SYNTH,
-            [text, target, selected, device, str(speed or 1.0)],
+            _SETUP.replace("DEVICE", repr(device)),
+            {"out": target, "speed": speed or 1.0, "text": text, "voice": selected},
         )
-
-        try:
-            result = json.loads(stdout.strip().splitlines()[-1])
-        except (ValueError, IndexError) as exc:
-            raise RuntimeError(f"Kokoro beklenmeyen cikti verdi: {stdout[:200]}") from exc
-        if not result.get("ok"):
-            raise RuntimeError(f"Kokoro sentezi basarisiz: {result}")
 
         logger.debug("[Kokoro] %s uzerinde sentezlendi -> %s", result.get("device"), target)
         return target

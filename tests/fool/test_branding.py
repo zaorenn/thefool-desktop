@@ -874,3 +874,37 @@ def test_pyproject_extras_kendine_referans_verir():
         "pyproject extras'i upstream pakete referans veriyor; "
         '"fool-agent[...]" olmali'
     )
+
+
+def test_cli_acilis_logosu_THE_FOOL_yazar():
+    """Acilis logosu ASCII CIZIM: icinde "Hermes" DIZESI gecmez.
+
+    Bu yuzden marka denetimi onu goremez. Gercekte yasandi: yeniden adlandirma
+    araci degisken adini ``FOOL_AGENT_LOGO`` yapti, cizim ise blok
+    karakterlerle "HERMES-AGENT" yazmaya devam etti -- ve yeni kuran herkesin
+    gordugu ILK ekran buydu. Yanindaki sembol de Caduceus'tu: Hermes'in asasi.
+
+    Bir upstream birlestirmesi bu blogu geri getirirse test dusmeli.
+    """
+    import re
+
+    source = (Path(__file__).resolve().parents[2] / "cli.py").read_text(encoding="utf-8")
+
+    logo = re.search(r'FOOL_AGENT_LOGO = """(.*?)"""', source, re.S)
+    assert logo, "acilis logosu bulunamadi"
+
+    art = logo.group(1)
+
+    # Upstream'in altin paleti: geri donusun en net isareti.
+    for gold in ("#FFD700", "#FFBF00", "#CD7F32", "#B8860B"):
+        assert gold not in art, f"logo upstream'in altin paletine donmus ({gold})"
+
+    # "HERMES" harflerinin ANSI Shadow bicimindeki imzasi: 'H' harfi
+    # ``██║  ██║`` deseniyle basliyor. "THE FOOL" ise ``████████╗`` (T) ile.
+    first_line = art.strip().split(chr(10))[0]
+    assert "████████╗" in first_line, "logo artik THE FOOL ile baslamiyor"
+
+    caduceus = re.search(r'FOOL_CADUCEUS = """(.*?)"""', source, re.S)
+    assert caduceus, "sol panel isareti bulunamadi"
+    for gold in ("#FFD700", "#FFBF00", "#CD7F32", "#B8860B"):
+        assert gold not in caduceus.group(1), "sol panel isareti altin palete donmus"

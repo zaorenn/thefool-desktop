@@ -852,3 +852,25 @@ class TestIlkAcilisTespiti:
         after = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))
         assert (after.get("model") or {}).get("provider"), "saglayici eklenmedi"
         assert after["tts"]["provider"] == "piper", "var olan ayar silindi"
+
+
+def test_pyproject_extras_kendine_referans_verir():
+    """Ek paket gruplari KENDI paketimize referans vermeli.
+
+    ``fool-agent`` icindeki bir extra ``hermes-agent[cron]`` derse, cozumleyici
+    PyPI'daki UPSTREAM paketi cekmeye calisiyor ve surumler catisiyor:
+    "hermes-agent<=0.16.0 depends on pyjwt==2.12.1" vs bizim 2.13.0. Sonuc
+    "No solution found" ve ``fool update`` isteğe bagli ozellikleri SESSIZCE
+    atliyor -- kullanici yalnizca "Optional extras failed" satirini goruyor.
+
+    Yeniden adlandirma araci bunu kaciriyor cunku ``hermes-agent`` korunan
+    listede (beceri kimligi ve upstream depo atfi icin). Orada dogru, burada
+    yanlis; ayrimi bu test tutuyor.
+    """
+    root = Path(__file__).resolve().parents[2]
+    text = (root / "pyproject.toml").read_text(encoding="utf-8")
+
+    assert '"hermes-agent[' not in text, (
+        "pyproject extras'i upstream pakete referans veriyor; "
+        '"fool-agent[...]" olmali'
+    )

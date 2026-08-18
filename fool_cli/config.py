@@ -983,6 +983,27 @@ def _fool_seed_local_model(home: Path) -> None:
                 return
         patch.setdefault("display", {})["skin"] = "the-fool"
 
+        # FOOL-SEAM: whatsapp-toolset
+        # WhatsApp'tan gelen mesajlar UZAK kullanicilardan geliyor -- aile
+        # uyeleri, arkadaslar. Upstream'in varsayilani onlara 59 arac veriyor
+        # ve icinde ``computer_use``, ``execute_code``, 13 tane ``browser_*``,
+        # ``cronjob`` ve Home Assistant kontrolu var. Yani mesaj yazabilen
+        # herkes makineyi SURUYOR.
+        #
+        # Burada arastirma ve icerik uretimi birakiliyor, kontrol ve bilgi
+        # sizmasi kesiliyor:
+        #   file       -> ``read_file`` her dosyayi okur
+        #   terminal   -> keyfi komut
+        #   session_search / memory -> sahibinin gecmis sohbetleri
+        #   delegation -> kisitlamayi dolanabilir
+        patch.setdefault("platform_toolsets", {})["whatsapp"] = [
+            "clarify",
+            "image_gen",
+            "tts",
+            "vision",
+            "web",
+        ]
+
         # FOOL-SEAM: browser-default
         #
         # Upstream'de `browser.backend` varsayilani Browser Use (bulut, API

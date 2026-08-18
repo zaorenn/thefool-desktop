@@ -15176,6 +15176,29 @@ app.on('before-quit', event => {
 
   hudWindow = null
 
+  // FOOL-SEAM: notch-quit
+  // Notch da hep-ustte bir panel: uygulama kapandiktan sonra ekranin
+  // tepesinde asili kalirsa kullanicinin kapatmasinin hicbir yolu yok
+  // (gorev cubugunda gorunmuyor, kapatma dugmesi yok). Kisayolu da birakmak
+  // sart, yoksa kapanmis bir uygulama baska bir uygulamanin kordonunu
+  // rehin tutar.
+  if (notchWindow && !notchWindow.isDestroyed()) {
+    notchWindow.removeAllListeners('closed')
+    notchWindow.destroy()
+  }
+
+  notchWindow = null
+
+  if (notchShortcut) {
+    try {
+      globalShortcut.unregister(notchShortcut)
+    } catch {
+      // Olu bir hizlandirici cikisi engellemesin.
+    }
+
+    notchShortcut = null
+  }
+
   // Same for the Quick Entry composer — and release its global accelerator so a
   // quitting The Fool never keeps another app's chord hostage.
   closeQuickEntryWindow()

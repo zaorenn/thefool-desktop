@@ -100,6 +100,25 @@ function Waveform({ active, level }: { active: boolean; level: number }) {
 }
 
 export function NotchShell() {
+  // Uygulamanin global govde arkaplani bu pencerede de boyaniyor: notch'un
+  // kendisi solsa bile arkasinda 460x220'lik opak bir dikdortgen kaliyordu
+  // ("kocaman siyah kisim"). Pencere zaten saydam; govdeyi de saydam yapmak
+  // gerekiyor ve bu YALNIZCA notch penceresinde olmali, o yuzden global
+  // stylesheet yerine burada.
+  useEffect(() => {
+    const root = document.documentElement
+    const { body } = document
+    const previous = [root.style.background, body.style.background] as const
+
+    root.style.background = 'transparent'
+    body.style.background = 'transparent'
+
+    return () => {
+      root.style.background = previous[0]
+      body.style.background = previous[1]
+    }
+  }, [])
+
   const voice = useNotchVoice()
   const [hovered, setHovered] = useState(false)
   // Hangi kisayolun kayitli oldugu makineye gore degisiyor (aday

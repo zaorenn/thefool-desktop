@@ -236,10 +236,45 @@ class CLIAgentSetupMixin:
         """
         from cli import _cprint, logger
 
+        # FOOL-SEAM: first-run-autodetect
+        # SORMADAN once bir kez daha bak. Kurulum anindaki tek deneme, model
+        # sunucusu o sirada kapaliysa bosa gidiyor -- ve kullanici sunucuyu
+        # actiktan sonra bile bu ekranda kaliyordu. Burasi, kullanicinin
+        # GERCEKTEN sohbete baslamak istedigi an: sunucu simdi acik olabilir.
+        try:
+            from fool.autodetect import config_patch, detect
+            from fool_cli.config import set_config_value
+
+            found = detect()
+        except Exception:
+            found = None
+
+        if found is not None:
+            patch = config_patch(found)
+            model_cfg = patch.get("model") or {}
+            provider = str(model_cfg.get("provider") or "")
+            default_model = str(model_cfg.get("default") or "")
+
+            if provider:
+                set_config_value("model.provider", provider)
+                if default_model:
+                    set_config_value("model.default", default_model)
+                if model_cfg.get("base_url"):
+                    set_config_value("model.base_url", str(model_cfg["base_url"]))
+
+                _cprint("")
+                _cprint(f"✓ Found {found.runner.label} running — using it.")
+                if default_model:
+                    _cprint(f"  Model: {default_model}")
+                _cprint("  Change it any time with 'fool model'.")
+
+                return True
+
         _cprint("")
-        _cprint("⚕ No inference provider is configured yet — let's fix that.")
-        _cprint("  You'll pick a provider (Nous Portal OAuth is the fastest; "
-                "no API key needed) and a model.")
+        _cprint("⚕ No local model server found — let's set up a provider.")
+        _cprint("  Easiest path: start LM Studio (or Ollama / Jan / llama.cpp) "
+                "with a model loaded and run 'fool' again — it configures itself.")
+        _cprint("  Otherwise you can pick a cloud provider and a model here.")
         try:
             answer = input("  Set up a provider now? [Y/n]: ").strip().lower()
         except (KeyboardInterrupt, EOFError):

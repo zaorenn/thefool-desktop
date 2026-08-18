@@ -52,10 +52,16 @@ function ProgressBar({ job }: { job: VoiceJob }) {
 function VoiceRow({
   item,
   onInstall,
+  onDevice,
+  onSelect,
+  onVoice,
   pending
 }: {
   item: VoiceItem
   onInstall: (id: string, device: 'cpu' | 'cuda') => void
+  onDevice: (id: string, device: 'auto' | 'cpu' | 'cuda') => void
+  onSelect: (id: string) => void
+  onVoice: (id: string, voice: string) => void
   pending: VoiceJob | null
 }) {
   const running = pending?.state === 'running'
@@ -70,7 +76,16 @@ function VoiceRow({
       </Button>
     )
   } else if (item.installed) {
-    action = <Pill tone="primary">Installed</Pill>
+    // Kurulu olmak ile KULLANILIYOR olmak ayri seyler. Yalnizca "Installed"
+    // gostermek, dort modelin de kurulu oldugu bir listede hangisinin
+    // konustugunu belirsiz birakiyordu.
+    action = item.active ? (
+      <Pill tone="primary">In use</Pill>
+    ) : (
+      <Button onClick={() => { triggerHaptic('open'); onSelect(item.id) }} size="sm" variant="outline">
+        Use
+      </Button>
+    )
   } else {
     action = (
       <div className="flex gap-2">
@@ -107,7 +122,49 @@ function VoiceRow({
   return (
     <ListRow
       action={action}
-      below={pending && pending.state === 'running' ? <ProgressBar job={pending} /> : null}
+      below={
+        pending && pending.state === 'running' ? (
+          <ProgressBar job={pending} />
+        ) : item.installed && supportsCuda ? (
+          // Kurulumdaki CPU/CUDA secimi hangi PAKETIN inecegini belirler;
+          // bu ise modelin her calismada NEREDE kosacagini. Ikisini tek
+          // dugmeye baglamak, kurduktan sonra aygit degistirmeyi imkansiz
+          // kiliyordu.
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {/* Ses secimi: bir motorun birden cok sesi var ve hangisinin
+                konustugu panelde hic gorunmuyordu. Piper'in listesi DISKTEN
+                geliyor -- inmemis bir sesi sunmak calisma aninda patlardi. */}
+            {item.voices.length > 1 && (
+              <select
+                className="mr-2 h-6 rounded border border-(--stroke-nous) bg-transparent px-1 text-[0.66rem]"
+                onChange={event => onVoice(item.id, event.target.value)}
+                value={item.voice || item.voices[0]?.id || ''}
+              >
+                {item.voices.map(voice => (
+                  <option key={voice.id} value={voice.id}>
+                    {voice.label}
+                  </option>
+                ))}
+              </select>
+            )}
+            {(['auto', 'cpu', 'cuda'] as const).map(device => (
+              <Button
+                className="h-6 px-2 text-[0.66rem]"
+                disabled={device === 'cuda' && !item.cuda_available}
+                key={device}
+                onClick={() => { triggerHaptic('open'); onDevice(item.id, device) }}
+                size="sm"
+                variant={item.device === device ? 'default' : 'ghost'}
+              >
+                {device === 'auto' ? 'Auto' : device.toUpperCase()}
+              </Button>
+            ))}
+            {!item.cuda_available && (
+              <span className="ml-1 text-[0.62rem] text-muted-foreground">no CUDA on this machine</span>
+            )}
+          </div>
+        ) : null
+      }
       description={item.summary}
       hint={
         pending?.state === 'failed'
@@ -215,6 +272,33 @@ export function VoiceSettings() {
     }
   }, [jobs])
 
+  const select = useCallback(async (id: string) => {
+    try {
+      await voiceApi.select(id)
+      setReloadToken(token => token + 1)
+    } catch (error) {
+      notifyError(error, 'Could not switch model')
+    }
+  }, [])
+
+  const setDevice = useCallback(async (id: string, device: 'auto' | 'cpu' | 'cuda') => {
+    try {
+      await voiceApi.setDevice(id, device)
+      setReloadToken(token => token + 1)
+    } catch (error) {
+      notifyError(error, 'Could not change device')
+    }
+  }, [])
+
+  const setVoice = useCallback(async (id: string, voice: string) => {
+    try {
+      await voiceApi.setVoice(id, voice)
+      setReloadToken(token => token + 1)
+    } catch (error) {
+      notifyError(error, 'Could not change voice')
+    }
+  }, [])
+
   const install = useCallback(async (id: string, device: 'cpu' | 'cuda') => {
     try {
       const job = await voiceApi.install(id, device)
@@ -246,13 +330,13 @@ export function VoiceSettings() {
         title="Text to speech"
       >
         {tts.map(item => (
-          <VoiceRow item={item} key={item.id} onInstall={install} pending={jobs[item.id] ?? null} />
+          <VoiceRow item={item} key={item.id} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}
       </SettingsSection>
 
       <SettingsSection icon={Mic} title="Speech to text">
         {stt.map(item => (
-          <VoiceRow item={item} key={item.id} onInstall={install} pending={jobs[item.id] ?? null} />
+          <VoiceRow item={item} key={item.id} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}
       </SettingsSection>
 

@@ -105,6 +105,12 @@ class VoiceEntry:
     warmup: str = ""
     #: Isinma ve model kimligi icin kullanilan ad.
     model_id: str = ""
+    #: Bu motorun SES listesi: (kimlik, aciklama).
+    #:
+    #: Sabit liste yalnizca kendi ses kumesi olan motorlar icin. Piper'in
+    #: sesleri ayri ayri INEN dosyalar oldugu icin listesi diskten uretiliyor:
+    #: inmemis bir sesi sunmak, secildiginde calisma aninda patlardi.
+    voices: tuple[tuple[str, str], ...] = ()
     assets: tuple[VoiceAsset, ...] = ()
     #: Yaklaşık toplam indirme boyutu, kullanıcıya gösterilir.
     size_label: str = ""
@@ -157,6 +163,15 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         probe_module="kokoro",
         sidecar_specs=("kokoro==0.9.4", "soundfile==0.14.0"),
+        voices=(
+            ("af_heart", "Amerikan kadin - sicak"),
+            ("af_bella", "Amerikan kadin - berrak"),
+            ("af_nicole", "Amerikan kadin - yumusak"),
+            ("am_michael", "Amerikan erkek - dengeli"),
+            ("am_puck", "Amerikan erkek - canli"),
+            ("bf_emma", "Ingiliz kadin"),
+            ("bm_george", "Ingiliz erkek"),
+        ),
         # Kokoro spaCy'nin ``en_core_web_sm`` modelini istiyor ve o PyPI'da
         # YOK. Bu adim olmadan motor kuruluyor ama ilk sentezde E050 veriyor.
         sidecar_wheels=(
@@ -194,6 +209,18 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         # 1.27.0 -> 0.36.2'ye dusuruyor ve lazy_deps.py bunun Hindsight'i
         # cokerttigini (#60783) yaziyor. Kendi ortamina kuruluyor.
         sidecar_specs=("qwen-tts==0.1.1",),
+        # Modelin ``get_supported_speakers()`` ciktisindan alindi, tahmin degil.
+        voices=(
+            ("ryan", "Dengeli erkek"),
+            ("serena", "Berrak kadin"),
+            ("aiden", "Genc erkek"),
+            ("dylan", "Alcak, sakin erkek"),
+            ("eric", "Anlati tonu"),
+            ("vivian", "Sicak kadin"),
+            ("ono_anna", "Japonca'da dogal kadin"),
+            ("sohee", "Korece'de dogal kadin"),
+            ("uncle_fu", "Cince'de olgun erkek"),
+        ),
         # PyPI'nin Windows torch tekerlegi CPU-only. Gercek CUDA derlemesi
         # yalnizca PyTorch'un kendi indeksinde; olculdu: CPU'da kisa bir
         # cumle 7.8 saniye surdu.
@@ -286,7 +313,12 @@ def status(entry_id: str) -> dict[str, Any]:
     if e is None:
         return {"id": entry_id, "installed": False, "error": "bilinmeyen oge"}
 
-    if e.sidecar_specs:
+    # Isinmasi olan oge icin AGIRLIKLAR da inmis olmali. Yalnizca pakete
+    # bakmak "kurulu" derdi ama ilk konusmada model sessizce inmeye baslar ve
+    # kullanici sadece "cok yavas" gorur -- panelin tam kacinmasi gereken sey.
+    if e.warmup and e.model_id and not _weights_present(e.model_id):
+        engine_ok = False
+    elif e.sidecar_specs:
         # Sidecar'li motor ANA ortamda asla gorunmez; orada aramak her zaman
         # "kurulu degil" derdi.
         from fool import sidecar as _sidecar
@@ -311,6 +343,23 @@ def status(entry_id: str) -> dict[str, Any]:
     }
 
 
+def _weights_present(model_id: str) -> bool:
+    """HuggingFace onbelleginde model agirliklari var mi?
+
+    faster-whisper agirliklari ``Systran/faster-whisper-<model>`` altinda
+    tutuyor. Dizin varligi degil, ICINDE gercek bir dosya olup olmadigi
+    kontrol ediliyor: yarida kesilen bir indirme bos dizin birakiyor.
+    """
+    from pathlib import Path as _Path
+
+    root = _Path.home() / ".cache" / "huggingface" / "hub"
+    for pattern in (f"models--Systran--faster-whisper-{model_id}", f"models--*{model_id}*"):
+        for candidate in root.glob(pattern):
+            if any(f.is_file() and f.stat().st_size > 1_000_000 for f in candidate.rglob("*")):
+                return True
+    return False
+
+
 def _cuda_available() -> bool:
     """CUDA gerçekten kullanılabilir mi?
 
@@ -327,8 +376,150 @@ def _cuda_available() -> bool:
         return False
 
 
+def active_providers() -> dict[str, str]:
+    """Su an SECILI olan TTS/STT saglayicilari.
+
+    Panel bunu gostermeden kullanici hangi modelin konustugunu bilemiyordu:
+    dort model "kurulu" yaziyor, hangisinin aktif oldugu hicbir yerde yok.
+    """
+    try:
+        from fool_cli.config import load_config
+
+        cfg = load_config() or {}
+    except Exception:
+        return {"stt": "", "tts": ""}
+
+    tts = str((cfg.get("tts") or {}).get("provider") or "")
+    stt_cfg = cfg.get("stt") or {}
+    stt = str(stt_cfg.get("provider") or "")
+    # Yerel STT'de asil kimlik MODEL: "local" dort farkli whisper boyutu
+    # olabiliyor ve panel hangisini gosterecegini bilemez.
+    if stt == "local":
+        stt = str((stt_cfg.get("local") or {}).get("model") or "local")
+    return {"stt": stt, "tts": tts}
+
+
+def select(entry_id: str) -> dict[str, Any]:
+    """Bu ogeyi AKTIF saglayici yap."""
+    e = entry(entry_id)
+    if e is None:
+        raise ValueError(f"bilinmeyen oge: {entry_id}")
+    if not status(entry_id).get("installed"):
+        raise ValueError(f"{e.label} kurulu degil")
+
+    from fool_cli.config import set_config_value
+
+    if e.kind == "tts":
+        set_config_value("tts.provider", e.provider_id or e.id)
+    else:
+        # Yerel whisper: saglayici "local", asil secim model boyutu.
+        set_config_value("stt.provider", "local")
+        set_config_value("stt.local.model", e.model_id or "base")
+        # Dil OTOMATIK kalmali: sabitlemek baska dilde konusmayi bozuyor.
+        set_config_value("stt.local.language", "")
+
+    return {"ok": True, "active": active_providers()}
+
+
+def device_key(e: VoiceEntry) -> str:
+    """Bu ogenin cihaz ayarinin yapilandirmadaki yeri."""
+    if e.kind == "stt":
+        return "stt.local.device"
+    return f"tts.{e.provider_id or e.id}.device"
+
+
+def current_device(e: VoiceEntry) -> str:
+    """Secili cihaz: ``auto`` | ``cpu`` | ``cuda``."""
+    try:
+        from fool_cli.config import load_config
+
+        cfg = load_config() or {}
+    except Exception:
+        return "auto"
+
+    node: Any = cfg
+    for part in device_key(e).split("."):
+        node = (node or {}).get(part) if isinstance(node, dict) else None
+    value = str(node or "auto").strip().lower()
+    return value if value in ("auto", "cpu", "cuda") else "auto"
+
+
+def set_device(entry_id: str, device: str) -> dict[str, Any]:
+    """Ogenin CALISMA cihazini ayarla.
+
+    Kurulum sirasindaki secimden AYRI: kurulum hangi paketin inecegini
+    belirler, bu ise modelin her calismada nerede kosacagini. Ikisini tek
+    dugmeye baglamak, kurduktan sonra cihaz degistirmeyi imkansiz kiliyordu.
+    """
+    e = entry(entry_id)
+    if e is None:
+        raise ValueError(f"bilinmeyen oge: {entry_id}")
+    if device not in ("auto", "cpu", "cuda"):
+        raise ValueError(f"gecersiz aygit: {device}")
+
+    from fool_cli.config import set_config_value
+
+    set_config_value(device_key(e), device)
+    return {"ok": True, "device": device}
+
+
+def available_voices(e: VoiceEntry) -> list[dict[str, str]]:
+    """Bu motor icin SECILEBILIR sesler.
+
+    Piper ozel: sesleri ayri ayri inen ``.onnx`` dosyalari, yani liste
+    DISKTEN uretiliyor. Inmemis bir sesi sunmak secildiginde calisma aninda
+    patlardi -- panelin tam kacinmasi gereken sey.
+    """
+    if e.id == "piper":
+        try:
+            return [
+                {"id": f.stem, "label": f.stem}
+                for f in sorted(voice_dir().glob("*.onnx"))
+            ]
+        except OSError:
+            return []
+    return [{"id": vid, "label": desc} for vid, desc in e.voices]
+
+
+def current_voice(e: VoiceEntry) -> str:
+    try:
+        from fool_cli.config import load_config
+
+        cfg = load_config() or {}
+    except Exception:
+        return ""
+    node = ((cfg.get("tts") or {}).get(e.provider_id or e.id) or {})
+    return str(node.get("voice") or "")
+
+
+def set_voice(entry_id: str, voice: str) -> dict[str, Any]:
+    """Motorun konusacagi sesi ayarla."""
+    e = entry(entry_id)
+    if e is None:
+        raise ValueError(f"bilinmeyen oge: {entry_id}")
+
+    valid = {v["id"] for v in available_voices(e)}
+    if valid and voice not in valid:
+        raise ValueError(f"{e.label} icin bilinmeyen ses: {voice}")
+
+    from fool_cli.config import set_config_value
+
+    set_config_value(f"tts.{e.provider_id or e.id}.voice", voice)
+    return {"ok": True, "voice": voice}
+
+
 def catalog_status() -> list[dict[str, Any]]:
-    return [status(e.id) for e in CATALOG]
+    active = active_providers()
+    rows = []
+    for e in CATALOG:
+        row = status(e.id)
+        key = e.model_id if (e.kind == "stt" and e.model_id) else (e.provider_id or e.id)
+        row["active"] = active.get(e.kind, "") == key
+        row["device"] = current_device(e)
+        row["voices"] = available_voices(e) if e.kind == "tts" else []
+        row["voice"] = current_voice(e) if e.kind == "tts" else ""
+        rows.append(row)
+    return rows
 
 
 # ---------------------------------------------------------------------------

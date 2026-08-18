@@ -20,7 +20,10 @@ vi.mock('./voice-api', () => ({
     cancel: (...args: unknown[]) => Promise.resolve({ cancelled: true }),
     catalog: (...args: unknown[]) => catalog(...args),
     install: (...args: unknown[]) => install(...args),
-    job: (...args: unknown[]) => job(...args)
+    job: (...args: unknown[]) => job(...args),
+    setDevice: (...args: unknown[]) => Promise.resolve({ ok: true }),
+    setVoice: (...args: unknown[]) => Promise.resolve({ ok: true }),
+    select: (...args: unknown[]) => Promise.resolve({ ok: true })
   }
 }))
 
@@ -34,6 +37,10 @@ const { VoiceSettings } = await import('./voice-settings')
 
 function item(overrides: Partial<VoiceItem> = {}): VoiceItem {
   return {
+    active: false,
+    device: 'auto',
+    voice: '',
+    voices: [],
     assets_installed: true,
     cuda_available: false,
     devices: ['cpu'],
@@ -51,7 +58,7 @@ function item(overrides: Partial<VoiceItem> = {}): VoiceItem {
 }
 
 function reply(items: VoiceItem[], cudaAvailable = false): VoiceCatalog {
-  return { cuda_available: cudaAvailable, items, voice_dir: 'C:\\fool\\voices' }
+  return { active: { stt: '', tts: '' }, cuda_available: cudaAvailable, items, voice_dir: 'C:\\fool\\voices' }
 }
 
 beforeEach(() => {
@@ -61,12 +68,23 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('VoiceSettings', () => {
-  it('kurulu ogeyi "Installed" olarak gosterir', async () => {
-    catalog.mockResolvedValue(reply([item()]))
+  it('AKTIF ogeyi "In use" olarak gosterir', async () => {
+    catalog.mockResolvedValue(reply([item({ active: true })]))
 
     render(<VoiceSettings />)
 
-    expect(await screen.findByText('Installed')).toBeTruthy()
+    expect(await screen.findByText('In use')).toBeTruthy()
+  })
+
+  it('kurulu ama aktif OLMAYAN oge secilebilir', async () => {
+    // Dort model de kurulu oldugunda hangisinin konustugu belirsizdi;
+    // "Use" dugmesi o secimi mumkun kiliyor.
+    catalog.mockResolvedValue(reply([item({ active: false })]))
+
+    render(<VoiceSettings />)
+
+    expect(await screen.findByText('Use')).toBeTruthy()
+    expect(screen.queryByText('In use')).toBeNull()
   })
 
   it('kurulu OLMAYAN oge icin CPU dugmesi cikarir', async () => {
@@ -75,7 +93,7 @@ describe('VoiceSettings', () => {
     render(<VoiceSettings />)
 
     expect(await screen.findByText('CPU')).toBeTruthy()
-    expect(screen.queryByText('Installed')).toBeNull()
+    expect(screen.queryByText('In use')).toBeNull()
   })
 
   it('CUDA dugmesi kart YOKKEN cikmaz', async () => {

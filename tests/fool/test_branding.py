@@ -703,3 +703,86 @@ def test_browser_binary_detection_covers_common_installs() -> None:
     assert "chrome.exe" in joined
     assert "msedge.exe" in joined, "Edge cogu Windows makinesinde HAZIR kurulu"
     assert browser_detect.ENV_VAR == "AGENT_BROWSER_EXECUTABLE_PATH"
+
+class TestSkillBodyBranding:
+    """Beceri govdesi ajanin OKUDUGU talimattir.
+
+    Sistem promptu "sen Fool Agent'sin" dese bile, ajan bir beceri acip
+    "Hermes Agent is an open-source AI agent framework by Nous Research"
+    okuyunca kendini oyle tanitiyor: beceri govdesi daha somut ve daha yakin
+    bir kaynak. Bu yuzden govde de markalanmali -- ama govde, dizinden farkli
+    olarak CALISTIRILABILIR seyler tasiyor ve onlar bozulmamali.
+    """
+
+    def test_kimlik_cumlesi_markalanir(self):
+        out = branding.brand_skill_body(
+            "Hermes Agent is an open-source AI agent framework by Nous Research."
+        )
+        assert out == "Fool Agent is an open-source AI agent framework by Fool Labs."
+
+    def test_cagrilabilir_beceri_kimligi_korunur(self):
+        """``hermes-agent`` bir ADdir; markalanirsa skill_view yanlis cagrilir."""
+        src = 'Load it with skill_view(name="hermes-agent") first.'
+        assert branding.brand_skill_body(src) == src
+
+    def test_upstream_depo_atfi_korunur(self):
+        src = "Source: https://github.com/NousResearch/hermes-agent"
+        assert branding.brand_skill_body(src) == src
+
+    def test_modul_ve_ortam_adlari_korunur(self):
+        src = "Import hermes_cli.config after setting HERMES_HOME."
+        assert branding.brand_skill_body(src) == src
+
+    def test_ev_dizini_markalanir(self):
+        """Ev dizini artik gercekten ``.fool`` -- korumak yanlis yolu birakirdi."""
+        assert branding.brand_skill_body("~/.hermes/skills") == "~/.fool/skills"
+
+    def test_kod_blogu_degismez(self):
+        """Blok ici metin CALISTIRILAN komut; ikinci kez dokunmak bozar."""
+        src = chr(10).join(["Hermes runs it.", "```bash", "fool run --name Hermes", "```", "Hermes stops."])
+        out = branding.brand_skill_body(src).split(chr(10))
+        assert out[0] == "The Fool runs it."
+        assert out[2] == "fool run --name Hermes"   # blok ici DOKUNULMADI
+        assert out[4] == "The Fool stops."
+
+    def test_idempotent(self):
+        """Iki kez uygulamak tek kez uygulamakla ayni olmali."""
+        src = "Hermes Agent, hermes-agent, ~/.hermes, Nous Research"
+        once = branding.brand_skill_body(src)
+        assert branding.brand_skill_body(once) == once
+
+    def test_skills_tool_dikisi_gercek_dosyayi_markalar(self):
+        """Uctan uca: DEPODAKI gercek beceri dosyasi dikisten gecirilir.
+
+        ``skill_view``i dogrudan cagirmak beceri KESFINE baglidir (calisma
+        dizini, FOOL_HOME, yapilandirma) ve testi kirilgan yapar. Onemli olan
+        sozlesme su: skills_tool okudugu metni markalayarak donduruyor. Burada
+        tam o dikis, gercek girdiyle sinaniyor.
+        """
+        import re as _re
+
+        from tools.skills_tool import _fool_brand_skill
+
+        skill_md = (
+            Path(__file__).resolve().parents[2]
+            / "skills"
+            / "autonomous-ai-agents"
+            / "hermes-agent"
+            / "SKILL.md"
+        )
+        assert skill_md.exists(), f"test dayanagi kayboldu: {skill_md}"
+
+        raw = skill_md.read_text(encoding="utf-8-sig", errors="replace")
+        assert _re.search(r"\b(Hermes|Nous Research)\b", raw), (
+            "kaynak dosya artik marka tasimiyor; bu test anlamini yitirdi"
+        )
+
+        out = _fool_brand_skill(raw)
+        leaks = [
+            line
+            for line in out.split(chr(10))
+            if _re.search(r"\b(Hermes|Nous Research)\b", line)
+            and "NousResearch/hermes-agent" not in line
+        ]
+        assert not leaks, f"markasiz satirlar: {leaks[:5]}"
+        assert "name: hermes-agent" in out, "cagrilabilir kimlik bozuldu"

@@ -54,6 +54,7 @@ TRANSFORM_COVERED: tuple[str, ...] = (
     "fool_cli/commands.py",     # CommandDef.__post_init__
     "fool_cli/_parser.py",      # argparse_brand
     "fool_cli/console_engine.py",
+    "skills/",                  # brand_skill_body (FOOL-SEAM: skill-body-brand)
 )
 
 #: Taranan yüzeyler: kullanıcıya DÖNÜŞÜMSÜZ giden metin.
@@ -66,6 +67,13 @@ SURFACES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Kurulum betikleri", ("scripts/install.sh", "scripts/install.ps1")),
     ("Ajan kimliği ve promptlar", ("agent/prompt_builder.py", "agent/system_prompt.py")),
     ("CLI banner ve sürüm", ("fool_cli/banner.py", "fool_cli/_startup_fast.py")),
+    # Web panosu BILESENLERI. i18n katalogu donusumden geciyor ama bilesen
+    # icindeki sabit metinler gecmiyor -- dashboard basligi ve logotype tam
+    # buradan kacmisti.
+    ("Web panosu (sabit metin)", ("web/src/**/*.tsx", "web/index.html")),
+    # NOT: ``skills/`` bilerek TARANMIYOR. Beceri govdeleri artik okuma
+    # aninda ``brand_skill_body()`` ile donusturuluyor; kaynakta "Hermes"
+    # yazmasi kacak degil. Bu tarayici 156 yanlis pozitif uretiyordu.
 )
 
 #: Marka — YALNIZCA serbest metinde. Kelime sınırları kritik: tanımlayıcıda

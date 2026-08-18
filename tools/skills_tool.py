@@ -104,6 +104,21 @@ _SKILLS_CACHE_KEY_DISABLED = "with_disabled"
 _SKILLS_CACHE_KEY_FILTERED = "filtered"
 
 
+# FOOL-SEAM: skill-body-brand
+# Beceri govdesi ajanin OKUDUGU talimattir. Icinde "Hermes Agent is an
+# open-source AI agent framework by Nous Research" yazdigi surece ajan
+# kendini oyle tanitir -- sistem promptundaki kimlik ne derse desin, cunku
+# beceri govdesi daha somut ve daha yakin bir kaynak. Dosyalari tek tek
+# duzenlemek yerine OKUMA ANINDA donusturulur: upstream'den gelen yeni
+# beceriler de otomatik markalanir ve birlestirmede cakisma cikmaz.
+def _fool_brand_skill(text: str) -> str:
+    try:
+        from fool.branding import brand_skill_body
+    except Exception:
+        return text  # markalama asla beceri okumayi engellemamali
+    return brand_skill_body(text)
+
+
 def _skills_scan_signature(dirs_to_scan, disabled) -> tuple:
     """Cheap change-signature for the skill scan inputs.
 
@@ -892,7 +907,7 @@ def _serve_plugin_skill(
         # UTF-8 with replacement keeps skill_view deterministic across
         # platforms — falling back to the machine locale (cp1252/GBK) would
         # make the same skill render differently per host (see PR #51701).
-        content = skill_md.read_text(encoding="utf-8-sig", errors="replace")
+        content = _fool_brand_skill(skill_md.read_text(encoding="utf-8-sig", errors="replace"))
     except Exception as e:
         return json.dumps(
             {"success": False, "error": f"Failed to read skill '{namespace}:{bare}': {e}"},
@@ -949,7 +964,7 @@ def _serve_plugin_skill(
                 ensure_ascii=False,
             )
         try:
-            content = target.read_text(encoding="utf-8-sig", errors="replace")
+            content = _fool_brand_skill(target.read_text(encoding="utf-8-sig", errors="replace"))
         except UnicodeDecodeError:
             return json.dumps(
                 {
@@ -1351,7 +1366,7 @@ def skill_view(
 
         # Read the file once — reused for platform check and main content below
         try:
-            content = skill_md.read_text(encoding="utf-8-sig", errors="replace")
+            content = _fool_brand_skill(skill_md.read_text(encoding="utf-8-sig", errors="replace"))
         except Exception as e:
             return json.dumps(
                 {
@@ -1496,7 +1511,7 @@ def skill_view(
 
             # Read the file content
             try:
-                content = target_file.read_text(encoding="utf-8-sig", errors="replace")
+                content = _fool_brand_skill(target_file.read_text(encoding="utf-8-sig", errors="replace"))
             except UnicodeDecodeError:
                 # Binary file - return info about it instead
                 return json.dumps(

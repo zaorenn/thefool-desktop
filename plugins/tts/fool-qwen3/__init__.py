@@ -200,10 +200,24 @@ class Qwen3TTSProvider(TTSProvider):
             logger.warning("Qwen3-TTS %r dilini desteklemiyor; auto kullanilacak", language)
             language = "auto"
 
+        # Bilinmeyen model kimligi HATA DEGIL, varsayilana dusus.
+        #
+        # Neden: cagiran katman bazen baska bir saglayicinin model adini
+        # geciriyor ve transformers onu tanimayinca "Try: pip install
+        # transformers -U" diyor -- kullanici icin tamamen anlamsiz bir mesaj
+        # ve sesin neden cikmadigina dair hicbir ipucu yok.
+        known = {entry["id"] for entry in self.list_models()}
+        requested = model or DEFAULT_MODEL
+        if requested not in known:
+            logger.warning(
+                "Qwen3-TTS %r modelini tanimiyor; %s kullanilacak", requested, DEFAULT_MODEL
+            )
+            requested = DEFAULT_MODEL
+
         stdout = sidecar.run_script(
             SIDECAR_NAME,
             _SYNTH,
-            [text, target, voice or DEFAULT_VOICE, model or DEFAULT_MODEL, device, language],
+            [text, target, voice or DEFAULT_VOICE, requested, device, language],
         )
 
         try:

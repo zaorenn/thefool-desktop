@@ -43,36 +43,38 @@ logger = logging.getLogger(__name__)
 #: olmak zorunda, yoksa panel "kurulu" derken sağlayıcı ortamı bulamaz.
 SIDECAR_NAME = "chatterbox"
 
-#: Alt süreçte çalışan sentez betiği.
+#: Kalıcı motor sürecinin AÇILIŞ kodu.
 #:
-#: Motor ARTIK ana ortamda değil: ``chatterbox-tts`` ``starlette``ı 1.3.1'in
-#: altına düşürüyor ve o pin bir CVE düzeltmesi (CVE-2026-48710). Yani ana
-#: ortama kurmak bir güvenlik gerilemesiydi. Kendi ortamına alındı; buradan
-#: alt süreç olarak çağrılıyor.
-_SYNTH = r"""
-import sys, json
-text, out_path, device, sample, exaggeration, cfg_weight = sys.argv[1:7]
-
+#: Chatterbox katalogdaki en ağır motor; her cümlede yeniden yüklemek
+#: dakikalar sürüyordu. Model burada BİR KEZ yükleniyor ve süreç açık
+#: kaldığı sürece bellekte kalıyor.
+_SETUP = """
 import torch
 from chatterbox.tts import ChatterboxTTS
 import torchaudio
 
-if device == "auto":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+_device = DEVICE
+if _device == "auto":
+    _device = "cuda" if torch.cuda.is_available() else "cpu"
+if _device == "cuda" and not torch.cuda.is_available():
+    _device = "cpu"
 
-model = ChatterboxTTS.from_pretrained(device=device)
+_model = ChatterboxTTS.from_pretrained(device=_device)
 
-kwargs = {}
-if sample:
-    kwargs["audio_prompt_path"] = sample
-if exaggeration:
-    kwargs["exaggeration"] = float(exaggeration)
-if cfg_weight:
-    kwargs["cfg_weight"] = float(cfg_weight)
 
-wav = model.generate(text, **kwargs)
-torchaudio.save(out_path, wav, model.sr)
-print(json.dumps({"ok": True, "path": out_path, "device": device}))
+def handle(req):
+    kwargs = {}
+    if req.get("sample"):
+        kwargs["audio_prompt_path"] = req["sample"]
+    if req.get("exaggeration"):
+        kwargs["exaggeration"] = float(req["exaggeration"])
+    if req.get("cfg_weight"):
+        kwargs["cfg_weight"] = float(req["cfg_weight"])
+
+    wav = _model.generate(req["text"], **kwargs)
+    torchaudio.save(req["out"], wav, _model.sr)
+
+    return {"path": req["out"], "device": _device}
 """
 
 
@@ -152,11 +154,21 @@ class ChatterboxTTSProvider(TTSProvider):
         cfg = config.get("chatterbox") if isinstance(config, dict) else {}
         cfg = cfg if isinstance(cfg, dict) else {}
 
-        from fool.tts_device import resolve as resolve_device
 
-        device = resolve_device(cfg, provider="chatterbox")
+        # HAM tercih gonderiliyor, ``resolve()`` DEGIL.
+        #
+        # ``resolve()`` ana surecte ``cuda_available()`` soruyor ve ana ortamda
+        # CUDA'li torch YOK -- yani her zaman False. Sonuc: kullanici "cuda"
+        # secmis olsa bile istek "cpu" olarak sidecar'a gidiyordu ve motor,
+        # kendi CUDA torch'u dururken CPU'da kosuyordu. Olculdu: Qwen'de 8,2 sn
+        # yerine CUDA'da olmasi gereken sure.
+        #
+        # Karar sidecar'a ait: yetkili torch orada.
+        device = str(cfg.get("device") or "auto").strip().lower()
+        if device not in ("auto", "cpu", "cuda"):
+            device = "auto"
 
-        from fool import sidecar
+        from fool import engine_host, sidecar
 
         if not sidecar.is_ready(SIDECAR_NAME, "chatterbox"):
             raise RuntimeError(
@@ -186,18 +198,18 @@ class ChatterboxTTSProvider(TTSProvider):
         if not target.lower().endswith(".wav"):
             target = os.path.splitext(output_path)[0] + ".wav"
 
-        stdout = sidecar.run_script(
+        result = engine_host.request(
             SIDECAR_NAME,
-            _SYNTH,
-            [text, target, device, sample, _num("exaggeration"), _num("cfg_weight")],
+            _SETUP.replace("DEVICE", repr(device)),
+            {
+                "cfg_weight": _num("cfg_weight"),
+                "exaggeration": _num("exaggeration"),
+                "out": target,
+                "sample": sample,
+                "text": text,
+            },
         )
 
-        try:
-            result = json.loads(stdout.strip().splitlines()[-1])
-        except (ValueError, IndexError) as exc:
-            raise RuntimeError(f"Chatterbox beklenmeyen cikti verdi: {stdout[:200]}") from exc
-        if not result.get("ok"):
-            raise RuntimeError(f"Chatterbox sentezi basarisiz: {result}")
 
         logger.debug("[Chatterbox] %s uzerinde sentezlendi -> %s", result.get("device"), target)
         return target

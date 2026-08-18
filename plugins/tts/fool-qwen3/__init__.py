@@ -92,33 +92,39 @@ DEFAULT_MODEL = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
 #: ayrı, ama betiğin kendisi bu paketle birlikte sürümlenmeli. Ayrı bir
 #: dosyaya koymak, eklenti güncellendiğinde eski betiğin diskte kalması
 #: riskini getirirdi.
-_SYNTH = r"""
-import sys, json
-text, out_path, speaker, model_id, device, language = sys.argv[1:7]
-
+#: Kalıcı motor sürecinin AÇILIŞ kodu.
+#:
+#: Model BİR KEZ yükleniyor. Önceki tasarımda her cümle için yeni bir süreç
+#: açılıyor, torch içe aktarılıyor ve 2,4 GB'lık model diskten yeniden
+#: yükleniyordu — bu Qwen'de en pahalı olan motordu.
+_SETUP = """
 import torch
 from qwen_tts import Qwen3TTSModel
 import soundfile as sf
 
 # CUDA ``device_map`` ile veriliyor. ``.to(device)`` YOK: Qwen3TTSModel bir
 # sarmalayici ve o metodu tasimiyor -- denenip dogrulandi.
-kwargs = {}
-if device == "cuda" and torch.cuda.is_available():
-    kwargs = {"device_map": "cuda:0", "dtype": torch.bfloat16}
+# "auto" da CUDA'ya cozulmeli: yalnizca "cuda" esitligine bakmak, varsayilan
+# ayarda modelin sessizce CPU'da kosmasi demekti -- olculdu, 8,2 sn.
+_want = DEVICE
+if _want == "auto":
+    _want = "cuda" if torch.cuda.is_available() else "cpu"
 
-model = Qwen3TTSModel.from_pretrained(model_id, **kwargs)
-wavs, sample_rate = model.generate_custom_voice(
-    text=text,
-    speaker=speaker,
-    language=language or None,
-)
-sf.write(out_path, wavs[0], sample_rate)
-print(json.dumps({
-    "ok": True,
-    "path": out_path,
-    "device": "cuda" if kwargs else "cpu",
-    "sample_rate": sample_rate,
-}))
+_kwargs = {}
+if _want == "cuda" and torch.cuda.is_available():
+    _kwargs = {"device_map": "cuda:0", "dtype": torch.bfloat16}
+
+_model = Qwen3TTSModel.from_pretrained(MODEL, **_kwargs)
+_device = "cuda" if _kwargs else "cpu"
+
+
+def handle(req):
+    wavs, sample_rate = _model.generate_custom_voice(
+        text=req["text"], speaker=req["speaker"], language=req.get("language") or None
+    )
+    sf.write(req["out"], wavs[0], sample_rate)
+
+    return {"path": req["out"], "device": _device, "sample_rate": sample_rate}
 """
 
 
@@ -174,8 +180,7 @@ class Qwen3TTSProvider(TTSProvider):
         format: str = "wav",
         **extra: Any,
     ) -> str:
-        from fool import sidecar
-        from fool.tts_device import resolve as resolve_device
+        from fool import engine_host, sidecar
 
         if not sidecar.is_ready(SIDECAR_NAME, "qwen_tts"):
             raise RuntimeError(
@@ -183,7 +188,18 @@ class Qwen3TTSProvider(TTSProvider):
             )
 
         config: Dict[str, Any] = extra.get("provider_config") or {}
-        device = resolve_device(config, provider="qwen3")
+        # HAM tercih gonderiliyor, ``resolve()`` DEGIL.
+        #
+        # ``resolve()`` ana surecte ``cuda_available()`` soruyor ve ana ortamda
+        # CUDA'li torch YOK -- yani her zaman False. Sonuc: kullanici "cuda"
+        # secmis olsa bile istek "cpu" olarak sidecar'a gidiyordu ve motor,
+        # kendi CUDA torch'u dururken CPU'da kosuyordu. Olculdu: Qwen'de 8,2 sn
+        # yerine CUDA'da olmasi gereken sure.
+        #
+        # Karar sidecar'a ait: yetkili torch orada.
+        device = str(config.get("device") or "auto").strip().lower()
+        if device not in ("auto", "cpu", "cuda"):
+            device = "auto"
 
         # Model WAV yaziyor. Istenen bicim farkliysa uzantiyi zorlamak yerine
         # WAV'a yazip yolu oyle donduruyoruz: ABC "desteklenmiyorsa en yakinini
@@ -214,19 +230,12 @@ class Qwen3TTSProvider(TTSProvider):
             )
             requested = DEFAULT_MODEL
 
-        stdout = sidecar.run_script(
+        setup = _SETUP.replace("DEVICE", repr(device)).replace("MODEL", repr(requested))
+        result = engine_host.request(
             SIDECAR_NAME,
-            _SYNTH,
-            [text, target, voice or DEFAULT_VOICE, requested, device, language],
+            setup,
+            {"language": language, "out": target, "speaker": voice or DEFAULT_VOICE, "text": text},
         )
-
-        try:
-            result = json.loads(stdout.strip().splitlines()[-1])
-        except (ValueError, IndexError) as exc:
-            raise RuntimeError(f"Qwen3-TTS beklenmeyen cikti verdi: {stdout[:200]}") from exc
-
-        if not result.get("ok"):
-            raise RuntimeError(f"Qwen3-TTS sentezi basarisiz: {result}")
 
         logger.debug("Qwen3-TTS synthesized on %s -> %s", result.get("device"), target)
         return target

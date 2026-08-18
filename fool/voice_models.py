@@ -464,7 +464,7 @@ def set_device(entry_id: str, device: str) -> dict[str, Any]:
 
     # CUDA secildi ama ortam onu calistiramiyor: yalnizca yapilandirmaya
     # yazmak sessiz bir yalan olurdu. Gercek CUDA derlemesi kuruluyor.
-    needs_runtime = device == "cuda" and bool(e.sidecar_specs) and not cuda_ready(e)
+    needs_runtime = device == "cuda" and not cuda_ready(e)
 
     return {"ok": True, "device": device, "needs_cuda_runtime": needs_runtime}
 
@@ -963,6 +963,97 @@ def _run(job: Job, e: VoiceEntry) -> None:
         with _JOBS_LOCK:
             if _ACTIVE_BY_ENTRY.get(e.id) == job.id:
                 _ACTIVE_BY_ENTRY.pop(e.id, None)
+
+
+def _install_stt_cuda(job: Job) -> None:
+    """Ana ortama CTranslate2'nin CUDA kutuphanelerini kur.
+
+    STT sidecar'da DEGIL, ana ortamda kosuyor; o yuzden torch degil
+    ``nvidia-cublas``/``nvidia-cudnn`` gerekiyor. Bunlar olmadan
+    faster-whisper ``device="cuda"`` istegini "cublas64_12.dll not found" ile
+    reddediyor ve SESSIZCE CPU'ya dusuyor -- olculdu: 15,16 sn vs 0,23 sn.
+    """
+    from tools.lazy_deps import LAZY_DEPS, install_specs
+
+    specs = list(LAZY_DEPS.get("stt.cuda", ()))
+    if not specs:
+        raise RuntimeError("stt.cuda paket listesi bos")
+
+    job.stage = "installing CUDA libraries"
+    job.detail = ", ".join(specs)
+
+    stop = threading.Event()
+
+    def _creep() -> None:
+        crept = 0.0
+        while not stop.wait(0.5):
+            crept = min(crept + 1.2, 90.0)
+            job.percent = crept
+
+    ticker = threading.Thread(target=_creep, daemon=True)
+    ticker.start()
+    try:
+        outcome = install_specs(specs, timeout=1800)
+    finally:
+        stop.set()
+
+    if getattr(outcome, "blocked", False):
+        raise RuntimeError(getattr(outcome, "reason", "kurulum engellendi"))
+    if not getattr(outcome, "ok", False):
+        tail = (getattr(outcome, "stderr", "") or getattr(outcome, "stdout", "") or "").strip()
+        raise RuntimeError(f"pip basarisiz: {tail.splitlines()[-1] if tail else 'bilinmeyen'}")
+
+    # Yeni kurulan DLL'ler bu surecte de bulunur olsun; yoksa ayar
+    # yeniden baslatmaya kadar etkisiz kalir.
+    try:
+        from fool.cuda_runtime import enable
+
+        enable()
+    except Exception:
+        pass
+
+
+def _run_cuda(job: Job, e: VoiceEntry) -> None:
+    try:
+        if e.sidecar_specs:
+            install_cuda_runtime(e.id)
+        else:
+            _install_stt_cuda(job)
+
+        job.percent = 100.0
+        job.stage = "done"
+        job.detail = ""
+        job.state = "done"
+    except Exception as exc:  # noqa: BLE001 - hata kullaniciya gosterilecek
+        job.state = "failed"
+        job.stage = "failed"
+        job.error = str(exc)
+    finally:
+        job.finished_at = time.time()
+        with _JOBS_LOCK:
+            if _ACTIVE_BY_ENTRY.get(e.id) == job.id:
+                _ACTIVE_BY_ENTRY.pop(e.id, None)
+
+
+def start_cuda_install(entry_id: str) -> dict[str, Any]:
+    """CUDA calisma zamanini arka planda kur, is kimligini dondur."""
+    e = entry(entry_id)
+    if e is None:
+        raise ValueError(f"bilinmeyen oge: {entry_id}")
+    if "cuda" not in e.devices:
+        raise ValueError(f"{e.label} CUDA desteklemiyor")
+
+    with _JOBS_LOCK:
+        existing_id = _ACTIVE_BY_ENTRY.get(entry_id)
+        if existing_id and (existing := _JOBS.get(existing_id)) and existing.state == "running":
+            return existing.snapshot()
+
+        job = Job(id=uuid.uuid4().hex[:12], entry_id=entry_id, device="cuda")
+        _JOBS[job.id] = job
+        _ACTIVE_BY_ENTRY[entry_id] = job.id
+
+    threading.Thread(target=_run_cuda, args=(job, e), daemon=True, name=f"fool-cuda-{job.id}").start()
+    return job.snapshot()
 
 
 def start_install(entry_id: str, device: Device = "cpu") -> dict[str, Any]:

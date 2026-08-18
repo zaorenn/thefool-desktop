@@ -117,6 +117,15 @@ async def voice_set_voice(body: VoiceBody) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.post("/api/fool/voice/cuda")
+async def voice_cuda(body: SelectBody) -> dict[str, Any]:
+    """CUDA calisma zamanini kur (arka planda is olarak)."""
+    try:
+        return voice_models.start_cuda_install(body.entry_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("/api/fool/voice/clones")
 async def voice_clones() -> dict[str, Any]:
     return {"clones": voice_models.list_clones()}

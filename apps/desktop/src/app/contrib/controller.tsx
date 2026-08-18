@@ -73,6 +73,8 @@ import {
   WorkspaceTabMenu
 } from '../chat/session-tile'
 import { HudShell } from '../hud/hud-shell'
+import { NotchShell } from '@/fool/notch/notch-shell'
+import { isNotchWindow } from '@/fool/notch/window'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
 import { $workspaceIsPage } from '../routes'
 import { ShellContextMenu } from '../shell/shell-context-menu'
@@ -713,6 +715,19 @@ export function ContribController() {
   // sessions, streams, submit) mounts identically, and only the shell around
   // the chat surface differs. Branching here rather than at the window entry
   // is what keeps the HUD's composer the real composer.
+  // FOOL-SEAM: notch-route
+  // Notch, HUD ile AYNI gerekcelerle burada dalliyor: cerceve disindaki her sey
+  // (ag gecidi, oturumlar, akislar, gonderim) ayni sekilde monte olmali ki
+  // notch'tan gonderilen ses gercek oturuma dussun. Pencere girisinde
+  // dallanmak bunu koparirdi.
+  if (isNotchWindow()) {
+    return (
+      <ContribWiring>
+        <NotchShell />
+      </ContribWiring>
+    )
+  }
+
   if (isHudWindow()) {
     return (
       <ContribWiring>

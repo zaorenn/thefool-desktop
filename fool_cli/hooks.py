@@ -1,11 +1,11 @@
-"""hermes hooks — inspect and manage shell-script hooks.
+"""fool hooks — inspect and manage shell-script hooks.
 
 Usage::
 
-    hermes hooks list
-    hermes hooks test <event> [--for-tool X] [--payload-file F]
-    hermes hooks revoke <command>
-    hermes hooks doctor
+    fool hooks list
+    fool hooks test <event> [--for-tool X] [--payload-file F]
+    fool hooks revoke <command>
+    fool hooks doctor
 
 Consent records live under ``~/.hermes/shell-hooks-allowlist.json`` and
 hook definitions come from the ``hooks:`` block in ``~/.hermes/config.yaml``
@@ -28,7 +28,7 @@ def hooks_command(args) -> None:
     sub = getattr(args, "hooks_action", None)
 
     if not sub:
-        print("Usage: hermes hooks {list|test|revoke|doctor}")
+        print("Usage: fool hooks {list|test|revoke|doctor}")
         print("Run 'fool hooks --help' for details.")
         return
 

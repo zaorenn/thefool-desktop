@@ -662,7 +662,7 @@ def _apply_external_secret_sources(home_path: Path) -> None:
     # A config with no enabled sources costs one dict scan; a config with
     # enabled sources pays the crypto load exactly once, on demand.
     # NOTE: only keys that smell like a real secret source trigger the import —
-    # a generic dict entry must not force crypto load on every hermes launch.
+    # a generic dict entry must not force crypto load on every fool launch.
     # We whitelist by *shape* (source dict with enabled flag) rather than
     # hardcoding names, so plugin/test sources pass through unknown keys.
     any_enabled = any(

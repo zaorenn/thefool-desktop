@@ -101,7 +101,7 @@ def _media_caption_split(text, media_files, *, max_caption_len):
     tool / cron) strips the ``MEDIA:`` tag and leaves the remaining prose as
     ``text``; historically each platform sent that ``text`` as a *separate*
     message before an uncaptioned media bubble, splitting the reported case
-    ``hermes send --to whatsapp "MEDIA:/x.png This Caption"`` into two parts.
+    ``fool send --to whatsapp "MEDIA:/x.png This Caption"`` into two parts.
 
     Returns ``(caption, body_text)``:
 

@@ -1,10 +1,10 @@
-"""hermes webhook — manage dynamic webhook subscriptions from the CLI.
+"""fool webhook — manage dynamic webhook subscriptions from the CLI.
 
 Usage:
-    hermes webhook subscribe <name> [options]
-    hermes webhook list
-    hermes webhook remove <name>
-    hermes webhook test <name> [--payload '{"key": "value"}']
+    fool webhook subscribe <name> [options]
+    fool webhook list
+    fool webhook remove <name>
+    fool webhook test <name> [--payload '{"key": "value"}']
 
 Subscriptions persist to ~/.hermes/webhook_subscriptions.json and are
 hot-reloaded by the webhook adapter without a gateway restart.
@@ -142,7 +142,7 @@ def webhook_command(args):
     sub = getattr(args, "webhook_action", None)
 
     if not sub:
-        print("Usage: hermes webhook {subscribe|list|remove|test}")
+        print("Usage: fool webhook {subscribe|list|remove|test}")
         print("Run 'fool webhook --help' for details.")
         return
 
@@ -228,7 +228,7 @@ def _cmd_list(args):
     subs = _load_subscriptions()
     if not subs:
         print("  No dynamic webhook subscriptions.")
-        print("  Create one with: hermes webhook subscribe <name>")
+        print("  Create one with: fool webhook subscribe <name>")
         return
 
     base_url = _get_webhook_base_url()
@@ -278,7 +278,7 @@ def _cmd_test(args):
     base_url = _get_webhook_base_url()
     url = f"{base_url}/webhooks/{name}"
 
-    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from hermes webhook test"}'
+    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from fool webhook test"}'
 
     import hmac
     import hashlib

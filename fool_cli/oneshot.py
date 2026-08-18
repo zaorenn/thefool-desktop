@@ -328,7 +328,7 @@ def _run_agent(
 ) -> tuple[str, dict]:
     """Build an AIAgent exactly like a normal CLI chat turn would, then
     run a single conversation.  Returns ``(final_response, run_result)``."""
-    # Imports are local so they don't run when hermes is invoked for
+    # Imports are local so they don't run when fool is invoked for
     # other commands (keeps top-level CLI startup cheap).
     from fool_cli.config import load_config
     from fool_cli.models import detect_provider_for_model

@@ -307,7 +307,7 @@ def _iter_external_files(base: Path) -> List[Path]:
 
 
 def _should_exclude(rel_path: Path) -> bool:
-    """Return True if *rel_path* (relative to hermes root) should be skipped."""
+    """Return True if *rel_path* (relative to fool root) should be skipped."""
     parts = rel_path.parts
 
     for part in parts:
@@ -838,7 +838,7 @@ def _run_backup_locked(args, hermes_root: Path) -> None:
             print(f"  ... and {len(errors) - 10} more")
 
     if not errors:
-        print(f"\nRestore with: hermes import {out_path.name}")
+        print(f"\nRestore with: fool import {out_path.name}")
 
 
 # ---------------------------------------------------------------------------
@@ -854,7 +854,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
     if not names:
         return False, "zip archive is empty"
 
-    # Look for telltale files that a hermes home would have
+    # Look for telltale files that a fool home would have
     markers = {"config.yaml", ".env", "state.db"}
     found = set()
     for n in names:
@@ -889,7 +889,7 @@ def _detect_prefix(zf: zipfile.ZipFile) -> str:
     first_parts = {p[0] for p in parts_list if len(p) > 1}
     if len(first_parts) == 1:
         prefix = first_parts.pop()
-        # Only strip if it looks like a hermes dir name
+        # Only strip if it looks like a fool dir name
         if prefix in {".hermes", "hermes"}:
             return prefix + "/"
 
@@ -947,7 +947,7 @@ def _extract_member_atomically(
     Permission bits *and* ownership are carried across the replace so routing
     through mkstemp does not change the file the caller would otherwise have
     produced.  ``os.replace`` swaps in a temp file owned by the *writing* user,
-    so without the chown a ``sudo hermes import`` would silently re-own every
+    so without the chown a ``sudo fool import`` would silently re-own every
     restored file to root — on the disaster-recovery path, and on exactly the
     Docker/NAS installs ``utils._restore_file_owner`` documents.  Both concerns
     delegate to the shared ``utils`` helpers rather than being re-derived here.
@@ -1486,7 +1486,7 @@ def _create_quick_snapshot_locked(
         )
         print(
             "  ⚠ If sessions disappear after update, check "
-            f"{root} and run: hermes snapshot list"
+            f"{root} and run: fool snapshot list"
         )
         logger.error(
             "Quick snapshot failed to capture DB file(s): %s",
@@ -2055,7 +2055,7 @@ def create_pre_migration_backup(
 
     Shares implementation with :func:`create_pre_update_backup` via
     ``_write_full_zip_backup`` — same exclusions, same SQLite safe-copy,
-    restorable with ``hermes import <archive>``.  Writes to
+    restorable with ``fool import <archive>``.  Writes to
     ``<FOOL_HOME>/backups/pre-migration-<timestamp>.zip`` and auto-prunes
     old pre-migration backups.
 

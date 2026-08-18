@@ -1,4 +1,4 @@
-"""CLI handlers for ``hermes secrets onepassword ...``.
+"""CLI handlers for ``fool secrets onepassword ...``.
 
 Subcommands:
     setup    — verify the op CLI, set account / token env var, enable
@@ -187,10 +187,10 @@ def cmd_setup(args: argparse.Namespace) -> int:
     console.print()
     console.print("[green]✓ 1Password secret source is enabled.[/green]")
     console.print(
-        "  Map credentials:  [cyan]hermes secrets onepassword set OPENAI_API_KEY "
+        "  Map credentials:  [cyan]fool secrets onepassword set OPENAI_API_KEY "
         "\"op://Private/OpenAI/api key\"[/cyan]\n"
-        "  Preview:          [cyan]hermes secrets onepassword sync[/cyan]\n"
-        "  Status:           [cyan]hermes secrets onepassword status[/cyan]"
+        "  Preview:          [cyan]fool secrets onepassword sync[/cyan]\n"
+        "  Status:           [cyan]fool secrets onepassword status[/cyan]"
     )
     return 0
 
@@ -235,7 +235,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         console.print(ref_table)
 
     if not enabled:
-        console.print("\n  Run [cyan]hermes secrets onepassword setup[/cyan] to enable.")
+        console.print("\n  Run [cyan]fool secrets onepassword setup[/cyan] to enable.")
         return 0
     if binary and not token_set:
         who = _op_whoami(binary, account)
@@ -249,7 +249,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     if not references:
         console.print(
             "\n  [yellow]No references mapped yet.[/yellow]  Add one: "
-            "[cyan]hermes secrets onepassword set ENV_VAR \"op://…\"[/cyan]"
+            "[cyan]fool secrets onepassword set ENV_VAR \"op://…\"[/cyan]"
         )
     return 0
 
@@ -280,7 +280,7 @@ def cmd_set(args: argparse.Namespace) -> int:
     if not op_cfg.get("enabled"):
         console.print(
             "  [yellow]Note: the integration is disabled — run "
-            "[cyan]hermes secrets onepassword setup[/cyan] to turn it on.[/yellow]"
+            "[cyan]fool secrets onepassword setup[/cyan] to turn it on.[/yellow]"
         )
     return 0
 
@@ -376,7 +376,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
     if not references:
         console.print(
             "[yellow]No op:// references configured.  Add one with "
-            "`hermes secrets onepassword set ENV_VAR \"op://…\"`.[/yellow]"
+            "`fool secrets onepassword set ENV_VAR \"op://…\"`.[/yellow]"
         )
         return 0
 
@@ -466,7 +466,7 @@ def cmd_disable(args: argparse.Namespace) -> int:
         "[green]Disabled.[/green]  1Password references will NOT be resolved on the "
         "next Hermes invocation.\n"
         "  Your reference mappings are left in config.yaml — remove them with "
-        "[cyan]hermes secrets onepassword remove ENV_VAR[/cyan] if you no longer "
+        "[cyan]fool secrets onepassword remove ENV_VAR[/cyan] if you no longer "
         "need them."
     )
     return 0

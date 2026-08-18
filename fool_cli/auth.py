@@ -5280,7 +5280,7 @@ def _nous_device_auth_timeout_message(portal_base_url: str) -> str:
         "  Portal sign-in is required before the device code can be approved.\n"
         "  If the browser showed a CAPTCHA / 'You did not pass CAPTCHA' error,\n"
         "  finish signing in at the Portal in a normal browser tab, then retry:\n"
-        "    hermes portal\n"
+        "    fool portal\n"
         f"  Portal login: {portal}/login"
     )
 

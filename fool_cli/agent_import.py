@@ -1,11 +1,11 @@
-"""hermes import-agent — import Claude Code / Codex CLI setups into Hermes.
+"""fool import-agent — import Claude Code / Codex CLI setups into Hermes.
 
 Usage:
-    hermes import-agent                       # auto-detect ~/.claude or ~/.codex
-    hermes import-agent claude-code           # import from ~/.claude
-    hermes import-agent codex                 # import from ~/.codex
-    hermes import-agent claude-code --dry-run # preview only, no changes
-    hermes import-agent codex --source /path/to/.codex
+    fool import-agent                       # auto-detect ~/.claude or ~/.codex
+    fool import-agent claude-code           # import from ~/.claude
+    fool import-agent codex                 # import from ~/.codex
+    fool import-agent claude-code --dry-run # preview only, no changes
+    fool import-agent codex --source /path/to/.codex
 
 Follows the OpenClaw migration pattern (``fool claw migrate`` /
 ``optional-skills/migration/openclaw-migration/scripts/openclaw_to_hermes.py``):
@@ -867,12 +867,12 @@ def import_agent_command(args) -> None:
         if not detected:
             print()
             print_error("No supported agent setup found (~/.claude or ~/.codex).")
-            print_info("Specify one explicitly: hermes import-agent claude-code --source /path")
+            print_info("Specify one explicitly: fool import-agent claude-code --source /path")
             return
         if len(detected) > 1 and explicit_source is None:
             print()
             print_info("Multiple agent setups detected: " + ", ".join(detected))
-            print_info("Pick one: hermes import-agent claude-code   or   hermes import-agent codex")
+            print_info("Pick one: fool import-agent claude-code   or   fool import-agent codex")
             return
         agent = detected[0]
 
@@ -886,7 +886,7 @@ def import_agent_command(args) -> None:
     if not source_dir.is_dir():
         print()
         print_error(f"Agent directory not found: {source_dir}")
-        print_info("Specify a custom path: hermes import-agent "
+        print_info("Specify a custom path: fool import-agent "
                     f"{agent} --source /path/to/{_AGENT_DEFAULT_DIRS[agent]}")
         return
 
@@ -939,7 +939,7 @@ def import_agent_command(args) -> None:
     if not auto_yes:
         if not sys.stdin.isatty():
             print_info("Non-interactive session — preview only.")
-            print_info(f"To execute, re-run with: hermes import-agent {agent} --yes")
+            print_info(f"To execute, re-run with: fool import-agent {agent} --yes")
             return
         if not prompt_yes_no("Proceed with import?", default=True):
             print_info("Import cancelled.")

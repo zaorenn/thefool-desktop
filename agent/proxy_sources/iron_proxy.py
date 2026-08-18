@@ -713,7 +713,7 @@ def iron_proxy_version(binary: Path) -> str:
     except (OSError, subprocess.TimeoutExpired):
         return ""
     out = (res.stdout or res.stderr or "").strip()
-    # Don't cache empty output — that would poison ``hermes egress
+    # Don't cache empty output — that would poison ``fool egress
     # status`` for the lifetime of the process if the first probe hit a
     # corrupt binary or a flag-rename in a newer upstream.  Re-probe on
     # the next call instead.
@@ -767,7 +767,7 @@ def ensure_ca_cert(*, force: bool = False) -> Tuple[Path, Path]:
                 "openssl", "req", "-x509", "-new", "-nodes",
                 "-key", str(tmp_key),
                 "-sha256", "-days", "3650",
-                "-subj", "/CN=hermes iron-proxy CA",
+                "-subj", "/CN=fool iron-proxy CA",
                 "-addext", "basicConstraints=critical,CA:TRUE",
                 "-addext", "keyUsage=critical,keyCertSign",
                 "-out", str(tmp_crt),
@@ -1363,7 +1363,7 @@ def write_proxy_config(config: Dict) -> Path:
     """
 
     try:
-        import yaml  # PyYAML is already a Hermes dep
+        import yaml  # PyYAML is already a Fool dep
     except ImportError as exc:
         raise RuntimeError(
             "PyYAML is required to write the iron-proxy config but is not "

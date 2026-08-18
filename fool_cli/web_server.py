@@ -3946,7 +3946,7 @@ async def get_system_stats():
 
     OS / Python / host identity from stdlib; CPU / memory / disk / uptime from
     psutil when available, with graceful degradation when it isn't.  Read-only
-    and non-sensitive (no env values, no paths beyond the hermes home root).
+    and non-sensitive (no env values, no paths beyond the fool home root).
     """
     import platform as _platform
 
@@ -6011,7 +6011,7 @@ def _install_memory_provider_pip_dependencies(dependencies: List[str]) -> List[D
     # Route through the lazy-install pipeline (tools.lazy_deps.install_specs)
     # instead of shelling out to pip against sys.executable directly. That
     # pipeline is environment-aware: on hosted/immutable images the agent venv
-    # under /opt/hermes is sealed read-only, and installs must be redirected
+    # under /opt/fool is sealed read-only, and installs must be redirected
     # to the writable durable target on the data volume
     # (FOOL_LAZY_INSTALL_TARGET, e.g. /opt/data/lazy-packages) — the same
     # path every lazy backend already uses. A direct `pip install --python
@@ -10739,7 +10739,7 @@ _oauth_sessions: Dict[str, Dict[str, Any]] = {}
 _oauth_sessions_lock = threading.Lock()
 
 # Import OAuth constants from canonical source instead of duplicating.
-# Guarded so hermes web still starts if anthropic_adapter is unavailable;
+# Guarded so fool web still starts if anthropic_adapter is unavailable;
 # Phase 2 endpoints will return 501 in that case.
 try:
     from agent.anthropic_adapter import (
@@ -17720,7 +17720,7 @@ def _discover_dashboard_plugins() -> list:
     # #87197: when the process itself is profile-scoped (``--profile <name>``
     # sets ``FOOL_HOME=<root>/profiles/<name>``), the launch home is the
     # profile directory, which has no ``plugins/`` — user plugins are
-    # installed in the hermes root (``~/.hermes/plugins``). Scan the default
+    # installed in the fool root (``~/.hermes/plugins``). Scan the default
     # root as well (``get_default_hermes_root()`` unwraps
     # ``<root>/profiles/<name>`` → ``<root>`` and returns a custom
     # ``FOOL_HOME`` unchanged when it *is* the root), mirroring how

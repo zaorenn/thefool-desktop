@@ -809,7 +809,7 @@ def redact_sensitive_text(
 
     Performance: each regex pattern is gated behind a cheap substring
     pre-check (e.g. ``"=" in text`` for ENV assignments, ``"://" in text``
-    for URLs, ``"eyJ" in text`` for JWTs). On a typical hermes log line
+    for URLs, ``"eyJ" in text`` for JWTs). On a typical fool log line
     (no secrets) this drops the 13-pattern scan from ~5.6us to ~1.8us per
     record (-68%). The pre-checks are conservative — false positives
     still run the full regex, which then doesn't match. False negatives

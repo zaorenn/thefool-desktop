@@ -213,7 +213,7 @@ def _check_metadata_block(frontmatter: Dict[str, Any]) -> List[LintFinding]:
                 )
             )
     author = str(frontmatter.get("author", ""))
-    if author and author.strip().lower() in ("hermes", "agent", "hermes agent") and (
+    if author and author.strip().lower() in ("hermes", "agent", "fool agent") and (
         author != "Hermes Agent"
     ):
         findings.append(

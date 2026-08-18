@@ -1649,7 +1649,7 @@ BROWSER_SESSION_INACTIVITY_TIMEOUT = _get_session_inactivity_timeout()
 # over 10 days in a single 18-day-uptime process, pinning ~5 CPU cores.
 BROWSER_ORPHAN_REAP_INTERVAL = 300  # seconds
 
-# Hard ceiling for a daemon whose owning hermes process is still alive but
+# Hard ceiling for a daemon whose owning fool process is still alive but
 # which has fallen out of that process's in-memory session tracking.  The
 # owner-alive check alone makes such a daemon immortal: in-memory tracking is
 # lost on any exception path, yet the owner PID stays up, so the reaper skips
@@ -1711,7 +1711,7 @@ def _emergency_cleanup_all_sessions():
     Called on process exit or interrupt to prevent orphaned sessions.
 
     Also runs the orphan reaper to clean up daemons left behind by previously
-    crashed hermes processes — this way every clean hermes exit sweeps
+    crashed fool processes — this way every clean fool exit sweeps
     accumulated orphans, not just ones that actively used the browser tool.
     """
     global _cleanup_done
@@ -1734,9 +1734,9 @@ def _emergency_cleanup_all_sessions():
                 _session_last_activity.clear()
                 _recording_sessions.clear()
 
-    # Sweep orphans from other crashed hermes processes.  Safe even if we
+    # Sweep orphans from other crashed fool processes.  Safe even if we
     # never used the browser — uses owner_pid liveness to avoid reaping
-    # daemons owned by other live hermes processes.
+    # daemons owned by other live fool processes.
     try:
         _reap_orphaned_browser_sessions()
     except Exception as e:
@@ -1788,7 +1788,7 @@ def _write_owner_pid(socket_dir: str, session_name: str) -> None:
     """Record the current hermes PID as the owner of a browser socket dir.
 
     Written atomically to ``<socket_dir>/<session_name>.owner_pid`` so the
-    orphan reaper can distinguish daemons owned by a live hermes process
+    orphan reaper can distinguish daemons owned by a live fool process
     (don't reap) from daemons whose owner crashed (reap).  Best-effort —
     an OSError here just falls back to the legacy ``tracked_names``
     heuristic in the reaper.
@@ -1894,7 +1894,7 @@ def _socket_dir_idle_seconds(socket_dir: str) -> Optional[float]:
     Every browser command writes ``_stdout_<cmd>`` / ``_stderr_<cmd>`` temp
     files into the session's socket dir, so the newest mtime under that dir is
     a last-activity marker that — unlike ``_session_last_activity`` — survives
-    hermes restarts and does not depend on in-memory bookkeeping surviving an
+    fool restarts and does not depend on in-memory bookkeeping surviving an
     exception path.
 
     The directory's own mtime is not sufficient: command names repeat, so
@@ -1931,13 +1931,13 @@ def _reap_orphaned_browser_sessions():
 
     This function scans the tmp directory for ``agent-browser-*`` socket dirs
     left behind by previous runs, reads the daemon PID files, and kills any
-    daemons whose owning hermes process is no longer alive.
+    daemons whose owning fool process is no longer alive.
 
     Ownership detection priority:
       1. ``<session>.owner_pid`` file (written by current code) — if the
          referenced hermes PID is alive, leave the daemon alone regardless
          of whether it's in *this* process's ``_active_sessions``.  This is
-         cross-process safe: two concurrent hermes instances won't reap each
+         cross-process safe: two concurrent fool instances won't reap each
          other's daemons.
       2. Fallback for daemons that predate owner_pid: check
          ``_active_sessions`` in the current process.  If not tracked here,
@@ -1991,7 +1991,7 @@ def _reap_orphaned_browser_sessions():
 
         if owner_alive is True:
             # Owner is alive.  Normally that means the session belongs to a
-            # live hermes process and must not be touched — but "owner alive"
+            # live fool process and must not be touched — but "owner alive"
             # alone made leaked daemons immortal: if the owner lost its
             # in-memory tracking (any exception path between spawn and
             # registration), nothing would ever reap the daemon, and the

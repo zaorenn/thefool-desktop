@@ -67,6 +67,10 @@ SURFACES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Kurulum betikleri", ("scripts/install.sh", "scripts/install.ps1")),
     ("Ajan kimliği ve promptlar", ("agent/prompt_builder.py", "agent/system_prompt.py")),
     ("CLI banner ve sürüm", ("fool_cli/banner.py", "fool_cli/_startup_fast.py")),
+    # CLI'nin KULLANICIYA YAZDIRDIGI komutlar. Burada "hermes update" yazmasi
+    # kozmetik degil: kullanici (ya da ajan) o komutu gercekten calistirip
+    # "command not found" aliyor -- 433 gecis tam buradan kacmisti.
+    ("CLI komut metinleri", ("fool_cli/**/*.py", "tools/**/*.py", "agent/**/*.py")),
     # Web panosu BILESENLERI. i18n katalogu donusumden geciyor ama bilesen
     # icindeki sabit metinler gecmiyor -- dashboard basligi ve logotype tam
     # buradan kacmisti.
@@ -82,6 +86,11 @@ SURFACES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: (``'Hermes update'``). Sınır olmadan tarayıcı yüzlerce sembol adını
 #: metin sanıyordu.
 _BRAND = re.compile(r"\b(Hermes|HERMES|Nous Research)\b")
+
+#: Kullaniciya YAZDIRILAN komut: ``hermes`` ardindan bir alt komut.
+#: Tanimlayicilardan ayirt eden sey BOSLUK -- ``hermes_cli`` ve
+#: ``hermes-agent`` bu desene uymaz.
+_COMMAND = re.compile(r"\bhermes (?=[a-z][a-z0-9-]*)")
 
 #: İÇ SÖZLEŞME — değişmemeli, bulgu sayılmaz.
 _CONTRACT: tuple[re.Pattern[str], ...] = (
@@ -140,8 +149,41 @@ def scan() -> list[Finding]:
             except OSError:
                 continue
 
+            # Docstring'ler KULLANICIYA GITMEZ; gelistirici notudur. Yorum
+            # satirlariyla ayni gerekce, ama uc tirnak birden cok satira
+            # yayildigi icin durum takibi gerekiyor. Bu olmadan tarayici 226
+            # yanlis pozitif uretiyor ve gercek bulgular arasinda kayboluyordu.
+            in_docstring = False
+
             for i, raw in enumerate(text.splitlines(), 1):
-                if _COMMENT.match(raw) or not _BRAND.search(raw):
+                fences = raw.count('\"\"\"') + raw.count("'''")
+
+                if in_docstring:
+                    if fences:
+                        in_docstring = False
+                    continue
+
+                if fences == 1:
+                    in_docstring = True
+                    continue
+
+                if fences >= 2:
+                    # Tek satirlik docstring -- basi ve sonu ayni satirda.
+                    continue
+
+                if _COMMENT.match(raw):
+                    continue
+
+                # Komut metni markadan BAGIMSIZ bir bulgu turu: ``hermes push``
+                # icinde "Hermes" gecmiyor ama calistirildiginda hata veriyor.
+                if _COMMAND.search(raw):
+                    key = (rel, i)
+                    if key not in seen:
+                        seen.add(key)
+                        findings.append(Finding(surface, rel, i, raw.strip()[:150]))
+                    continue
+
+                if not _BRAND.search(raw):
                     continue
                 # Sözleşme parçalarını sil, kalanda marka ara.
                 residue = raw

@@ -134,7 +134,7 @@ def cmd_moa(args) -> None:
         moa = normalize_moa_config(cfg.get("moa") if isinstance(cfg, dict) else {})
         preset_name = (getattr(args, "name", None) or "").strip()
         if not preset_name:
-            raise SystemExit("Usage: hermes moa delete <name>")
+            raise SystemExit("Usage: fool moa delete <name>")
         if preset_name not in moa["presets"]:
             raise SystemExit(f"Unknown MoA preset: {preset_name}")
         if len(moa["presets"]) <= 1:

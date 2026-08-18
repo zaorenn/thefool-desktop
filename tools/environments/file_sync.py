@@ -55,7 +55,7 @@ def iter_sync_files(container_base: str = "/root/.hermes") -> list[tuple[str, st
 
     Combines credentials, skills, and cache into a single flat list of
     (host_path, remote_path) pairs.  Credential paths are remapped from
-    the hardcoded /root/.hermes to *container_base* because the remote
+    the hardcoded /root/.fool to *container_base* because the remote
     user's home may differ (e.g. /home/daytona, /home/user).
     """
     # Late import: credential_files imports agent modules that create

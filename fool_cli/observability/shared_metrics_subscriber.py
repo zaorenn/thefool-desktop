@@ -95,7 +95,7 @@ class SharedMetricsSubscriber:
                     )
             except Exception:
                 logger.warning(
-                    "Unable to persist the Hermes shared metric: %s",
+                    "Unable to persist the Fool shared metric: %s",
                     metric_name,
                     exc_info=True,
                 )

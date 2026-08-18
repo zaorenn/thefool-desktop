@@ -106,7 +106,7 @@ def build_parser(
 
 
 def projects_command(args: argparse.Namespace) -> int:
-    """Entry point from ``hermes project …`` argparse dispatch."""
+    """Entry point from ``fool project …`` argparse dispatch."""
     action = getattr(args, "project_action", None)
     if not action:
         parser = getattr(args, "_project_parser", None)
@@ -114,7 +114,7 @@ def projects_command(args: argparse.Namespace) -> int:
             parser.print_help()
         else:
             print(
-                "usage: hermes project <action> [options]\n"
+                "usage: fool project <action> [options]\n"
                 "Run 'fool project --help' for the full list.",
                 file=sys.stderr,
             )
@@ -223,7 +223,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
             conn, include_archived=getattr(args, "include_archived", False)
         )
     if not projs:
-        print("No projects yet. Create one with `hermes project create <name>`.")
+        print("No projects yet. Create one with `fool project create <name>`.")
         return 0
     for p in projs:
         marker = "*" if p.id == active else " "

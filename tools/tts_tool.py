@@ -1924,7 +1924,7 @@ def _generate_openai_tts(
 # DeepInfra serves TTS over an OpenAI-compatible /v1/openai/audio/speech
 # endpoint. Models are discovered live via the shared catalog helper
 # (filtered by the ``tts`` surface tag) — no hardcoded model ids in this
-# file, so retired models disappear from hermes the next time the
+# file, so retired models disappear from fool the next time the
 # catalog is fetched without a patch.
 
 

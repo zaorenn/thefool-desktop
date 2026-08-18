@@ -565,7 +565,7 @@ def _complete_pending_core_install(root: Path, core_marker: Path) -> bool:
                 file=sys.stderr,
             )
             print(
-                "  The next launch will retry; hermes will keep working from "
+                "  The next launch will retry; fool will keep working from "
                 "the current venv in the meantime.",
                 file=sys.stderr,
             )

@@ -15,7 +15,7 @@ def build_login_parser(subparsers, *, cmd_login: Callable) -> None:
     ``fool login`` was removed in favor of ``fool auth`` / ``fool model``
     (the runtime handler in ``fool_cli/auth.py::login_command`` just prints a
     deprecation message and exits).  The subparser is kept registered so that
-    old scripts/aliases invoking ``hermes login [--flags]`` still receive the
+    old scripts/aliases invoking ``fool login [--flags]`` still receive the
     actionable deprecation message rather than an argparse ``invalid choice:
     'login'`` error — but:
 

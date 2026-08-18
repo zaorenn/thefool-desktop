@@ -679,7 +679,7 @@ def _maybe_auto_propose_org_edit(name: str, skill_path: Path) -> Optional[str]:
             return (
                 f"This skill is shared by your organisation. Your edit is "
                 f"saved locally and will not be overwritten by org updates. "
-                f"Run `hermes sync propose {name}` to share it back."
+                f"Run `fool sync propose {name}` to share it back."
             )
         result = ssc.propose_skill(name)
         if result.get("proposal_pending"):
@@ -692,7 +692,7 @@ def _maybe_auto_propose_org_edit(name: str, skill_path: Path) -> Optional[str]:
         logger.debug("auto-propose skipped for %s: %s", name, e)
         return (
             f"Edit saved locally. Could not submit it to your organisation "
-            f"right now — run `hermes sync propose {name}` to retry."
+            f"right now — run `fool sync propose {name}` to retry."
         )
 
 
@@ -728,7 +728,7 @@ def _org_mirror_write_guard(name: str, skill_path: Path, action: str) -> Optiona
                     "organisation, so a local delete would just come back on "
                     "the next sync. Ask an org admin to remove it for "
                     "everyone. (Editing it IS allowed — your changes are kept "
-                    "and can be proposed back with `hermes sync propose "
+                    "and can be proposed back with `fool sync propose "
                     f"{name}`.)"
                 ),
             }

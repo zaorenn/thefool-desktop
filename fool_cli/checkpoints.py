@@ -3,18 +3,18 @@
 Gives users direct visibility and control over the filesystem checkpoint
 store at ``~/.hermes/checkpoints/``.  Actions:
 
-    hermes checkpoints               # same as `status`
-    hermes checkpoints status        # total size, project count, breakdown
-    hermes checkpoints list          # per-project checkpoint counts + workdir
-    hermes checkpoints prune [opts]  # force a sweep (ignores the 24h marker)
-    hermes checkpoints clear [-f]    # nuke the entire base (asks first)
-    hermes checkpoints clear-legacy  # delete just the legacy-* archives
+    fool checkpoints               # same as `status`
+    fool checkpoints status        # total size, project count, breakdown
+    fool checkpoints list          # per-project checkpoint counts + workdir
+    fool checkpoints prune [opts]  # force a sweep (ignores the 24h marker)
+    fool checkpoints clear [-f]    # nuke the entire base (asks first)
+    fool checkpoints clear-legacy  # delete just the legacy-* archives
 
 Examples::
 
-    hermes checkpoints
-    hermes checkpoints prune --retention-days 3 --max-size-mb 200
-    hermes checkpoints clear -f
+    fool checkpoints
+    fool checkpoints prune --retention-days 3 --max-size-mb 200
+    fool checkpoints clear -f
 
 None of these require the agent to be running.  Safe to call any time.
 """
@@ -89,7 +89,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         for arch in sorted(legacy, key=lambda a: a.get("mtime", 0), reverse=True):
             print(f"  {arch['name']:<40}  {_fmt_bytes(arch['size_bytes']):>10}")
         print()
-        print("Clear with: hermes checkpoints clear-legacy")
+        print("Clear with: fool checkpoints clear-legacy")
     return 0
 
 

@@ -1,0 +1,110 @@
+/**
+ * Bas-konuş tuş mantığı — saf, DOM'suz, sınanabilir.
+ *
+ * Neden ayrı ve saf
+ * -----------------
+ * Bu mantığın kaçırdığı tek bir ``keyup`` mikrofonu sonsuza kadar açık bırakır:
+ * kullanıcı tuşu bıraktığını sanır, notch dinlemeye devam eder ve kaydedilen
+ * her şey bir sonraki mesaja karışır. Sessiz ve kötü bir hata. Bu yüzden karar
+ * verme React'ten ayrıldı ve doğrudan sınanıyor.
+ *
+ * Kaçırılan keyup'ın üç gerçek yolu var ve üçü de burada karşılanıyor:
+ *
+ * 1. **Pencere odağı kaybediyor.** Alt-Tab basılıyken tuş bırakılırsa keyup
+ *    başka uygulamaya gider; bize hiç gelmez. ``blur`` bu yüzden bırakma
+ *    sayılıyor.
+ * 2. **Tuş tekrarı.** Basılı tutulan tuş art arda ``keydown`` üretir; her biri
+ *    yeni bir kayıt başlatsaydı ilk hece kaybolurdu. Tekrarlar yutuluyor.
+ * 3. **Değiştirici tuş bırakma sırası.** Sağ Ctrl bırakıldığında bazı
+ *    düzenlerde ``key`` alanı farklı gelebiliyor; eşleştirme ``code`` üzerinden
+ *    yapılıyor (``ControlRight``), çünkü o fiziksel tuşu gösterir ve klavye
+ *    düzeninden etkilenmez.
+ */
+
+/** Bas-konuş için varsayılan fiziksel tuş: sağ Ctrl. */
+export const PUSH_TO_TALK_CODE = 'ControlRight'
+
+/** Bu süreden kısa basışlar yanlışlıkla dokunma sayılır ve gönderilmez. */
+export const MIN_HOLD_MS = 180
+
+export type PushToTalkEvent =
+  | { type: 'start' }
+  /** Tuş yeterince uzun tutuldu — kaydı gönder. */
+  | { type: 'commit'; heldMs: number }
+  /** Çok kısa basıldı ya da odak kaybedildi — kaydı at, gönderme. */
+  | { type: 'cancel'; reason: 'too-short' | 'blur' }
+
+export interface PushToTalkState {
+  heldSince: null | number
+}
+
+export function createPushToTalkState(): PushToTalkState {
+  return { heldSince: null }
+}
+
+export interface KeyLike {
+  code: string
+  /** Tuş tekrarı mı? Basılı tutuş art arda keydown üretir. */
+  repeat?: boolean
+}
+
+/**
+ * Tuşa basıldı.
+ *
+ * Zaten basılıysa ya da tekrar ise ``null`` döner — çağıran hiçbir şey yapmaz.
+ */
+export function onKeyDown(
+  state: PushToTalkState,
+  event: KeyLike,
+  now: number,
+  code: string = PUSH_TO_TALK_CODE
+): null | PushToTalkEvent {
+  if (event.code !== code || event.repeat) {
+    return null
+  }
+
+  if (state.heldSince !== null) {
+    // Zaten basılı. İkinci bir 'start' kaydı sıfırlar ve ilk heceyi yer.
+    return null
+  }
+
+  state.heldSince = now
+
+  return { type: 'start' }
+}
+
+/** Tuş bırakıldı. Kısa basış gönderilmez — yanlışlıkla dokunma. */
+export function onKeyUp(
+  state: PushToTalkState,
+  event: KeyLike,
+  now: number,
+  code: string = PUSH_TO_TALK_CODE
+): null | PushToTalkEvent {
+  if (event.code !== code || state.heldSince === null) {
+    return null
+  }
+
+  const heldMs = now - state.heldSince
+  state.heldSince = null
+
+  return heldMs < MIN_HOLD_MS ? { type: 'cancel', reason: 'too-short' } : { type: 'commit', heldMs }
+}
+
+/**
+ * Pencere odağı kaybetti.
+ *
+ * Tuş hâlâ basılı olabilir ama ``keyup`` artık BİZE gelmeyecek — o olay odağı
+ * alan uygulamaya gider. Basılı sayılmaya devam etmek mikrofonu sonsuza kadar
+ * açık bırakırdı, o yüzden bu bir iptal.
+ */
+export function onBlur(state: PushToTalkState): null | PushToTalkEvent {
+  if (state.heldSince === null) {
+    return null
+  }
+
+  state.heldSince = null
+
+  return { type: 'cancel', reason: 'blur' }
+}
+
+export const isHolding = (state: PushToTalkState): boolean => state.heldSince !== null

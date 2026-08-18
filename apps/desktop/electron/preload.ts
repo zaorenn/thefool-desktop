@@ -58,6 +58,19 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   // HUD mode: the chrome-free floating chat. A full app renderer (own gateway)
   // sized as a floating bar, so it mounts the real composer. Main owns the
   // window; `onChanged` keeps every window's toggle truthful.
+  // FOOL-SEAM: notch-ipc
+  notch: {
+    open: () => ipcRenderer.invoke('fool:notch:open'),
+    close: () => ipcRenderer.invoke('fool:notch:close'),
+    toggle: () => ipcRenderer.invoke('fool:notch:toggle'),
+    onListenRequest: (callback: () => void) => {
+      const listener = () => callback()
+
+      ipcRenderer.on('fool:notch:listen', listener)
+
+      return () => ipcRenderer.removeListener('fool:notch:listen', listener)
+    }
+  },
   hud: {
     open: request => ipcRenderer.invoke('fool:hud:open', request),
     close: () => ipcRenderer.invoke('fool:hud:close'),

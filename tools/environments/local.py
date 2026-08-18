@@ -816,7 +816,7 @@ def _find_bash() -> str:
         return candidates[0]
 
     raise RuntimeError(
-        "Git Bash not found. Hermes Agent requires Git for Windows on Windows.\n"
+        "Git Bash not found. Fool Agent requires Git for Windows on Windows.\n"
         "Install it from: https://git-scm.com/download/win\n"
         "Or set FOOL_GIT_BASH_PATH to your bash.exe location."
     )
@@ -904,7 +904,7 @@ def _git_bash_aslr_help(bash: str, details: str = "") -> str:
         'Get-Item "$gitRoot\\bin\\bash.exe", "$gitRoot\\usr\\bin\\*.exe" '
         "-ErrorAction SilentlyContinue | ForEach-Object { "
         "Set-ProcessMitigation -Name $_.FullName -Disable ForceRelocateImages }\n"
-        "Then restart Hermes. If the override is blocked or later re-applied, "
+        "Then restart The Fool. If the override is blocked or later re-applied, "
         "ask your Windows administrator to allow this per-program exception."
     )
 
@@ -1088,7 +1088,7 @@ def _resolve_hermes_bin_dir() -> str | None:
     agent process's PATH plus a static set of system dirs (``_SANE_PATH``).
     When the gateway is launched by something that does NOT source the user's
     shell rc — systemd, a service manager, a desktop launcher, cron — the
-    hermes install dir (``~/.local/bin``, the venv ``bin``/``Scripts``, pipx,
+    fool install dir (``~/.local/bin``, the venv ``bin``/``Scripts``, pipx,
     nix) is absent from that PATH, so plugins shelling out to bare ``hermes``
     via the terminal tool hit ``command not found`` (exit 127) even though
     ``hermes`` works fine in the user's own interactive terminal.
@@ -1139,7 +1139,7 @@ def _resolve_hermes_bin_dir() -> str | None:
 
 
 def _prepend_hermes_bin_dir(existing_path: str) -> str:
-    """Prepend the hermes install dir to ``existing_path`` if it's missing.
+    """Prepend the fool install dir to ``existing_path`` if it's missing.
 
     Cross-platform (uses ``os.pathsep``). First-occurrence wins, so a PATH
     that already contains the dir is returned unchanged. Returns the input
@@ -1318,7 +1318,7 @@ def _make_run_env(env: dict) -> dict:
         # error / exit 127).  No-op off Windows and when a login snapshot is
         # healthy (the snapshot re-exports the full PATH inside the shell).
         new_path = _prepend_git_bash_dirs(new_path)
-        # Ensure the hermes install dir is reachable so plugins can shell out
+        # Ensure the fool install dir is reachable so plugins can shell out
         # to bare ``hermes`` via the terminal tool even when the gateway was
         # launched without it on PATH (systemd, service managers, cron, etc.).
         run_env[path_key] = _prepend_hermes_bin_dir(new_path)
@@ -1617,7 +1617,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
 
     if stripped:
         logger.debug(
-            "Stripped Hermes-owned entries from PYTHONPATH: %s",
+            "Stripped The Fool-owned entries from PYTHONPATH: %s",
             stripped,
         )
 

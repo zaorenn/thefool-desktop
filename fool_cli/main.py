@@ -12,35 +12,35 @@ Usage:
     fool gateway install     # Install gateway service
     fool gateway uninstall   # Uninstall gateway service
     fool setup               # Interactive setup wizard
-    hermes logout              # Clear stored authentication
+    fool logout              # Clear stored authentication
     fool status              # Show status of all components
     fool cron                # Manage cron jobs
     fool cron list           # List cron jobs
     fool cron status         # Check if cron scheduler is running
     fool doctor              # Check configuration and dependencies
-    hermes honcho setup                    # Configure Honcho AI memory integration
-    hermes honcho status                   # Show Honcho config and connection status
-    hermes honcho sessions                 # List directory → session name mappings
-    hermes honcho map <name>               # Map current directory to a session name
-    hermes honcho peer                     # Show peer names and dialectic settings
-    hermes honcho peer --user NAME         # Set user peer name
-    hermes honcho peer --ai NAME           # Set AI peer name
-    hermes honcho peer --reasoning LEVEL   # Set dialectic reasoning level
-    hermes honcho mode                     # Show current memory mode
-    hermes honcho mode [hybrid|honcho|local]  # Set memory mode
-    hermes honcho tokens                   # Show token budget settings
-    hermes honcho tokens --context N       # Set session.context() token cap
-    hermes honcho tokens --dialectic N     # Set dialectic result char cap
-    hermes honcho identity                 # Show AI peer identity representation
-    hermes honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
-    hermes honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
+    fool honcho setup                    # Configure Honcho AI memory integration
+    fool honcho status                   # Show Honcho config and connection status
+    fool honcho sessions                 # List directory → session name mappings
+    fool honcho map <name>               # Map current directory to a session name
+    fool honcho peer                     # Show peer names and dialectic settings
+    fool honcho peer --user NAME         # Set user peer name
+    fool honcho peer --ai NAME           # Set AI peer name
+    fool honcho peer --reasoning LEVEL   # Set dialectic reasoning level
+    fool honcho mode                     # Show current memory mode
+    fool honcho mode [hybrid|honcho|local]  # Set memory mode
+    fool honcho tokens                   # Show token budget settings
+    fool honcho tokens --context N       # Set session.context() token cap
+    fool honcho tokens --dialectic N     # Set dialectic result char cap
+    fool honcho identity                 # Show AI peer identity representation
+    fool honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
+    fool honcho migrate                  # Step-by-step migration guide: OpenClaw native → Hermes + Honcho
     fool version             Show version
     fool update              Update to latest version
     fool uninstall           Uninstall Hermes Agent
     fool acp                 Run as an ACP server for editor integration
     fool sessions browse     Interactive session picker with search
 
-    hermes claw migrate --dry-run  # Preview migration without changes
+    fool claw migrate --dry-run  # Preview migration without changes
 """
 
 # IMPORTANT: fool_bootstrap must be the very first import — it sets up
@@ -53,7 +53,7 @@ Usage:
 # crashes between ``git reset --hard`` and ``uv pip install -e .``), the
 # new code references ``fool_bootstrap`` but the editable install's
 # ``.pth`` file still points at the old set of top-level modules.  Without
-# this guard, hermes crashes on import and the user can't run
+# this guard, fool crashes on import and the user can't run
 # ``fool update`` to recover.  Missing the bootstrap means UTF-8 stdio
 # setup is skipped on Windows — degraded, not broken.  POSIX is unaffected.
 try:
@@ -507,7 +507,7 @@ _ensure_project_root_on_path_fast()
 
 
 # ---------------------------------------------------------------------------
-# Profile override — MUST happen before any hermes module import.
+# Profile override — MUST happen before any fool module import.
 #
 # Many modules cache FOOL_HOME at import time (module-level constants).
 # We intercept --profile/-p from sys.argv here and set the env var so that
@@ -626,7 +626,7 @@ def _apply_profile_override() -> None:
     # only when it already points to a specific profile directory.  The
     # distinguishing heuristic: a profile path has "profiles" as its immediate
     # parent directory name (e.g. ~/.hermes/profiles/coder or
-    # /opt/data/profiles/coder).  If FOOL_HOME points to the hermes root
+    # /opt/data/profiles/coder).  If FOOL_HOME points to the fool root
     # instead (e.g. systemd hardcodes FOOL_HOME=/root/.hermes), we must
     # still read active_profile — the user may have switched profiles via
     # `fool profile use` and the gateway should honour that choice.
@@ -636,7 +636,7 @@ def _apply_profile_override() -> None:
         if Path(hermes_home_env).parent.name == "profiles":
             return
 
-    # 2. If no flag, check active_profile in the hermes root.
+    # 2. If no flag, check active_profile in the fool root.
     #
     # EXCEPTION: a supervised s6 gateway child (exported by the container
     # run-script as FOOL_S6_SUPERVISED_CHILD=1) must NOT follow the sticky
@@ -676,7 +676,7 @@ def _apply_profile_override() -> None:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
         except Exception as exc:
-            # A bug in profiles.py must NEVER prevent hermes from starting
+            # A bug in profiles.py must NEVER prevent fool from starting
             print(
                 f"Warning: profile override failed ({exc}), using default",
                 file=sys.stderr,
@@ -2685,7 +2685,7 @@ def _launch_tui(
 
     import tempfile
 
-    # TUI child is a hermes process: propagate the profile-home contract via
+    # TUI child is a fool process: propagate the profile-home contract via
     # the single factory; keep secrets (the TUI/agent needs provider creds).
     from tools.environments.local import build_subprocess_env
     env = build_subprocess_env(scrub_secrets=False, inherit_profile_home=True)
@@ -2847,7 +2847,7 @@ def _pin_kanban_board_env() -> None:
     """Pin the active kanban board into ``FOOL_KANBAN_BOARD`` for the chat session.
 
     Without this, in-process tools (``kanban_*``) and shelled-out CLI calls
-    (``hermes kanban …``) resolve the board on different paths: the env-pin if
+    (``fool kanban …``) resolve the board on different paths: the env-pin if
     set, otherwise the global ``<root>/kanban/current`` file. A concurrent
     ``fool kanban boards switch`` from another session can flip the file
     mid-turn, so the same chat sees its tool calls hit board A while its shell
@@ -5303,7 +5303,7 @@ def cmd_sync(args):
 
     if sub in {None, ""}:
         print(
-            "usage: hermes sync "
+            "usage: fool sync "
             "<status|pull|push|now|enable|disable|device|propose>\n"
             "\n"
             "Your skills, across your devices:\n"
@@ -5398,7 +5398,7 @@ def cmd_sync(args):
                 print(
                     f"  {len(modified)} with local edits not yet shared: "
                     f"{', '.join(modified)}\n"
-                    f"  Share them back with `hermes sync propose <skill>`. "
+                    f"  Share them back with `fool sync propose <skill>`. "
                     f"Org updates will not overwrite them.",
                     file=sys.stderr,
                 )
@@ -5474,10 +5474,10 @@ def cmd_sync(args):
                         file=sys.stderr,
                     )
         elif sub == "push":
-            result = ssc.push_skills(identity=identity, message="hermes sync push")
+            result = ssc.push_skills(identity=identity, message="fool sync push")
         elif sub == "now":
             pull_res = ssc.pull_skills(identity=identity)
-            push_res = ssc.push_skills(identity=identity, message="hermes sync now")
+            push_res = ssc.push_skills(identity=identity, message="fool sync now")
             result = {"pull": pull_res, "push": push_res}
         else:
             print(f"Unknown sync subcommand: {sub}", file=sys.stderr)
@@ -5500,7 +5500,7 @@ def cmd_webhook(args):
 def cmd_slack(args):
     """Slack integration helpers.
 
-    Dispatches ``hermes slack <subcommand>``. Currently supports:
+    Dispatches ``fool slack <subcommand>``. Currently supports:
       manifest — print or write a Slack app manifest with every gateway
                  command registered as a first-class slash.
     """
@@ -5508,7 +5508,7 @@ def cmd_slack(args):
     if sub in {None, ""}:
         # No subcommand — print usage hint.
         print(
-            "usage: hermes slack <subcommand>\n"
+            "usage: fool slack <subcommand>\n"
             "\n"
             "subcommands:\n"
             "  manifest   Generate a Slack app manifest with every gateway\n"
@@ -5567,7 +5567,7 @@ def cmd_verify(args):
 
 
 def cmd_security(args):
-    """Dispatch `hermes security <subcmd>`."""
+    """Dispatch `fool security <subcmd>`."""
     sub = getattr(args, "security_command", None)
     if sub in ("audit", None):
         from fool_cli.security_audit import cmd_security_audit
@@ -5580,7 +5580,7 @@ def cmd_security(args):
 
 
 def cmd_approvals(args):
-    """Dispatch `hermes approvals <subcmd>`."""
+    """Dispatch `fool approvals <subcmd>`."""
     from fool_cli.approvals_suggest import approvals_command
 
     status = approvals_command(args)
@@ -6052,7 +6052,7 @@ def _nixos_build_env() -> dict[str, str] | None:
     does a bare ``PATH`` lookup — which fails on NixOS.
 
     Two-tier resolution:
-    1. Fast path — the hermes venv's python3 (present in managed installs)
+    1. Fast path — the fool venv's python3 (present in managed installs)
     2. Fallback — resolves the absolute python3 path via ``nix-shell``
 
     Returns an env dict suitable for ``subprocess.run(env=...)`` or
@@ -6071,7 +6071,7 @@ def _nixos_build_env() -> dict[str, str] | None:
     if shutil.which("python3"):
         return None
 
-    # Tier 1: fast path — hermes venv python3, no nix-shell overhead
+    # Tier 1: fast path — fool venv python3, no nix-shell overhead
     for venv_name in ("venv", ".venv"):
         venv_python = PROJECT_ROOT / venv_name / "bin" / "python3"
         if venv_python.exists():
@@ -6079,7 +6079,7 @@ def _nixos_build_env() -> dict[str, str] | None:
 
     # Tier 2: nix-shell fallback — resolves the absolute python3 path once.
     # Slower (~2–5 s for the nix-shell eval) but always works, even without
-    # a hermes venv (pip / non-managed / bare-git installs).  The resolved
+    # a fool venv (pip / non-managed / bare-git installs).  The resolved
     # path is a self-contained Nix store binary (all deps via RPATH) so it
     # stays valid even after the nix-shell exits.
     try:
@@ -6384,7 +6384,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     if r1.returncode != 0:
         _say(
             f"  {'✗' if fatal else '⚠'} Web UI npm install failed"
-            + ("" if fatal else " (hermes web will not be available)")
+            + ("" if fatal else " (fool web will not be available)")
         )
         _relay(r1)
         if fatal:
@@ -6437,7 +6437,7 @@ def _do_build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
 
         _say(
             f"  {'✗' if fatal else '⚠'} Web UI build failed"
-            + ("" if fatal else " (hermes web will not be available)")
+            + ("" if fatal else " (fool web will not be available)")
         )
         _relay(r2)
         if fatal:
@@ -7815,7 +7815,7 @@ def cmd_gui(args: argparse.Namespace):
     # Desktop launch options from config.yaml (`desktop.electron_flags`,
     # `desktop.disable_gpu`). The GPU policy is bridged to the env var the
     # Electron app already reads; an explicit env var still wins over config so
-    # `FOOL_DESKTOP_DISABLE_GPU=... hermes desktop` keeps working.
+    # `FOOL_DESKTOP_DISABLE_GPU=... fool desktop` keeps working.
     config_electron_flags, config_disable_gpu, config_password_store = _desktop_launch_options()
     if config_disable_gpu != "auto" and "FOOL_DESKTOP_DISABLE_GPU" not in os.environ:
         env["FOOL_DESKTOP_DISABLE_GPU"] = config_disable_gpu
@@ -7825,7 +7825,7 @@ def cmd_gui(args: argparse.Namespace):
     # without it safeStorage.isEncryptionAvailable() is often false and the
     # desktop app refuses to persist remote gateway tokens. Config wins over
     # detection; an explicit env var wins over both so
-    # `FOOL_DESKTOP_PASSWORD_STORE=... hermes desktop` keeps working.
+    # `FOOL_DESKTOP_PASSWORD_STORE=... fool desktop` keeps working.
     if sys.platform == "linux" and "FOOL_DESKTOP_PASSWORD_STORE" not in os.environ:
         password_store = (
             config_password_store
@@ -7845,7 +7845,7 @@ def cmd_gui(args: argparse.Namespace):
         npm = _resolve_node_runtime_npm()
         if not npm:
             print("Desktop GUI requires Node.js/npm, but npm was not found on PATH.")
-            print("Install Node.js, then run:  hermes gui")
+            print("Install Node.js, then run:  fool gui")
             sys.exit(1)
     else:
         npm = None
@@ -7977,7 +7977,7 @@ def cmd_gui(args: argparse.Namespace):
                     print("  If this says \"Access is denied\" on Hermes.exe, close any")
                     print("  running Hermes desktop window and retry.")
                 print("  If the log shows Electron download retries, rebuild via a mirror:")
-                print("    ELECTRON_MIRROR=<mirror-base-url> hermes desktop --force-build")
+                print("    ELECTRON_MIRROR=<mirror-base-url> fool desktop --force-build")
                 sys.exit(build_result.returncode or 1)
             packaged_executable = _desktop_packaged_executable(desktop_dir)
             if not source_mode:
@@ -8339,7 +8339,7 @@ def _dashboard_cmdline_for_pid(pid: int) -> list[str] | None:
 
     Linux: reads ``/proc/<pid>/cmdline`` (NUL-separated, lossless).
     macOS: falls back to ``ps -o command=`` + shlex (best effort — quoting
-    is reconstructed, but hermes launch commands don't embed exotic args).
+    is reconstructed, but fool launch commands don't embed exotic args).
     Windows: returns ``None``; taskkill /F gives no graceful window and the
     desktop app manages its own backend there.
     """
@@ -8846,7 +8846,7 @@ def _quarantine_running_hermes_exe(
 
     We rename live shims to ``hermes.exe.old.<unix-ms>`` first. uv then writes
     fresh shims at the original paths. The ``.old`` files are cleaned up on
-    the next hermes invocation by ``_cleanup_quarantined_exes``.
+    the next fool invocation by ``_cleanup_quarantined_exes``.
 
     Rename can still fail when *another* process has opened the .exe without
     ``FILE_SHARE_DELETE`` — typically AV real-time scanners with transient
@@ -9023,7 +9023,7 @@ def _run_quarantined_install(
 def _cleanup_quarantined_exes(scripts_dir: Path | None = None) -> None:
     """Sweep ``hermes.exe.old.*`` left by prior updates.
 
-    Called early on every hermes invocation. The .old files are unlocked once
+    Called early on every fool invocation. The .old files are unlocked once
     their owning process exited, so deletion succeeds the next run. Silent
     no-op when nothing's there or on file-locked / permission errors.
     """
@@ -9401,7 +9401,7 @@ def _verify_console_scripts_installed(
         logger.warning("console script verification: repair install failed: %s", e)
         print(
             "  ⚠ Entry point repair failed; try `fool update --force` after "
-            "closing other hermes processes."
+            "closing other fool processes."
         )
         return
 
@@ -9584,7 +9584,7 @@ def _verify_core_dependencies_installed(
         logger.warning("dep verification: per-package repair failed: %s", e)
         print(
             f"  ⚠ Could not install: {', '.join(still_missing)}. "
-            "Run `fool update --force` after closing other hermes processes."
+            "Run `fool update --force` after closing other fool processes."
         )
         return
 
@@ -9592,7 +9592,7 @@ def _verify_core_dependencies_installed(
     if final_missing:
         print(
             f"  ⚠ Still missing after repair: {', '.join(final_missing)}. "
-            "Run `fool update --force` after closing other hermes processes."
+            "Run `fool update --force` after closing other fool processes."
         )
     else:
         print("  ✓ All declared core dependencies now installed")
@@ -11125,7 +11125,7 @@ def cmd_dashboard(args):
         # empty, auto-seeded home where the dashboard sees only the default
         # profile and the install-method stamp is missing (so the Docker
         # update-button guard also misfires).  get_default_hermes_root()
-        # returns the root for both layouts: ~/.hermes for a standard install
+        # returns the root for both layouts: ~/.fool for a standard install
         # and /opt/data for Docker (it strips a trailing profiles/<name>).
         # See the support report for the double-mount workaround this avoids.
         try:
@@ -12491,7 +12491,7 @@ def main():
         "checkpoints",
         help="Inspect / prune / clear ~/.hermes/checkpoints/",
         description="Manage the filesystem checkpoint store — the shadow git "
-        "repo hermes uses to snapshot working directories before "
+        "repo fool uses to snapshot working directories before "
         "write_file/patch/terminal calls. Lets you see how much "
         "space checkpoints occupy, force a prune, or wipe the base.",
     )
@@ -13040,7 +13040,7 @@ def main():
         nargs="?",
         help=(
             "Output path. JSONL: file path (use - for stdout, required). "
-            "md/qmd: output directory (default: <hermes home>/session-exports)"
+            "md/qmd: output directory (default: <fool home>/session-exports)"
         ),
     )
     sessions_export.add_argument(
@@ -13587,7 +13587,7 @@ def main():
 
     # Discover Python plugins and register shell hooks once, before any
     # command that can fire lifecycle hooks.  Both are idempotent; gated
-    # so introspection/management commands (hermes hooks list, cron
+    # so introspection/management commands (fool hooks list, cron
     # list, gateway status, mcp add, ...) don't pay discovery cost or
     # trigger consent prompts for hooks the user is still inspecting.
     _prepare_agent_startup(args)

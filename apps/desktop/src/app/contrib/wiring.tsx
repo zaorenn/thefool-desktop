@@ -68,6 +68,7 @@ import {
 } from '@/store/session'
 import { clearSessionTodos, setSessionTodos, todosForHydration } from '@/store/todos'
 import { armWakeWord, stopClientCapture } from '@/store/wake-word'
+import { isNotchWindow } from '@/fool/notch/window'
 import { isAuxiliaryWindow, isHudWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
 
@@ -1039,7 +1040,12 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         {/* HUD mode has no titlebar to hang these off — the clusters are
             `fixed`, so without this they'd float over the chat as orphaned
             buttons. Exits are the ⌘⇧H toggle and ⌘W. */}
-        {!isHudWindow() && (
+        {/* FOOL-SEAM: notch-no-chrome
+            Notch'un da baslik cubugu YOK. Kumeler `fixed` konumlu, yani
+            olmayan bir baslik cubuguna asilinca centigin uzerinde yetim
+            dugmeler olarak yuzuyorlar -- HUD icin yazilan gerekce, notch'ta
+            birebir yasandi. */}
+        {!isHudWindow() && !isNotchWindow() && (
           <TitlebarControls
             leftTools={leftTitlebarTools}
             onOpenSettings={() => navigate(SETTINGS_ROUTE)}
@@ -1151,7 +1157,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
 
       {/* Petdex floating mascot — renders nothing unless installed + enabled.
           Never in the HUD: that window is the chat bar and nothing else. */}
-      {!isHudWindow() && <FloatingPet />}
+      {!isHudWindow() && !isNotchWindow() && <FloatingPet />}
 
       {/* Single persistent xterm host chasing the terminal pane's slot rect.
           The HUD has no terminal pane, so it has nothing to chase. */}

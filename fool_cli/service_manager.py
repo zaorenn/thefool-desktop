@@ -135,7 +135,7 @@ def _s6_running() -> bool:
     ``/proc/1/exe`` is unreadable and ``resolve()`` silently returns the
     path unchanged, so the resolved name is the literal ``"exe"`` and
     detection always fails. Since every Hermes runtime call inside the
-    container drops to hermes via ``s6-setuidgid``, that silent failure
+    container drops to fool via ``s6-setuidgid``, that silent failure
     made the entire service-manager runtime-registration path inert in
     production (PR #30136 review).
 
@@ -415,7 +415,7 @@ _HERMES_GID = 10000
 
 def _seed_supervise_skeleton(svc_dir: Path) -> None:
     """Pre-create the ``supervise/`` and top-level ``event/`` skeleton
-    inside a service directory, owned by the hermes user.
+    inside a service directory, owned by the fool user.
 
     Why this exists
     ---------------
@@ -431,7 +431,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
     The PR #30136 review surfaced this as a real product gap: the
     entire S6ServiceManager lifecycle (``register/start/stop/unregister
     _profile_gateway``) was inert in production because every operation
-    is dispatched as the hermes user.
+    is dispatched as the fool user.
 
     Why this works
     --------------
@@ -441,7 +441,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
     chown/chmod fix-up that would normally make event/ ``03730
     root:root`` is **skipped** entirely — s6-supervise just opens the
     pre-existing FIFOs and proceeds. So if we lay the skeleton down
-    with hermes ownership before triggering ``s6-svscanctl -a``,
+    with fool ownership before triggering ``s6-svscanctl -a``,
     s6-supervise inherits our layout and never touches it.
 
     Layout produced
@@ -455,7 +455,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
     The ``death_tally``, ``lock``, and ``status`` regular files end up
     written by s6-supervise itself (as root), but those land mode 0644 —
     world-readable — and ``s6-svstat`` only needs read access, so the
-    hermes user reads them fine.
+    fool user reads them fine.
 
     If ``svc_dir/log/`` is present (the canonical s6 logger pattern —
     one s6-supervise instance per service, plus a second for its
@@ -491,7 +491,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
         try:
             os.chown(path, _HERMES_UID, _HERMES_GID)
         except PermissionError:
-            # Running as the hermes user already — directory is hermes-
+            # Running as the fool user already — directory is hermes-
             # owned by default. The chown is a no-op in that case, so
             # swallowing this keeps both root and unprivileged callers
             # on one code path.
@@ -635,7 +635,7 @@ class S6ServiceManager:
              so with-contenv's root HOME does not leak into the
              unprivileged gateway process.
           3. Activates the bundled venv.
-          4. Drops to the hermes user and exec's
+          4. Drops to the fool user and exec's
              ``hermes -p <profile> gateway run`` (or just ``hermes
              gateway run`` for the default profile — see below).
 
@@ -791,7 +791,7 @@ class S6ServiceManager:
             f"# shellcheck shell=sh\n"
             f': "${{FOOL_HOME:=/opt/data}}"\n'
             f'log_dir="$FOOL_HOME/logs/gateways/{prof}"\n'
-            # Create the leaf and clear a stale s6-log lock as hermes when
+            # Create the leaf and clear a stale s6-log lock as fool when
             # this script starts as root. Never chown or unlink hermes-writable
             # volume paths from this restartable root-context script:
             # log/supervise/control is hermes-owned, so an unprivileged user
@@ -799,15 +799,15 @@ class S6ServiceManager:
             # CWE-367). Parent logs/gateways is seeded hermes-owned at stage2
             # boot (#45258; tests/docker/test_log_dir_seed.py).
             f'if [ "$(id -u)" = 0 ]; then\n'
-            f'  s6-setuidgid hermes mkdir -p "$log_dir"\n'
-            f'  s6-setuidgid hermes rm -f "$log_dir/lock"\n'
+            f'  s6-setuidgid fool mkdir -p "$log_dir"\n'
+            f'  s6-setuidgid fool rm -f "$log_dir/lock"\n'
             f'else\n'
             f'  mkdir -p "$log_dir"\n'
             f'  rm -f "$log_dir/lock"\n'
             f'fi\n'
             # Skip the drop when already non-root (CAP_SETGID).
             f'[ "$(id -u)" = 0 ] || exec s6-log 1 n10 s1000000 T "$log_dir"\n'
-            f'exec s6-setuidgid hermes s6-log 1 n10 s1000000 T "$log_dir"\n'
+            f'exec s6-setuidgid fool s6-log 1 n10 s1000000 T "$log_dir"\n'
         )
 
     # -- lifecycle ---------------------------------------------------------
@@ -1015,11 +1015,11 @@ class S6ServiceManager:
             log_run.write_text(self._render_log_run(profile), encoding="utf-8")
             log_run.chmod(0o755)
 
-            # Pre-create the supervise/ skeleton with hermes ownership
+            # Pre-create the supervise/ skeleton with fool ownership
             # BEFORE we publish the slot. s6-supervise will EEXIST our
             # dirs/FIFOs and inherit the ownership, so the runtime
             # s6-svc / s6-svstat / s6-svwait calls (all dispatched as
-            # the hermes user) won't hit EACCES on root-owned 0700
+            # the fool user) won't hit EACCES on root-owned 0700
             # dirs. See ``_seed_supervise_skeleton`` for the full
             # rationale.
             _seed_supervise_skeleton(tmp_dir)

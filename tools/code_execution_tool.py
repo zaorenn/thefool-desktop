@@ -1504,7 +1504,7 @@ def execute_code(
             _external_env_logged.add(_child_python)
             logger.info(
                 "execute_code: child interpreter %s is outside the Hermes "
-                "environment; hermes root omitted from PYTHONPATH",
+                "environment; fool root omitted from PYTHONPATH",
                 _child_python,
             )
         if _existing_pp:
@@ -1919,7 +1919,7 @@ def _python_environment_prefix(python_path: str) -> str:
     Successful probes are cached per interpreter path (bounded, FIFO-evicted).
     Failures are NOT cached: a transient probe failure (fork pressure, 5s
     timeout on a loaded host) must not stick for the process lifetime — a
-    sticky empty result would silently drop the hermes root from every
+    sticky empty result would silently drop the fool root from every
     subsequent execute_code call's PYTHONPATH.
     """
     cached = _python_prefix_cache.get(python_path)

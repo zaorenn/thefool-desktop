@@ -8,7 +8,7 @@ module writes the XDG desktop entry that gives it one.
 Two values must be absolute for the entry to work:
 
   - ``Exec`` — the launcher runs without shell ``PATH`` customizations, so
-    a bare ``fool desktop`` fails when hermes lives in ``~/.local/bin``
+    a bare ``fool desktop`` fails when fool lives in ``~/.local/bin``
     or a venv. Resolve the real binary and write its full path.
   - ``Icon`` — an unqualified icon name needs an indexed icon theme. The
     spec allows an absolute path instead, so point at the app icon in the

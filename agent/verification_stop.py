@@ -287,7 +287,7 @@ def build_verify_on_stop_nudge(
         if _workspace_has_runnable_recipe(facts.get("root")):
             command_instruction = (
                 "No canonical test/lint/build command was detected, but the "
-                "project has a runnable verification recipe. Run `hermes verify "
+                "project has a runnable verification recipe. Run `fool verify "
                 "--json` (detect -> build -> test -> boot -> readiness poll); a "
                 "passing run records verification evidence for this workspace. "
                 "Read any failure, repair the code, and summarize what passed."

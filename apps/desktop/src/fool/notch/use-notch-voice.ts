@@ -26,7 +26,12 @@ import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
-import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
+import {
+  playSpeechText,
+  type SpeechStreamSession,
+  startSpeechStream,
+  stopVoicePlayback
+} from '@/lib/voice-playback'
 import { $activeSessionId, $messages } from '@/store/session'
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
@@ -75,12 +80,18 @@ export function useNotchVoice(): NotchVoice {
   // Bir kaydın atılacağını işaretler. `commit` ve `cancel` yarışabiliyor
   // (tuş bırakma ile odak kaybı aynı anda gelebilir); ilk gelen kazanır.
   const discardRef = useRef(false)
+  // Suren akis oturumu ve o oturuma KADAR gonderilmis karakter sayisi.
+  const streamRef = useRef<{ sent: number; session: SpeechStreamSession | null } | null>(null)
 
   const begin = useCallback(() => {
     setError(null)
     discardRef.current = false
     setStatus('listening')
     // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
+    // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
+    // seslendirilmeye devam eder.
+    streamRef.current?.session?.finish()
+    streamRef.current = null
     stopVoicePlayback()
     void mic.start().catch((cause: unknown) => {
       setStatus('idle')
@@ -144,9 +155,20 @@ export function useNotchVoice(): NotchVoice {
     })()
   }, [mic, requestGateway])
 
-  // Cevabı seslendir. `thinking` durumundayken gelen her yeni asistan
-  // baloncuğu sırayla okunuyor — ara anlatımlar dahil, yalnızca sonuncusu
-  // değil.
+  // Cevabı AKARKEN seslendir.
+  //
+  // Neden akış: baloncuğun bitmesini beklemek, uzun bir cevapta kullanıcıyı
+  // sessizce bekletiyordu — model 20 saniye yazıyor, ses ancak sonunda
+  // başlıyor. ``startSpeechStream`` metni parça parça alıp konuşmayı hemen
+  // başlatıyor, yani bekleme süresi ortadan kalkıyor.
+  //
+  // ``append`` yalnızca YENİ eklenen kısmı alıyor: her seferinde tüm metni
+  // göndermek aynı cümleleri defalarca okuturdu.
+  //
+   
+  // değerin AYNASI değil: açık bir WebSocket oturumu ve o oturuma kaç karakter
+  // gönderildiği. State'e taşımak her token'da yeniden render tetiklerdi ve
+  // oturumun kendisi zaten render'a ait bir şey değil.
   useEffect(() => {
     if (status !== 'thinking' && status !== 'speaking') {
       return
@@ -154,32 +176,56 @@ export function useNotchVoice(): NotchVoice {
 
     const pending = collectUnspokenTurnSpeech([...messages], lastSpokenId)
 
-    // ``pending: true`` = baloncuk hala akiyor. Yarim cumleyi seslendirmek
-    // kelimenin ortasinda kesilen bir konusma verirdi.
-    if (!pending || pending.pending || !pending.text.trim()) {
+    if (!pending || !pending.text.trim()) {
       return
     }
 
-    let cancelled = false
+    // Akış oturumu tur başına BİR kez açılıyor.
+    if (!streamRef.current) {
+      streamRef.current = { sent: 0, session: null }
 
-    setLastSpokenId(pending.id)
-    setStatus('speaking')
+      void startSpeechStream({ source: 'voice-conversation' })
+        .then(session => {
+          if (streamRef.current) {
+            streamRef.current.session = session
+          }
 
-    void playSpeechText(pending.text, { messageId: pending.id, source: 'voice-conversation' })
-      .catch(() => undefined)
-      .finally(() => {
-        // ``cancelled`` yetmiyor: kullanici oynatma SURERKEN sag Ctrl'ye
-        // basip konusmaya baslayabiliyor. O durumda ``begin()`` durumu
-        // 'listening' yapiyor ama bu geri cagrim hemen ardindan 'idle'
-        // yaziyordu -- notch kayit surerken daraliyor ve kullanici
-        // dinlenmedigini saniyordu. Yalnizca HALA konusuyorsak bosa dus.
-        if (!cancelled && statusRef.current === 'speaking') {
-          setStatus('idle')
-        }
-      })
+          // Akış yoksa (ağ geçidi desteklemiyorsa) tek seferlik oynatmaya
+          // düşülüyor — ses hiç çıkmamasındansa geç çıkması iyidir.
+          if (!session) {
+            return
+          }
 
-    return () => {
-      cancelled = true
+          void session.done.then(outcome => {
+            if (outcome === 'fallback') {
+              void playSpeechText(pending.text, {
+                messageId: pending.id,
+                source: 'voice-conversation'
+              }).catch(() => undefined)
+            }
+          })
+        })
+        .catch(() => undefined)
+    }
+
+    const stream = streamRef.current
+    const session = stream?.session
+
+    if (stream && session && pending.text.length > stream.sent) {
+      session.append(pending.text.slice(stream.sent))
+      stream.sent = pending.text.length
+      setStatus('speaking')
+    }
+
+    // Baloncuk tamamlandı: akışı kapat ve turu bitmiş say.
+    if (!pending.pending) {
+      session?.finish()
+      streamRef.current = null
+      setLastSpokenId(pending.id)
+
+      if (statusRef.current !== 'listening') {
+        setStatus('idle')
+      }
     }
   }, [lastSpokenId, messages, status])
 

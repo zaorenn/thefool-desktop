@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { claimBarge, createBargeGate, releaseBarge } from '@/fool/notch/barge-in'
+import { HANDS_FREE_VAD } from '@/fool/notch/hands-free'
 import { useI18n } from '@/i18n'
 import { startThinkingSound, stopThinkingSound } from '@/lib/thinking-sound'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
@@ -72,6 +74,9 @@ export function useVoiceConversation({
   const stopBargeMonitorRef = useRef<(() => void) | null>(null)
   const bargeCapturePendingRef = useRef(false)
   const bargedRef = useRef(false)
+  // FOOL-SEAM: shared-voice-policy -- turu kimin kestigi. Ortak kapi
+  // (fool/notch/barge-in.ts) iki yuzeyin ayni kurali kullanmasini sagliyor.
+  const bargeGateRef = useRef(createBargeGate())
   const speechStartSequenceRef = useRef(0)
   const enabledRef = useRef(enabled)
   const mutedRef = useRef(muted)
@@ -233,11 +238,16 @@ export function useVoiceConversation({
     }
 
     try {
-      // VAD tuning mirrors `tools.voice_mode` defaults so the browser loop matches the CLI.
+      // FOOL-SEAM: shared-voice-policy
+      //
+      // VAD tuning mirrors `tools.voice_mode` defaults so the browser loop
+      // matches the CLI -- ama sayilar burada ELLE yaziliydi ve notch kendi
+      // kopyasini tutuyordu. Iki yuzeyin farkli esikte susmasi, ayni cumlenin
+      // farkli yerde kesilmesi demek: kullanici icin "bazen cumlemi yiyor"
+      // diye gorunen, tekrar uretilemeyen bir hata. Tek kaynak
+      // ``fool/notch/hands-free.ts``.
       await handle.start({
-        silenceLevel: 0.075,
-        silenceMs: 1_250,
-        idleSilenceMs: 12_000,
+        ...HANDS_FREE_VAD,
         onError: error => {
           notifyError(error, voiceCopy.microphoneFailed)
           pendingStartRef.current = false
@@ -386,6 +396,16 @@ export function useVoiceConversation({
     stopBargeMonitorRef.current = monitorSpeechDuringPlayback({
       isPlaying: () => $voicePlayback.get().status === 'speaking',
       onSpeech: () => {
+        // FOOL-SEAM: shared-voice-policy
+        //
+        // Ayni tur iki kez talep edilemez. Notch tarafinda olculdu: insan
+        // refleksi konusmaya baslarken tusa da basmak ve kapisiz birakmak
+        // ayni cumleyi modele iki kez gonderiyordu. Kapi ORTAK
+        // (``fool/notch/barge-in.ts``) ki iki yuzeyin kurali ayrismasin.
+        if (!claimBarge(bargeGateRef.current, 'voice')) {
+          return
+        }
+
         bargeCapturePendingRef.current = true
         bargedRef.current = true
         markVoicePlaybackInterrupted()
@@ -400,6 +420,8 @@ export function useVoiceConversation({
       onUtterance: audio => {
         bargeCapturePendingRef.current = false
         stopBargeMonitorRef.current = null
+        // Kapi serbest: bir sonraki tur yeniden talep edilebilmeli.
+        releaseBarge(bargeGateRef.current)
         void submitCapturedUtterance(audio)
       }
     })

@@ -17,6 +17,7 @@
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
+import { useStore } from '@nanostores/react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -28,6 +29,8 @@ import {
   nextIdleRounds,
   shouldRearmListening
 } from './hands-free'
+import { formatPttCode } from './ptt-binding'
+import { $pttCode } from './ptt-store'
 import {
   createPushToTalkState,
   onBlur as ptOnBlur,
@@ -58,7 +61,7 @@ const LABEL: Record<NotchStatus, string> = {
 }
 
 /** Eller serbest kip kendini susturdugunda gosterilen satir. */
-const PAUSED_LABEL = 'Paused — press right Ctrl or say the wake word'
+const pausedLabel = (key: string) => `Paused — press ${key} or say the wake word`
 
 /**
  * Canlı dalga formu.
@@ -295,10 +298,14 @@ export function NotchShell() {
   // Bas-konuş durumu bir ref'te: klavye olayları render döngüsünün dışında
   // geliyor ve state kullanmak her tuş olayında bir render daha demek olurdu.
   const ptt = useRef(createPushToTalkState())
+  // Sag Ctrl her makinede yok: bazi dizustulerde fiziksel olarak bulunmuyor,
+  // bazi kullanicilar onu IME degistirmeye baglamis. O makinelerde bas-konus
+  // hic calismiyordu ve sebebi gorunmuyordu.
+  const pttCode = useStore($pttCode)
 
   useEffect(() => {
     const onDown = (event: KeyboardEvent) => {
-      const action = ptOnKeyDown(ptt.current, event, Date.now())
+      const action = ptOnKeyDown(ptt.current, event, Date.now(), pttCode)
 
       if (action?.type === 'start' && sessionActive) {
         // Tuşun varsayılan davranışını yutuyoruz ki basılı tutuş başka bir
@@ -309,7 +316,7 @@ export function NotchShell() {
     }
 
     const onUp = (event: KeyboardEvent) => {
-      const action = ptOnKeyUp(ptt.current, event, Date.now())
+      const action = ptOnKeyUp(ptt.current, event, Date.now(), pttCode)
 
       if (action?.type === 'commit') {
         voice.commit()
@@ -370,7 +377,10 @@ export function NotchShell() {
       window.removeEventListener('keyup', onUp)
       window.removeEventListener('blur', onWindowBlur)
     }
-  }, [sessionActive, voice])
+    // ``pttCode`` bagimliliga giriyor: kullanici tusu yeniden bagladiginda
+    // dinleyiciler ESKI koda bakmaya devam ederdi -- yani ayar kaydediliyor
+    // ama hicbir sey degismiyor gibi gorunurdu.
+  }, [pttCode, sessionActive, voice])
 
   return (
     <div className="flex h-screen w-screen justify-center bg-transparent" data-fool-notch>
@@ -420,7 +430,9 @@ export function NotchShell() {
               <Waveform active={voice.status === 'listening'} level={voice.level} />
 
               <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
-                {voice.status === 'idle' && paused ? PAUSED_LABEL : LABEL[voice.status]}
+                {voice.status === 'idle' && paused
+                  ? pausedLabel(formatPttCode(pttCode))
+                  : LABEL[voice.status]}
               </div>
 
               {/* Yazıya dökülen metin: kullanıcı ne anlaşıldığını GÖRMELİ.

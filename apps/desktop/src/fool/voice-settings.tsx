@@ -15,14 +15,17 @@
  * Zone A: upstream bu dosyayı bilmiyor; birleştirmede çakışamaz.
  */
 
+import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useState } from 'react'
 
 import { ListRow, ListRowSkeleton, Pill, SettingsContent, SettingsSection } from '@/app/settings/primitives'
 import { Button } from '@/components/ui/button'
 import { triggerHaptic } from '@/lib/haptics'
-import { Cpu, Download, Mic, Volume2, Zap } from '@/lib/icons'
+import { Cpu, Download, Keyboard, Mic, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
+import { DEFAULT_PTT_CODE, formatPttCode, isBindableCode } from './notch/ptt-binding'
+import { $pttCode } from './notch/ptt-store'
 import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem, type VoiceJob } from './voice-api'
 
 //: Süren bir kurulum varken yoklama aralığı. Saniyede bir, dakikalarca sürebilen
@@ -311,6 +314,71 @@ function CloneSection({
   )
 }
 
+/**
+ * Bas-konuş tuşunu yeniden bağla.
+ *
+ * Varsayılan sağ Ctrl her makinede yok: bazı dizüstülerde fiziksel olarak
+ * bulunmuyor, bazı kullanıcılar onu IME değiştirmeye ya da ekran okuyucuya
+ * bağlamış. O makinelerde bas-konuş hiç çalışmıyordu ve sebebi görünmüyordu —
+ * kullanıcı notch'u açık görüp konuşuyor, hiçbir şey olmuyor.
+ *
+ * Yakalama ``code`` okuyor, ``key`` değil: ``code`` fiziksel tuşu gösterir ve
+ * klavye düzeninden etkilenmez.
+ */
+function PushToTalkRow() {
+  const code = useStore($pttCode)
+  const [capturing, setCapturing] = useState(false)
+
+  useEffect(() => {
+    if (!capturing) {
+      return
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      // Escape yakalamayı İPTAL eder — bağlanabilir tuşlar arasında da
+      // değil, yani kullanıcının her zaman bir çıkış yolu var.
+      if (event.code === 'Escape') {
+        event.preventDefault()
+        setCapturing(false)
+
+        return
+      }
+
+      if (!isBindableCode(event.code)) {
+        return
+      }
+
+      event.preventDefault()
+      $pttCode.set(event.code)
+      setCapturing(false)
+    }
+
+    window.addEventListener('keydown', onKey, true)
+
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [capturing])
+
+  return (
+    <ListRow
+      action={
+        <div className="flex items-center gap-2">
+          <Pill>{capturing ? 'Press a key…' : formatPttCode(code)}</Pill>
+          <Button onClick={() => { triggerHaptic(); setCapturing(previous => !previous) }} size="sm" variant="outline">
+            {capturing ? 'Cancel' : 'Rebind'}
+          </Button>
+          {code !== DEFAULT_PTT_CODE && (
+            <Button onClick={() => { triggerHaptic(); $pttCode.set(DEFAULT_PTT_CODE) }} size="sm" variant="ghost">
+              Reset
+            </Button>
+          )}
+        </div>
+      }
+      description="Hold this key while the notch session is open to talk. Escape cancels a rebind."
+      title="Push to talk key"
+    />
+  )
+}
+
 export function VoiceSettings() {
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
   const [jobs, setJobs] = useState<Record<string, VoiceJob>>({})
@@ -522,6 +590,10 @@ export function VoiceSettings() {
         {tts.map(item => (
           <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}
+      </SettingsSection>
+
+      <SettingsSection icon={Keyboard} title="Voice controls">
+        <PushToTalkRow />
       </SettingsSection>
 
       <SettingsSection icon={Mic} title="Speech to text">

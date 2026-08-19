@@ -64,6 +64,20 @@ def _synth(text: str, provider: str) -> str:
 
 
 def _audio_seconds(path: str) -> float:
+    """Ses uzunluğu.
+
+    ``wave`` yalnızca PCM okuyor; float32 WAV'da ``unknown format: 3`` ile
+    düşüyor ve süre sessizce ``0.00s`` görünüyordu -- ölçüm aracının kendisi
+    yanlış rapor veriyordu. ``soundfile`` varsa o kullanılıyor.
+    """
+    try:
+        import soundfile as sf
+
+        info = sf.info(path)
+        return float(info.frames) / float(info.samplerate or 1)
+    except Exception:
+        pass
+
     try:
         with contextlib.closing(wave.open(path, "rb")) as handle:
             return handle.getnframes() / float(handle.getframerate() or 1)

@@ -199,6 +199,33 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         size_label="~1,3 GB",
     ),
     VoiceEntry(
+        id="styletts2",
+        label="StyleTTS 2",
+        kind="tts",
+        summary=(
+            "Kokoro-class speed with noticeably more natural prosody. "
+            "Not autoregressive, so it stays steady on long sentences "
+            "instead of drifting. English."
+        ),
+        provider_id="styletts2",
+        probe_module="styletts2",
+        # Kendi ortamina SART: paketin pinleri 2024'ten ve sert --
+        # ``huggingface-hub<0.20``, ``accelerate<0.26``, ``langchain<0.2``,
+        # ``filelock<3.13``. Ana ortama kurmak faster-whisper'i ve
+        # transformers'i geriye dusururdu. Python 3.13'te 133 pakete
+        # cozuluyor (uv ile dogrulandi, tahmin degil).
+        # ``soundfile`` BILEREK pinlenmiyor: styletts2 kendisi
+        # ``soundfile>=0.12.1,<0.13`` istiyor ve ustune ``0.14.0`` yazmak
+        # kurulumu "requirements are unsatisfiable" ile dusuruyordu (olculdu).
+        # Diger motorlarda pin var cunku onlar soundfile'i kendileri
+        # cekmiyor.
+        sidecar_specs=("styletts2==0.1.6",),
+        sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
+        devices=("cpu", "cuda"),
+        cuda_probe="torch",
+        size_label="~1,5 GB",
+    ),
+    VoiceEntry(
         id="chatterbox",
         label="Chatterbox",
         kind="tts",

@@ -37,6 +37,9 @@ ENGINE_VRAM_MB = {
     "kokoro": 700,
     "piper": 300,
     "qwen3-tts": 2_500,
+    # StyleTTS 2: ~150M parametre + BERT/ASR yardimci aglari. Olculdukten
+    # sonra bu sayi gercek degerle degistirilecek.
+    "styletts2": 1_200,
     "whisper-turbo": 2_000,
 }
 

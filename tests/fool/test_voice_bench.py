@@ -230,7 +230,13 @@ def test_bench_SAGLAYICI_adiyla_sakliyor(tmp_path, monkeypatch) -> None:
 
     from fool import voice_models as vm
 
-    entry = next(e for e in vm.CATALOG if e.kind == "tts" and e.provider_id)
+    # ``provider_id`` ile ``id``nin GERCEKTEN farkli oldugu bir girdi gerekiyor
+    # (qwen3-tts -> qwen3). StyleTTS 2 eklendiginde bu test yanlisi seciyordu:
+    # onun provider_id'si id'siyle ayni ve test kendini dogrulayamiyordu.
+    entry = next(
+        e for e in vm.CATALOG
+        if e.kind == "tts" and e.provider_id and e.provider_id != e.id
+    )
     monkeypatch.setattr(vm, "CATALOG", (entry,))
     monkeypatch.setattr(vm, "status", lambda entry_id: {"installed": True})
 

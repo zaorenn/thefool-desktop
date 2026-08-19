@@ -498,14 +498,32 @@ def _onnxruntime_cuda_available() -> bool:
 
 
 def _cuda_available() -> bool:
-    """Ana ortamdaki bir motor CUDA çalıştırabilir mi?
+    """Bu MAKİNEDE kullanılabilir bir NVIDIA GPU var mı?
 
-    Eskiden bu işlev ``nvidia-smi`` varsa doğrudan ``True`` dönüyordu -- yani
-    NVIDIA sürücüsü kurulu HER makinede. Sürücünün varlığı, çıkarım motorunun
-    CUDA kullanabildiği anlamına gelmiyor ve panel bu yüzden güvenle "CUDA"
-    yazarken motor CPU'da koşuyordu. Sürücü artık yalnızca ön eleme.
+    Bu, ``cuda_ready(entry)``den FARKLI bir soru ve ikisini karıştırmak
+    panelde "no CUDA on this machine" yazdırdı -- 16 GB'lık bir kartın
+    üstünde.
+
+      * ``cuda_available``  -> KUTUDA kart var mı? Panel CUDA düğmesini buna
+        göre etkinleştiriyor.
+      * ``cuda_ready(e)``   -> ŞU MOTOR onu kullanabiliyor mu? Her motor
+        kendi çalışma zamanına soruyor (torch / ctranslate2 / onnxruntime).
+
+    Makine sorusunun cevabı ana ortamdaki torch OLAMAZ: motorlar kendi izole
+    ortamlarında koşuyor ve ana ortamda torch hiç kurulu değil. O yüzden
+    sürücünün bildirdiği aygıt sayısına bakılıyor -- ithal maliyeti de yok.
     """
-    return _nvidia_driver_present() and _torch_cuda_available()
+    if not _nvidia_driver_present():
+        return False
+    try:
+        from fool.gpu_budget import total_vram_mb
+
+        return bool(total_vram_mb())
+    except Exception:
+        # Sonda cokerse surucunun varligina guveniliyor: makine sorusunda
+        # yanlis "hayir" demek, kullanicinin CUDA dugmesini KAYBETMESI
+        # demek -- nitekim tam bu oldu.
+        return True
 
 
 def active_providers() -> dict[str, str]:

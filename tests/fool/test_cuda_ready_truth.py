@@ -156,3 +156,66 @@ def test_nvidia_smi_tek_basina_yetmiyor(monkeypatch) -> None:
     hazir = [e.id for e in vm.CATALOG if vm.cuda_ready(e)]
 
     assert not hazir, f"surucu disinda kanit olmadan CUDA diyen motorlar: {hazir}"
+
+
+# ---------------------------------------------------------------------------
+# MAKINE sorusu ile MOTOR sorusu AYRI
+# ---------------------------------------------------------------------------
+#
+# Bu bölüm bir regresyonun ardından yazıldı. ``cuda_ready``yi motora sormaya
+# çevirirken ``cuda_available``ı da ana ortamın torch'una bağlamıştım. Ama
+# motorlar KENDİ izole ortamlarında koşuyor ve ana ortamda torch hiç kurulu
+# değil -- sonuç: panel 16 GB'lık bir kartın üstünde "no CUDA on this machine"
+# yazdı ve kullanıcı CUDA düğmesini kaybetti.
+#
+# İki ayrı soru:
+#   cuda_available  -> KUTUDA kart var mı?      (panel düğmeyi buna göre açar)
+#   cuda_ready(e)   -> ŞU MOTOR kullanabilir mi? (her motor kendi runtime'ına sorar)
+
+def test_makine_sorusu_ana_ortam_torchuna_BAGLI_DEGIL(monkeypatch) -> None:
+    """Ana ortamda torch yok ve olmaması normal -- motorlar sidecar'da."""
+    monkeypatch.setattr(vm, "_nvidia_driver_present", lambda: True)
+    monkeypatch.setattr(vm, "_torch_cuda_available", lambda: False)
+
+    from fool import gpu_budget
+
+    monkeypatch.setattr(gpu_budget, "total_vram_mb", lambda: 16_376)
+
+    assert vm._cuda_available() is True
+
+
+def test_makine_sorusu_surucu_yoksa_hayir(monkeypatch) -> None:
+    monkeypatch.setattr(vm, "_nvidia_driver_present", lambda: False)
+
+    assert vm._cuda_available() is False
+
+
+def test_makine_sorusu_sonda_cokerse_SURUCUYE_guveniyor(monkeypatch) -> None:
+    """Makine sorusunda yanlış "hayır", kullanıcının CUDA düğmesini kaybetmesi."""
+    monkeypatch.setattr(vm, "_nvidia_driver_present", lambda: True)
+
+    from fool import gpu_budget
+
+    def _boom():
+        raise OSError("nvidia-smi cokti")
+
+    monkeypatch.setattr(gpu_budget, "total_vram_mb", _boom)
+
+    assert vm._cuda_available() is True
+
+
+def test_iki_soru_BIRBIRINDEN_bagimsiz(monkeypatch) -> None:
+    """Kart var ama motor kullanamıyor: ikisi aynı anda doğru olabilmeli.
+
+    Piper'da tam bu durum ölçüldü -- kart yerinde, onnxruntime'da
+    CUDAExecutionProvider yok.
+    """
+    monkeypatch.setattr(vm, "_nvidia_driver_present", lambda: True)
+    monkeypatch.setattr(vm, "_onnxruntime_cuda_available", lambda: False)
+
+    from fool import gpu_budget
+
+    monkeypatch.setattr(gpu_budget, "total_vram_mb", lambda: 16_376)
+
+    assert vm._cuda_available() is True
+    assert vm.cuda_ready(_entry("piper")) is False

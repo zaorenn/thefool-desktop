@@ -194,6 +194,7 @@ EXPECTED_SEAMS = {
     "remote-platform-default",
     "local-only-stt",
     "local-only-tts",
+    "shared-gpu-budget",
 }
 
 

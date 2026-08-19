@@ -86,3 +86,36 @@ def test_rehber_sistem_promptuna_giriyor() -> None:
 def test_rehber_kisa_kaliyor() -> None:
     """Sistem promptu bedava değil; her satırın karşılığı olmalı."""
     assert len(guidance.CLI_COMMAND_GUIDANCE) < 2_000
+
+
+# ---------------------------------------------------------------------------
+# Arkadaş tarzı sohbet
+# ---------------------------------------------------------------------------
+
+def test_sohbet_rehberi_sistem_promptuna_giriyor() -> None:
+    assert any(guidance.COMPANION_GUIDANCE in block for block in guidance.blocks())
+
+
+def test_sohbet_rehberi_dolgu_acilislari_yasakliyor() -> None:
+    """Ölçülebilir kural: "Great question" ile başlayan bir cevap yanlıştır."""
+    flat = " ".join(guidance.COMPANION_GUIDANCE.split())
+
+    assert "Great question" in flat
+    assert "No filler openers" in flat
+
+
+def test_sohbet_rehberi_SESLI_okunacagini_soyluyor() -> None:
+    """Markdown başlıkları ve kod bloğu, seslendirildiğinde saçma duyuluyor."""
+    flat = " ".join(guidance.COMPANION_GUIDANCE.split())
+
+    assert "read out loud" in flat
+    assert "no markdown headings" in flat
+
+
+def test_sohbet_rehberi_bilmiyorum_demeyi_soyluyor() -> None:
+    assert "I don't know" in guidance.COMPANION_GUIDANCE
+
+
+def test_sohbet_rehberi_kisa_kaliyor() -> None:
+    """Sistem promptu bedava değil."""
+    assert len(guidance.COMPANION_GUIDANCE) < 1_600

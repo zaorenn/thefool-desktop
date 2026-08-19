@@ -375,8 +375,10 @@ export function NotchShell() {
     const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(() => {
       setSessionActive(previous => {
         if (previous) {
-          // Kapatiliyor: suren bir kayit varsa atilir.
+          // Kapatiliyor: suren bir kayit varsa atilir ve ARKADAS OTURUMU
+          // unutulur -- bir sonraki acilis temiz bir oturum alsin.
           voice.cancel()
+          voice.endSession()
           window.hermesDesktop?.notch?.close?.()
 
           return false

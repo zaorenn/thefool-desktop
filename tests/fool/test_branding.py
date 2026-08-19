@@ -201,6 +201,7 @@ EXPECTED_SEAMS = {
     "local-only-doctor",
     "speech-pauses",
     "slow-voice-engine",
+    "companion-scope",
 }
 
 

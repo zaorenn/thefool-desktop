@@ -45,6 +45,11 @@ import {
   shouldMonitorBargeIn
 } from './barge-in'
 import {
+  createCompanionSessionState,
+  ensureCompanionSession,
+  forgetCompanionSession
+} from './companion-session'
+import {
   type BeginActivation,
   listenOptionsFor,
   modeForActivation
@@ -81,6 +86,8 @@ export interface NotchVoice {
   commit: () => void
   /** İptal: kaydı at, hiçbir şey gönderme. */
   cancel: () => void
+  /** Notch oturumu kapandı — arkadaş oturumunu unut. */
+  endSession: () => void
 }
 
 export function useNotchVoice(): NotchVoice {
@@ -129,6 +136,11 @@ export function useNotchVoice(): NotchVoice {
   const fillerRef = useRef(createFillerState())
   // Bu turda cevaptan metin geldi mi? Geldiyse sessizlik bitti.
   const speechStartedRef = useRef(false)
+  // Sesli arkadasin KENDI oturumu. Bugune kadar masaustu sohbet panelinin
+  // oturumu kullaniliyordu ve o oturum ``desktop`` kapsaminda kuruluyor:
+  // olculdu, 21 takim / 73 arac / 8 tanesi makineye dokunuyor. Yani "hava
+  // nasil?" diyen arkadas ``terminal_run`` ve ``computer_use``a sahipti.
+  const companionRef = useRef(createCompanionSessionState())
   // ``onSilence`` geri çağrımı ``commit``ten ÖNCE kuruluyor; ref olmadan
   // tanımlanmamış bir değere kapanır.
   const commitRef = useRef<() => void>(() => undefined)
@@ -145,7 +157,9 @@ export function useNotchVoice(): NotchVoice {
       return
     }
 
-    const sessionId = $activeSessionId.get()
+    // Durdurma ARKADAS oturumuna gitmeli: paylasilan oturumu durdurmak,
+    // kullanicinin sohbet panelinde suren isini kesmek olurdu.
+    const sessionId = companionRef.current.id ?? $activeSessionId.get()
 
     if (!sessionId) {
       return
@@ -199,6 +213,11 @@ export function useNotchVoice(): NotchVoice {
       })
   }, [haltTurn, mic])
 
+  /** Notch oturumu kapandı — bir sonraki açılış TEMİZ bir arkadaş oturumu alsın. */
+  const endSession = useCallback(() => {
+    forgetCompanionSession(companionRef.current)
+  }, [])
+
   const cancel = useCallback(() => {
     discardRef.current = true
     void mic.stop()
@@ -206,6 +225,19 @@ export function useNotchVoice(): NotchVoice {
     setCapturing(false)
     setStatus('idle')
   }, [mic])
+
+  // Arkadas oturumunu getir; acilamazsa PAYLASILAN oturuma dus.
+  //
+  // Sesli sohbetin HIC calismamasi, kisitlanmamis calismasindan daha kotu bir
+  // sonuc: ag gecidi henuz ayakta degilse kullanici yine konusabilmeli.
+  const resolveSessionId = useCallback(async () => {
+    const own = await ensureCompanionSession(companionRef.current, {
+      create: params =>
+        requestGateway('session.create', params) as Promise<{ session_id?: string }>
+    })
+
+    return own ?? $activeSessionId.get()
+  }, [requestGateway])
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
   // araya girerken yakalanan cümle. Ayrı yazmak, ikisinden birinin canlı
@@ -239,7 +271,7 @@ export function useNotchVoice(): NotchVoice {
       // bellekteki oturumu. Saklanani gondermek ag gecidinde hicbir seye
       // denk gelmiyor ve mesaj sessizce kayboluyor -- ilk yazimda tam bu
       // oldu, kullanici "soyledigim seyler modele gitmiyor" dedi.
-      const sessionId = $activeSessionId.get()
+      const sessionId = await resolveSessionId()
 
       await requestGateway('prompt.submit', {
         session_id: sessionId,
@@ -250,7 +282,7 @@ export function useNotchVoice(): NotchVoice {
         text
       })
     },
-    [requestGateway]
+    [requestGateway, resolveSessionId]
   )
 
   const commit = useCallback(() => {
@@ -490,5 +522,16 @@ export function useNotchVoice(): NotchVoice {
 
   commitRef.current = commit
 
-  return { begin, cancel, capturing, commit, error, heardSpeech, level, status, transcript }
+  return {
+    begin,
+    cancel,
+    capturing,
+    commit,
+    endSession,
+    error,
+    heardSpeech,
+    level,
+    status,
+    transcript
+  }
 }

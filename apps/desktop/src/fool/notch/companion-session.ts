@@ -34,17 +34,28 @@ export interface CompanionSessionDeps {
   create: (params: Record<string, unknown>) => Promise<{ session_id?: string }>
   /** Şu anki çalışma dizini (oturum onunla açılıyor). */
   cwd?: string
+  /**
+   * Oturumun KAPSAMI. Sesli kip bunu belirliyor: arkadaş ``companion``
+   * (kısıtlı), Jarvis ``desktop`` (sahibinin tam yüzeyi).
+   *
+   * Kapsam oturum açılışında donuyor -- araç kümesi ajan kurulurken
+   * belirleniyor ve prompt önbelleği ona bağlı.
+   */
+  source?: string
 }
 
 export interface CompanionSessionState {
   id: null | string
   /** Süren oluşturma -- iki eşzamanlı istek iki oturum açmasın. */
   pending: null | Promise<null | string>
+  /** Açık oturumun kapsamı. Kip değişince oturum YENİLENMELİ. */
+  source: null | string
 }
 
 export const createCompanionSessionState = (): CompanionSessionState => ({
   id: null,
-  pending: null
+  pending: null,
+  source: null
 })
 
 /**
@@ -59,8 +70,18 @@ export async function ensureCompanionSession(
   state: CompanionSessionState,
   deps: CompanionSessionDeps
 ): Promise<null | string> {
-  if (state.id) {
+  const wanted = deps.source ?? COMPANION_SOURCE
+
+  // Kip degistiyse ESKI oturum kullanilamaz: kapsami ajan kurulurken dondu ve
+  // arkadas oturumunda terminal yok, Jarvis oturumunda kisit yok. Eskisini
+  // kullanmaya devam etmek, kullanicinin sectigi kipi sessizce yok saymakti.
+  if (state.id && state.source === wanted) {
     return state.id
+  }
+
+  if (state.id && state.source !== wanted) {
+    state.id = null
+    state.source = null
   }
 
   if (state.pending) {
@@ -71,12 +92,13 @@ export async function ensureCompanionSession(
     try {
       const created = await deps.create({
         cwd: deps.cwd ?? '',
-        source: COMPANION_SOURCE
+        source: wanted
       })
 
       const id = created.session_id ?? null
 
       state.id = id
+      state.source = id ? wanted : null
 
       return id
     } catch {
@@ -97,4 +119,5 @@ export async function ensureCompanionSession(
 /** Oturum kapandı (kısayol ya da uygulama kapanışı) -- kimliği unut. */
 export function forgetCompanionSession(state: CompanionSessionState): void {
   state.id = null
+  state.source = null
 }

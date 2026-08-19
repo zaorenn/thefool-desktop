@@ -645,6 +645,27 @@ def _load_tts_config() -> Dict[str, Any]:
         return {}
 
 
+def _voice_mode_provider() -> str:
+    """FOOL-SEAM: voice-mode-provider
+
+    Aktif sesli kipin kendi seslendirme saglayicisi (``voice.modes.<kip>``).
+    Yazilmamissa bos donuyor ve cagiran taraf genel ``tts.provider``a
+    dusuyor.
+
+    Hata YUTULUYOR: bir kip yapilandirmasi okuma hatasinin seslendirmeyi
+    tamamen susturmasi kabul edilemez.
+    """
+    try:
+        from fool.voice_modes import active_mode, mode_provider
+        from fool_cli.config import load_config
+
+        config = load_config() or {}
+        return mode_provider(config, active_mode(config)).lower().strip()
+    except Exception as exc:  # pragma: no cover
+        logger.debug("voice mode provider lookup skipped: %s", exc)
+        return ""
+
+
 def _installed_local_tts() -> set:
     """FOOL-SEAM: local-only-tts
 
@@ -690,6 +711,16 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
       4. Hicbiri yoksa ``none`` + ne oldugunu VE nasil duzeltilecegini
          soyleyen bir uyari. Sessizce metin gondermekten iyidir.
     """
+    # FOOL-SEAM: voice-mode-provider
+    #
+    # Iki sesli kip var (arkadas / Jarvis) ve ikisinin AYNI sesle konusmasi
+    # ikisini de zayiflatiyor: arkadas icin sicak ve ifadeli bir ses, Jarvis
+    # icin kisa ve net bir ses isteniyor. Aktif kipin kendi saglayicisi
+    # varsa genel ``tts.provider``i eziyor.
+    _mode_provider = _voice_mode_provider()
+    if _mode_provider:
+        return _mode_provider
+
     explicit = str(tts_config.get("provider") or "").lower().strip()
     if explicit:
         return explicit

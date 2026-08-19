@@ -35,6 +35,8 @@ import {
 } from '@/lib/voice-playback'
 import { $activeSessionId, $messages } from '@/store/session'
 
+import { $voiceMode, voiceModeInfo } from '../voice-mode'
+
 import {
   type BargeGate,
   claimBarge,
@@ -231,9 +233,14 @@ export function useNotchVoice(): NotchVoice {
   // Sesli sohbetin HIC calismamasi, kisitlanmamis calismasindan daha kotu bir
   // sonuc: ag gecidi henuz ayakta degilse kullanici yine konusabilmeli.
   const resolveSessionId = useCallback(async () => {
+    // Kapsami SESLI KIP belirliyor: arkadas kisitli, Jarvis sahibinin tam
+    // yuzeyi. Kip degistiyse ``ensureCompanionSession`` yeni bir oturum aciyor
+    // -- arac kumesi ajan kurulurken donuyor ve eskisini kullanmaya devam
+    // etmek kullanicinin sectigi kipi sessizce yok saymakti.
     const own = await ensureCompanionSession(companionRef.current, {
       create: params =>
-        requestGateway('session.create', params) as Promise<{ session_id?: string }>
+        requestGateway('session.create', params) as Promise<{ session_id?: string }>,
+      source: voiceModeInfo($voiceMode.get()).source
     })
 
     return own ?? $activeSessionId.get()

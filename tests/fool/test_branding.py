@@ -202,6 +202,8 @@ EXPECTED_SEAMS = {
     "speech-pauses",
     "slow-voice-engine",
     "companion-scope",
+    "voice-mode-provider",
+    "voice-modes",
 }
 
 

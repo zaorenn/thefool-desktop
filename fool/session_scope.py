@@ -81,6 +81,10 @@ def scope_toolsets(scope: object) -> list[str] | None:
     ``None`` = "kapsama özel bir kısıtlama yok, normal çözümlemeye devam et".
     Bilinmeyen bir kapsamı kısıtlamak, tanımadığımız bir yüzeyi sessizce
     kırmak olurdu.
+
+    ``jarvis`` bilerek ``None`` döner: Jarvis kipi sahibinin TAM yüzeyini
+    alıyor (kullanıcının açık tercihi). Kısıtlama orada değil, tool-calling
+    sınavında -- bkz. ``fool/voice_modes.py`` ve ``fool/agent_authority.py``.
     """
     if isinstance(scope, str) and scope.strip().lower() == COMPANION:
         return list(COMPANION_TOOLSETS)

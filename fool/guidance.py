@@ -128,6 +128,22 @@ Being useful and being pleasant are the same thing here. Neither one is
 achieved by being longer."""
 
 
+def _active_voice_persona() -> str:
+    """Yapılandırmada seçili sesli kipin personası.
+
+    Geç ithal ve hata yutuluyor: bir yapılandırma okuma hatasının sistem
+    promptunu tamamen boş bırakması kabul edilemez -- o durumda arkadaş
+    personasına düşülüyor.
+    """
+    try:
+        from fool.voice_modes import active_mode, get
+        from fool_cli.config import load_config
+
+        return get(active_mode(load_config() or {})).guidance
+    except Exception:
+        return COMPANION_GUIDANCE
+
+
 def _profile_memory_guidance() -> str:
     """Gec ithal: ``fool.profile_memory`` yapilandirma katmanina dokunuyor ve
     rehber modulunu acilista ona bagimli kilmak istemiyoruz."""
@@ -146,10 +162,11 @@ def blocks() -> tuple[str, ...]:
         # "telegram'i kur" diyor, kabuk hata veriyor, ajan baska bir varyant
         # deniyor; tur bosa gidiyor ve kullanici ajani beceriksiz saniyor.
         CLI_COMMAND_GUIDANCE,
-        # Sohbet eden bir urun; cogu tur bir gorev degil biri konusuyor.
-        # Varsayilan asistan tonu (dolgu acilis, madde isaretleri, her turun
-        # sonunda soru) sesli okundugunda ozellikle yanlis duyuluyor.
-        COMPANION_GUIDANCE,
+        # AKTIF sesli kipin personasi. Iki kip var ve gereksinimleri
+        # celisiyor: arkadas kipinde cogu tur bir gorev degil (kisa, sicak),
+        # Jarvis kipinde gercekten is yapiliyor (kisa, kesin, yikici islemden
+        # once onay). Tek personada birlestirmek ikisini de bozuyordu.
+        _active_voice_persona(),
         # Profil hafizasi sormadan ve iz birakmadan buyuyordu. Rizanin kendisi
         # bir YARGI ve yargiyi kod veremez; mekanizma ve izlenebilirlik
         # ``fool/profile_memory.py`` icinde, kural burada.

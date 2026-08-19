@@ -48,6 +48,10 @@ export interface VoiceItem {
   installed: boolean
   job: VoiceJob | null
   kind: 'tts' | 'stt'
+  /** ``tts.provider`` yapilandirmasina YAZILAN ad -- katalog kimliginden
+   *  AYRI (``qwen3-tts`` indirilir, ``qwen3`` secilir). Sunucu bu alani
+   *  zaten gonderiyordu; arayuzde tanimli degildi. */
+  provider_id: string
   label: string
   recommended: boolean
   size_label: string
@@ -118,6 +122,11 @@ export const voiceApi = {
    *  cagriliyor: olculdu, isitmasiz ilk transkripsiyon 6,94 sn, isitilmis
    *  0,66 sn. O sure kullanicinin konusmakla gecirdigi zamana gizleniyor. */
   warmStt: () => call<{ status: string }>('/api/fool/voice/warm', {}),
+  /** Kip basina secili seslendirme saglayicilari. */
+  modeProviders: () => call<{ providers: Record<string, string> }>('/api/fool/voice/modes'),
+  /** Bir kipin sesini kaydet. Bos saglayici = genel ayara don. */
+  setModeProvider: (mode: string, provider: string) =>
+    call<{ ok: boolean }>('/api/fool/voice/modes', { mode, provider }),
   /** Kisa bir cumle seslendir. ``elapsed_ms`` panelde gosteriliyor: motorun
    *  GERCEKTEN CUDA'da kosup kosmadiginin tek durust kaniti. */
   preview: (entryId: string) =>

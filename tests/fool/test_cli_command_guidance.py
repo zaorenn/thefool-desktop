@@ -44,7 +44,12 @@ def real_commands() -> set[str]:
 
     out = subprocess.run(
         [sys.executable, "-m", "fool_cli.main", "--help"],
-        capture_output=True, text=True, timeout=180,
+        capture_output=True,
+        text=True,
+        timeout=180,
+        # Depo kurali: Windows'ta stdin belirtilmeyen bir alt surec ebeveynin
+        # konsol tutamacini miras alip blokluyor.
+        stdin=subprocess.DEVNULL,
     ).stdout
 
     match = re.search(r"\{([a-z0-9,\-]+)\}", out)

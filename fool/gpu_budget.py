@@ -61,7 +61,17 @@ def _nvidia_smi_mb(field: str) -> int | None:
     try:
         out = subprocess.run(
             ["nvidia-smi", f"--query-gpu={field}", "--format=csv,noheader,nounits"],
-            capture_output=True, text=True, timeout=5, check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+            # ``stdin`` ACIKCA kapatiliyor (depo kurali, bkz.
+            # ``scripts/check_subprocess_stdin.py``). Windows'ta stdin
+            # belirtilmeyen bir alt surec ebeveynin konsol tutamacini miras
+            # aliyor ve okumaya kalkarsa BLOKLUYOR. Bu islev transkripsiyon
+            # yukleme yolunda cagriliyor -- orada bir kilitlenme sesli turu
+            # sonsuza kadar dondururdu.
+            stdin=subprocess.DEVNULL,
         )
     except Exception:
         return None

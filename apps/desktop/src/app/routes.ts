@@ -18,6 +18,10 @@ export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
+// FOOL-SEAM: friend-window
+// Sohbet icin AYRI bir tam sayfa: notch kucuk ve gecici, bu ise oturup
+// konusmak icin. Kapsami ``friend`` -- arac yok ama hafiza ajanla ORTAK.
+export const FRIEND_ROUTE = '/friend'
 
 export type AppView =
   | 'agents'
@@ -30,6 +34,7 @@ export type AppView =
   // so the sidebar kept a session highlighted and the titlebar kept the
   // session-title dropdown while a plugin page was showing.
   | 'extension'
+  | 'friend'
   | 'messaging'
   | 'profiles'
   | 'settings'
@@ -42,6 +47,7 @@ export type AppRouteId =
   | 'artifacts'
   | 'command-center'
   | 'cron'
+  | 'friend'
   | 'messaging'
   | 'new'
   | 'profiles'
@@ -61,6 +67,7 @@ export const APP_ROUTES = [
   { id: 'settings', path: SETTINGS_ROUTE, view: 'settings' },
   { id: 'command-center', path: COMMAND_CENTER_ROUTE, view: 'command-center' },
   { id: 'skills', path: SKILLS_ROUTE, view: 'skills' },
+  { id: 'friend', path: FRIEND_ROUTE, view: 'friend' },
   { id: 'messaging', path: MESSAGING_ROUTE, view: 'messaging' },
   { id: 'webhooks', path: WEBHOOKS_ROUTE, view: 'webhooks' },
   { id: 'artifacts', path: ARTIFACTS_ROUTE, view: 'artifacts' },

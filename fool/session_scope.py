@@ -31,8 +31,17 @@ atardı (bkz. ``gateway/run.py`` ajan önbelleği).
 
 from __future__ import annotations
 
-#: Sesli arkadaş kapsamı.
+#: Uzak sesli arkadaş kapsamı (WhatsApp, Telegram, notch...).
 COMPANION = "companion"
+
+#: Masaüstündeki Friend penceresi.
+#:
+#: ``companion``dan TEK farkı hafıza. Uzak bir kullanıcıya sahibinin geçmiş
+#: sohbetlerini açmak sızıntı; kendi makinesinde kendi penceresinde AÇMAMAK
+#: ise arkadaşı hafızasız bırakmak -- her seferinde kendini yeniden anlatmak
+#: zorunda kalıyorsun. Bu pencere yerel ve sahibinin, o yüzden hafıza ORTAK:
+#: Friend ile ajan aynı ``MEMORY.md`` / ``USER.md`` dosyalarını görüyor.
+FRIEND = "friend"
 
 #: Sahibinin iş yaptığı kapsam (masaüstü sohbet paneli, TUI, CLI).
 AGENT_SCOPES = frozenset({"cli", "desktop", "tui"})
@@ -67,6 +76,22 @@ COMPANION_TOOLSETS = (
 #: tarafında hiçbir şey okumuyor -- bu modülün var olma sebeplerinden biri.
 COMPANION_SURFACES = frozenset({"companion", "hud", "notch"})
 
+#: Friend penceresinin araçları: uzak arkadaşınkiler + HAFIZA.
+#:
+#: ``memory`` burada var, ``companion``da yok ve fark bilinçli: orada
+#: kullanıcı uzakta ve tanınmıyor, burada makinenin sahibi kendi
+#: penceresinde. ``session_search`` yine DIŞARIDA -- geçmiş sohbetleri
+#: taramak hatırlamaktan farklı bir şey ve sohbet için gerekmiyor.
+FRIEND_TOOLSETS = (
+    "clarify",
+    "image_gen",
+    "memory",
+    "output_file",
+    "tts",
+    "vision",
+    "web",
+)
+
 
 def is_companion_surface(surface: object) -> bool:
     """Bu yüzey sesli arkadaş mı?"""
@@ -86,6 +111,9 @@ def scope_toolsets(scope: object) -> list[str] | None:
     alıyor (kullanıcının açık tercihi). Kısıtlama orada değil, tool-calling
     sınavında -- bkz. ``fool/voice_modes.py`` ve ``fool/agent_authority.py``.
     """
-    if isinstance(scope, str) and scope.strip().lower() == COMPANION:
+    key = scope.strip().lower() if isinstance(scope, str) else ""
+    if key == COMPANION:
         return list(COMPANION_TOOLSETS)
+    if key == FRIEND:
+        return list(FRIEND_TOOLSETS)
     return None

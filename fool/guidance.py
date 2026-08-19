@@ -77,6 +77,45 @@ Notes:
   the supported path and anything else risks leaving the skin inconsistent."""
 
 
+CLI_COMMAND_GUIDANCE: Final[str] = """THE FOOL'S OWN CLI
+The command is `fool`. These subcommands exist; do not invent others:
+
+    `fool tools`      turn toolsets on/off per platform
+    `fool model`      pick the model and provider
+    `fool gateway`    messaging gateway: run, start, stop, status, setup
+    `fool whatsapp`   set up WhatsApp
+    `fool slack`      Slack setup helpers
+    `fool send`       send a message to a configured platform
+    `fool logs`       read the logs (`fool logs -f` to follow)
+    `fool status`     component status
+    `fool doctor`     check config and dependencies
+    `fool config`     read/write config.yaml values
+    `fool desktop`    build and open the desktop app
+    `fool update`     update the installed backend
+    `fool cron`       scheduled jobs
+    `fool skills`     manage skills
+
+There is NO per-platform setup command beyond the ones above: Telegram,
+Discord, Matrix and the rest are configured through `fool gateway setup`
+and `fool config`. Logs are NOT under `fool gateway` — use `fool logs`.
+
+If you are unsure a subcommand exists, run `fool --help` first instead of
+guessing. Guessing costs the user a whole turn."""
+
+
 def blocks() -> tuple[str, ...]:
     """Sistem promptuna eklenecek The Fool rehber blokları."""
-    return (OPEN_IN_DEFAULT_BROWSER_GUIDANCE, ACCENT_COLOR_GUIDANCE)
+    return (
+        OPEN_IN_DEFAULT_BROWSER_GUIDANCE,
+        ACCENT_COLOR_GUIDANCE,
+        # Ajan olmayan komutlari uyduruyordu (olculdu: ``fool telegram``,
+        # ``fool gateway logs``, ``fool voice`` -- ucu de yok). Kullanici
+        # "telegram'i kur" diyor, kabuk hata veriyor, ajan baska bir varyant
+        # deniyor; tur bosa gidiyor ve kullanici ajani beceriksiz saniyor.
+        CLI_COMMAND_GUIDANCE,
+    )
+
+
+def all_guidance() -> tuple[str, ...]:
+    """``blocks()`` icin okunur takma ad -- testler ve cagiranlar icin."""
+    return blocks()

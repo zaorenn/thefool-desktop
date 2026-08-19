@@ -199,6 +199,7 @@ EXPECTED_SEAMS = {
     "benchmark-gated-authority",
     "profile-memory-consent",
     "local-only-doctor",
+    "speech-pauses",
 }
 
 

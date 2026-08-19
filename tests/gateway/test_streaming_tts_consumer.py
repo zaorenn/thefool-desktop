@@ -280,13 +280,27 @@ class TestConsumerLifecycle:
             assert adapter.begin_count == 1
             assert adapter.finish_count == 1
             assert adapter.abort_count == 0
+            # FOOL-SEAM: speech-pauses
+            #
+            # Her cumleden SONRA bir sessizlik parcasi yaziliyor (nefes);
+            # bkz. fool/prosody.py. Bu testin asil olctugu sey SIRA ve bu
+            # degismedi: ses parcalari hala uretildikleri sirada geliyor.
+            # Sessizlik parcalari ayiklanip ayni sozlesme dogrulaniyor,
+            # ustune duraklamanin gercekten eklendigi ayrica olculuyor.
+            voiced = [c for c in adapter.written_chunks if set(c) != {0}]
+            silences = [c for c in adapter.written_chunks if set(c) == {0}]
+
             # 2 clauses * 2 chunks each = 4 chunks
-            assert len(adapter.written_chunks) == 4
+            assert len(voiced) == 4
             # Verify ordering
-            assert adapter.written_chunks[0] == b"chunk-1-0"
-            assert adapter.written_chunks[1] == b"chunk-1-1"
-            assert adapter.written_chunks[2] == b"chunk-2-0"
-            assert adapter.written_chunks[3] == b"chunk-2-1"
+            assert voiced[0] == b"chunk-1-0"
+            assert voiced[1] == b"chunk-1-1"
+            assert voiced[2] == b"chunk-2-0"
+            assert voiced[3] == b"chunk-2-1"
+
+            # Cumle basina bir nefes, ve her biri gercekten sessiz.
+            assert len(silences) == 2
+            assert all(silences)
 
         _run_test(run)
 

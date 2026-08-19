@@ -5250,13 +5250,15 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
             cfg = _load_tts_config()
             streamer = resolve_streaming_provider(cfg)
             cap = _resolve_max_text_length(_get_provider(cfg), cfg) if streamer else 0
-        return streamer, cap
+        # FOOL-SEAM: speech-pauses -- duraklama ayari TTS bolumunde yasiyor ve
+        # profil kapsami icinde okunmasi gerekiyor.
+        return streamer, cap, cfg
 
     try:
-        streamer, cap = await loop.run_in_executor(None, _resolve)
+        streamer, cap, _tts_cfg_for_pauses = await loop.run_in_executor(None, _resolve)
     except Exception:
         _log.exception("speak-stream provider resolution failed")
-        streamer, cap = None, 0
+        streamer, cap, _tts_cfg_for_pauses = None, 0, {}
     if streamer is None:
         with contextlib.suppress(Exception):
             await ws.send_json({"type": "fallback"})
@@ -5307,6 +5309,23 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
                     return
                 yield from chunker.feed(delta)
 
+        # FOOL-SEAM: speech-pauses
+        #
+        # Parcalar arasindaki tek bosluk motorun bir sonraki parcayi URETME
+        # suresiydi -- yani motor hizlandikca konusma sikisiyor. Olculen
+        # rakamlarla Kokoro sonraki cagrilarda 0,08 sn'ye iniyor ve cumleler
+        # neredeyse ust uste biniyor: teknik olarak mukemmel, kulakta
+        # nefessiz. Hizlandirmanin kendi urettigi bir kusur; yavas motorda
+        # (Chatterbox 28 sn) kimse fark etmiyordu.
+        #
+        # Sessizlik PCM olarak EKLENIYOR, beklenerek degil: bir ``sleep``
+        # bir sonraki parcanin sentezini de geciktirir ve kazanilan gecikmeyi
+        # geri verirdi.
+        from fool.prosody import pause_pcm_after, pauses_enabled
+
+        _pauses = pauses_enabled(_tts_cfg_for_pauses)
+        _rate = int(getattr(streamer, "sample_rate", 24_000) or 24_000)
+
         try:
             for sentence in _sentences():
                 cleaned = _strip_markdown_for_tts(sentence)
@@ -5317,6 +5336,11 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
                         if stop.is_set():
                             return
                         loop.call_soon_threadsafe(chunks.put_nowait, chunk)
+                # Duraklama CUMLENIN sonunda, uzunluk sinirindan bolunmus her
+                # parcanin degil: ikincisi cumle ortasinda kekelemek olurdu.
+                _gap = pause_pcm_after(cleaned, _rate, enabled=_pauses)
+                if _gap and not stop.is_set():
+                    loop.call_soon_threadsafe(chunks.put_nowait, _gap)
         except Exception as exc:
             _log.warning("speak-stream synthesis failed: %s", exc)
         finally:

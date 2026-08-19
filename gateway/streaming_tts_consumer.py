@@ -337,6 +337,25 @@ class StreamingTTSConsumer:
                 self._handle.audible = True
                 self._suppress_whole_file = True
 
+        # FOOL-SEAM: speech-pauses
+        #
+        # Cumleler arasindaki tek bosluk motorun bir sonraki parcayi URETME
+        # suresiydi -- motor hizlandikca konusma sikisiyor. Sessizlik PCM
+        # olarak ekleniyor, beklenerek degil: bir ``sleep`` bir sonraki
+        # cumlenin sentezini de geciktirir ve kazanilan gecikmeyi geri
+        # verirdi.
+        if not (self._aborted or self._handle.aborted):
+            from fool.prosody import pause_pcm_after, pauses_enabled
+
+            gap = pause_pcm_after(
+                cleaned,
+                self._audio_format.sample_rate,
+                channels=self._audio_format.channels,
+                enabled=pauses_enabled(self._tts_config),
+            )
+            if gap:
+                await self._adapter.write_streaming_tts(self._handle, gap)
+
     async def _iter_stream_chunks(self, text: str):
         """Yield provider PCM chunks one at a time without blocking the loop."""
         if self._streamer is None:

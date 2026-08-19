@@ -198,6 +198,7 @@ EXPECTED_SEAMS = {
     "output-file-toolset",
     "benchmark-gated-authority",
     "profile-memory-consent",
+    "local-only-doctor",
 }
 
 

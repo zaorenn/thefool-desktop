@@ -21,7 +21,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ListRow, ListRowSkeleton, Pill, SettingsContent, SettingsSection } from '@/app/settings/primitives'
 import { Button } from '@/components/ui/button'
 import { triggerHaptic } from '@/lib/haptics'
-import { Cpu, Download, Keyboard, Mic, Volume2, Zap } from '@/lib/icons'
+import { Cpu, Download, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
 import { DEFAULT_PTT_CODE, formatPttCode, isBindableCode } from './notch/ptt-binding'
@@ -48,6 +48,61 @@ function ProgressBar({ job }: { job: VoiceJob }) {
         </span>
         <span className="font-mono">{job.percent.toFixed(0)}%</span>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Model başına dinleme düğmesi.
+ *
+ * Dört motor "kurulu" yazıyor ve kullanıcı hangisinin nasıl konuştuğunu
+ * duymadan seçim yapıyordu. Ses seçmek kulakla yapılan bir iş.
+ *
+ * Asıl kazanç ölçüm: geçen süre de gösteriliyor. Bu depodaki en pahalı hata
+ * sınıfı -- "cihaz cuda yazıyordu, motor CPU'da koşuyordu" -- tam burada
+ * görünür oluyor. Kokoro CUDA'da 0,08 sn; CPU'da saniyeler. Bir düğmeye basıp
+ * "3,4 s" görmek, panelin "CUDA" yazmasından daha inandırıcı bir kanıt.
+ */
+function PreviewButton({ item }: { item: VoiceItem }) {
+  const [busy, setBusy] = useState(false)
+  const [elapsed, setElapsed] = useState<null | number>(null)
+
+  const play = useCallback(async () => {
+    setBusy(true)
+    triggerHaptic()
+
+    try {
+      const result = await voiceApi.preview(item.id)
+
+      setElapsed(result.elapsed_ms)
+      // Ses ``data:`` URI olarak calindi: gecici dosya sunucuda zaten
+      // siliniyor ve tarayiciya ikinci bir istek yaptirmak, motorun
+      // sentezini bir kez daha tetikleme riski demekti.
+      const audio = new Audio(`data:${result.mime};base64,${result.audio_base64}`)
+
+      await audio.play()
+    } catch (error) {
+      notifyError(error, `Could not preview ${item.label}`)
+    } finally {
+      setBusy(false)
+    }
+  }, [item.id, item.label])
+
+  if (!item.installed) {
+    return null
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Button disabled={busy} onClick={() => void play()} size="sm" variant="ghost">
+        <Play className="size-3.5" />
+        {busy ? 'Speaking…' : 'Listen'}
+      </Button>
+      {elapsed !== null && (
+        <span className="text-[0.62rem] text-muted-foreground tabular-nums">
+          {(elapsed / 1000).toFixed(2)} s
+        </span>
+      )}
     </div>
   )
 }
@@ -174,6 +229,9 @@ function VoiceRow({
               // duser. Fark burada gorunur oluyor.
               <span className="ml-1 text-[0.62rem] text-(--theme-warm)">CUDA runtime missing</span>
             ) : null}
+            {/* Kulakla secim + gercek gecikme. Panelin "CUDA" yazmasindan
+                daha inandirici bir kanit. */}
+            {item.kind === 'tts' && <PreviewButton item={item} />}
           </div>
         ) : null
       }

@@ -101,6 +101,28 @@ async def voice_select(body: SelectBody) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.post("/api/fool/voice/preview")
+async def voice_preview_route(body: SelectBody) -> dict[str, Any]:
+    """Kısa bir cümle seslendir ve GEÇEN SÜREYİ de döndür.
+
+    Süre bilerek gövdede: panelin "CUDA" yazması ile motorun gerçekten
+    CUDA'da koşması ayrı şeyler ve fark ölçülebilir (Kokoro CUDA'da 0,08 sn,
+    CPU'da saniyeler). Kullanıcı düğmeye basınca hem duyuyor hem görüyor.
+
+    Sentez motoru yükleyebildiği için istek uzun sürebilir; zaman aşımını
+    çağıran taraf yönetiyor.
+    """
+    from fool import voice_preview
+
+    try:
+        return voice_preview.preview(body.entry_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        # Sessizce basarisiz olan bir dinleme dugmesi, dugmenin bozuk olmasi.
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 @router.post("/api/fool/voice/device")
 async def voice_device(body: DeviceBody) -> dict[str, Any]:
     try:

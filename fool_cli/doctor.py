@@ -999,6 +999,47 @@ def run_doctor(args):
     except Exception as _lo_err:
         check_warn("local-only audit unavailable", str(_lo_err))
 
+    # FOOL-SEAM: slow-voice-engine
+    #
+    # Olculdu (bu makine, kisa cumle, isinmis): piper 0,11 sn, kokoro 0,14 sn,
+    # chatterbox 1,74 sn, qwen3-tts 9,26 sn. Kullanicinin SECILI motoru
+    # qwen3'tu -- kurulu en hizlisindan ~66 kat yavas ve bu hicbir yerde
+    # gorunmuyordu. Sesli sohbette her cumle icin 9 saniye demek.
+    try:
+        from fool.voice_bench import (
+            faster_alternative,
+            is_measured,
+            load_results,
+            slow_engine_message,
+        )
+        from fool_cli.config import load_config as _load_config
+
+        _tts = (_load_config() or {}).get("tts") or {}
+        _selected = str(_tts.get("provider") or "").strip() if isinstance(_tts, dict) else ""
+        _bench = load_results()
+
+        if _selected and is_measured(_selected, _bench):
+            _hit = faster_alternative(_selected, _bench)
+            if _hit:
+                check_warn(
+                    f"voice engine {_selected} is slow",
+                    slow_engine_message(_selected, *_hit),
+                )
+            else:
+                _ms = int(_bench[_selected]["elapsed_ms"])
+                check_ok(f"voice engine {_selected}: {_ms / 1000:.2f}s per sentence")
+        elif _selected:
+            # "Olculmedi" ile "olculdu, iyi" AYRI seyler. Ikisini ayni
+            # gostermek, olcumu hic bulunmayan bir motoru "sorun yok" diye
+            # isaretlemek demekti -- nitekim tam bu oldu: kayit anahtari
+            # ``qwen3-tts``, yapilandirmadaki ad ``qwen3``.
+            check_ok(
+                f"voice engine {_selected} not benchmarked "
+                "(run `python -m fool.voice_bench`)"
+            )
+    except Exception as _vb_err:
+        check_warn("voice engine check unavailable", str(_vb_err))
+
     _section("Model Tool-Calling")
     try:
         from fool.agent_authority import enforcement_enabled

@@ -91,6 +91,17 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   })
 }
 
+export interface VoicePreview {
+  ok: boolean
+  provider: string
+  entry_id: string
+  /** Sentez GERCEKTEN ne kadar surdu. */
+  elapsed_ms: number
+  bytes: number
+  mime: string
+  audio_base64: string
+}
+
 export const voiceApi = {
   cancel: (jobId: string) => call<{ cancelled: boolean }>('/api/fool/voice/cancel', { job_id: jobId }),
   catalog: () => call<VoiceCatalog>('/api/fool/voice/catalog'),
@@ -103,6 +114,10 @@ export const voiceApi = {
   setVoice: (entryId: string, voice: string) =>
     call<{ ok: boolean }>('/api/fool/voice/voice', { entry_id: entryId, voice }),
   installCuda: (entryId: string) => call<VoiceJob>('/api/fool/voice/cuda', { entry_id: entryId }),
+  /** Kisa bir cumle seslendir. ``elapsed_ms`` panelde gosteriliyor: motorun
+   *  GERCEKTEN CUDA'da kosup kosmadiginin tek durust kaniti. */
+  preview: (entryId: string) =>
+    call<VoicePreview>('/api/fool/voice/preview', { entry_id: entryId }),
   clones: () => call<{ clones: VoiceClone[] }>('/api/fool/voice/clones'),
   uploadClone: (filename: string, dataBase64: string) =>
     call<{ id: string; label: string }>('/api/fool/voice/clones/upload', {

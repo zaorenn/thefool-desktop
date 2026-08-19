@@ -26,7 +26,8 @@ from tools.tool_backend_helpers import (
 
 
 _DEFAULT_PLATFORM_TOOLSETS = {
-    "cli": "fool-cli",
+    # FOOL-SEAM: toolset-rename — takim adi tanimlayici, markalanmaz.
+    "cli": "hermes-cli",
 }
 
 # Maps a tools_config provider's ``managed_nous_feature`` to the tool-pool

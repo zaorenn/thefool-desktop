@@ -2381,7 +2381,7 @@ def _enable_recently_shipped_toolsets(
     declined = {str(ts) for ts in offered} if isinstance(offered, list) else set()
 
     plat_info = PLATFORMS.get(platform)
-    default_ts = plat_info["default_toolset"] if plat_info else f"fool-{platform}"
+    default_ts = plat_info["default_toolset"] if plat_info else f"hermes-{platform}"  # FOOL-SEAM: toolset-rename
     composite_tools = None
 
     for ts_key in sorted(_RECENTLY_SHIPPED_TOOLSETS):
@@ -2418,13 +2418,29 @@ def _get_platform_tools(
     explicitly_configured = isinstance(toolset_names, list)
 
     if toolset_names is None or not isinstance(toolset_names, list):
-        plat_info = PLATFORMS.get(platform)
-        if plat_info:
-            default_ts = plat_info["default_toolset"]
+        # FOOL-SEAM: remote-platform-default
+        #
+        # Yapilandirilmamis bir platform upstream'de kendi 59 araclik
+        # bilesigine dusuyor: ``computer_use``, ``execute_code``,
+        # ``terminal_run``, ``read_file``, 13 tane ``browser_*``. WhatsApp ya
+        # da Telegram'a yazabilen herkes -- aile, arkadas, numarayi bilen biri
+        # -- makineyi surerdi. Uzak platformlar acik bir secim yapilana kadar
+        # kisitli gelir; sahibinin kendi yuzeyleri (cli, cron, desktop)
+        # dokunulmadan gecer. Kullanicinin config.yaml'a yazdigi liste bu
+        # dalin disinda kaldigi icin her zaman kazanir.
+        from fool.platform_toolsets import default_toolsets_for
+
+        _safe = default_toolsets_for(platform)
+        if _safe is not None:
+            toolset_names = _safe
         else:
-            # Plugin platform — derive toolset name from platform key
-            default_ts = f"fool-{platform}"
-        toolset_names = [default_ts]
+            plat_info = PLATFORMS.get(platform)
+            if plat_info:
+                default_ts = plat_info["default_toolset"]
+            else:
+                # Plugin platform — derive toolset name from platform key
+                default_ts = f"hermes-{platform}"  # FOOL-SEAM: toolset-rename
+            toolset_names = [default_ts]
 
     # YAML may parse bare numeric names (e.g. ``12306:``) as int.
     # Normalise to str so downstream sorted() never mixes types.
@@ -2562,7 +2578,7 @@ def _get_platform_tools(
     # otherwise saving via `fool tools` (which flips has_explicit_config
     # to True) silently drops them.
     _plat_info = PLATFORMS.get(platform)
-    _default_ts = _plat_info["default_toolset"] if _plat_info else f"fool-{platform}"
+    _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"  # FOOL-SEAM: toolset-rename
     platform_tool_universe = set(resolve_toolset(_default_ts))
     configurable_tool_universe = set()
     for ck in configurable_keys:
@@ -2571,7 +2587,18 @@ def _get_platform_tools(
     for ts_key in enabled_toolsets:
         claimed.update(resolve_toolset(ts_key))
     skip = configurable_keys | plugin_ts_keys | platform_default_keys
-    skip |= {k for k in TOOLSETS if k.startswith("fool-")}
+    # FOOL-SEAM: toolset-rename
+    #
+    # Bu satir platform BILESIKLERINI ("hermes-cli", "hermes-discord", ...)
+    # kurtarma dongusunun disinda tutmak icin yazilmisti; marka donusumunden
+    # sonra ``fool-`` onekini ariyor ama ``TOOLSETS`` icinde tek bir ``fool-``
+    # anahtari yok -- hepsi hala ``hermes-``. Sonuc: her platform kendi
+    # bilesiginin yaninda ``hermes-cli``yi de "kurtariyor", yani 59 aracin
+    # tamamini geri aliyor. Iki oneki de eliyoruz.
+    skip |= {
+        k for k in TOOLSETS
+        if k.startswith("fool-") or k.startswith("hermes-")
+    }
     skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
     for ts_key, ts_def in TOOLSETS.items():
         if ts_key in skip:
@@ -2704,6 +2731,39 @@ def _get_platform_tools(
                 platform,
                 ", ".join(_named),
             )
+
+    # FOOL-SEAM: remote-platform-default
+    #
+    # Uzak bir platformun araci yuzeyi icin SON soz. Varsayilan listeyi
+    # yukarida belirlemek yetmiyor, cunku liste sonradan uc ayri yerden
+    # genisliyor: "kurtarma" dongusu (platform bilesiginde olup
+    # yapilandirilamayan takimlar), yeni gelen takimlari otomatik acan
+    # grandfathering kurali ve eklenti takimlari. Olculdu: kullanici
+    # ``platform_toolsets.telegram: [clarify]`` yazmis olmasina ragmen sonuc
+    # ``{clarify, bfl, kanban}`` cikiyordu -- ``kanban_list`` / ``kanban_show``
+    # sahibinin gorev panosunu, baslıklarini ve yorumlarini bota mesaj
+    # yazabilen HERKESE aciyor.
+    #
+    # Tavan:
+    #   * acik secim yoksa -> guvenli kume (fool/platform_toolsets.py)
+    #   * acik secim varsa -> TAM OLARAK kullanicinin yazdigi liste
+    # Ikinci maddenin bedeli: uzak platformlarda yeni takimlar otomatik
+    # acilmaz, kullanici ``fool tools`` ile secer. Bilincli tercih --
+    # sessizce genisleyen bir uzak yuzey kabul edilemez.
+    #
+    # MCP sunuculari disarida birakiliyor: onlar takim degil baglanti ve
+    # kullanici tarafindan ayrica kurulmus olmalari gerekiyor.
+    from fool import platform_toolsets as _remote_policy
+
+    if _remote_policy.is_remote_platform(platform):
+        if explicitly_configured:
+            _ceiling = {str(t) for t in (platform_toolsets.get(platform) or [])}
+        else:
+            _ceiling = set(_remote_policy.SAFE_REMOTE_TOOLSETS)
+        enabled_toolsets = {
+            k for k in enabled_toolsets
+            if k in _ceiling or k in enabled_mcp_servers
+        }
 
     return enabled_toolsets
 

@@ -2753,6 +2753,37 @@ def _get_platform_tools(
     #
     # MCP sunuculari disarida birakiliyor: onlar takim degil baglanti ve
     # kullanici tarafindan ayrica kurulmus olmalari gerekiyor.
+    # FOOL-SEAM: benchmark-gated-authority
+    #
+    # Makineyi SUREN takimlar (terminal, file, code_execution, computer_use,
+    # browser, delegation, cronjob...) ancak model tool-calling sinavini
+    # gectiyse veriliyor. Upstream'in "bu model agentic degil" karari bir DIZE
+    # eslesmesi ve yalnizca uyari: araclar yine de veriliyor. Sonuc sessiz
+    # siniftan -- model araci yanlis cagiriyor, tur bosa gidiyor, kullanici
+    # modeli aptal saniyor; kotu ihtimalde ``terminal_run``i yanlis argumanla
+    # gercekten calistiriyor.
+    #
+    # Kapi VARSAYILAN OLARAK KAPALI (``agent.require_benchmark``): calisan bir
+    # kurulumu bir olcumun karariyla kirmak, cozdugunden cok sorun uretirdi.
+    # Olcum her zaman yapilabiliyor (``python -m fool.model_readiness``),
+    # kisitlama acik tercihle basliyor.
+    try:
+        from fool.agent_authority import enforcement_enabled, granted_toolsets
+
+        if enforcement_enabled(config):
+            from fool.model_readiness import has_passed
+
+            _model_cfg = config.get("model") or {}
+            _model = str(
+                (_model_cfg.get("default") or _model_cfg.get("model") or "")
+                if isinstance(_model_cfg, dict) else ""
+            ).strip()
+            enabled_toolsets = granted_toolsets(
+                enabled_toolsets, passed=has_passed(_model)
+            )
+    except Exception as _auth_err:  # pragma: no cover - kapi asla cokmemeli
+        logger.debug("benchmark gate skipped: %s", _auth_err)
+
     from fool import platform_toolsets as _remote_policy
 
     if _remote_policy.is_remote_platform(platform):

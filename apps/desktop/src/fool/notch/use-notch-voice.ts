@@ -26,6 +26,7 @@ import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
 import {
   playSpeechText,
   type SpeechStreamSession,
@@ -33,6 +34,16 @@ import {
   stopVoicePlayback
 } from '@/lib/voice-playback'
 import { $activeSessionId, $messages } from '@/store/session'
+
+import {
+  type BargeGate,
+  claimBarge,
+  createBargeGate,
+  forceClaimBarge,
+  isPlayingPhase,
+  releaseBarge,
+  shouldMonitorBargeIn
+} from './barge-in'
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
 
@@ -82,10 +93,23 @@ export function useNotchVoice(): NotchVoice {
   const discardRef = useRef(false)
   // Suren akis oturumu ve o oturuma KADAR gonderilmis karakter sayisi.
   const streamRef = useRef<{ sent: number; session: SpeechStreamSession | null } | null>(null)
+  // Turu kimin kestigi. Tus ve ses ayni anda gelebiliyor; kapisiz birakmak
+  // ayni cumleyi modele iki kez gonderiyordu.
+  const bargeRef = useRef<BargeGate>(createBargeGate())
+  // Araya girme yakalamasi SURUYOR mu? Izleyici, durum 'listening'e dondugu
+  // an sokulup atilirsa yakaladigi cumleyi teslim edemeden olur -- yani
+  // kullanicinin araya girerken soyledigi sey kaybolur. Bu bayrak izleyiciyi
+  // teslimat bitene kadar ayakta tutuyor.
+  const [capturing, setCapturing] = useState(false)
 
   const begin = useCallback(() => {
     setError(null)
     discardRef.current = false
+    // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.
+    // Kapıyı ilk gelene bırakmak tuşu sessizce yutardı — mikrofon açılmaz,
+    // kullanıcı boşluğa konuşurdu.
+    forceClaimBarge(bargeRef.current, 'key')
+    setCapturing(false)
     setStatus('listening')
     // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
     // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
@@ -102,8 +126,53 @@ export function useNotchVoice(): NotchVoice {
   const cancel = useCallback(() => {
     discardRef.current = true
     void mic.stop()
+    releaseBarge(bargeRef.current)
+    setCapturing(false)
     setStatus('idle')
   }, [mic])
+
+  // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
+  // araya girerken yakalanan cümle. Ayrı yazmak, ikisinden birinin canlı
+  // oturum kimliği gibi bir ayrıntıyı kaçırması demekti.
+  const submitAudio = useCallback(
+    async (audio: Blob) => {
+      const dataUrl = await blobToDataUrl(audio)
+      const result = await transcribeAudio(dataUrl, audio.type)
+      const text = (result.transcript ?? '').trim()
+
+      if (!text) {
+        // Sessiz kayıt. Boş metin göndermek ajanı boşluğa cevap vermeye
+        // zorlardı; sessizce başa dönmek doğru.
+        setStatus('idle')
+        releaseBarge(bargeRef.current)
+
+        return
+      }
+
+      setTranscript(text)
+      setStatus('thinking')
+      // Yeni tur başladı: bir sonraki araya girme kapıyı yeniden talep
+      // edebilmeli.
+      releaseBarge(bargeRef.current)
+
+      // CANLI oturum kimligi -- saklanan kimlik DEGIL. Ikisi ayri ad uzayi:
+      // saklanan kimlik diske yazilan kayit, canli kimlik ag gecidinin
+      // bellekteki oturumu. Saklanani gondermek ag gecidinde hicbir seye
+      // denk gelmiyor ve mesaj sessizce kayboluyor -- ilk yazimda tam bu
+      // oldu, kullanici "soyledigim seyler modele gitmiyor" dedi.
+      const sessionId = $activeSessionId.get()
+
+      await requestGateway('prompt.submit', {
+        session_id: sessionId,
+        // Notch'tan konuşuldu: kullanıcı başka bir uygulamaya bakıyor.
+        // HUD ile aynı ipucu, ağ geçidi bunu tur başına bağlam olarak
+        // kullanıyor.
+        surface: 'hud',
+        text
+      })
+    },
+    [requestGateway]
+  )
 
   const commit = useCallback(() => {
     setStatus('transcribing')
@@ -114,46 +183,19 @@ export function useNotchVoice(): NotchVoice {
 
         if (!recording || discardRef.current) {
           setStatus('idle')
+          releaseBarge(bargeRef.current)
 
           return
         }
 
-        const dataUrl = await blobToDataUrl(recording.audio)
-        const result = await transcribeAudio(dataUrl, recording.audio.type)
-        const text = (result.transcript ?? '').trim()
-
-        if (!text) {
-          // Sessiz kayıt. Boş metin göndermek ajanı boşluğa cevap vermeye
-          // zorlardı; sessizce başa dönmek doğru.
-          setStatus('idle')
-
-          return
-        }
-
-        setTranscript(text)
-        setStatus('thinking')
-
-        // CANLI oturum kimligi -- saklanan kimlik DEGIL. Ikisi ayri ad uzayi:
-        // saklanan kimlik diske yazilan kayit, canli kimlik ag gecidinin
-        // bellekteki oturumu. Saklanani gondermek ag gecidinde hicbir seye
-        // denk gelmiyor ve mesaj sessizce kayboluyor -- ilk yazimda tam bu
-        // oldu, kullanici "soyledigim seyler modele gitmiyor" dedi.
-        const sessionId = $activeSessionId.get()
-
-        await requestGateway('prompt.submit', {
-          session_id: sessionId,
-          // Notch'tan konuşuldu: kullanıcı başka bir uygulamaya bakıyor.
-          // HUD ile aynı ipucu, ağ geçidi bunu tur başına bağlam olarak
-          // kullanıyor.
-          surface: 'hud',
-          text
-        })
+        await submitAudio(recording.audio)
       } catch (cause) {
         setStatus('idle')
+        releaseBarge(bargeRef.current)
         setError(cause instanceof Error ? cause.message : String(cause))
       }
     })()
-  }, [mic, requestGateway])
+  }, [mic, submitAudio])
 
   // Cevabı AKARKEN seslendir.
   //
@@ -229,6 +271,84 @@ export function useNotchVoice(): NotchVoice {
       }
     }
   }, [lastSpokenId, messages, status])
+
+  // Araya girme: kullanıcı TUŞA BASMADAN konuşmaya başlayınca da sus.
+  //
+  // ``lib/voice-barge-in.ts`` bu işi zaten yapabiliyordu ama notch onu hiç
+  // çağırmıyordu; araya girmenin tek yolu sağ Ctrl'ye basmaktı. İnsanla
+  // konuşurken kimse araya girmek için düğmeye basmaz.
+  //
+  // İzleyici ``thinking`` evresinde DE açık: model cevabı üretirken 1-3
+  // saniye tam sessizlik oluyor ve kullanıcı çoğu zaman tam o boşlukta
+  // fikrini değiştirip konuşuyor. Yalnızca oynatma sırasında izlemek o araya
+  // girmeyi tamamen kaçırıyordu.
+  //
+  // İzleyici ÖN KAYIT tutuyor: tetiklendiği anda yeni bir kaydedici açmak
+  // "dur, aslında—" cümlesinin ilk hecelerini yer. Bu yüzden yakalanan ses
+  // doğrudan gönderim yoluna veriliyor, kullanıcıdan tekrar istenmiyor.
+  const monitorActive = shouldMonitorBargeIn(status) || capturing
+
+  // Buradaki ref'ler reaktif bir degerin AYNASI degil: ``statusRef`` render
+  // sirasinda yaziliyor (efekt icinde degil) ve ``bargeRef`` / ``streamRef``
+  // birer imperatif tutamac -- kapi durumu ve acik bir WebSocket oturumu.
+  // State'e tasimak izleyiciyi her durum degisiminde sokup atardi; o da her
+  // seferinde yeni bir ``getUserMedia`` akisi ve sifirlanan gurultu tabani
+  // demek.
+  // eslint-disable-next-line no-restricted-syntax -- yukaridaki gerekce
+  useEffect(() => {
+    if (!monitorActive) {
+      return
+    }
+
+    // Durum ``thinking`` <-> ``speaking`` arasında gidip gelirken izleyici
+    // YENİDEN kurulmamalı: her kurulum yeni bir ``getUserMedia`` akışı açar
+    // ve gürültü tabanı kalibrasyonunu sıfırlar. Bu yüzden efekt tek bir
+    // boolean'a bağlı ve güncel durum ``statusRef`` üzerinden okunuyor.
+    const stop = monitorSpeechDuringPlayback({
+      isPlaying: () => isPlayingPhase(statusRef.current),
+      onSpeech: () => {
+        if (!claimBarge(bargeRef.current, 'voice')) {
+          // Kullanıcı aynı anda tuşa da bastı; o yol kaydı zaten yönetiyor.
+          return
+        }
+
+        // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
+        // seslendirilmeye devam eder.
+        streamRef.current?.session?.finish()
+        streamRef.current = null
+        stopVoicePlayback()
+        setCapturing(true)
+        setStatus('listening')
+      },
+      onUtterance: audio => {
+        if (bargeRef.current.claimedBy !== 'voice') {
+          // Tuş devraldı — yakalanan sesi göndermek çift gönderim olurdu.
+          setCapturing(false)
+
+          return
+        }
+
+        setCapturing(false)
+
+        if (!audio) {
+          // Yakalama yoksa kullanıcıyı sessizliğe düşürme: başa dön.
+          releaseBarge(bargeRef.current)
+          setStatus('idle')
+
+          return
+        }
+
+        setStatus('transcribing')
+        void submitAudio(audio).catch((cause: unknown) => {
+          setStatus('idle')
+          releaseBarge(bargeRef.current)
+          setError(cause instanceof Error ? cause.message : String(cause))
+        })
+      }
+    })
+
+    return stop
+  }, [monitorActive, submitAudio])
 
   return { begin, cancel, commit, error, level, status, transcript }
 }

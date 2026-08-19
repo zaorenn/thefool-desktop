@@ -193,6 +193,7 @@ EXPECTED_SEAMS = {
     "toolset-rename",
     "remote-platform-default",
     "local-only-stt",
+    "local-only-tts",
 }
 
 

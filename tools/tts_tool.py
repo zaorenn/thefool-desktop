@@ -645,14 +645,70 @@ def _load_tts_config() -> Dict[str, Any]:
         return {}
 
 
+def _installed_local_tts() -> set:
+    """FOOL-SEAM: local-only-tts
+
+    Su an KURULU olan yerel seslendirme motorlarinin saglayici adlari.
+
+    Katalog ``fool/voice_models.py`` icinde; sonda cokerse bos kume donuyor
+    ve cagiran taraf "yerel yok" muamelesi yapiyor.
+    """
+    try:
+        from fool import voice_models as _vm
+
+        return {
+            (e.provider_id or e.id).lower()
+            for e in _vm.CATALOG
+            if e.kind == "tts" and _vm.status(e.id).get("installed")
+        }
+    except Exception as exc:  # pragma: no cover - katalog yoksa cokmemeli
+        logger.debug("local TTS probe failed: %s", exc)
+        return set()
+
+
 def _get_provider(tts_config: Dict[str, Any]) -> str:
-    """Get the explicitly configured TTS provider or the free default.
+    """Get the explicitly configured TTS provider, else a LOCAL default.
 
     Inference credentials do not imply consent to paid speech generation.
     Users opt into cloud TTS by setting ``tts.provider`` (normally through
-    ``fool tools``); otherwise the historical Edge backend remains active.
+    ``fool tools``).
+
+    FOOL-SEAM: local-only-tts
+
+    Upstream'in secim-yokken varsayilani ``edge``di. Edge TTS Microsoft'un
+    cevrimici "Read Aloud" servisi: ajanin soyledigi HER cumlenin metni
+    websocket uzerinden Microsoft'a gidiyor. Bu bir HATA yolu degil,
+    VARSAYILAN yol -- yani ``tts.provider`` yazmamis her yeni kullanici,
+    yerel motorlari kurulu olsa bile.
+
+    Yerel-once bir uruntte bu kabul edilemez. Sira:
+
+      1. Kullanicinin acik secimi -- ne yazdiysa o, bulut dahil.
+      2. Kurulu bir yerel motor (Kokoro > Piper > Qwen3 > Chatterbox;
+         sira olculen ilk-cagri sonrasi gecikmeye gore).
+      3. Acik bulut tercihi varsa tarihsel ``edge`` varsayilani.
+      4. Hicbiri yoksa ``none`` + ne oldugunu VE nasil duzeltilecegini
+         soyleyen bir uyari. Sessizce metin gondermekten iyidir.
     """
-    return (tts_config.get("provider") or DEFAULT_PROVIDER).lower().strip()
+    explicit = str(tts_config.get("provider") or "").lower().strip()
+    if explicit:
+        return explicit
+
+    from fool.local_only import (
+        TTS_CLOUD_BLOCKED_MESSAGE,
+        cloud_tts_allowed,
+        preferred_local_tts,
+    )
+
+    local = preferred_local_tts(_installed_local_tts())
+    if local:
+        return local
+
+    if cloud_tts_allowed(tts_config):
+        return DEFAULT_PROVIDER
+
+    logger.warning("[The Fool] %s", TTS_CLOUD_BLOCKED_MESSAGE)
+    return "none"
 
 
 @dataclass(frozen=True)

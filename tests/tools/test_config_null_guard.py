@@ -11,36 +11,70 @@ from unittest.mock import patch
 # ── TTS tool ──────────────────────────────────────────────────────────────
 
 class TestTTSProviderNullGuard:
-    """tools/tts_tool.py — _get_provider()"""
+    """tools/tts_tool.py — _get_provider()
 
-    def test_explicit_null_provider_returns_default(self):
-        """YAML ``tts: {provider: null}`` should fall back to default."""
-        from tools.tts_tool import _get_provider, DEFAULT_PROVIDER
+    FOOL-SEAM: local-only-tts
 
-        result = _get_provider({"provider": None})
-        assert result == DEFAULT_PROVIDER.lower().strip()
+    Upstream'in secim-yokken varsayilani ``edge``di ve bu sinif onu
+    savunuyordu. Edge TTS Microsoft'un cevrimici "Read Aloud" servisi: ajanin
+    soyledigi HER cumlenin metni websocket uzerinden Microsoft'a gidiyor.
+    Yerel-once bir uruntte bu, bir hata yolu degil VARSAYILAN yol oldugu icin
+    daha da kabul edilemez.
 
+    Bu sinifin ASIL korudugu iki sey degismedi ve hala dogrulaniyor:
 
-    def test_missing_provider_keeps_free_default_with_cloud_credentials(self):
-        """A chat-provider key must not silently opt the user into paid TTS."""
-        from tools.tts_tool import _get_provider, DEFAULT_PROVIDER
+      1. ``provider: null`` cokmemeli (AttributeError yok).
+      2. Bir sohbet saglayicisi anahtari, kullaniciyi sessizce PARALI bir
+         seslendirmeye gecirmemeli.
 
-        assert _get_provider({}) == DEFAULT_PROVIDER
-        assert _get_provider({"provider": None}) == DEFAULT_PROVIDER
+    Degisen tek sey: secim yokken varsayilan artik KURULU BIR YEREL motor;
+    hicbiri yoksa acik tercih olmadan buluta cikilmiyor.
+    """
 
-    def test_active_provider_without_credentials_keeps_edge(self):
-        """A TTS-capable active provider that can't authenticate must NOT
-        silently displace the free Edge default (no surprise billing / hard
-        errors for a credential-less deployment)."""
-        from tools.tts_tool import _get_provider, DEFAULT_PROVIDER
+    def test_explicit_null_provider_does_not_crash(self):
+        """YAML ``tts: {provider: null}`` bir istisna uretmemeli."""
+        from tools.tts_tool import _get_provider
 
-        assert _get_provider({}) == DEFAULT_PROVIDER.lower().strip()
+        assert isinstance(_get_provider({"provider": None}), str)
+
+    def test_null_and_missing_resolve_identically(self, monkeypatch):
+        """``provider: null`` ile hic anahtar olmamasi ayni sey."""
+        from tools import tts_tool
+
+        monkeypatch.setattr(tts_tool, "_installed_local_tts", lambda: {"kokoro"})
+
+        assert tts_tool._get_provider({"provider": None}) == tts_tool._get_provider({})
+
+    def test_missing_provider_prefers_installed_local_engine(self, monkeypatch):
+        """Bir sohbet anahtari kullaniciyi parali TTS'e gecirmemeli.
+
+        Upstream bunu "edge'de kal" diye dogruluyordu; The Fool bir adim ileri
+        gidiyor ve KURULU YEREL motoru seciyor -- ne parali ne de bulut.
+        """
+        from tools import tts_tool
+
+        monkeypatch.setattr(tts_tool, "_installed_local_tts", lambda: {"kokoro", "chatterbox"})
+
+        provider = tts_tool._get_provider({})
+
+        assert provider == "kokoro"
+        assert provider not in {"openai", "elevenlabs", "deepinfra", "gemini"}
+
+    def test_no_local_engine_does_not_silently_reach_the_cloud(self, monkeypatch):
+        """Yerel motor yoksa sessizce Edge'e dusmuyor; acik tercih sart."""
+        from tools import tts_tool
+
+        monkeypatch.setattr(tts_tool, "_installed_local_tts", lambda: set())
+
+        assert tts_tool._get_provider({}) == "none"
+        assert tts_tool._get_provider({"allow_cloud_fallback": True}) == tts_tool.DEFAULT_PROVIDER
 
     def test_explicit_provider_wins_over_active(self):
         """An explicit tts.provider always overrides the active-provider fallback."""
         from tools.tts_tool import _get_provider
 
         assert _get_provider({"provider": "edge"}) == "edge"
+
 
 
 # ── Web tools ─────────────────────────────────────────────────────────────

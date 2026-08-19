@@ -4479,6 +4479,27 @@ def _gui_surface_toolsets(platform: str) -> set[str]:
 
 def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
     session_platform = platform or _resolve_session_platform()
+
+    # FOOL-SEAM: companion-scope
+    #
+    # Arkadasinla konusmak, ona terminalini vermek degil. Olculdu: masaustu
+    # oturumu 21 takim aliyor ve icinde ``terminal``, ``computer_use``,
+    # ``code_execution``, ``delegation``, ``cronjob`` var. Notch'un sesli turu
+    # O OTURUMU paylasiyor, yani "hava nasil?" diyen sesli arkadas makinenin
+    # tamamina sahip -- ve bu hicbir yerde gorunmuyor.
+    #
+    # Kapsam bir OTURUM ozelligi, tur ozelligi degil: tur basina arac
+    # degistirmek ajani yeniden kurmak demek ve donmus sistem promptu + arac
+    # semalari uzerine kurulu prompt onbellegini her turda cope atardi.
+    #
+    # Bilinmeyen kapsam kisitlanmiyor (``None`` doner): tanimadigimiz bir
+    # yuzeyi sessizce kirmak yanlis olurdu.
+    from fool.session_scope import scope_toolsets
+
+    _scoped = scope_toolsets(session_platform)
+    if _scoped is not None:
+        return _scoped
+
     explicit = [
         item.strip()
         for item in os.environ.get("FOOL_TUI_TOOLSETS", "").split(",")

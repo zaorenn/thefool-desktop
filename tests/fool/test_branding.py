@@ -200,6 +200,7 @@ EXPECTED_SEAMS = {
     "profile-memory-consent",
     "local-only-doctor",
     "speech-pauses",
+    "slow-voice-engine",
 }
 
 

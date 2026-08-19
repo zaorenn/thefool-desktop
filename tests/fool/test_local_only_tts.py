@@ -84,3 +84,38 @@ def test_acik_tercihle_edge_yine_calisiyor(tts, monkeypatch) -> None:
     monkeypatch.setattr(tts, "_installed_local_tts", lambda: set())
 
     assert tts._get_provider({"allow_cloud_fallback": True}) == "edge"
+
+
+# ---------------------------------------------------------------------------
+# "none" GERÇEKTEN durduruyor mu?
+# ---------------------------------------------------------------------------
+#
+# Bu bölüm uçtan uca ses turunun (fool/voice_roundtrip.py) yakaladığı bir
+# hatanın ardından yazıldı. ``_get_provider`` doğru şekilde "none" dönüyordu
+# ama ``text_to_speech_tool`` o değeri tanımıyor ve VARSAYILAN dala düşüyordu
+# -- varsayılan ise Edge, yani tam kaçınmak için "none" döndüğümüz şey.
+#
+# Yani koruma vardı, sözleşme yoktu. Birim testleri iki ucu ayrı ayrı doğru
+# gördü; boşluk aralarındaydı.
+
+def test_none_saglayicisi_EDGE_e_dusmuyor(tmp_path) -> None:
+    from tools.tts_tool import text_to_speech_tool
+    import json as _json
+
+    raw = text_to_speech_tool("merhaba", output_path=str(tmp_path / "x.wav"), provider="none")
+    payload = _json.loads(raw)
+
+    assert payload["success"] is False
+    assert "NOT sent to Microsoft" in payload["error"]
+
+
+def test_none_mesaji_nasil_duzeltilecegini_soyluyor(tmp_path) -> None:
+    from tools.tts_tool import text_to_speech_tool
+    import json as _json
+
+    payload = _json.loads(
+        text_to_speech_tool("merhaba", output_path=str(tmp_path / "x.wav"), provider="none")
+    )
+
+    assert "Settings > Text to speech" in payload["error"]
+    assert "allow_cloud_fallback" in payload["error"]

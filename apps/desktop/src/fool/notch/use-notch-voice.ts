@@ -49,6 +49,7 @@ import {
   listenOptionsFor,
   modeForActivation
 } from './hands-free'
+import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
 
@@ -120,6 +121,27 @@ export function useNotchVoice(): NotchVoice {
   // tanımlanmamış bir değere kapanır.
   const commitRef = useRef<() => void>(() => undefined)
 
+  // Suren turu ag gecidinde DURDUR.
+  //
+  // Oynatmayi kesmek yetmiyordu: model cevabi uretmeye devam ediyor, kalan
+  // tokenlar geliyor ve ``collectUnspokenTurnSpeech`` onlari YENI tur
+  // bittikten sonra seslendiriyor -- kullanici sozunu kesti, ajan biraz sonra
+  // kaldigi yerden devam ediyor. Composer tarafi bu dikisi zaten kullaniyordu
+  // (``use-voice-conversation.ts``), notch hic kullanmiyordu.
+  const haltTurn = useCallback(async () => {
+    if (!shouldInterruptTurn(statusRef.current)) {
+      return
+    }
+
+    const sessionId = $activeSessionId.get()
+
+    if (!sessionId) {
+      return
+    }
+
+    await requestGateway('session.interrupt', { session_id: sessionId })
+  }, [requestGateway])
+
   const begin = useCallback((activation: BeginActivation = 'key') => {
     setError(null)
     discardRef.current = false
@@ -136,6 +158,9 @@ export function useNotchVoice(): NotchVoice {
     streamRef.current?.session?.finish()
     streamRef.current = null
     stopVoicePlayback()
+    // Tuşla araya girmek de araya girmektir: süren tur durmalı, yoksa eski
+    // cevabın kalanı yeni turdan sonra konuşulur.
+    void haltTurn().catch(() => undefined)
 
     // Eller serbest kipte kaydın sınırını sessizlik çiziyor; bas-konuşta
     // KULLANICI çiziyor. İkisine aynı ayarı vermek, tuş hâlâ basılıyken
@@ -160,7 +185,7 @@ export function useNotchVoice(): NotchVoice {
         setStatus('idle')
         setError(cause instanceof Error ? cause.message : String(cause))
       })
-  }, [mic])
+  }, [haltTurn, mic])
 
   const cancel = useCallback(() => {
     discardRef.current = true
@@ -356,6 +381,10 @@ export function useNotchVoice(): NotchVoice {
         streamRef.current?.session?.finish()
         streamRef.current = null
         stopVoicePlayback()
+        // Durdurma HEMEN gidiyor, yakalamanın bitmesi beklenmiyor: kullanıcı
+        // konuşurken model saniyelerce üretmeye devam ederdi ve o metin
+        // bağlama girerdi.
+        void haltTurn().catch(() => undefined)
         setCapturing(true)
         setStatus('listening')
       },
@@ -378,7 +407,15 @@ export function useNotchVoice(): NotchVoice {
         }
 
         setStatus('transcribing')
-        void submitAudio(audio).catch((cause: unknown) => {
+        // Sıra garanti: gönderim, durdurma çözülmeden başlamıyor. Ters
+        // sırada çalıştırmak yeni istemi MEŞGUL bir oturuma yollamaktı.
+        // Durdurma düşerse cümle YİNE gönderiliyor -- ağ hatasını yutup
+        // kullanıcının konuşmasını çöpe atmak daha kötü bir sonuç.
+        void interruptThenSubmit({
+          interrupt: haltTurn,
+          onInterruptError: () => undefined,
+          submit: () => submitAudio(audio)
+        }).catch((cause: unknown) => {
           setStatus('idle')
           releaseBarge(bargeRef.current)
           setError(cause instanceof Error ? cause.message : String(cause))
@@ -387,7 +424,7 @@ export function useNotchVoice(): NotchVoice {
     })
 
     return stop
-  }, [monitorActive, submitAudio])
+  }, [haltTurn, monitorActive, submitAudio])
 
   commitRef.current = commit
 

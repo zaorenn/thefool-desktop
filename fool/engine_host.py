@@ -58,7 +58,22 @@ import sys
 _out = sys.stdout
 sys.stdout = sys.stderr
 
-{setup}
+# Kurulum EXEC ile calisiyor ki hatasi YAKALANABILSIN.
+#
+# Once dogrudan yazilmisti ve bir istisna stderr'e (DEVNULL) gidiyordu:
+# ebeveyn yalnizca "surec oldu" goruyor, SEBEBI goremiyordu. Olculdu --
+# F5-TTS'in "paylasilan FFmpeg kutuphaneleri gerekiyor" mesaji tamamen
+# kayboluyor ve kullanici ham bir cokme ile bas basa kaliyordu.
+#
+# ``exec(..., globals())`` modul kapsamini koruyor: kurulumda tanimlanan
+# ``handle`` ve ``global`` degiskenleri aynen calisiyor.
+try:
+    exec(compile({setup!r}, "<setup>", "exec"), globals())
+except BaseException as _boot_exc:
+    sys.stdout = _out
+    _out.write(json.dumps({{"ready": False, "error": "%s: %s" % (type(_boot_exc).__name__, _boot_exc)}}) + "\\n")
+    _out.flush()
+    raise SystemExit(1)
 
 sys.stdout = _out
 _out.write(json.dumps({{"ready": True}}) + "\\n")
@@ -127,11 +142,19 @@ def _spawn(name: str, setup: str) -> _Engine:
             continue
 
         try:
-            if json.loads(line).get("ready"):
-                return _Engine(lock=threading.Lock(), process=process, setup_hash=_hash(setup))
+            payload = json.loads(line)
         except ValueError:
             # Protokol öncesi kaçak satır — yoksay, beklemeye devam et.
             continue
+
+        if payload.get("ready"):
+            return _Engine(lock=threading.Lock(), process=process, setup_hash=_hash(setup))
+
+        # Kurulum SEBEBIYLE dustu: sebebi yukari tasi. Ham bir "surec coktu"
+        # kullaniciyi hicbir yere goturmuyordu.
+        if "error" in payload:
+            process.kill()
+            raise RuntimeError(f"{name}: {payload['error']}")
 
     process.kill()
     raise RuntimeError(f"{name}: motor {BOOT_TIMEOUT_SECONDS} sn icinde hazir olmadi")

@@ -226,6 +226,45 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         size_label="~1,5 GB",
     ),
     VoiceEntry(
+        id="kyutai",
+        label="Kyutai TTS",
+        kind="tts",
+        summary=(
+            "Built for live conversation, not for reading. Streams audio as it "
+            "generates, so the first word starts before the sentence is done. "
+            "English and French."
+        ),
+        provider_id="kyutai",
+        probe_module="moshi",
+        # Adaylar arasinda EN YALIN bagimlilik agaci: Python 3.13'te 38
+        # pakete cozuluyor (styletts2 133, f5-tts 148 -- uv ile olculdu).
+        # Yine de kendi ortaminda: torch surumunu kendi pinliyor.
+        # ``soundfile`` ACIKCA ekleniyor: moshi onu cekmiyor ve saglayici
+        # ciktiyi PCM_16 yazmak icin ona ihtiyac duyuyor. Olculdu -- ilk
+        # sentez "No module named 'soundfile'" ile dustu.
+        sidecar_specs=("moshi==0.2.13", "soundfile==0.14.0"),
+        sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
+        devices=("cpu", "cuda"),
+        cuda_probe="torch",
+        size_label="~3,5 GB",
+    ),
+    VoiceEntry(
+        id="f5-tts",
+        label="F5-TTS",
+        kind="tts",
+        summary=(
+            "Clones a voice from a few seconds of reference audio. Flow "
+            "matching, so it is fast for what it does. English."
+        ),
+        provider_id="f5tts",
+        probe_module="f5_tts",
+        sidecar_specs=("f5-tts==1.1.22",),
+        sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
+        devices=("cpu", "cuda"),
+        cuda_probe="torch",
+        size_label="~3 GB",
+    ),
+    VoiceEntry(
         id="chatterbox",
         label="Chatterbox",
         kind="tts",

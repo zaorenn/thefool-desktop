@@ -40,6 +40,10 @@ ENGINE_VRAM_MB = {
     # StyleTTS 2: ~150M parametre + BERT/ASR yardimci aglari. Olculdukten
     # sonra bu sayi gercek degerle degistirilecek.
     "styletts2": 1_200,
+    # Kyutai 1,6B parametre; F5-TTS ~300M + vocoder. Olculdukten sonra
+    # gercek degerlerle degistirilecek.
+    "kyutai": 3_500,
+    "f5-tts": 2_000,
     "whisper-turbo": 2_000,
 }
 

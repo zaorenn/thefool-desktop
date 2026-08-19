@@ -212,6 +212,16 @@ def test_abort_helper_defers_and_exits_2(capsys):
 
 
 def test_abort_helper_resumes_paused_gateways_before_exit():
+    """FOOL-SEAM: update-self-deadlock
+
+    Duraklatilan gateway'ler cikmadan once geri geliyor -- bu testin asil
+    olctugu sey ve DEGISMEDI.
+
+    Eklenen: ``allow_cold_start=False``. Bagimlilik senkronu ertelendiginde
+    guncelleme TAMAMLANMADI, ve o durumda CALISMAYAN bir gateway'i
+    baslatmak kullanicinin bir sonraki denemesini engelleyen sureci
+    yaratiyordu -- olculdu, sonsuz donguye giriyordu.
+    """
     resume_calls = []
     sentinel = object()
     with patch.object(
@@ -221,10 +231,12 @@ def test_abort_helper_resumes_paused_gateways_before_exit():
     ), patch.object(cli_main, "_write_update_incomplete_marker"), patch.object(
         cli_main,
         "_resume_windows_gateways_after_update",
-        side_effect=lambda token: resume_calls.append(token),
+        side_effect=lambda token, **kwargs: resume_calls.append((token, kwargs)),
     ), pytest.raises(SystemExit):
         cli_main._abort_dependency_sync_if_self_locked(sentinel)
-    assert resume_calls == [sentinel]
+
+    assert [token for token, _ in resume_calls] == [sentinel]
+    assert resume_calls[0][1] == {"allow_cold_start": False}
 
 
 # ---------------------------------------------------------------------------

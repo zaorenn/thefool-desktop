@@ -33,8 +33,21 @@ DANGEROUS = {
 # Kip kaydı
 # ---------------------------------------------------------------------------
 
-def test_iki_kip_tanimli() -> None:
-    assert set(vm.modes()) == {vm.COMPANION, vm.JARVIS}
+def test_uc_kip_tanimli() -> None:
+    """Notch'un iki kipi + Friend penceresi.
+
+    ``friend`` sonradan eklendi: pencere KENDI sesini secebilsin diye
+    (``voice.modes.friend.provider``). Notch'un kipleri degismedi.
+    """
+    assert set(vm.modes()) == {vm.COMPANION, vm.FRIEND, vm.JARVIS}
+
+
+def test_friend_kipi_makineye_dokunmuyor_ama_hafizasi_var() -> None:
+    friend = vm.get(vm.FRIEND)
+
+    assert friend.touches_machine is False
+    assert "memory" in (friend.toolsets or ())
+    assert vm.requires_benchmark(vm.FRIEND) is False
 
 
 def test_varsayilan_kip_ARKADAS() -> None:

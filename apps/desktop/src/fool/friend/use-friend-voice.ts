@@ -23,7 +23,12 @@ import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
-import { type SpeechStreamSession, startSpeechStream, stopVoicePlayback } from '@/lib/voice-playback'
+import {
+  playSpeechText,
+  type SpeechStreamSession,
+  startSpeechStream,
+  stopVoicePlayback
+} from '@/lib/voice-playback'
 import { $messages } from '@/store/session'
 
 import {
@@ -55,6 +60,10 @@ export interface FriendVoice {
   error: null | string
   start: () => void
   stop: () => void
+  /** Bas-konuş: basıldı. */
+  beginHold: () => void
+  /** Bas-konuş: bırakıldı. */
+  endHold: () => void
 }
 
 export function useFriendVoice(): FriendVoice {
@@ -181,6 +190,44 @@ export function useFriendVoice(): FriendVoice {
     listen()
   }, [listen])
 
+  /** Bas-konuş: tuşa/düğmeye basıldı — sessizlik saptayıcısı OLMADAN dinle.
+   *
+   * Sessizlik saptayıcısı kullanıcı hâlâ basılı tutarken kaydı kapatırdı --
+   * cümlenin ortasında kesilen bir kayıt (aynı gerekçe ``notch/push-to-talk``
+   * içinde de yazılı).
+   */
+  const beginHold = useCallback(() => {
+    setActive(false)
+    setError(null)
+    setPhase('listening')
+    void mic.start().catch((cause: unknown) => {
+      setPhase('idle')
+      setError(cause instanceof Error ? cause.message : String(cause))
+    })
+  }, [mic])
+
+  /** Bas-konuş: bırakıldı — kaydı gönder. */
+  const endHold = useCallback(() => {
+    setPhase('thinking')
+
+    void (async () => {
+      try {
+        const recording = await mic.stop()
+
+        if (!recording) {
+          setPhase('idle')
+
+          return
+        }
+
+        await submitAudio(recording.audio)
+      } catch (cause) {
+        setPhase('idle')
+        setError(cause instanceof Error ? cause.message : String(cause))
+      }
+    })()
+  }, [mic, submitAudio])
+
   const stop = useCallback(() => {
     setActive(false)
     void mic.stop()
@@ -213,11 +260,39 @@ export function useFriendVoice(): FriendVoice {
 
     if (!streamRef.current) {
       streamRef.current = { sent: 0, session: null }
+
+      const spoken = pending
+
       void startSpeechStream({ source: 'voice-conversation' })
         .then(session => {
           if (streamRef.current) {
             streamRef.current.session = session
           }
+
+          // Akis YOKSA (ag gecidi desteklemiyor) ya da hic ses uretmeden
+          // kapanirsa metin TEK SEFERLIK oynatmayla seslendiriliyor.
+          //
+          // Bu geri dusus notch'ta vardi, buraya koymayi ATLAMISIM: sonuc
+          // tam olarak "duyuyor, yaziyor, ama konusmuyor" oldu -- panel
+          // TALKING yazarken hicbir ses cikmiyordu. Sessiz basarisizligin
+          // ders kitabi hali.
+          if (!session) {
+            void playSpeechText(spoken.text, {
+              messageId: spoken.id,
+              source: 'voice-conversation'
+            }).catch(() => undefined)
+
+            return
+          }
+
+          void session.done.then(outcome => {
+            if (outcome === 'fallback') {
+              void playSpeechText(spoken.text, {
+                messageId: spoken.id,
+                source: 'voice-conversation'
+              }).catch(() => undefined)
+            }
+          })
         })
         .catch(() => undefined)
     }
@@ -299,5 +374,5 @@ export function useFriendVoice(): FriendVoice {
     })
   }, [haltTurn, monitorActive, submitAudio])
 
-  return { error, level, phase, reply, start, stop, transcript }
+  return { beginHold, endHold, error, level, phase, reply, start, stop, transcript }
 }

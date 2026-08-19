@@ -3423,7 +3423,11 @@ def _abort_dependency_sync_if_self_locked(gateway_resume=None) -> None:
         return
     _m()._defer_update_for_self_lock(locked)
     if gateway_resume is not None:
-        _m()._resume_windows_gateways_after_update(gateway_resume)
+        # FOOL-SEAM: update-self-deadlock -- bagimlilik senkronu ertelendi,
+        # yani guncelleme TAMAMLANMADI: yeni gateway baslatilmiyor.
+        _m()._resume_windows_gateways_after_update(
+            gateway_resume, allow_cold_start=False
+        )
     sys.exit(2)
 
 
@@ -4159,8 +4163,34 @@ def _refresh_bootstrap_cache_scripts(branch: str = "main") -> None:
     except Exception as exc:
         logger.debug("Could not refresh bootstrap-cache scripts after update: %s", exc)
 
-def _resume_windows_gateways_after_update(token: dict | None) -> None:
-    """Restart Windows profile gateways previously paused for update."""
+def _resume_windows_gateways_after_update(
+    token: dict | None, *, allow_cold_start: bool = True
+) -> None:
+    """Restart Windows profile gateways previously paused for update.
+
+    FOOL-SEAM: update-self-deadlock
+
+    ``allow_cold_start=False`` yalnizca DURUMU geri yukler; yeni bir gateway
+    BASLATMAZ.
+
+    Neden ayrildi -- olculdu, tekrar uretilebilir bir kilitlenme:
+
+      1. ``fool update`` venv'i tutan bir surec buluyor ve reddediyor.
+      2. Cikmadan once bu islev cagriliyor ve ``cold_start_if_installed``
+         dali CALISMAYAN bir gateway'i BASLATIYOR
+         ("Gateway started via cold-start after update").
+      3. Kullanici mesajin dedigini yapiyor: her seyi kapatiyor,
+         ``fool update`` tekrar caliyor.
+      4. Updater'in KENDI baslattigi gateway artik venv'i tutuyor -> ayni
+         red. Sonsuz dongu; guncelleme hicbir zaman olmuyor.
+
+    Cold-start bir DURUM GERI YUKLEME degil, basarili guncelleme sonrasi bir
+    kolaylik: "gateway calismiyordu ama autostart kayitli, demek ki kullanici
+    istiyor". Guncelleme OLMADIYSA o kolaylik yersiz ve zararli.
+
+    Duraklatilan gateway'ler yine geri geliyor -- onlar zaten calisiyordu ve
+    durumu geri yuklemek dogru.
+    """
     if not token or not token.get("resume_needed"):
         return
     token["resume_needed"] = False
@@ -4176,7 +4206,8 @@ def _resume_windows_gateways_after_update(token: dict | None) -> None:
     unmapped = token.get("unmapped") or []
     cold_start = bool(token.get("cold_start_if_installed"))
     if not profiles and not any(u.get("argv") for u in unmapped):
-        if cold_start:
+        # FOOL-SEAM: update-self-deadlock -- red yolunda cold-start YOK.
+        if cold_start and allow_cold_start:
             _m()._cold_start_windows_gateway_after_update()
         return
 
@@ -4625,7 +4656,13 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         if _venv_holders:
             print(_format_venv_python_holders_message(_venv_holders))
-            _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
+            # FOOL-SEAM: update-self-deadlock
+            # Cold-start YOK: guncelleme olmadi ve calismayan bir gateway'i
+            # burada baslatmak, kullanici her seyi kapatip tekrar
+            # denediginde onu engelleyecek olan sureci yaratmak demek.
+            _m()._resume_windows_gateways_after_update(
+                _windows_gateway_resume, allow_cold_start=False
+            )
             sys.exit(2)
 
     # Self-lock deferral moved: the venv-holder sweep above excludes this
@@ -5132,7 +5169,10 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 "  Reattach to the branch and retry: "
                 f"git -C {_m().PROJECT_ROOT} checkout {branch} && fool update"
             )
-            _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
+            # FOOL-SEAM: update-self-deadlock -- guncelleme yapilmadi.
+            _m()._resume_windows_gateways_after_update(
+                _windows_gateway_resume, allow_cold_start=False
+            )
             sys.exit(1)
 
         # Clear stale .pyc bytecode cache — prevents ImportError on gateway

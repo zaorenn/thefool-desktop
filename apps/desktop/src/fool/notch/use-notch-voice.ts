@@ -44,19 +44,31 @@ import {
   releaseBarge,
   shouldMonitorBargeIn
 } from './barge-in'
+import {
+  type BeginActivation,
+  listenOptionsFor,
+  modeForActivation
+} from './hands-free'
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
 
 export interface NotchVoice {
   /** Son hata — notch'ta kısa bir satır olarak gösteriliyor. */
   error: null | string
+  /** Araya girme yakalaması sürüyor mu? Yeniden açma kararını besliyor. */
+  capturing: boolean
+  /** Son turda hiç konuşma duyuldu mu? Sessiz tur sayacını besliyor. */
+  heardSpeech: boolean
   /** Mikrofon seviyesi 0..1; dalga formunu bu besliyor. */
   level: number
   /** Kullanıcının son söylediği (yazıya dökülmüş) metin. */
   transcript: string
   status: NotchStatus
-  /** Tuşa basıldı — kaydı aç. */
-  begin: () => void
+  /**
+   * Kaydı aç. ``'key'`` tuşa basıldı (bas-konuş), ``'auto'`` eller serbest
+   * döngüsü kendiliğinden açtı (sessizlik kaydı bitirir).
+   */
+  begin: (activation?: BeginActivation) => void
   /** Tuş bırakıldı — kaydı kapat, yaz, gönder. */
   commit: () => void
   /** İptal: kaydı at, hiçbir şey gönderme. */
@@ -101,8 +113,14 @@ export function useNotchVoice(): NotchVoice {
   // kullanicinin araya girerken soyledigi sey kaybolur. Bu bayrak izleyiciyi
   // teslimat bitene kadar ayakta tutuyor.
   const [capturing, setCapturing] = useState(false)
+  // Son turda konuşma duyuldu mu? Boşta zaman aşımıyla kapanan bir kayıt
+  // "kullanıcı orada değil" demek; sessiz tur sayacı bunu sayıyor.
+  const [heardSpeech, setHeardSpeech] = useState(false)
+  // ``onSilence`` geri çağrımı ``commit``ten ÖNCE kuruluyor; ref olmadan
+  // tanımlanmamış bir değere kapanır.
+  const commitRef = useRef<() => void>(() => undefined)
 
-  const begin = useCallback(() => {
+  const begin = useCallback((activation: BeginActivation = 'key') => {
     setError(null)
     discardRef.current = false
     // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.
@@ -110,6 +128,7 @@ export function useNotchVoice(): NotchVoice {
     // kullanıcı boşluğa konuşurdu.
     forceClaimBarge(bargeRef.current, 'key')
     setCapturing(false)
+    setHeardSpeech(false)
     setStatus('listening')
     // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
     // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
@@ -117,10 +136,30 @@ export function useNotchVoice(): NotchVoice {
     streamRef.current?.session?.finish()
     streamRef.current = null
     stopVoicePlayback()
-    void mic.start().catch((cause: unknown) => {
-      setStatus('idle')
-      setError(cause instanceof Error ? cause.message : String(cause))
-    })
+
+    // Eller serbest kipte kaydın sınırını sessizlik çiziyor; bas-konuşta
+    // KULLANICI çiziyor. İkisine aynı ayarı vermek, tuş hâlâ basılıyken
+    // kaydın kapanması demekti — cümlenin ortasında kesilen bir kayıt.
+    const options = listenOptionsFor(modeForActivation(activation))
+
+    void mic
+      .start(
+        options
+          ? {
+              ...options,
+              onSilence: () => {
+                // Sessizlik turu bitirdi: konuşma duyulmuştu, yoksa
+                // ``onSilence`` değil boşta zaman aşımı çalışırdı.
+                setHeardSpeech(true)
+                commitRef.current()
+              }
+            }
+          : undefined
+      )
+      .catch((cause: unknown) => {
+        setStatus('idle')
+        setError(cause instanceof Error ? cause.message : String(cause))
+      })
   }, [mic])
 
   const cancel = useCallback(() => {
@@ -350,5 +389,7 @@ export function useNotchVoice(): NotchVoice {
     return stop
   }, [monitorActive, submitAudio])
 
-  return { begin, cancel, commit, error, level, status, transcript }
+  commitRef.current = commit
+
+  return { begin, cancel, capturing, commit, error, heardSpeech, level, status, transcript }
 }

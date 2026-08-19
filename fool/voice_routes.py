@@ -101,6 +101,24 @@ async def voice_select(body: SelectBody) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.post("/api/fool/voice/warm")
+async def voice_warm() -> dict[str, Any]:
+    """Konuşma tanıma modelini arka planda yükle.
+
+    Sesli oturum AÇILDIĞI anda çağrılıyor. Ölçüldü (12,18 sn gerçek konuşma,
+    Whisper large-v3-turbo float16, RTX 4070 Ti SUPER):
+
+        ısıtmasız ilk transkripsiyon : 6,94 sn
+        ısıtılmış ilk transkripsiyon : 0,66 sn
+
+    O 6 saniye, kullanıcının zaten konuşmakla geçirdiği süreye gizleniyor.
+    Yanıt HEMEN dönüyor; yükleme arka planda sürüyor.
+    """
+    from fool import stt_warmup
+
+    return stt_warmup.warm()
+
+
 @router.post("/api/fool/voice/preview")
 async def voice_preview_route(body: SelectBody) -> dict[str, Any]:
     """Kısa bir cümle seslendir ve GEÇEN SÜREYİ de döndür.

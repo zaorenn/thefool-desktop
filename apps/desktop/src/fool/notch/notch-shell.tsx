@@ -24,6 +24,8 @@ import { useEffect, useRef, useState } from 'react'
 import { onGatewayEvent } from '@/contrib/events'
 import { Mic } from '@/lib/icons'
 
+import { voiceApi } from '../voice-api'
+
 import {
   MAX_IDLE_ROUNDS,
   nextIdleRounds,
@@ -238,6 +240,27 @@ export function NotchShell() {
   }, [voice.status, voice.transcript])
 
   const expanded = voice.status !== 'idle' || lingering
+
+  // Oturum açılınca konuşma tanımayı ISIT.
+  //
+  // Ölçüldü (12,18 sn gerçek konuşma, Whisper large-v3-turbo float16):
+  // ısıtmasız ilk transkripsiyon 6,94 sn, ısıtılmış 0,66 sn. O altı saniye
+  // modelin VRAM'e yüklenmesi ve kullanıcı ilk cümlesini söylerken arka
+  // planda ödenebiliyor.
+  //
+  // Boşta-boşaltma paylaşılan kartta 300 sn olduğu için (fool/gpu_budget.py)
+  // maliyet her uzun aradan sonra geri geliyordu; oturumu her açışta ısıtmak
+  // tam o durumu kapsıyor.
+  //
+  // Hata YUTULUYOR: ısıtma bir iyileştirme, bir gereklilik değil. Ağ geçidi
+  // henüz ayakta değilse oturum yine açılmalı.
+  useEffect(() => {
+    if (!sessionActive) {
+      return
+    }
+
+    void voiceApi.warmStt().catch(() => undefined)
+  }, [sessionActive])
 
   // Eller serbest tur alma: oturum açıkken tur biter bitmez mikrofon
   // kendiliğinden açılıyor. Kullanıcı hiçbir şeye dokunmadan cevap veriyor —

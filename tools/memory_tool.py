@@ -1061,6 +1061,7 @@ def memory_tool(
     new_text: str = None,
     operations: Optional[List[Dict[str, Any]]] = None,
     store: Optional[MemoryStore] = None,
+    consent: Any = None,
 ) -> str:
     """
     Single entry point for the memory tool. Dispatches to MemoryStore methods.
@@ -1094,6 +1095,42 @@ def memory_tool(
 
     if target not in {"memory", "user"}:
         return tool_error(f"Invalid target '{target}'. Use 'memory' or 'user'.", success=False)
+
+    # FOOL-SEAM: profile-memory-consent
+    #
+    # ``target=user`` KULLANICI hakkinda kalici bir sey yaziyor ve bugune
+    # kadar ne sorulan bir izin ne de sonradan bakilabilecek bir kayit vardi.
+    # Kullanicinin kurulu ``USER.md`` dosyasinda bu sekilde birikmis satirlar
+    # var (favori sarkisi, indirilenler klasoru) ve hicbiri icin sorulmadi.
+    #
+    # Sorun "gizli" olmasi degil -- dosya kullanicinin kendi makinesinde.
+    # Sorun GORUNMEZ olmasi: kullanici ne bilindigini bilmiyor ve bir seyi
+    # geri almak icin once onun var oldugunu kesfetmesi gerekiyor.
+    #
+    # Rehber tek basina bir oneri; burasi mekanizma. Kapi ASLA cokmuyor:
+    # bir riza altyapisinin hafizayi kullanilmaz yapmasi kabul edilemez.
+    if str(target or "").strip().lower() == "user":
+        _mutating = bool(operations) or action in {"add", "replace"}
+        if _mutating:
+            try:
+                from fool.profile_memory import (
+                    check_profile_write,
+                    consent_mode,
+                    record,
+                )
+                from fool_cli.config import load_config
+
+                _mode = consent_mode(load_config() or {})
+                _refusal = check_profile_write(_mode, consent)
+                if _refusal:
+                    return tool_error(_refusal, success=False)
+                record(
+                    content or new_text or old_text or "",
+                    mode=_mode,
+                    consent=consent,
+                )
+            except Exception as _consent_err:  # pragma: no cover
+                logger.debug("profile consent gate skipped: %s", _consent_err)
 
     # --- Batch path -------------------------------------------------------
     if operations:
@@ -1215,6 +1252,10 @@ MEMORY_SCHEMA = {
                 "type": "string",
                 "description": "REQUIRED for 'replace' and 'remove' (single-op shape): a short unique substring identifying the existing entry to modify. Omit only for 'add'."
             },
+            "consent": {
+                "type": "string",
+                "description": "Set to 'granted' ONLY when target='user' and the user has just told you it is OK to remember this. Ask them first in your own words; telling you something is not the same as asking you to keep it."
+            },
             "new_text": {
                 "type": "string",
                 "description": "Alias for 'content' (single-op shape). Provided so the replace/remove old_text/new_text pairing works; if both are set, 'content' wins."
@@ -1257,6 +1298,7 @@ registry.register(
         old_text=args.get("old_text"),
         new_text=args.get("new_text"),
         operations=args.get("operations"),
+        consent=args.get("consent"),
         store=kw.get("store")),
     check_fn=check_memory_requirements,
     emoji="🧠",

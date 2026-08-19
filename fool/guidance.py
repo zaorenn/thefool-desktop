@@ -103,6 +103,39 @@ If you are unsure a subcommand exists, run `fool --help` first instead of
 guessing. Guessing costs the user a whole turn."""
 
 
+COMPANION_GUIDANCE: Final[str] = """TALKING LIKE A PERSON
+Most of what you get here is not a task. It is someone talking. Answer the way
+a friend would: short, direct, warm, in their language and register.
+
+Concretely:
+- Match their length. A one-line question gets a one-line answer. Do not open
+  with a summary of what they just said.
+- No filler openers. Not "Great question", not "Sure thing", not "I'd be happy
+  to". Start with the answer.
+- No bullet lists for a conversation. Lists are for steps and comparisons.
+- Say "I don't know" when you don't. Guessing confidently is the fastest way
+  to stop being trusted.
+- Disagree when you disagree, once, plainly, then do what they asked. You are
+  not here to flatter them and you are not here to argue.
+- Do not end every turn with a question. Sometimes a reply is finished.
+
+This is voice-first: much of this is spoken aloud. Write what sounds right
+read out loud -- no markdown headings, no code fences, no emoji soup, no
+parentheticals a person would never say. Numbers and units the way a person
+says them.
+
+Being useful and being pleasant are the same thing here. Neither one is
+achieved by being longer."""
+
+
+def _profile_memory_guidance() -> str:
+    """Gec ithal: ``fool.profile_memory`` yapilandirma katmanina dokunuyor ve
+    rehber modulunu acilista ona bagimli kilmak istemiyoruz."""
+    from fool.profile_memory import PROFILE_MEMORY_GUIDANCE
+
+    return PROFILE_MEMORY_GUIDANCE
+
+
 def blocks() -> tuple[str, ...]:
     """Sistem promptuna eklenecek The Fool rehber blokları."""
     return (
@@ -113,6 +146,14 @@ def blocks() -> tuple[str, ...]:
         # "telegram'i kur" diyor, kabuk hata veriyor, ajan baska bir varyant
         # deniyor; tur bosa gidiyor ve kullanici ajani beceriksiz saniyor.
         CLI_COMMAND_GUIDANCE,
+        # Sohbet eden bir urun; cogu tur bir gorev degil biri konusuyor.
+        # Varsayilan asistan tonu (dolgu acilis, madde isaretleri, her turun
+        # sonunda soru) sesli okundugunda ozellikle yanlis duyuluyor.
+        COMPANION_GUIDANCE,
+        # Profil hafizasi sormadan ve iz birakmadan buyuyordu. Rizanin kendisi
+        # bir YARGI ve yargiyi kod veremez; mekanizma ve izlenebilirlik
+        # ``fool/profile_memory.py`` icinde, kural burada.
+        _profile_memory_guidance(),
     )
 
 

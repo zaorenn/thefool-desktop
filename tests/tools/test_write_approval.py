@@ -68,14 +68,32 @@ def test_normalize_enabled_coerces_values():
 # ---------------------------------------------------------------------------
 
 def test_memory_gate_off_allows_write(hermes_home):
-    # Default (gate off) → write straight through, no staging.
+    """Gate off -> write straight through, no staging.
+
+    FOOL-SEAM: profile-memory-consent
+
+    ``target="user"`` writes are additionally gated on the user's permission
+    (fool/profile_memory.py): the agent was accumulating personal facts with
+    neither a question asked nor a record kept. That is a SEPARATE gate from
+    the approval staging this test is about, so consent is granted here and
+    the approval behaviour is asserted unchanged.
+    """
     from tools.memory_tool import memory_tool, MemoryStore
     from tools import write_approval as wa
     store = MemoryStore(); store.load_from_disk()
-    r = json.loads(memory_tool("add", "user", "save me", store=store))
+    r = json.loads(memory_tool("add", "user", "save me", store=store, consent="granted"))
     assert r["success"] is True
     assert r["entry_count"] == 1
     assert wa.pending_count("memory") == 0
+
+
+def test_profile_write_without_consent_is_refused(hermes_home):
+    """FOOL-SEAM: profile-memory-consent -- the new gate, at this seam."""
+    from tools.memory_tool import memory_tool, MemoryStore
+    store = MemoryStore(); store.load_from_disk()
+    r = json.loads(memory_tool("add", "user", "save me", store=store))
+    assert r["success"] is False
+    assert "permission" in r["error"]
 
 
 def test_cli_memory_approve_without_live_agent_uses_fresh_store(hermes_home, capsys):

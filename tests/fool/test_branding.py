@@ -197,6 +197,7 @@ EXPECTED_SEAMS = {
     "shared-gpu-budget",
     "output-file-toolset",
     "benchmark-gated-authority",
+    "profile-memory-consent",
 }
 
 

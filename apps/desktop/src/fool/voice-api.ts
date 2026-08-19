@@ -114,6 +114,10 @@ export const voiceApi = {
   setVoice: (entryId: string, voice: string) =>
     call<{ ok: boolean }>('/api/fool/voice/voice', { entry_id: entryId, voice }),
   installCuda: (entryId: string) => call<VoiceJob>('/api/fool/voice/cuda', { entry_id: entryId }),
+  /** Konusma tanima modelini arka planda yukle. Sesli oturum ACILDIGI anda
+   *  cagriliyor: olculdu, isitmasiz ilk transkripsiyon 6,94 sn, isitilmis
+   *  0,66 sn. O sure kullanicinin konusmakla gecirdigi zamana gizleniyor. */
+  warmStt: () => call<{ status: string }>('/api/fool/voice/warm', {}),
   /** Kisa bir cumle seslendir. ``elapsed_ms`` panelde gosteriliyor: motorun
    *  GERCEKTEN CUDA'da kosup kosmadiginin tek durust kaniti. */
   preview: (entryId: string) =>

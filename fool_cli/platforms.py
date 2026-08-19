@@ -18,29 +18,41 @@ class PlatformInfo(NamedTuple):
 
 
 # Ordered so that TUI menus are deterministic.
+# FOOL-SEAM: toolset-rename
+#
+# ``default_toolset`` bir TANIMLAYICI, kullaniciya gorunen bir metin degil:
+# karsiligi ``toolsets.py`` icindeki ``hermes-*`` bilesikleridir ve o dosya
+# upstream'e ait. Marka donusumu bir kez bu degerleri de ``fool-*`` yapti;
+# sonuc sessiz bir kopmaydi -- ``resolve_toolset("fool-telegram")`` bos liste
+# donuyor, ``config.yaml``da acik kaydi olmayan her platform SIFIR aracla
+# kosuyordu. Hata mesaji yok, model sadece "yapamiyorum" diyor.
+#
+# Kural, arac ADLARINDA oldugu gibi: cagri sozlesmesi markalanmaz, yalnizca
+# ``label`` markalanir. Bu satirlari ``fool-*`` yapan bir yamayi geri cevir;
+# ``tests/fool/test_platform_toolsets.py`` yakalar.
 PLATFORMS: OrderedDict[str, PlatformInfo] = OrderedDict([
-    ("cli",            PlatformInfo(label="🖥️  CLI",            default_toolset="fool-cli")),
-    ("telegram",       PlatformInfo(label="📱 Telegram",        default_toolset="fool-telegram")),
-    ("discord",        PlatformInfo(label="💬 Discord",         default_toolset="fool-discord")),
-    ("slack",          PlatformInfo(label="💼 Slack",           default_toolset="fool-slack")),
-    ("whatsapp",       PlatformInfo(label="📱 WhatsApp",        default_toolset="fool-whatsapp")),
-    ("whatsapp_cloud", PlatformInfo(label="📱 WhatsApp Business (Cloud)", default_toolset="fool-whatsapp")),
-    ("signal",         PlatformInfo(label="📡 Signal",          default_toolset="fool-signal")),
-    ("bluebubbles",    PlatformInfo(label="💙 BlueBubbles",     default_toolset="fool-bluebubbles")),
-    ("email",          PlatformInfo(label="📧 Email",           default_toolset="fool-email")),
-    ("homeassistant",  PlatformInfo(label="🏠 Home Assistant",  default_toolset="fool-homeassistant")),
-    ("mattermost",     PlatformInfo(label="💬 Mattermost",      default_toolset="fool-mattermost")),
-    ("matrix",         PlatformInfo(label="💬 Matrix",          default_toolset="fool-matrix")),
-    ("dingtalk",       PlatformInfo(label="💬 DingTalk",        default_toolset="fool-dingtalk")),
-    ("feishu",         PlatformInfo(label="🪽 Feishu",          default_toolset="fool-feishu")),
-    ("wecom",          PlatformInfo(label="💬 WeCom",           default_toolset="fool-wecom")),
-    ("wecom_callback", PlatformInfo(label="💬 WeCom Callback",  default_toolset="fool-wecom-callback")),
-    ("weixin",         PlatformInfo(label="💬 Weixin",          default_toolset="fool-weixin")),
-    ("qqbot",          PlatformInfo(label="💬 QQBot",           default_toolset="fool-qqbot")),
-    ("yuanbao",        PlatformInfo(label="🤖 Yuanbao",         default_toolset="fool-yuanbao")),
-    ("webhook",        PlatformInfo(label="🔗 Webhook",         default_toolset="fool-webhook")),
-    ("api_server",     PlatformInfo(label="🌐 API Server",      default_toolset="fool-api-server")),
-    ("cron",           PlatformInfo(label="⏰ Cron",            default_toolset="fool-cron")),
+    ("cli",            PlatformInfo(label="🖥️  CLI",            default_toolset="hermes-cli")),
+    ("telegram",       PlatformInfo(label="📱 Telegram",        default_toolset="hermes-telegram")),
+    ("discord",        PlatformInfo(label="💬 Discord",         default_toolset="hermes-discord")),
+    ("slack",          PlatformInfo(label="💼 Slack",           default_toolset="hermes-slack")),
+    ("whatsapp",       PlatformInfo(label="📱 WhatsApp",        default_toolset="hermes-whatsapp")),
+    ("whatsapp_cloud", PlatformInfo(label="📱 WhatsApp Business (Cloud)", default_toolset="hermes-whatsapp")),
+    ("signal",         PlatformInfo(label="📡 Signal",          default_toolset="hermes-signal")),
+    ("bluebubbles",    PlatformInfo(label="💙 BlueBubbles",     default_toolset="hermes-bluebubbles")),
+    ("email",          PlatformInfo(label="📧 Email",           default_toolset="hermes-email")),
+    ("homeassistant",  PlatformInfo(label="🏠 Home Assistant",  default_toolset="hermes-homeassistant")),
+    ("mattermost",     PlatformInfo(label="💬 Mattermost",      default_toolset="hermes-mattermost")),
+    ("matrix",         PlatformInfo(label="💬 Matrix",          default_toolset="hermes-matrix")),
+    ("dingtalk",       PlatformInfo(label="💬 DingTalk",        default_toolset="hermes-dingtalk")),
+    ("feishu",         PlatformInfo(label="🪽 Feishu",          default_toolset="hermes-feishu")),
+    ("wecom",          PlatformInfo(label="💬 WeCom",           default_toolset="hermes-wecom")),
+    ("wecom_callback", PlatformInfo(label="💬 WeCom Callback",  default_toolset="hermes-wecom-callback")),
+    ("weixin",         PlatformInfo(label="💬 Weixin",          default_toolset="hermes-weixin")),
+    ("qqbot",          PlatformInfo(label="💬 QQBot",           default_toolset="hermes-qqbot")),
+    ("yuanbao",        PlatformInfo(label="🤖 Yuanbao",         default_toolset="hermes-yuanbao")),
+    ("webhook",        PlatformInfo(label="🔗 Webhook",         default_toolset="hermes-webhook")),
+    ("api_server",     PlatformInfo(label="🌐 API Server",      default_toolset="hermes-api-server")),
+    ("cron",           PlatformInfo(label="⏰ Cron",            default_toolset="hermes-cron")),
 ])
 
 
@@ -77,7 +89,7 @@ def get_all_platforms() -> "OrderedDict[str, PlatformInfo]":
             if entry.name not in merged:
                 merged[entry.name] = PlatformInfo(
                     label=f"{entry.emoji}  {entry.label}" if entry.emoji else entry.label,
-                    default_toolset=f"fool-{entry.name}",
+                    default_toolset=f"hermes-{entry.name}",
                 )
     except Exception:
         pass

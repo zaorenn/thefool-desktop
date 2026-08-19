@@ -675,6 +675,21 @@ def get_toolset(name: str, *, include_registry: bool = True) -> Optional[Dict[st
     """
     toolset = TOOLSETS.get(name)
 
+    # FOOL-SEAM: toolset-rename
+    #
+    # ``fool_cli/platforms.py`` her platformun ``default_toolset`` degerini
+    # ``hermes-telegram`` -> ``fool-telegram`` diye markaladi, ama bilesikleri
+    # tanimlayan yer BU dosya ve upstream'e ait; adlar hala ``hermes-*``.
+    # Sonuc sessiz bir kopmaydi: ``config.yaml``da acik kaydi olmayan her
+    # platform SIFIR araca cozuluyordu -- hata yok, uyari yok, model sadece
+    # "yapamiyorum" diyor. Markalama gorunurde kaliyor, cozumleme calisiyor.
+    if toolset is None:
+        from fool.platform_toolsets import upstream_toolset_alias
+
+        _twin = upstream_toolset_alias(name)
+        if _twin is not None:
+            toolset = TOOLSETS.get(_twin)
+
     if not include_registry:
         # Static view only: return the built-in definition (copying the nested
         # tools/includes lists so callers can't mutate TOOLSETS), or None for
@@ -830,8 +845,16 @@ def resolve_toolset(name: str, visited: Set[str] = None, *, include_registry: bo
         # into a toolset matching the platform name. This is a registry-derived
         # view, so it only applies when registry tools are requested; the static
         # view (include_registry=False) has no plugin-platform definition.
-        if include_registry and name.startswith("hermes-"):
-            platform_name = name[len("hermes-"):]
+        # FOOL-SEAM: toolset-rename
+        # Eklenti platformlari icin uretilen yedek de markalanmis adi
+        # tanimali; yoksa ``fool-<eklenti>`` yine bos doner.
+        _probe = name
+        if _probe.startswith("fool-"):
+            from fool.platform_toolsets import upstream_toolset_alias
+
+            _probe = upstream_toolset_alias(_probe) or _probe
+        if include_registry and _probe.startswith("hermes-"):
+            platform_name = _probe[len("hermes-"):]
             try:
                 from gateway.platform_registry import platform_registry
                 if platform_registry.is_registered(platform_name):

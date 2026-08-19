@@ -190,6 +190,8 @@ EXPECTED_SEAMS = {
     "cli-launchers",
     "session-header",
     "browser-default",
+    "toolset-rename",
+    "remote-platform-default",
 }
 
 
@@ -910,7 +912,7 @@ def test_cli_acilis_logosu_THE_FOOL_yazar():
         assert gold not in caduceus.group(1), "sol panel isareti altin palete donmus"
 
 
-def test_whatsapp_uzak_kullaniciya_makineyi_actirmaz(tmp_path, monkeypatch):
+def test_whatsapp_uzak_kullaniciya_makineyi_actirmaz() -> None:
     """WhatsApp'tan gelen mesajlar makineyi KONTROL edememeli.
 
     Upstream'in ``hermes-whatsapp`` varsayilani 59 arac veriyor ve icinde
@@ -918,21 +920,21 @@ def test_whatsapp_uzak_kullaniciya_makineyi_actirmaz(tmp_path, monkeypatch):
     Home Assistant kontrolu var. WhatsApp'a yazabilen herkes -- aile uyeleri,
     numarayi bilen herhangi biri -- makineyi surebilir demek.
 
-    Bu test yeni kurulumun kisitli takimla geldigini ve tehlikeli araclarin
-    sizmadigini tutuyor.
-    """
-    import yaml
+    Bu test once ``ensure_hermes_home()`` uzerinden kuruluyordu ve o yol
+    kisitlamayi yalnizca ilk acilista CALISAN bir yerel model sunucusu
+    bulunursa yaziyordu. LM Studio kapaliyken ``config.yaml`` hic yazilmiyor,
+    kisitlama hic uygulanmiyordu -- yani guvenlik denetimi, olcmeye calistigi
+    sey gibi, sessizce kapanabiliyordu. Ayni erken cikis, saglayicisi zaten
+    ayarli olan MEVCUT kurulumlara da kisitlamayi hic indirmiyordu.
 
-    from fool_cli.config import ensure_hermes_home
+    Politika artik ``config.yaml``dan bagimsiz: bos yapilandirmayla sor.
+    Ayrintili kapsam icin ``tests/fool/test_platform_toolsets.py``.
+    """
+    from fool_cli.tools_config import _get_platform_tools
     from toolsets import resolve_toolset
 
-    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
-    ensure_hermes_home()
-
-    cfg = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8")) or {}
-    sets = (cfg.get("platform_toolsets") or {}).get("whatsapp")
-
-    assert sets, "yeni kurulumda whatsapp arac takimi kisitlanmamis"
+    sets = _get_platform_tools({}, "whatsapp")
+    assert sets, "temiz kurulumda whatsapp hic arac takimi almiyor"
 
     tools = set()
     for name in sets:
@@ -947,6 +949,7 @@ def test_whatsapp_uzak_kullaniciya_makineyi_actirmaz(tmp_path, monkeypatch):
         "patch",
         "read_file",
         "search_files",
+        "terminal_run",
         "write_file",
     }
     leaked = forbidden & tools
@@ -954,3 +957,7 @@ def test_whatsapp_uzak_kullaniciya_makineyi_actirmaz(tmp_path, monkeypatch):
 
     browser = sorted(t for t in tools if t.startswith("browser") or t.startswith("ha_"))
     assert not browser, f"WhatsApp'a tarayici/ev kontrolu siziyor: {browser}"
+
+    # Sahibinin gorev panosu da uzak birinin isi degil.
+    board = sorted(t for t in tools if t.startswith("kanban"))
+    assert not board, f"WhatsApp'a gorev panosu siziyor: {board}"

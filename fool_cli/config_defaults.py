@@ -9,7 +9,8 @@ DEFAULT_CONFIG = {
     "providers": {},
     "fallback_providers": [],
     "credential_pool_strategies": {},
-    "toolsets": ["fool-cli"],
+    # FOOL-SEAM: toolset-rename — takim adi tanimlayici, markalanmaz.
+    "toolsets": ["hermes-cli"],
     # SQLite journal mode used by every Hermes database opener. WAL is the
     # normal default; set DELETE for weak-fsync/shared filesystems where WAL is
     # not crash-safe (for example macOS virtiofs, NFS, or SMB).

@@ -55,7 +55,10 @@ def validate_platform_toolsets(
             if is_valid_toolset(name):
                 valid_count += 1
                 continue
-            suggestion = f"fool-{platform}"
+            # FOOL-SEAM: toolset-rename
+            # Oneri GERCEK takim adini vermeli; "did you mean 'fool-cli'?"
+            # kullaniciyi var olmayan bir ada yonlendiriyordu.
+            suggestion = f"hermes-{platform}"
             hint = (
                 f" — did you mean '{suggestion}'?"
                 if is_valid_toolset(suggestion)

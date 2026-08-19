@@ -78,7 +78,7 @@ CLOUD_BLOCKED_MESSAGE = (
 #: Ana ortamda ya da kendi izole ortamlarında koşan, hiçbir yere bağlanmayan
 #: seslendirme motorları. Sıra bilinçli: ölçülen ilk-çağrı sonrası gecikmeye
 #: göre (Kokoro 0,08 sn, Piper benzeri, Qwen3-TTS 6,0 sn, Chatterbox 28 sn).
-LOCAL_TTS_PROVIDERS = ("kokoro", "piper", "styletts2", "qwen3", "chatterbox")
+LOCAL_TTS_PROVIDERS = ("kokoro", "piper", "styletts2", "kyutai", "f5tts", "qwen3", "chatterbox")
 
 
 def cloud_tts_allowed(tts_config: Any) -> bool:

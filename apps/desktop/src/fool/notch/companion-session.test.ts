@@ -93,3 +93,52 @@ describe('arkadas oturumu', () => {
     expect(create).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('kip degisimi', () => {
+  it('istenen kapsamla aciyor', async () => {
+    const create = vi.fn().mockResolvedValue({ session_id: 's1' })
+
+    await ensureCompanionSession(createCompanionSessionState(), {
+      create,
+      source: 'desktop'
+    })
+
+    expect(create.mock.calls[0][0]).toMatchObject({ source: 'desktop' })
+  })
+
+  it('kip degisince YENI oturum aciyor', async () => {
+    // Kapsam ajan kurulurken dondu: arkadas oturumunda terminal yok, Jarvis
+    // oturumunda kisit yok. Eskisini kullanmaya devam etmek, kullanicinin
+    // sectigi kipi sessizce yok saymakti.
+    const create = vi
+      .fn()
+      .mockResolvedValueOnce({ session_id: 'friend' })
+      .mockResolvedValueOnce({ session_id: 'jarvis' })
+
+    const state = createCompanionSessionState()
+
+    await ensureCompanionSession(state, { create, source: 'companion' })
+    const second = await ensureCompanionSession(state, { create, source: 'desktop' })
+
+    expect(create).toHaveBeenCalledTimes(2)
+    expect(second).toBe('jarvis')
+  })
+
+  it('ayni kipte oturumu YENIDEN kullaniyor', async () => {
+    const create = vi.fn().mockResolvedValue({ session_id: 's1' })
+    const state = createCompanionSessionState()
+
+    await ensureCompanionSession(state, { create, source: 'desktop' })
+    await ensureCompanionSession(state, { create, source: 'desktop' })
+
+    expect(create).toHaveBeenCalledOnce()
+  })
+
+  it('kaynak verilmezse arkadas kapsami', async () => {
+    const create = vi.fn().mockResolvedValue({ session_id: 's1' })
+
+    await ensureCompanionSession(createCompanionSessionState(), { create })
+
+    expect(create.mock.calls[0][0]).toMatchObject({ source: COMPANION_SOURCE })
+  })
+})

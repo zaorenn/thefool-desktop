@@ -44,6 +44,7 @@ import { NotificationsSettings } from './notifications-settings'
 import { PluginsSettings } from './plugins-settings'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
 import { SessionsSettings } from './sessions-settings'
+import { VoiceModeSettings } from '@/fool/voice-mode-settings'
 import { VoiceSettings } from '@/fool/voice-settings'
 
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
@@ -333,6 +334,13 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
                   Model indirme paneli AYRI bir menu ogesi degil, MEVCUT Voice
                   bolumunun devami. Ayri giris iki tane "Voice" satiri
                   uretiyordu ve kullanici hangisinin ne oldugunu bilemiyordu. */}
+              {/* FOOL-SEAM: voice-modes
+                  Iki sesli kip (Friend / Jarvis) AYRI bolumler ama AYNI Voice
+                  gorunumunde: ayri menu ogesi acmak yukaridaki ile ayni hatayi
+                  uretirdi -- kullanici hangi "Voice" satirinin ne oldugunu
+                  bilemiyordu. Kipler once geliyor cunku hangi kipte oldugun,
+                  hangi motoru kurdugundan once gelen bir karar. */}
+              {activeView === 'config:voice' && <VoiceModeSettings />}
               {activeView === 'config:voice' && <VoiceSettings />}
             </>
           ) : activeView === 'providers' ? (

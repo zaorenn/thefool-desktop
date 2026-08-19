@@ -44,6 +44,9 @@ function item(overrides: Partial<VoiceItem> = {}): VoiceItem {
   return {
     active: false,
     device: 'auto',
+    // ``provider_id`` yapilandirmaya YAZILAN ad (``qwen3-tts`` indirilir,
+    // ``qwen3`` secilir). Sunucu zaten gonderiyordu; arayuzde tanimli degildi.
+    provider_id: 'test-provider',
     voice: '',
     voices: [],
     clone_capable: false,

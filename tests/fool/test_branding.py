@@ -195,6 +195,7 @@ EXPECTED_SEAMS = {
     "local-only-stt",
     "local-only-tts",
     "shared-gpu-budget",
+    "output-file-toolset",
 }
 
 

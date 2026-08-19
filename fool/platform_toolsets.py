@@ -62,6 +62,11 @@ LOCAL_PLATFORMS = frozenset({
 SAFE_REMOTE_TOOLSETS = (
     "clarify",
     "image_gen",
+    # Yalnizca YAZAN, okuma yetkisi olmayan dosya uretimi. Bu takim olmadan
+    # "bana bunun PDF'ini cikar" demek imkansizdi: dosya yazmak ``file``
+    # takimini gerektiriyor, o da ``read_file`` getiriyor -- yani tek bir
+    # dosya uretebilmek icin tum diski okutmak gerekiyordu.
+    "output_file",
     "tts",
     "vision",
     "web",

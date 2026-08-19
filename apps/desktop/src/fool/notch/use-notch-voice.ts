@@ -50,6 +50,13 @@ import {
   modeForActivation
 } from './hands-free'
 import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
+import {
+  createFillerState,
+  FILL_AFTER_MS,
+  resetTurn,
+  shouldFill,
+  takeFiller
+} from './thinking-filler'
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
 
@@ -117,6 +124,11 @@ export function useNotchVoice(): NotchVoice {
   // Son turda konuşma duyuldu mu? Boşta zaman aşımıyla kapanan bir kayıt
   // "kullanıcı orada değil" demek; sessiz tur sayacı bunu sayıyor.
   const [heardSpeech, setHeardSpeech] = useState(false)
+  // Doldurma durumu ref'te: klavye/zamanlayici yollarindan okunuyor ve
+  // state'e tasimak her turda gereksiz render demekti.
+  const fillerRef = useRef(createFillerState())
+  // Bu turda cevaptan metin geldi mi? Geldiyse sessizlik bitti.
+  const speechStartedRef = useRef(false)
   // ``onSilence`` geri çağrımı ``commit``ten ÖNCE kuruluyor; ref olmadan
   // tanımlanmamış bir değere kapanır.
   const commitRef = useRef<() => void>(() => undefined)
@@ -214,6 +226,9 @@ export function useNotchVoice(): NotchVoice {
       }
 
       setTranscript(text)
+      // Yeni tur: doldurma hakki yenileniyor, sessizlik sayaci sifirlaniyor.
+      resetTurn(fillerRef.current)
+      speechStartedRef.current = false
       setStatus('thinking')
       // Yeni tur başladı: bir sonraki araya girme kapıyı yeniden talep
       // edebilmeli.
@@ -319,6 +334,8 @@ export function useNotchVoice(): NotchVoice {
     const session = stream?.session
 
     if (stream && session && pending.text.length > stream.sent) {
+      // Cevap geldi: sessizlik bitti, doldurma penceresi kapandi.
+      speechStartedRef.current = true
       session.append(pending.text.slice(stream.sent))
       stream.sent = pending.text.length
       setStatus('speaking')
@@ -425,6 +442,51 @@ export function useNotchVoice(): NotchVoice {
 
     return stop
   }, [haltTurn, monitorActive, submitAudio])
+
+  // Dusunme sessizligini doldur.
+  //
+  // Kullanici konusmayi bitiriyor, model cevabi uretmeye basliyor ve arada
+  // 1-3 saniye TAM sessizlik oluyor. Ekranda "Thinking..." yaziyor ama
+  // kullanici cogu zaman ekrana bakmiyor -- notch'un butun amaci bu. Kulakta
+  // hicbir sey yok ve konusma olmus gibi duyuluyor: kullanici ya tekrar
+  // konusuyor (araya girme sayiliyor) ya da bekleyip bekleyemeyecegini
+  // bilemiyor.
+  //
+  // Her bosluk DOLDURULMUYOR: kisa bir duraklama insan konusmasinda zaten
+  // var ve her turda "hmm" demek bir sure sonra bir tik gibi duyuluyor.
+  // Kural dar -- yalnizca esigi gecen bosluk, tur basina bir kez, arka
+  // arkaya ayni sozcuk olmadan (bkz. thinking-filler.ts).
+  //
+   
+  // tutamac (doldurma durumu, akis oturumu), reaktif deger aynasi degil
+  useEffect(() => {
+    if (status !== 'thinking') {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      const allowed = shouldFill(fillerRef.current, {
+        elapsedMs: FILL_AFTER_MS,
+        enabled: true,
+        hasSpeechStarted: speechStartedRef.current,
+        // Araya girme surerken doldurmak, kullanicinin ustune konusmak olur.
+        interrupted: bargeRef.current.claimedBy === 'voice'
+      })
+
+      if (!allowed) {
+        return
+      }
+
+      // Tek seferlik oynatma kullaniliyor, akis oturumu DEGIL: akis oturumu
+      // turun cevabina ait ve doldurma sozcugunu oraya yazmak onu cevabin
+      // basina yapistirirdi.
+      void playSpeechText(takeFiller(fillerRef.current), {
+        source: 'voice-conversation'
+      }).catch(() => undefined)
+    }, FILL_AFTER_MS)
+
+    return () => clearTimeout(timer)
+  }, [status])
 
   commitRef.current = commit
 

@@ -974,6 +974,69 @@ def run_doctor(args):
     print(color("│                 🩺 The Fool Doctor                        │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
 
+    # FOOL-SEAM: local-only-doctor
+    #
+    # Bu oturumda kapatilan sizintilarin ORTAK yani, hicbirinin tek tek
+    # bakildiginda gorunmemesiydi. Denetimler yazildi ama ayri ayri
+    # komutlarda duruyorlardi; kullanicinin bilmedigi bir komutu calistirmasi
+    # beklenemez. ``fool doctor`` zaten "bir sorun var mi" diye bakilan yer.
+    _section("Local-Only")
+    try:
+        from fool.local_only import audit_local_only
+        from fool_cli.config import load_config as _load_config
+
+        _cfg = _load_config() or {}
+        # Satirlar "local-only" ile onekleniyor: tek basina "browser" ya da
+        # "web" doctor ciktisinda BASKA bolumlerin satirlariyla karisiyor
+        # (arac kullanilabilirligi bolumu de "browser" yaziyor). Onek hem
+        # okuyan insan hem de ciktiyi tarayan testler icin ayirici.
+        for _finding in audit_local_only(_cfg):
+            _label = f"local-only {_finding.surface}: {_finding.detail}"
+            if _finding.local:
+                check_ok(_label)
+            else:
+                check_warn(_label, _finding.remedy)
+    except Exception as _lo_err:
+        check_warn("local-only audit unavailable", str(_lo_err))
+
+    _section("Model Tool-Calling")
+    try:
+        from fool.agent_authority import enforcement_enabled
+        from fool.model_readiness import load_verdict
+        from fool_cli.config import load_config as _load_config
+
+        _cfg = _load_config() or {}
+        _model_cfg = _cfg.get("model") or {}
+        _model = str(
+            (_model_cfg.get("default") or _model_cfg.get("model") or "")
+            if isinstance(_model_cfg, dict) else ""
+        ).strip()
+        _verdict = load_verdict(_model) if _model else None
+
+        if not _model:
+            check_warn("no model configured", "Run `fool model`")
+        elif _verdict is None:
+            # "Olculmedi" ile "kaldi" ayri seyler; ikisini ayni gostermek
+            # kullaniciyi var olmayan bir sorunu kovalamaya iterdi.
+            check_warn(
+                f"{_model}: not benchmarked",
+                "Run `python -m fool.model_readiness` to measure tool-calling",
+            )
+        elif _verdict.get("passed"):
+            check_ok(f"{_model}: {_verdict.get('score')}/{_verdict.get('total')} tool-calling")
+        else:
+            check_fail(
+                f"{_model}: {_verdict.get('score')}/{_verdict.get('total')} tool-calling",
+                "Pick a stronger model with `fool model`, or accept the risk",
+            )
+
+        if enforcement_enabled(_cfg):
+            check_ok("benchmark gate is ON — machine-touching tools require a pass")
+        else:
+            check_ok("benchmark gate is off (agent.require_benchmark)")
+    except Exception as _mr_err:
+        check_warn("tool-calling check unavailable", str(_mr_err))
+
     _section("Security Advisories")
     try:
         from fool_cli.security_advisories import (

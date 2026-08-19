@@ -3431,6 +3431,21 @@ def _text_to_speech_single(
             logger.info("Generating speech with Piper (local)...")
             _generate_piper_tts(text, file_str, tts_config)
 
+        elif provider == "none":
+            # FOOL-SEAM: local-only-tts
+            #
+            # ``_get_provider`` yerel motor yokken ve bulut acilmamisken "none"
+            # donuyor. Bu dal olmadan cagri asagidaki VARSAYILANA dusuyordu ve
+            # varsayilan Edge -- yani tam kacinmak icin "none" dondugumuz sey
+            # oluyordu. Kapi sessizce atlaniyordu ve bunu ucdan uca ses turu
+            # yakaladi (``fool/voice_roundtrip.py``), birim testleri degil.
+            from fool.local_only import TTS_CLOUD_BLOCKED_MESSAGE
+
+            return json.dumps({
+                "success": False,
+                "error": TTS_CLOUD_BLOCKED_MESSAGE,
+            }, ensure_ascii=False)
+
         else:
             # Default: Edge TTS (free), with NeuTTS as local fallback
             edge_available = True

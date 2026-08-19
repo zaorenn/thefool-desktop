@@ -1665,10 +1665,36 @@ def _should_force_faster_whisper_cpu() -> bool:
 def _get_idle_unload_seconds(local_cfg: Dict[str, Any]) -> int:
     """Resolve the idle unload timeout from config.
 
-    0 = never unload (default). Negative values are treated as 0.
+    Explicit config always wins; negative values are treated as 0 (never).
+
+    FOOL-SEAM: shared-gpu-budget
+
+    Upstream'in varsayilani 0 -- yani ASLA bosaltma. 16 GB'lik paylasilan bir
+    kartta bu yanlis: LLM, konusma tanima ve seslendirme ayni bellegi
+    kullaniyor. Olculdu (RTX 4070 Ti SUPER, LM Studio'da qwen3.5-9b acikken):
+
+        nvidia-smi -> total 16376, used 10480, free 5582    (MB)
+
+    Yani model tek basina belleğin ucte ikisini tutuyor. "Asla bosaltma" ile
+    bir kez konusan kullanici, whisper'i oturum boyunca VRAM'de tutuyor --
+    sohbet sirasinda bir daha hic kullanmasa bile. Bellek dolunca olan da
+    sessiz siniftan: motor OOM alip CPU'ya dusuyor, kullanici yalnizca
+    "yavasladi" goruyor.
+
+    Kart olculemiyorsa ya da genisse (>= 24 GB) varsayilan yine 0: orada
+    bosaltmak yalnizca yeniden yukleme gecikmesi uretirdi.
     """
+    raw = local_cfg.get("unload_after_idle_seconds")
+    if raw is None:
+        from fool.gpu_budget import default_idle_unload_seconds, total_vram_mb
+
+        try:
+            return default_idle_unload_seconds(total_vram_mb())
+        except Exception:  # pragma: no cover - sonda cokerse eski davranis
+            return 0
+
     try:
-        val = int(local_cfg.get("unload_after_idle_seconds", 0))
+        val = int(raw)
     except (TypeError, ValueError):
         return 0
     return max(val, 0)

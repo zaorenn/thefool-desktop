@@ -46,13 +46,52 @@ import tools.transcription_tools as tt
 
 
 class TestGetIdleUnloadSeconds:
-    def test_default_is_zero(self):
+    """FOOL-SEAM: shared-gpu-budget
+
+    Upstream'in varsayilani 0 (asla bosaltma) idi ve bu sinif onu
+    savunuyordu. 16 GB'lik PAYLASILAN bir kartta bu yanlis: LLM, konusma
+    tanima ve seslendirme ayni bellegi kullaniyor. Olculdu (RTX 4070 Ti
+    SUPER, LM Studio'da qwen3.5-9b acikken) total 16376 / used 10480 /
+    free 5582 MB -- model tek basina belleğin ucte ikisi.
+
+    Bu sinifin ASIL korudugu sozlesmeler degismedi ve hala dogrulaniyor:
+    acik bir deger aynen gecerli, acik 0 "asla" demek, negatif ve bozuk
+    degerler 0'a kirpiliyor.
+
+    Degisen tek sey: HIC yazilmamis config artik karta gore bir varsayilan
+    aliyor. Genis kartta (>= 24 GB) ve kart olculemedigi durumda yine 0.
+    """
+
+    def test_unmeasured_card_keeps_the_old_default(self, monkeypatch):
+        from fool import gpu_budget
+
+        monkeypatch.setattr(gpu_budget, "total_vram_mb", lambda: None)
+
         assert _get_idle_unload_seconds({}) == 0
+
+    def test_wide_card_keeps_the_old_default(self, monkeypatch):
+        from fool import gpu_budget
+
+        monkeypatch.setattr(gpu_budget, "total_vram_mb", lambda: 49_152)
+
+        assert _get_idle_unload_seconds({}) == 0
+
+    def test_shared_card_unloads_when_idle(self, monkeypatch):
+        from fool import gpu_budget
+
+        monkeypatch.setattr(gpu_budget, "total_vram_mb", lambda: 16_376)
+
+        assert _get_idle_unload_seconds({}) > 0
 
     def test_explicit_value(self):
         assert _get_idle_unload_seconds({"unload_after_idle_seconds": 300}) == 300
 
-    def test_zero_means_never(self):
+    def test_zero_means_never(self, monkeypatch):
+        """Acik 0 her zaman "asla" -- kart ne olursa olsun."""
+        from fool import gpu_budget
+
+        monkeypatch.setattr(gpu_budget, "total_vram_mb", lambda: 16_376)
+
         assert _get_idle_unload_seconds({"unload_after_idle_seconds": 0}) == 0
 
     def test_negative_clamped_to_zero(self):
@@ -61,8 +100,19 @@ class TestGetIdleUnloadSeconds:
     def test_garbage_falls_back_to_zero(self):
         assert _get_idle_unload_seconds({"unload_after_idle_seconds": "never"}) == 0
 
-    def test_none_falls_back_to_zero(self):
-        assert _get_idle_unload_seconds({"unload_after_idle_seconds": None}) == 0
+    def test_none_resolves_like_a_missing_key(self, monkeypatch):
+        """YAML ``unload_after_idle_seconds:`` (bos) = "gorus bildirmedim".
+
+        Depodaki null-guard sozlesmesiyle ayni: acik null varsayilana duser.
+        """
+        from fool import gpu_budget
+
+        monkeypatch.setattr(gpu_budget, "total_vram_mb", lambda: 16_376)
+
+        assert _get_idle_unload_seconds({"unload_after_idle_seconds": None}) == (
+            _get_idle_unload_seconds({})
+        )
+
 
 
 # ============================================================================

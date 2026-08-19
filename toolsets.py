@@ -289,6 +289,19 @@ TOOLSETS = {
         "tools": ["clarify"],
         "includes": []
     },
+
+    # FOOL-SEAM: output-file-toolset
+    #
+    # Uzak platformlarda dosya URETMEK icin ``file`` takimi gerekiyordu, o da
+    # ``read_file`` / ``search_files`` getiriyor: WhatsApp'tan bir PDF
+    # isteyebilmek icin bota mesaj yazabilen herkese TUM DISKI okutmak
+    # gerekiyordu. Bu takim yalnizca YAZAN tek bir araca sahip ve cikti
+    # klasorune kilitli (bkz. fool/output_file.py).
+    "output_file": {
+        "description": "Write generated files (reports, PDFs, CSVs) to this session's output folder. Write-only - cannot read or list anything.",
+        "tools": ["write_output"],
+        "includes": []
+    },
     
     "code_execution": {
         "description": "Run Python scripts that call tools programmatically (reduces LLM round trips)",

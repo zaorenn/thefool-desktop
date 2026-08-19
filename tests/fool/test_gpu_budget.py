@@ -99,3 +99,25 @@ def test_olcum_yoksa_engellenmiyor() -> None:
 @pytest.mark.parametrize("engine", ["chatterbox", "kokoro", "qwen3-tts", "whisper-turbo"])
 def test_her_cuda_motorunun_bir_tahmini_var(engine: str) -> None:
     assert gpu_budget.ENGINE_VRAM_MB[engine] > 0
+
+
+def test_nvidia_smi_cagrisi_stdin_kapatiyor() -> None:
+    """Windows footgun: ``stdin=`` belirtilmeyen alt süreç blokluyor.
+
+    Bu işlev transkripsiyon yükleme yolunda çağrılıyor -- orada bir
+    kilitlenme sesli turu sonsuza kadar dondururdu. Deponun kendi denetimi
+    var (``scripts/check_subprocess_stdin.py``); bu test aynı kuralı burada
+    da tutuyor.
+    """
+    import inspect
+
+    source = inspect.getsource(gpu_budget._nvidia_smi_mb)
+
+    assert "stdin=subprocess.DEVNULL" in source
+
+
+def test_nvidia_smi_cagrisi_zaman_asimli() -> None:
+    """Asılı kalan bir ``nvidia-smi`` de aynı yolu kilitlerdi."""
+    import inspect
+
+    assert "timeout=" in inspect.getsource(gpu_budget._nvidia_smi_mb)

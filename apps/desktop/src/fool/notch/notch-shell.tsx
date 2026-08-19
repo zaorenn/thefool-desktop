@@ -24,6 +24,11 @@ import { onGatewayEvent } from '@/contrib/events'
 import { Mic } from '@/lib/icons'
 
 import {
+  MAX_IDLE_ROUNDS,
+  nextIdleRounds,
+  shouldRearmListening
+} from './hands-free'
+import {
   createPushToTalkState,
   onBlur as ptOnBlur,
   onKeyDown as ptOnKeyDown,
@@ -42,13 +47,18 @@ const LINGER_MS = 6000
 /** Yay: hafif taşan ama salınmayan bir açılış. macOS'un çentik hissi bu. */
 const SPRING = { damping: 26, mass: 0.9, stiffness: 380, type: 'spring' } as const
 
+// Kullaniciya gorunen metinler Ingilizce -- uygulamanin varsayilan dili.
+// (Yorumlar Turkce; bu ayrim depo kurali.)
 const LABEL: Record<NotchStatus, string> = {
-  idle: 'Sağ Ctrl ile konuş',
-  listening: 'Dinliyorum…',
-  speaking: 'Yanıtlıyor',
-  thinking: 'Düşünüyor…',
-  transcribing: 'Yazıya dökülüyor…'
+  idle: 'Listening — just talk',
+  listening: 'Listening…',
+  speaking: 'Replying',
+  thinking: 'Thinking…',
+  transcribing: 'Transcribing…'
 }
+
+/** Eller serbest kip kendini susturdugunda gosterilen satir. */
+const PAUSED_LABEL = 'Paused — press right Ctrl or say the wake word'
 
 /**
  * Canlı dalga formu.
@@ -226,6 +236,62 @@ export function NotchShell() {
 
   const expanded = voice.status !== 'idle' || lingering
 
+  // Eller serbest tur alma: oturum açıkken tur biter bitmez mikrofon
+  // kendiliğinden açılıyor. Kullanıcı hiçbir şeye dokunmadan cevap veriyor —
+  // bas-konuş telsiz gibiydi, bu konuşma gibi.
+  //
+  // Sağ Ctrl yine çalışıyor ve o kayıt BAS-KONUŞ kuralıyla işliyor: gürültülü
+  // ortamda kullanıcı kaydın sınırını kendi çizmek isteyebilir.
+  const [idleRounds, setIdleRounds] = useState(0)
+
+  // Kullanıcı konuştuysa sayaç sıfırlanır; birikmiş sayaç onu bir sonraki
+  // sessizlikte erken susturmamalı.
+  useEffect(() => {
+    if (voice.heardSpeech) {
+      setIdleRounds(0)
+    }
+  }, [voice.heardSpeech])
+
+  // Oturum her açıldığında sayaç sıfırdan başlıyor: kullanıcı az önce
+  // kısayola bastı, orada olduğu kesin.
+  useEffect(() => {
+    if (sessionActive) {
+      setIdleRounds(0)
+    }
+  }, [sessionActive])
+
+  const rearm = shouldRearmListening({
+    capturing: voice.capturing,
+    idleRounds,
+    mode: 'hands-free',
+    sessionActive,
+    status: voice.status
+  })
+
+  useEffect(() => {
+    if (!rearm) {
+      return
+    }
+
+    // Kısa bir gecikme: oynatma kuyruğunun gerçekten boşalması için. Aynı
+    // karede açmak hoparlörün son hecesini mikrofona yakalatıyordu.
+    const timer = setTimeout(() => {
+      voice.begin('auto')
+      // Bu turda konuşma duyulmazsa kayıt boşta zaman aşımıyla kapanacak;
+      // sayaç şimdiden artıyor ve ``heardSpeech`` gelirse sıfırlanıyor.
+      setIdleRounds(previous => nextIdleRounds(previous, false))
+    }, 250)
+
+    return () => clearTimeout(timer)
+    // ``voice`` her render'da yeni bir nesne; bağımlılığa almak efekti her
+    // render'da yeniden kurar ve mikrofonu açıp kapatıp durur.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rearm])
+
+  // Kip kendini susturduysa kullanıcıya SÖYLE. Sessizce durmak, notch açık
+  // dururken hiçbir şeyin çalışmadığı izlenimi veriyordu.
+  const paused = sessionActive && voice.status === 'idle' && idleRounds >= MAX_IDLE_ROUNDS
+
   // Bas-konuş durumu bir ref'te: klavye olayları render döngüsünün dışında
   // geliyor ve state kullanmak her tuş olayında bir render daha demek olurdu.
   const ptt = useRef(createPushToTalkState())
@@ -354,7 +420,7 @@ export function NotchShell() {
               <Waveform active={voice.status === 'listening'} level={voice.level} />
 
               <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
-                {voice.status === 'idle' ? LABEL.idle : LABEL[voice.status]}
+                {voice.status === 'idle' && paused ? PAUSED_LABEL : LABEL[voice.status]}
               </div>
 
               {/* Yazıya dökülen metin: kullanıcı ne anlaşıldığını GÖRMELİ.

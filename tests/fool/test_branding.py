@@ -192,6 +192,7 @@ EXPECTED_SEAMS = {
     "browser-default",
     "toolset-rename",
     "remote-platform-default",
+    "local-only-stt",
 }
 
 

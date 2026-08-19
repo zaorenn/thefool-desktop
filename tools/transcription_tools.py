@@ -1122,6 +1122,28 @@ def _get_provider(stt_config: dict) -> str:
     # Try lazy-install before falling through to cloud providers
     if _try_lazy_install_stt():
         return "local"
+
+    # FOOL-SEAM: local-only-stt
+    #
+    # Buradan asagisi bulut merdiveni ve bu noktaya YEREL YOL COKTUGU icin
+    # gelindi -- CUDA kutuphanesi eksik, tekerlek bozuk, surum cakismasi.
+    # Upstream burada sessizce buluta geciyor: MIKROFON KAYDI ucuncu bir
+    # tarafa yukleniyor ve geriye yalnizca bir ``logger.info`` kaliyor.
+    # Sesli sohbet calismaya devam ettigi icin kullanicinin fark etmesi de
+    # mumkun degil.
+    #
+    # Sohbet icin zaten bir OpenAI/Groq anahtari olan herkes bu yoldan
+    # geciyor: anahtar orada, kod onu bulup kullaniyor.
+    #
+    # Acik tercih (``stt.provider: groq`` ya da
+    # ``stt.allow_cloud_fallback: true``) YUKARIDA zaten onurlandiriliyor;
+    # burada kesilen yalnizca SESSIZ gecis.
+    from fool.local_only import CLOUD_BLOCKED_MESSAGE, cloud_stt_allowed
+
+    if not cloud_stt_allowed(stt_config):
+        logger.warning("[The Fool] %s", CLOUD_BLOCKED_MESSAGE)
+        return "none"
+
     if _HAS_OPENAI and _resolve_provider_key("GROQ_API_KEY", "groq"):
         logger.info("No local STT available, using Groq Whisper API")
         return "groq"

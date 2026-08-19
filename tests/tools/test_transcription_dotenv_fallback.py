@@ -92,20 +92,34 @@ class TestProviderSelectionGate:
 
 
     def test_auto_detect_sees_dotenv_groq(self):
-        """No local backend, no explicit provider — auto-detect should fall
-        through to Groq when its key lives in dotenv only. Before the fix
-        it would return 'none'."""
+        """No local backend - auto-detect must find a Groq key that lives in
+        dotenv only, rather than returning 'none'.
+
+        FOOL-SEAM: local-only-stt
+
+        Upstream asserted this with no opt-in, because upstream treats cloud
+        STT as an acceptable silent fallback. The Fool does not: reaching this
+        branch means the LOCAL engine died, and uploading the user's
+        microphone audio to a third party because a chat API key happened to
+        be present is not a fallback, it is a leak. The silent path is closed;
+        an explicit opt-in still works.
+
+        What this test actually protects - dotenv-only key resolution - is
+        unchanged, and that is still what is asserted. Only the opt-in flag
+        was added. See ``fool/local_only.py`` and
+        ``tests/fool/test_local_only_stt.py``.
+        """
         from tools import transcription_tools as tt
 
-        with patch.object(tt, "_HAS_FASTER_WHISPER", False), \
-             patch.object(tt, "_HAS_OPENAI", True), \
-             patch.object(tt, "_HAS_MISTRAL", False), \
-             patch.object(tt, "_has_local_command", return_value=False), \
-             patch.object(tt, "_has_openai_audio_backend", return_value=False), \
-             patch("fool_cli.config.load_env",
+        with patch.object(tt, "_HAS_FASTER_WHISPER", False),              patch.object(tt, "_HAS_OPENAI", True),              patch.object(tt, "_HAS_MISTRAL", False),              patch.object(tt, "_has_local_command", return_value=False),              patch.object(tt, "_has_openai_audio_backend", return_value=False),              patch("fool_cli.config.load_env",
                    return_value={"GROQ_API_KEY": "dotenv-secret"}):
-            # No "provider" key → explicit=False → auto-detect branch
-            assert tt._get_provider({"enabled": True}) == "groq"
+            # No "provider" key -> explicit=False -> auto-detect branch
+            assert tt._get_provider(
+                {"enabled": True, "allow_cloud_fallback": True}
+            ) == "groq"
+
+            # Without the opt-in the same box stays local-only and says so.
+            assert tt._get_provider({"enabled": True}) == "none"
 
 
 class TestTranscribeCallSitesReadDotenv:

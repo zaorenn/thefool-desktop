@@ -205,6 +205,7 @@ EXPECTED_SEAMS = {
     "voice-mode-provider",
     "voice-modes",
     "friend-window",
+    "update-self-deadlock",
 }
 
 

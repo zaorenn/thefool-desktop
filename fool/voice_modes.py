@@ -36,6 +36,10 @@ from typing import Any, Final
 COMPANION: Final[str] = "companion"
 JARVIS: Final[str] = "jarvis"
 
+#: Masaustundeki Friend penceresi. Kendi sesini secebilmesi icin burada da
+#: bir kip: ``voice.modes.friend.provider``.
+FRIEND: Final[str] = "friend"
+
 DEFAULT_MODE: Final[str] = COMPANION
 
 
@@ -87,6 +91,12 @@ def _companion_toolsets() -> tuple[str, ...]:
     return tuple(COMPANION_TOOLSETS)
 
 
+def _friend_toolsets() -> tuple[str, ...]:
+    from fool.session_scope import FRIEND_TOOLSETS
+
+    return tuple(FRIEND_TOOLSETS)
+
+
 def _companion_guidance() -> str:
     from fool.guidance import COMPANION_GUIDANCE
 
@@ -105,6 +115,14 @@ def modes() -> dict[str, VoiceMode]:
             label="Friend",
             summary="Just talk. No tools, nothing to break -- it cannot touch the machine.",
             toolsets=_companion_toolsets(),
+            guidance=_companion_guidance(),
+            touches_machine=False,
+        ),
+        FRIEND: VoiceMode(
+            id=FRIEND,
+            label="Friend window",
+            summary="The full-page chat. No tools, but memory is shared with the agent.",
+            toolsets=_friend_toolsets(),
             guidance=_companion_guidance(),
             touches_machine=False,
         ),

@@ -25,6 +25,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Mic, MicOff } from '@/lib/icons'
+import { notifyError } from '@/store/notifications'
+
+import { voiceApi, type VoiceCatalog } from '../voice-api'
 
 import {
   advance,
@@ -113,9 +116,49 @@ function Orb({ level, phase }: { level: number; phase: OrbPhase }) {
   )
 }
 
+/** Bu pencerenin dinleme kipi. */
+type ListenMode = 'hands-free' | 'push-to-talk'
+
 export function FriendView() {
   const voice = useFriendVoice()
   const [muted, setMuted] = useState(false)
+  const [listenMode, setListenMode] = useState<ListenMode>('hands-free')
+  const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
+  const [provider, setProvider] = useState('')
+  const [holding, setHolding] = useState(false)
+
+  // Kurulu motorlar ve bu pencerenin secili sesi.
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const [data, saved] = await Promise.all([voiceApi.catalog(), voiceApi.modeProviders()])
+
+        if (!cancelled) {
+          setCatalog(data)
+          setProvider(saved.providers?.friend ?? '')
+        }
+      } catch {
+        // Sessizce gec: ses secimi olmadan da pencere calisiyor. Bir katalog
+        // hatasinin sohbeti engellemesi yanlis olurdu.
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const chooseProvider = useCallback(async (next: string) => {
+    setProvider(next)
+
+    try {
+      await voiceApi.setModeProvider('friend', next)
+    } catch (error) {
+      notifyError(error, 'Could not save the voice')
+    }
+  }, [])
 
   const toggle = useCallback(() => {
     setMuted(previous => {
@@ -123,24 +166,57 @@ export function FriendView() {
 
       if (next) {
         voice.stop()
-      } else {
+      } else if (listenMode === 'hands-free') {
         voice.start()
       }
 
       return next
     })
-  }, [voice])
+  }, [listenMode, voice])
 
-  // Sayfa acilinca konusmaya HAZIR olsun: kullanicinin once bir dugme
-  // aramasi, "oturup konusmak" fikrinin tam tersi.
+  // Kip degisince mikrofonu ona gore ayarla: eller serbest surekli dinliyor,
+  // bas-konus yalnizca basiliyken.
   useEffect(() => {
-    voice.start()
+    if (muted) {
+      return
+    }
 
-    return () => voice.stop()
+    if (listenMode === 'hands-free') {
+      voice.start()
+    } else {
+      voice.stop()
+    }
     // ``voice`` her render'da yeni bir nesne; bagimliliga almak mikrofonu
     // acip kapatip dururdu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listenMode, muted])
+
+  // Sayfa kapaninca mikrofonu MUTLAKA birak: acik kalan bir mikrofon
+  // kullanicinin gormedigi en kotu durum.
+  useEffect(() => {
+    return () => voice.stop()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const hold = useCallback(() => {
+    if (muted || listenMode !== 'push-to-talk') {
+      return
+    }
+
+    setHolding(true)
+    voice.beginHold()
+  }, [listenMode, muted, voice])
+
+  const release = useCallback(() => {
+    if (!holding) {
+      return
+    }
+
+    setHolding(false)
+    voice.endHold()
+  }, [holding, voice])
+
+  const tts = (catalog?.items ?? []).filter(item => item.kind === 'tts' && item.installed)
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
@@ -166,14 +242,66 @@ export function FriendView() {
         )}
       </div>
 
+      {/* Mikrofon dugmesi kipe gore FARKLI davraniyor: eller serbestte
+          sustur/ac, bas-konusta basili tutulan tus. Tek dugmeye iki anlam
+          yuklemek yerine davranisi kipe baglamak, kullanicinin ne yapacagini
+          tahmin etmesini gerektirmiyor. */}
       <button
-        aria-label={muted ? 'Unmute' : 'Mute'}
-        className="flex size-12 items-center justify-center rounded-full border border-(--stroke-nous) transition-colors hover:bg-(--surface-hover)"
-        onClick={toggle}
+        aria-label={
+          listenMode === 'push-to-talk' ? 'Hold to talk' : muted ? 'Unmute' : 'Mute'
+        }
+        className={`flex size-14 items-center justify-center rounded-full border transition-colors ${
+          holding
+            ? 'border-(--theme-primary) bg-(--theme-primary)/15'
+            : 'border-(--stroke-nous) hover:bg-(--surface-hover)'
+        }`}
+        onClick={listenMode === 'hands-free' ? toggle : undefined}
+        onPointerCancel={release}
+        onPointerDown={listenMode === 'push-to-talk' ? hold : undefined}
+        onPointerLeave={release}
+        onPointerUp={release}
         type="button"
       >
         {muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
       </button>
+
+      {/* Kontroller: dinleme kipi ve ses. Ayarlara gitmeden buradan
+          degistirilebiliyor -- konusurken "sesi begenmedim" demek icin
+          baska bir sayfaya gitmek akisi kesiyordu. */}
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex overflow-hidden rounded-full border border-(--stroke-nous)">
+          {(['hands-free', 'push-to-talk'] as const).map(mode => (
+            <button
+              className={`px-3 py-1 transition-colors ${
+                listenMode === mode
+                  ? 'bg-(--theme-primary) text-white'
+                  : 'hover:bg-(--surface-hover)'
+              }`}
+              key={mode}
+              onClick={() => setListenMode(mode)}
+              type="button"
+            >
+              {mode === 'hands-free' ? 'Hands-free' : 'Push to talk'}
+            </button>
+          ))}
+        </div>
+
+        <select
+          aria-label="Voice"
+          className="h-7 rounded border border-(--stroke-nous) bg-transparent px-2 text-xs"
+          onChange={event => void chooseProvider(event.target.value)}
+          value={provider}
+        >
+          {/* Bos = genel ``tts.provider``a dus. Bu pencerenin kendi sesi
+              olmak ZORUNDA degil. */}
+          <option value="">Default voice</option>
+          {tts.map(item => (
+            <option key={item.id} value={item.provider_id || item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   )
 }

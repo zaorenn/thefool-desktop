@@ -112,3 +112,70 @@ def test_stt_motoru_onizlenemiyor() -> None:
     """Konuşma tanımanın dinletecek bir şeyi yok."""
     with pytest.raises(ValueError):
         vp.preview("whisper-turbo")
+
+
+# ---------------------------------------------------------------------------
+# ``text_to_speech_tool`` sözleşmesi
+# ---------------------------------------------------------------------------
+#
+# Bu bölüm bir hatanın ardından yazıldı: ``_synthesize`` aracın dönüş değerini
+# doğrudan ``open()``a veriyordu, ama araç bir YOL değil JSON DİZESİ döndürüyor
+# ve çağrı ``OSError: Invalid argument`` ile düşüyordu. Yukarıdaki testler bu
+# işlevi taklit ettikleri için görmediler; gerçek bir sentez denemesi gördü.
+#
+# Ders: taklit edilen sınırın SÖZLEŞMESİ ayrıca sınanmalı.
+
+def test_arac_ciktisi_JSON_ve_yol_ondan_okunuyor(monkeypatch, tmp_path) -> None:
+    import json
+
+    produced = tmp_path / "gercek.wav"
+    produced.write_bytes(b"RIFF")
+
+    import tools.tts_tool as tt
+
+    monkeypatch.setattr(
+        tt,
+        "text_to_speech_tool",
+        lambda *a, **k: json.dumps({"success": True, "file_path": str(produced)}),
+    )
+
+    assert vp._synthesize("kokoro", str(tmp_path / "istenen.wav")) == str(produced)
+
+
+def test_file_paths_listesi_de_okunuyor(monkeypatch, tmp_path) -> None:
+    import json
+
+    produced = tmp_path / "parca1.wav"
+    import tools.tts_tool as tt
+
+    monkeypatch.setattr(
+        tt,
+        "text_to_speech_tool",
+        lambda *a, **k: json.dumps({"success": True, "file_paths": [str(produced)]}),
+    )
+
+    assert vp._synthesize("kokoro", "istenen.wav") == str(produced)
+
+
+def test_basarisiz_sentez_hata_firlatiyor(monkeypatch) -> None:
+    import json
+
+    import tools.tts_tool as tt
+
+    monkeypatch.setattr(
+        tt,
+        "text_to_speech_tool",
+        lambda *a, **k: json.dumps({"success": False, "error": "engine died"}),
+    )
+
+    with pytest.raises(RuntimeError, match="engine died"):
+        vp._synthesize("kokoro", "x.wav")
+
+
+def test_duz_yol_donduren_surumle_de_calisiyor(monkeypatch) -> None:
+    """Sözleşme değişirse sessizce bozulmamalı."""
+    import tools.tts_tool as tt
+
+    monkeypatch.setattr(tt, "text_to_speech_tool", lambda *a, **k: "/tmp/duz.wav")
+
+    assert vp._synthesize("kokoro", "x.wav") == "/tmp/duz.wav"

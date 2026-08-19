@@ -69,3 +69,52 @@ CLOUD_BLOCKED_MESSAGE = (
     "explicitly with `fool config set stt.allow_cloud_fallback true` "
     "(or name a provider with `fool config set stt.provider openai`)."
 )
+
+
+# ---------------------------------------------------------------------------
+# Seslendirme
+# ---------------------------------------------------------------------------
+
+#: Ana ortamda ya da kendi izole ortamlarında koşan, hiçbir yere bağlanmayan
+#: seslendirme motorları. Sıra bilinçli: ölçülen ilk-çağrı sonrası gecikmeye
+#: göre (Kokoro 0,08 sn, Piper benzeri, Qwen3-TTS 6,0 sn, Chatterbox 28 sn).
+LOCAL_TTS_PROVIDERS = ("kokoro", "piper", "qwen3", "chatterbox")
+
+
+def cloud_tts_allowed(tts_config: Any) -> bool:
+    """Seslendirme buluta gidebilir mi?
+
+    ``tts.provider`` AÇIKÇA yazılmışsa bu işlev hiç sorulmuyor -- kullanıcı
+    sağlayıcıyı kendisi seçmiş. Buradaki soru yalnızca "hiç seçim yokken ne
+    olacak".
+    """
+    if not isinstance(tts_config, dict):
+        return False
+    return _truthy(tts_config.get("allow_cloud_fallback"))
+
+
+def preferred_local_tts(installed: Any) -> str | None:
+    """Kurulu yerel motorlar arasından ilk tercihi seç.
+
+    ``installed`` kurulu sağlayıcı adlarını veren herhangi bir küme/dizi.
+    Hiçbiri yoksa ``None``.
+    """
+    try:
+        available = {str(name).lower().strip() for name in installed}
+    except TypeError:
+        return None
+
+    for provider in LOCAL_TTS_PROVIDERS:
+        if provider in available:
+            return provider
+    return None
+
+
+#: Yerel motor yokken ve bulut açılmamışken söylenecek şey.
+TTS_CLOUD_BLOCKED_MESSAGE = (
+    "No local text-to-speech engine is installed and cloud TTS is off, so "
+    "nothing was spoken. Your text was NOT sent to Microsoft. Install a local "
+    "voice from Settings > Text to speech (Kokoro is the fastest), or opt in "
+    "explicitly with `fool config set tts.allow_cloud_fallback true` "
+    "(or name a provider with `fool config set tts.provider edge`)."
+)

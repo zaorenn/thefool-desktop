@@ -204,6 +204,7 @@ EXPECTED_SEAMS = {
     "companion-scope",
     "voice-mode-provider",
     "voice-modes",
+    "friend-window",
 }
 
 

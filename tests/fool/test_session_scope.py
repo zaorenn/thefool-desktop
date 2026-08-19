@@ -139,3 +139,76 @@ def test_gateway_masaustu_kapsamini_DEGISTIRMIYOR(monkeypatch) -> None:
 
     assert "terminal" in result
     assert "file" in result
+
+
+# ---------------------------------------------------------------------------
+# Friend penceresi: arkadaş kapsamı + ORTAK HAFIZA
+# ---------------------------------------------------------------------------
+#
+# Uzak bir kullanıcıya sahibinin geçmiş sohbetlerini açmak sızıntı; kendi
+# makinesinde kendi penceresinde AÇMAMAK ise arkadaşı hafızasız bırakmak --
+# her seferinde kendini yeniden anlatmak zorunda kalıyorsun. İkisi farklı
+# sorular ve farklı cevapları var.
+
+def test_friend_kapsami_hafizayi_PAYLASIYOR() -> None:
+    assert "memory" in ss.FRIEND_TOOLSETS
+    assert "memory" not in ss.COMPANION_TOOLSETS
+
+
+def test_friend_kapsami_yine_de_makineye_dokunmuyor() -> None:
+    tools: set[str] = set()
+    for name in ss.FRIEND_TOOLSETS:
+        tools |= set(resolve_toolset(name))
+
+    assert tools
+    assert not (DANGEROUS & tools)
+    assert not [t for t in tools if t.startswith("browser")]
+
+
+def test_friend_gecmis_sohbetleri_TARAYAMIYOR() -> None:
+    """Hatırlamak ile geçmişi taramak farklı şeyler; sohbet için gerekmiyor."""
+    assert "session_search" not in ss.FRIEND_TOOLSETS
+
+
+def test_friend_kapsami_cozumleniyor() -> None:
+    assert ss.scope_toolsets("friend") == list(ss.FRIEND_TOOLSETS)
+
+
+def test_gateway_friend_kapsamini_uyguluyor() -> None:
+    from tui_gateway.server import _load_enabled_toolsets
+
+    result = set(_load_enabled_toolsets("friend") or [])
+
+    assert result == set(ss.FRIEND_TOOLSETS)
+    for forbidden in ("terminal", "file", "code_execution", "computer_use", "delegation"):
+        assert forbidden not in result
+
+
+def test_uc_kapsam_da_BIRBIRINDEN_farkli() -> None:
+    """companion < friend, ve desktop ikisinden de YETKILI.
+
+    Ilk yazimda ``friend < desktop`` diye yazmistim ve YANLISTI: friend'de
+    ``output_file`` var (yalnizca yazan, kilitli klasor), desktop'ta onun
+    yerine TAM ``file`` var -- yani desktop daha yetkili ama kume olarak
+    friend'i kapsamiyor. Kume iliskisi burada yanlis olcut; olcut YETKI.
+    """
+    from tui_gateway.server import _load_enabled_toolsets
+
+    companion = set(_load_enabled_toolsets("companion") or [])
+    friend = set(_load_enabled_toolsets("friend") or [])
+    desktop = set(_load_enabled_toolsets("desktop") or [])
+
+    # friend, companion'in her seyini yapabiliyor + hafiza.
+    assert companion < friend
+    assert friend - companion == {"memory"}
+
+    # desktop makineye dokunuyor, digerleri dokunmuyor.
+    machine = {"terminal", "file", "code_execution", "computer_use", "delegation"}
+    assert machine <= desktop
+    assert not (machine & friend)
+    assert not (machine & companion)
+
+    # friend'in dosya uretme yetkisi desktop'ta TAM dosya erisimiyle
+    # karsilaniyor -- ayni isin daha genis hali.
+    assert "output_file" in friend
+    assert "file" in desktop

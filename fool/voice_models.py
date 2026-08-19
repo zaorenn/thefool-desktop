@@ -63,6 +63,9 @@ class VoiceAsset:
     approx_bytes: int = 0
 
 
+CudaProbe = Literal["ctranslate2", "onnxruntime", "torch"]
+
+
 @dataclass(frozen=True)
 class VoiceEntry:
     """Katalogda tek bir kurulabilir öğe."""
@@ -86,6 +89,18 @@ class VoiceEntry:
     #: CUDA için ek paket grubu (varsa).
     cuda_group: str | None = None
     devices: tuple[Device, ...] = ("cpu",)
+    #: CUDA'yi HANGI calisma zamani belirliyor.
+    #:
+    #: Bu alan var cunku "kart var mi" ile "motor kullanabiliyor mu" farkli
+    #: sorular ve her motor farkli bir yigina soruyor. Ornekler olculdu:
+    #: faster-whisper torch degil ``ctranslate2`` kullaniyor; Piper
+    #: ``onnxruntime`` kullaniyor ve bu makinede saglayicilari
+    #: ``['AzureExecutionProvider', 'CPUExecutionProvider']`` -- yani CUDA
+    #: YOK, ama ``nvidia-smi`` var oldugu icin panel CUDA yaziyordu.
+    #:
+    #: ``sidecar_specs`` doluysa bu alan yok sayilir: cevap sidecar'in kendi
+    #: torch derlemesinden gelir.
+    cuda_probe: CudaProbe = "torch"
     #: Doluysa motor ANA ortama DEGIL, kendi izole ortamina kurulur.
     #: Gerekce ``fool/sidecar.py`` basliginda olculerek anlatildi: bu
     #: motorlarin ucu de paylasilan paketleri geriye dusuruyor (biri bir CVE
@@ -138,6 +153,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         probe_module="piper",
         cuda_group="tts.piper_cuda",
         devices=("cpu", "cuda"),
+        cuda_probe="onnxruntime",
         assets=(
             VoiceAsset(
                 url=f"{_PIPER_BASE}/en_US-lessac-medium.onnx",
@@ -245,6 +261,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         dep_group="stt.faster_whisper",
         probe_module="faster_whisper",
+        cuda_probe="ctranslate2",
         model_id="large-v3-turbo",
         warmup=(
             "from faster_whisper import WhisperModel; "
@@ -264,6 +281,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         dep_group="stt.faster_whisper",
         probe_module="faster_whisper",
+        cuda_probe="ctranslate2",
         devices=("cpu", "cuda"),
         size_label="~150 MB",
     ),
@@ -366,20 +384,62 @@ def _weights_present(model_id: str) -> bool:
     return False
 
 
-def _cuda_available() -> bool:
-    """CUDA gerçekten kullanılabilir mi?
+def _nvidia_driver_present() -> bool:
+    """NVIDIA SÜRÜCÜSÜ kurulu mu?
 
-    ``torch`` ithal etmek pahalı, o yüzden önce ``nvidia-smi`` deneniyor;
-    yoksa torch'a düşülüyor (zaten yüklüyse maliyeti yok).
+    Tek başına hiçbir şey kanıtlamıyor ve asla tek başına kullanılmamalı --
+    aşağıdaki motor sondalarının hepsi pahalı bir ithal yapıyor, bu ise
+    ucuz bir ön eleme: sürücü yoksa sormaya gerek yok.
     """
-    if shutil.which("nvidia-smi"):
-        return True
+    return bool(shutil.which("nvidia-smi"))
+
+
+def _torch_cuda_available() -> bool:
+    """Ana ortamdaki ``torch`` CUDA görebiliyor mu?"""
     try:
         import torch  # noqa: PLC0415
 
         return bool(torch.cuda.is_available())
     except Exception:
         return False
+
+
+def _ctranslate2_cuda_devices() -> int:
+    """``ctranslate2`` kaç CUDA aygıtı görüyor?
+
+    faster-whisper torch değil ``ctranslate2`` kullanıyor ve ikisinin CUDA
+    gereksinimleri AYRI: cuBLAS/cuDNN eksikse torch mutlu, ctranslate2 sıfır
+    aygıt görüyor ve motor sessizce CPU'ya düşüyor -- ölçülen fark 0,23 sn
+    yerine 15,16 sn.
+    """
+    import ctranslate2  # noqa: PLC0415
+
+    return int(ctranslate2.get_cuda_device_count())
+
+
+def _onnxruntime_cuda_available() -> bool:
+    """``onnxruntime`` CUDA saglayicisini sunuyor mu?
+
+    Piper onnxruntime kullaniyor. Varsayilan ``onnxruntime`` tekerlegi
+    CPU-only; CUDA icin ``onnxruntime-gpu`` gerekiyor. Olculdu (bu makine,
+    RTX 4070 Ti SUPER, surucu kurulu):
+    ``['AzureExecutionProvider', 'CPUExecutionProvider']`` -- yani CUDA yok.
+    Eski kod ``nvidia-smi`` gordugu icin yine de "CUDA" diyordu.
+    """
+    import onnxruntime  # noqa: PLC0415
+
+    return "CUDAExecutionProvider" in onnxruntime.get_available_providers()
+
+
+def _cuda_available() -> bool:
+    """Ana ortamdaki bir motor CUDA çalıştırabilir mi?
+
+    Eskiden bu işlev ``nvidia-smi`` varsa doğrudan ``True`` dönüyordu -- yani
+    NVIDIA sürücüsü kurulu HER makinede. Sürücünün varlığı, çıkarım motorunun
+    CUDA kullanabildiği anlamına gelmiyor ve panel bu yüzden güvenle "CUDA"
+    yazarken motor CPU'da koşuyordu. Sürücü artık yalnızca ön eleme.
+    """
+    return _nvidia_driver_present() and _torch_cuda_available()
 
 
 def active_providers() -> dict[str, str]:
@@ -522,17 +582,41 @@ def set_voice(entry_id: str, voice: str) -> dict[str, Any]:
 def cuda_ready(e: VoiceEntry) -> bool:
     """Bu motor GERCEKTEN CUDA calistirabiliyor mu?
 
-    Karti olmasi yetmiyor: sidecar'a PyPI'dan gelen torch Windows'ta CPU-only
-    derlemedir. Yapilandirmaya ``device: cuda`` yazmak o durumda hicbir sey
-    degistirmiyor -- motor sessizce CPU'ya dusuyor ve Chatterbox gibi agir bir
-    model dakikalarca tek kelime uretmiyor.
+    Kart ve surucu yetmiyor; soru her motorun KENDI calisma zamanina
+    soruluyor, cunku uc ayri yoldan sessizce CPU'ya dusulebiliyor:
+
+    * **Sidecar motorlari** (kokoro, chatterbox, qwen3-tts): PyPI'dan gelen
+      torch Windows'ta CPU-only derlemedir. Kart da surucu de yerinde, motor
+      yine CPU'da -- Chatterbox dakikalarca tek kelime uretmiyor.
+    * **faster-whisper**: torch degil ``ctranslate2`` kullaniyor. cuBLAS ya da
+      cuDNN eksikse ctranslate2 sifir aygit goruyor ve sessizce CPU'ya
+      dusuyor. Olculdu: 0,23 sn yerine 15,16 sn.
+    * **Ana ortamdaki digerleri**: torch'un kendisi soruluyor.
+
+    Sonda cokerse cevap ``False``. "Bilmiyorum"u "evet" saymak tam da bu
+    hatanin ilk halini uretmisti.
     """
-    if not e.sidecar_specs:
-        return _cuda_available()
+    if e.sidecar_specs:
+        from fool import sidecar as _sidecar
 
-    from fool import sidecar as _sidecar
+        try:
+            return bool(_sidecar.has_cuda_torch(e.id))
+        except Exception:
+            return False
 
-    return _sidecar.has_cuda_torch(e.id)
+    # Surucu on elemesi BILEREK yok: her sondanin kendi cevabi zaten kesin ve
+    # surucusuz bir makinede olumsuz doner. Ustune bir ``nvidia-smi`` kontrolu
+    # koymak, PATH'inde o ikili olmayan ama CUDA'si calisan kurulumlarda dogru
+    # cevabi YANLISA cevirirdi. Modul kurulu degilse motor da kurulu degildir;
+    # ``False`` dogru cevap.
+    try:
+        if e.cuda_probe == "ctranslate2":
+            return _ctranslate2_cuda_devices() > 0
+        if e.cuda_probe == "onnxruntime":
+            return _onnxruntime_cuda_available()
+        return _torch_cuda_available()
+    except Exception:
+        return False
 
 
 def install_cuda_runtime(entry_id: str) -> dict[str, Any]:

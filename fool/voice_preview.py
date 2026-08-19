@@ -40,9 +40,41 @@ def _status(entry_id: str) -> dict[str, Any]:
 
 
 def _synthesize(provider: str, path: str) -> str:
+    """Sentezle ve ÜRETİLEN DOSYANIN YOLUNU döndür.
+
+    ``text_to_speech_tool`` bir yol değil JSON DİZESİ döndürüyor
+    (``{"success": true, "file_path": ...}``) ve dönüş değerini doğrudan
+    ``open()``a vermek ``OSError: Invalid argument`` ile düşüyordu. İlk yazımda
+    tam bu oldu; birim testleri bu işlevi taklit ettiği için yakalamadılar,
+    gerçek bir sentez denemesi yakaladı.
+
+    Ayrıca istenen yola yazmayabiliyor (uzun metin parçalara bölünüyor), o
+    yüzden cevaptaki yol kullanılıyor -- varsayılan olarak istenen yola
+    düşülüyor.
+    """
+    import json
+
     from tools.tts_tool import text_to_speech_tool
 
-    return text_to_speech_tool(PREVIEW_TEXT, output_path=path, provider=provider)
+    raw = text_to_speech_tool(PREVIEW_TEXT, output_path=path, provider=provider)
+
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError):
+        # Eski/duz bir yol donduren bir surumle de calissin.
+        return str(raw)
+
+    if isinstance(payload, dict):
+        if not payload.get("success", True):
+            raise RuntimeError(str(payload.get("error") or "synthesis failed"))
+        produced = payload.get("file_path")
+        if isinstance(produced, str) and produced:
+            return produced
+        paths = payload.get("file_paths")
+        if isinstance(paths, list) and paths:
+            return str(paths[0])
+
+    return path
 
 
 def preview(entry_id: str) -> dict[str, Any]:

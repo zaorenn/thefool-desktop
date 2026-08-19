@@ -118,3 +118,194 @@ TTS_CLOUD_BLOCKED_MESSAGE = (
     "explicitly with `fool config set tts.allow_cloud_fallback true` "
     "(or name a provider with `fool config set tts.provider edge`)."
 )
+
+
+# ---------------------------------------------------------------------------
+# Bütün yüzeyleri bir arada göster
+# ---------------------------------------------------------------------------
+
+from dataclasses import dataclass  # noqa: E402
+
+
+@dataclass(frozen=True)
+class SurfaceFinding:
+    """Tek bir yüzeyin ağ durumu."""
+
+    #: ``model`` | ``stt`` | ``tts`` | ``web`` | ``browser``
+    surface: str
+    #: Bu yüzey makineden DIŞARI çıkmıyor mu?
+    local: bool
+    #: Ne bulundu -- kullanıcının okuyacağı tek cümle.
+    detail: str
+    #: Yerel değilse nasıl yerelleştirilir. Boş bırakılmıyor: yalnızca
+    #: "dışarı çıkıyor" demek kullanıcıyı belgelerde dolaştırıyordu.
+    remedy: str = ""
+
+
+#: Kendi makinesinde koşan model sunucuları.
+LOCAL_MODEL_PROVIDERS = frozenset(
+    {"custom", "llamacpp", "llama_cpp", "lmstudio", "localai", "ollama", "vllm"}
+)
+
+#: Hiçbir yere bağlanmayan konuşma tanıma sağlayıcıları.
+LOCAL_STT_PROVIDERS = frozenset({"local", "local_command"})
+
+
+def _section(config: Any, name: str) -> dict:
+    if not isinstance(config, dict):
+        return {}
+    value = config.get(name)
+    return value if isinstance(value, dict) else {}
+
+
+def _provider_of(section: dict) -> str:
+    return str(section.get("provider") or "").lower().strip()
+
+
+def audit_local_only(config: Any) -> list[SurfaceFinding]:
+    """Bu yapılandırmayla hangi yüzeyler ağa çıkar?
+
+    Bu denetimin varlık nedeni, ölçülen iki sızıntının ortak yanı: ikisi de
+    tek tek bakıldığında görünmüyordu. ``stt.local`` dolu olduğu için STT
+    yerel görünüyordu ama ``stt.provider`` yazılmadığından otomatik algılama
+    buluta düşebiliyordu; TTS'in varsayılanı zaten Microsoft'tu.
+
+    "Uygulamayı arkadaşıma göndersem ne dışarı çıkar?" sorusunun tek listede
+    cevabı. Emin olunamayan her şey YEREL DEĞİL sayılıyor -- denetimin işi
+    içini rahatlatmak değil.
+    """
+    model = _section(config, "model")
+    stt = _section(config, "stt")
+    tts = _section(config, "tts")
+    web = _section(config, "web")
+    browser = _section(config, "browser")
+
+    findings: list[SurfaceFinding] = []
+
+    # --- Model -------------------------------------------------------------
+    provider = _provider_of(model)
+    if not provider:
+        findings.append(SurfaceFinding(
+            "model", False,
+            "no model provider configured - first run picks whatever it detects",
+            "Set one explicitly: `fool config set model.provider lmstudio`",
+        ))
+    elif provider in LOCAL_MODEL_PROVIDERS:
+        findings.append(SurfaceFinding("model", True, f"local model server ({provider})"))
+    else:
+        findings.append(SurfaceFinding(
+            "model", False, f"cloud model provider ({provider})",
+            "Run a local server (LM Studio / Ollama) and "
+            "`fool config set model.provider lmstudio`",
+        ))
+
+    # --- Konuşma tanıma ----------------------------------------------------
+    provider = _provider_of(stt)
+    if cloud_stt_allowed(stt):
+        findings.append(SurfaceFinding(
+            "stt", False,
+            "cloud fallback is enabled - microphone audio may be uploaded",
+            "Turn it off: `fool config set stt.allow_cloud_fallback false`",
+        ))
+    elif not provider:
+        findings.append(SurfaceFinding(
+            "stt", False,
+            "no stt.provider set - the engine is chosen at runtime",
+            "Pin it: `fool config set stt.provider local` "
+            "(cloud stays off unless stt.allow_cloud_fallback is set)",
+        ))
+    elif provider in LOCAL_STT_PROVIDERS:
+        findings.append(SurfaceFinding("stt", True, f"local speech recognition ({provider})"))
+    else:
+        findings.append(SurfaceFinding(
+            "stt", False, f"cloud speech recognition ({provider}) - microphone audio is uploaded",
+            "Switch to local: `fool config set stt.provider local`",
+        ))
+
+    # --- Seslendirme -------------------------------------------------------
+    provider = _provider_of(tts)
+    if cloud_tts_allowed(tts):
+        findings.append(SurfaceFinding(
+            "tts", False,
+            "cloud fallback is enabled - reply text may be sent to a third party",
+            "Turn it off: `fool config set tts.allow_cloud_fallback false`",
+        ))
+    elif not provider:
+        findings.append(SurfaceFinding(
+            "tts", False,
+            "no tts.provider set - the engine is chosen at runtime",
+            "Pin it: `fool config set tts.provider kokoro`",
+        ))
+    elif provider in LOCAL_TTS_PROVIDERS:
+        findings.append(SurfaceFinding("tts", True, f"local speech synthesis ({provider})"))
+    else:
+        findings.append(SurfaceFinding(
+            "tts", False, f"cloud speech synthesis ({provider}) - reply text is sent out",
+            "Switch to a local voice: `fool config set tts.provider kokoro`",
+        ))
+
+    # --- Web araması -------------------------------------------------------
+    backend = str(web.get("backend") or "").lower().strip()
+    if backend in ("off", "none", "disabled"):
+        findings.append(SurfaceFinding("web", True, "web search is off"))
+    else:
+        findings.append(SurfaceFinding(
+            "web", False,
+            f"web search is on ({backend or 'default backend'}) - queries leave the machine",
+            "Turn it off: `fool config set web.backend off` "
+            "(searching the web is inherently a network action)",
+        ))
+
+    # --- Tarayıcı ----------------------------------------------------------
+    backend = str(browser.get("backend") or "").lower().strip()
+    if backend in ("off", "none", "disabled", "builtin", "local"):
+        findings.append(SurfaceFinding("browser", True, f"browser backend is {backend or 'off'}"))
+    else:
+        findings.append(SurfaceFinding(
+            "browser", False,
+            f"browser backend '{backend}' is a hosted service",
+            "Use the built-in stack: `fool config set browser.backend off`",
+        ))
+
+    return findings
+
+
+def render_local_only_report(findings: "list[SurfaceFinding]") -> str:
+    """Denetimi terminalde okunur hâle getir."""
+    lines: list[str] = []
+    leaks = [f for f in findings if not f.local]
+
+    for f in findings:
+        mark = "  yerel  " if f.local else "  DISARI "
+        lines.append(f"{mark} {f.surface:8} {f.detail}")
+        if not f.local and f.remedy:
+            lines.append(f"           -> {f.remedy}")
+
+    lines.append("")
+    if leaks:
+        lines.append(
+            f"{len(leaks)} yuzey makineden disari cikiyor: "
+            + ", ".join(f.surface for f in leaks)
+        )
+    else:
+        lines.append("Hicbir yuzey makineden disari cikmiyor.")
+    return "\n".join(lines)
+
+
+def _main() -> int:
+    """``python -m fool.local_only`` - kurulu yapilandirmayi denetle."""
+    try:
+        from fool_cli.config import load_config
+
+        config = load_config() or {}
+    except Exception as exc:  # pragma: no cover - yapilandirma okunamazsa
+        print(f"yapilandirma okunamadi: {exc}")
+        return 2
+
+    findings = audit_local_only(config)
+    print(render_local_only_report(findings))
+    return 1 if any(not f.local for f in findings) else 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(_main())

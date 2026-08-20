@@ -237,6 +237,28 @@ TASLAK_KAPAK_SCHEMA = {
     },
 }
 
+TASLAK_OZET_SCHEMA = {
+    "name": "rapor_taslak_ozet",
+    "description": (
+        "Write the report's summary page (MADDE 7: it sits between the cover "
+        "and the report text). Do this AFTER the sections exist - the "
+        "directive sizes the summary against the report's length, so it "
+        "cannot be written before there is a report to summarise."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string"},
+            "satirlar": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Summary paragraphs, in order.",
+            },
+        },
+        "required": ["kimlik", "satirlar"],
+    },
+}
+
 TASLAK_DURUM_SCHEMA = {
     "name": "rapor_taslak_durum",
     "description": (
@@ -414,4 +436,15 @@ registry.register(
         hedef_klasor=args.get("hedef_klasor"),
     ),
     emoji="🖨️",
+)
+
+registry.register(
+    name="rapor_taslak_ozet",
+    toolset="rapor",
+    schema=TASLAK_OZET_SCHEMA,
+    handler=lambda args, **kw: arac.taslak_ozet(
+        kimlik=args.get("kimlik", ""),
+        satirlar=args.get("satirlar"),
+    ),
+    emoji="📝",
 )

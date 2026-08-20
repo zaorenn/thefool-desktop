@@ -294,6 +294,13 @@ def _siradaki_adim(taslak: "Taslak", eksik: list[str]) -> str:
             f"kimlik='{taslak.kimlik}'."
         )
 
+    if not taslak.ozet:
+        # MADDE 7: kapak ile rapor metni arasinda ozet sayfasi bulunur.
+        return (
+            f"Bölümler, kapak ve ekler tamam. Şimdi özeti yaz: "
+            f"rapor_taslak_ozet, kimlik='{taslak.kimlik}'."
+        )
+
     return (
         f"Taslak hazır. rapor_taslak_uret aracını kimlik='{taslak.kimlik}' "
         f"ve hedef dosya yolu ile çağırıp .docx üret."
@@ -449,3 +456,26 @@ def kapak_alanlarini_dogrula(alanlar: dict) -> None:
             f"Kapakta tanınmayan alan: {', '.join(bilinmeyen)}. "
             f"Geçerli alanlar: {', '.join(sorted(_KAPAK_ALANLARI))}."
         )
+
+
+def ozet_yaz(kimlik: str, satirlar: list[str]) -> Taslak:
+    """Özeti yaz -- ÜZERİNE yazar.
+
+    Ayrı bir işlem, çünkü özet doğal olarak EN SON yazılıyor: MADDE 7 özeti
+    "raporun her 30 sayfası için en fazla 1 sayfa" diye tanımlıyor, yani
+    metnin ne kadar olduğu bilinmeden yazılamıyor. ``baslat`` sırasında
+    istemek, modeli daha hiçbir bölüm yokken özet uydurmaya zorlardı.
+    """
+    temiz = [str(s).strip() for s in satirlar if str(s).strip()]
+
+    if not temiz:
+        raise TaslakHatasi(
+            "Özet boş gönderildi. En az bir cümle gerekiyor "
+            "(MADDE 7: kapak ile rapor metni arasında özet sayfası bulunur)."
+        )
+
+    taslak = yukle(kimlik)
+    taslak.ozet = temiz
+    _yaz(taslak)
+
+    return taslak

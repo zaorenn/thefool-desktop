@@ -307,6 +307,7 @@ TOOLSETS = {
             "rapor_taslak_bolum",
             "rapor_taslak_ek",
             "rapor_taslak_kapak",
+            "rapor_taslak_ozet",
             "rapor_taslak_durum",
             "rapor_taslak_uret",
             "rapor_pdf",

@@ -200,13 +200,13 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         sidecar_specs=("kokoro==0.9.4", "soundfile==0.14.0"),
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         voices=(
-            ("af_heart", "Amerikan kadin - sicak"),
-            ("af_bella", "Amerikan kadin - berrak"),
-            ("af_nicole", "Amerikan kadin - yumusak"),
-            ("am_michael", "Amerikan erkek - dengeli"),
-            ("am_puck", "Amerikan erkek - canli"),
-            ("bf_emma", "Ingiliz kadin"),
-            ("bm_george", "Ingiliz erkek"),
+            ("af_heart", "American female - warm"),
+            ("af_bella", "American female - clear"),
+            ("af_nicole", "American female - soft"),
+            ("am_michael", "American male - even"),
+            ("am_puck", "American male - lively"),
+            ("bf_emma", "British female"),
+            ("bm_george", "British male"),
         ),
         # Kokoro spaCy'nin ``en_core_web_sm`` modelini istiyor ve o PyPI'da
         # YOK. Bu adim olmadan motor kuruluyor ama ilk sentezde E050 veriyor.
@@ -273,9 +273,9 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         # olan bir motorun tek sesi varmis gibi goruyordu.
         # ``tests/fool/test_voice_choices.py`` ikisini karsilastiriyor.
         voices=(
-            ("expresso/ex03-ex01_happy_001_channel1_334s.wav", "Neseli, canli"),
-            ("expresso/ex03-ex02_narration_001_channel1_674s.wav", "Anlatici, sakin"),
-            ("expresso/ex04-ex01_happy_001_channel1_334s.wav", "Neseli, ikinci konusmaci"),
+            ("expresso/ex03-ex01_happy_001_channel1_334s.wav", "Cheerful, lively"),
+            ("expresso/ex03-ex02_narration_001_channel1_674s.wav", "Narrator, calm"),
+            ("expresso/ex04-ex01_happy_001_channel1_334s.wav", "Cheerful, second speaker"),
         ),
         size_label="~3,5 GB",
     ),
@@ -350,15 +350,15 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         sidecar_specs=("qwen-tts==0.1.1",),
         # Modelin ``get_supported_speakers()`` ciktisindan alindi, tahmin degil.
         voices=(
-            ("ryan", "Dengeli erkek"),
-            ("serena", "Berrak kadin"),
-            ("aiden", "Genc erkek"),
-            ("dylan", "Alcak, sakin erkek"),
-            ("eric", "Anlati tonu"),
-            ("vivian", "Sicak kadin"),
-            ("ono_anna", "Japonca'da dogal kadin"),
-            ("sohee", "Korece'de dogal kadin"),
-            ("uncle_fu", "Cince'de olgun erkek"),
+            ("ryan", "Even male"),
+            ("serena", "Clear female"),
+            ("aiden", "Young male"),
+            ("dylan", "Low, calm male"),
+            ("eric", "Narration tone"),
+            ("vivian", "Warm female"),
+            ("ono_anna", "Female, native Japanese"),
+            ("sohee", "Female, native Korean"),
+            ("uncle_fu", "Mature male, native Chinese"),
         ),
         # PyPI'nin Windows torch tekerlegi CPU-only. Gercek CUDA derlemesi
         # yalnizca PyTorch'un kendi indeksinde; olculdu: CPU'da kisa bir

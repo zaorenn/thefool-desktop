@@ -46,9 +46,10 @@ import { HANDS_FREE_VAD } from '../notch/hands-free'
 import { interruptThenSubmit } from '../notch/interrupt'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
-import { friendModeSource } from './friend-mode'
+import { $friendMode, friendModeSource } from './friend-mode'
 import { friendSessionStore } from './friend-session'
 import type { OrbPhase } from './orb-motion'
+import { modeForSession, resumableSessions, type SessionSummary } from './session-picker'
 
 /** Ağ geçidi bu kaynağı görünce ``friend`` kapsamını uyguluyor.
  *
@@ -80,6 +81,10 @@ export interface FriendVoice {
   newConversation: () => void
   /** Sürdürülen oturumun kimliği ("" = henüz açılmadı). */
   sessionId: string
+  /** Sürdürülebilir sohbetler. */
+  listSessions: () => Promise<SessionSummary[]>
+  /** Bu sohbeti sürdür (kip de ona göre değişir). */
+  adoptSession: (session: SessionSummary) => void
 }
 
 export function useFriendVoice(mode = 'friend'): FriendVoice {
@@ -154,6 +159,39 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
 
     return resolved
   }, [requestGateway])
+
+  /** Sürdürülebilir sohbetler (sunucunun sırasıyla). */
+  const listSessions = useCallback(async (): Promise<SessionSummary[]> => {
+    const reply = await requestGateway<{ sessions?: SessionSummary[] }>('session.list', { limit: 60 })
+
+    return resumableSessions(reply.sessions ?? [])
+  }, [requestGateway])
+
+  /**
+   * Bu oturumu sürdür.
+   *
+   * KİP de değişiyor ve bu bilinçli: kapsam oturum oluşturulurken donuyor,
+   * yani ``desktop`` kaynaklı bir oturumu sürdürmek terminali olan bir ajanı
+   * sürdürmek demek. Pencerede "Friend" yazarken bunu yapmak, kullanıcıya
+   * makineye dokunamayacağını söylemek olurdu. Tek hakikat oturumun kendisi.
+   */
+  const adoptSession = useCallback((session: SessionSummary) => {
+    const nextMode = modeForSession(session)
+    const scope = friendModeSource(nextMode)
+
+    friendSessionStore.write(scope, session.id)
+
+    // Bellek durumunu da hizala, yoksa ``ensureCompanionSession`` eski
+    // kimlikte kalirdi.
+    sessionRef.current.id = session.id
+    sessionRef.current.source = scope
+
+    $friendMode.set(nextMode)
+    setSessionId(session.id)
+    setTranscript('')
+    setReply('')
+    setLastSpokenId(null)
+  }, [])
 
   /** Kullanıcı AÇIKÇA yeni bir sohbet istedi. */
   const newConversation = useCallback(() => {
@@ -463,10 +501,12 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
   }, [haltTurn, monitorActive, submitAudio])
 
   return {
+    adoptSession,
     beginHold,
     endHold,
     error,
     level,
+    listSessions,
     newConversation,
     phase,
     reply,

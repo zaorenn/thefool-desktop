@@ -95,6 +95,7 @@ describe('izleyici penceresi', () => {
  */
 describe('araya girme kapisi TEK yerde', () => {
   const HERE = import.meta.dirname
+
   const SURFACES = [
     ['notch', 'use-notch-voice.ts'],
     ['friend', '../friend/use-friend-voice.ts']

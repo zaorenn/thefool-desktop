@@ -12377,18 +12377,56 @@ function writeNotchShortcut(accelerator) {
   }
 }
 
+/**
+ * Kisayol niyeti: renderer henuz hazir degilse BEKLETILIYOR.
+ *
+ * Olculen hata: ``spawnNotchWindow()`` pencereyi olusturup HEMEN donuyor ve
+ * ``webContents.send`` renderer daha ``ipcRenderer.on('fool:notch:listen')``
+ * cagirmadan gidiyor. Ilk basista mesaj DUSUYOR. Kullanicinin gordugu tam
+ * olarak buydu: "ctrl alt v 2. kez basisimda ses algiliyor".
+ *
+ * Ustune renderer'daki ac/kapa mantigi dogru calisiyordu ama ilk mesaj
+ * kaybolunca sayac BIR KAYIYORDU -- yani ilk basis hicbir sey, ikinci acma,
+ * ucuncu kapama oluyordu.
+ */
+let pendingNotchIntent: null | { mode?: string } = null
+
 function fireNotchShortcut() {
+  const existed = Boolean(notchWindow && !notchWindow.isDestroyed())
   const win = openNotchWindow()
 
   // Odagi vermek SART: bunun ardindan gelen bas-konus tusu ancak notch
   // odaktaysa renderer'a ulasir.
   win.show()
   win.focus()
+
   // ``friend`` bayragi: kisayol yalnizca centigi acmiyor, ARKADAS turunu de
   // basliyor (kullanicinin istegi). Notch o kaynakla oturum aciyor -- arac
   // yok ama hafiza ajanla ortak.
-  win.webContents.send('fool:notch:listen', { mode: 'friend' })
+  const intent = { mode: 'friend' }
+
+  // TEK teslimat yolu secilir, ikisi birden DEGIL: hem gonderip hem
+  // bekletmek niyetin iki kez islenmesi, yani ac-kapa'nin ayni basista
+  // gerceklesmesi olurdu.
+  if (existed && !win.webContents.isLoading()) {
+    win.webContents.send('fool:notch:listen', intent)
+
+    return
+  }
+
+  pendingNotchIntent = intent
 }
+
+// Renderer montajda BEKLEYEN niyeti aliyor. Cekme yontemi secildi cunku
+// gonderme yontemi yarisiyor: ``did-finish-load`` bile React'in efektini
+// calistirdigini garanti etmiyor.
+ipcMain.handle('fool:notch:take-intent', async () => {
+  const intent = pendingNotchIntent
+
+  pendingNotchIntent = null
+
+  return intent
+})
 
 /**
  * Notch kisayolunu kaydet ve KAZANANI dondur.

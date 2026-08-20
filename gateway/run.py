@@ -2558,6 +2558,7 @@ from gateway.restart import (
     DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT,
     GATEWAY_FATAL_CONFIG_EXIT_CODE,
     GATEWAY_SERVICE_RESTART_EXIT_CODE,
+    _fatal_platform_exit_honored,
     parse_cron_drain_timeout,
     parse_restart_after_turn_timeout,
     parse_restart_drain_timeout,
@@ -12622,16 +12623,60 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if connected_count == 0:
             if startup_nonretryable_errors and not startup_retryable_errors:
                 reason = "; ".join(startup_nonretryable_errors)
-                logger.error("Gateway hit a non-retryable startup conflict: %s", reason)
+
+                # FOOL-SEAM: platform-failure-not-fatal
+                #
+                # Cikis kodu 78, "beni yeniden baslatma" sozlesmesi. Onu
+                # ONURLANDIRAN bir denetleyici altinda (systemd
+                # RestartPreventExitStatus, s6) bu dogru davranis. Windows'ta
+                # oyle bir denetleyici YOK ve sozlesme uygulanmiyor: gateway
+                # cikiyor, baslatici yeniden aciyor, ayni yapilandirma ayni
+                # hatayi veriyor.
+                #
+                # Olculdu (bu makine, tek oturum):
+                #
+                #     gateway.log -> "Starting Hermes Gateway" 37 kez
+                #     sebep       -> WhatsApp eslesmemis + Telegram token'i
+                #                    reddedilmis
+                #
+                # Bedeli yalnizca gurultu degil: her yeniden baslatma
+                # calisan TUM ses motoru sureclerini oldururyor ve bir
+                # sonraki cumle modeli SIFIRDAN yukluyor (styletts2 67 sn,
+                # kokoro 24 sn). Kullaniciya "model dakikalarca uyaniyor,
+                # bilgisayar kasiyor" olarak gorunen seyin bir parcasi
+                # buydu -- ve sebebi eslesmemis bir WhatsApp'ti.
+                #
+                # Hemen asagidaki KARISIK durum dali ayni akil yurutmeyi
+                # zaten yapiyor ("Staying alive so retryable platforms can
+                # recover"). Tum hatalar olumcul oldugunda da ayni sey
+                # gecerli: platformlar park ediliyor ve calisma durumunda
+                # GORUNUYOR, ama cron, yerel yuzey ve ses ayakta kaliyor.
+                # Yapilandirmayi duzeltmek operatorun isi; onu duyurmanin
+                # yolu urunu kapatmak olmamali.
+                if _fatal_platform_exit_honored():
+                    logger.error("Gateway hit a non-retryable startup conflict: %s", reason)
+                    try:
+                        from gateway.status import write_runtime_status
+                        write_runtime_status(gateway_state="startup_failed", exit_reason=reason)
+                    except Exception:
+                        pass
+                    self._exit_code = GATEWAY_FATAL_CONFIG_EXIT_CODE
+                    self._request_clean_exit(reason)
+                    self._startup_restore_in_progress = False
+                    return True
+
+                logger.error(
+                    "All %d enabled platform(s) are fatally misconfigured and parked: %s. "
+                    "Staying alive: cron jobs, the local surface and voice keep working, "
+                    "and restarting on this platform would only crash-loop.",
+                    len(startup_nonretryable_errors),
+                    reason,
+                )
                 try:
                     from gateway.status import write_runtime_status
-                    write_runtime_status(gateway_state="startup_failed", exit_reason=reason)
+                    write_runtime_status(gateway_state="degraded", exit_reason=reason)
                 except Exception:
                     pass
-                self._exit_code = GATEWAY_FATAL_CONFIG_EXIT_CODE
-                self._request_clean_exit(reason)
-                self._startup_restore_in_progress = False
-                return True
             if startup_nonretryable_errors:
                 # Mixed failure mode (NS-609): some platforms are fatally
                 # misconfigured (e.g. WhatsApp enabled but never paired) while

@@ -354,6 +354,20 @@ async def test_runner_exits_with_ex_config_on_nonretryable_startup_error(monkeyp
     set exit_code to 78 (EX_CONFIG) so the s6 finish script can translate
     it to exit 125 (permanent failure).  See #51228."""
     monkeypatch.setenv("FOOL_HOME", str(tmp_path))
+    # FOOL-SEAM: platform-failure-not-fatal
+    #
+    # Bu test S6/SYSTEMD dunyasini tarif ediyor -- docstring'i de zaten oyle
+    # diyor ("so the s6 finish script can translate it"). Cikis kodu 78 orada
+    # anlamli cunku denetleyici onu onurlandirip DURUYOR.
+    #
+    # Windows'ta oyle bir denetleyici yok ve baslatici sureci kosulsuz yeniden
+    # aciyor: olculdu, gateway ayni yapilandirma hatasiyla 37 kez basladi ve
+    # her dongu calisan tum ses motorlarini oldurdu. Orada davranis park
+    # etmeye donuyor (bkz. gateway/restart.py::_fatal_platform_exit_honored).
+    #
+    # Dunya ACIKCA seciliyor: testin anlatmak istedigi sozlesme burada, ve
+    # calistigi isletim sistemine gore sessizce degismemeli.
+    monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", "1")
     config = GatewayConfig(
         platforms={
             Platform.DISCORD: PlatformConfig(enabled=True, token="***")

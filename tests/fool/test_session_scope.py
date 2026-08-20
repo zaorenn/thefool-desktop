@@ -226,3 +226,116 @@ def test_uc_kapsam_da_BIRBIRINDEN_farkli() -> None:
     # karsilaniyor -- ayni isin daha genis hali.
     assert "output_file" in friend
     assert "file" in desktop
+
+
+# ---------------------------------------------------------------------------
+# Takım ADI değil, ajanın GERÇEKTEN aldığı araçlar
+# ---------------------------------------------------------------------------
+#
+# Yukarıdaki sınavlar takım adlarını doğruluyor. Asıl soru bir katman aşağıda:
+# o adlar hangi ARAÇLARA açılıyor? Bir takım sonradan makineye dokunan bir
+# araç kazanabilir ve ad listesi hiç değişmeden arkadaş kipi terminale
+# kavuşabilir. Ölçüldü (FOOL_DESKTOP=1, ağ geçidinin kendi çözümlemesi):
+#
+#     friend      6 takım ->  7 araç   makineye dokunan: YOK
+#     companion   5 takım ->  6 araç   makineye dokunan: YOK
+#     desktop    21 takım -> 73 araç   terminal, write_file, execute_code,
+#                                      computer_use, delegate_task, cronjob
+#
+# Sınav sayıları DEĞİL, ilişkiyi donduruyor.
+
+#: Yanlış çağrıldığında makineye ya da kullanıcının verisine dokunan araçlar.
+_MACHINE_TOOL_MARKERS = (
+    "computer",
+    "cronjob",
+    "delegate",
+    "delete",
+    "execute_code",
+    "terminal",
+    "write_file",
+)
+
+
+def _tools_for(scope: str) -> set[str]:
+    """Bu kapsamın araç adları -- gerçek çözümleme, taklit yok."""
+    from toolsets import resolve_toolset
+
+    names = ss.scope_toolsets(scope)
+    assert names is not None, f"{scope} kapsami kisitlanmiyor"
+
+    tools: set[str] = set()
+    for toolset in names:
+        for tool in resolve_toolset(toolset) or []:
+            tools.add(tool if isinstance(tool, str) else getattr(tool, "name", str(tool)))
+    return tools
+
+
+def _machine_tools(tools: set[str]) -> list[str]:
+    return sorted(t for t in tools if any(m in t for m in _MACHINE_TOOL_MARKERS))
+
+
+def test_arkadas_kapsami_MAKINEYE_DOKUNAN_hicbir_arac_ALMIYOR() -> None:
+    """Ad listesi değil, araçların kendisi sınanıyor.
+
+    Bir takımın sonradan ``terminal_run`` kazanması, ad listesi hiç
+    değişmeden sesli arkadaşa terminal vermek olurdu.
+    """
+    for scope in (ss.COMPANION, ss.FRIEND):
+        leaked = _machine_tools(_tools_for(scope))
+        assert not leaked, f"{scope} kapsamina makineye dokunan arac sizdi: {leaked}"
+
+
+def test_arkadas_kapsami_BOS_da_degil() -> None:
+    """Kısıtlamak susturmak değil: konuşacak araçları var."""
+    for scope in (ss.COMPANION, ss.FRIEND):
+        assert _tools_for(scope), f"{scope} kapsami hic arac almiyor"
+
+
+def test_JARVIS_kapsami_makineye_GERCEKTEN_dokunuyor() -> None:
+    """Jarvis'in var olma sebebi bu.
+
+    ``scope_toolsets('desktop')`` ``None`` döner (kısıtlama yok) -- yani
+    kısıt kapsamda değil, tool-calling sınavında. Burada sınanan şey Jarvis
+    kipinin GERÇEKTEN iş yapabildiği: aksi hâlde kip sadece bir etiket olurdu.
+    """
+    import os
+
+    from tui_gateway import server as srv
+
+    os.environ.setdefault("FOOL_DESKTOP", "1")
+
+    assert ss.scope_toolsets("desktop") is None
+
+    names = srv._load_enabled_toolsets("desktop") or []
+    assert "terminal" in names
+    assert "file" in names
+    assert "code_execution" in names
+
+
+def test_arkadas_ile_JARVIS_arasindaki_fark_MAKINEYE_ERISIM() -> None:
+    """İki kip ayrışmazsa ayrı kip olmalarının anlamı kalmıyor.
+
+    KESİN alt küme DEĞİL, ölçüldü: ``output_file`` arkadaşta var, Jarvis'in
+    listesinde yok. Kayıp değil -- Jarvis'in ``file`` takımı zaten dosya
+    yazıyor, arkadaşın ise SADECE yazan bu araç dışında hiç dosya erişimi
+    yok. Sınanacak şey bu asimetri değil, farkın YÖNÜ: Jarvis'in fazladan
+    aldığı her şey makineye dokunan takımlar.
+    """
+    import os
+
+    from fool.agent_authority import EARNED_TOOLSETS
+    from tui_gateway import server as srv
+
+    os.environ.setdefault("FOOL_DESKTOP", "1")
+
+    jarvis = set(srv._load_enabled_toolsets("desktop") or [])
+    friend = set(ss.FRIEND_TOOLSETS)
+
+    # Jarvis'in fazladan aldiklari KAZANILMASI gerekenleri iceriyor.
+    assert EARNED_TOOLSETS & (jarvis - friend), "Jarvis makineye dokunan hicbir sey almiyor"
+
+    # Arkadasin fazladan aldigi ne varsa ZARARSIZ olmali.
+    for extra in friend - jarvis:
+        assert extra not in EARNED_TOOLSETS, (
+            f"arkadas kapsami kazanilmasi gereken bir takim aliyor: {extra}"
+        )

@@ -53,10 +53,24 @@ def test_arkadas_kapsaminda_tarayici_ve_hafiza_yok() -> None:
 
 
 def test_arkadas_kapsami_SOHBET_EDEBILIYOR() -> None:
-    """Kısıtlamak sakatlamak değil: soru sorabilmeli, bakabilmeli, konuşabilmeli."""
+    """Kısıtlamak sakatlamak değil: soru sorabilmeli, bakabilmeli."""
     assert "clarify" in ss.COMPANION_TOOLSETS
     assert "web" in ss.COMPANION_TOOLSETS
-    assert "tts" in ss.COMPANION_TOOLSETS
+
+
+def test_arkadas_kapsaminda_KENDI_SES_ARACI_YOK() -> None:
+    """Masaüstü zaten HER cevabı kendi hattından seslendiriyor.
+
+    Ajana ayrıca ``text_to_speech`` verilirse kendi kendine de sentez
+    çağırmaya başlıyor -- gerçekte gözlemlendi: tek bir turda ajan üç kez
+    "Thought → Text To Speech" döngüsüne girdi, final metin bir öncekiyle
+    yinelenerek göründü, ve masaüstünün kendi sentezi aynı motoru paylaştığı
+    için "model uyandırılıyor" durumunda takılı kaldı. WhatsApp/Telegram gibi
+    istemci tarafı sesi olmayan yüzeylerde bu araç hâlâ doğru -- yalnızca
+    buradaki kapsamlarda yok.
+    """
+    assert "tts" not in ss.COMPANION_TOOLSETS
+    assert "tts" not in ss.FRIEND_TOOLSETS
 
 
 def test_arkadas_kapsami_DOSYA_URETEBILIYOR() -> None:

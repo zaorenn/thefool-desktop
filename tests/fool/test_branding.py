@@ -154,6 +154,7 @@ def test_python_and_typescript_brand_constants_agree() -> None:
 #: kabul etmiyor — o dikiş aşağıdaki
 #: :func:`test_desktop_package_carries_fool_identity` ile korunuyor.
 EXPECTED_SEAMS = {
+    "platform-failure-not-fatal",
     "i18n-brand",
     "wordmark",
     "theme-preset",

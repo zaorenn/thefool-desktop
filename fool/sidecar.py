@@ -115,13 +115,74 @@ def is_ready(name: str, probe_module: str | None = None) -> bool:
     return completed.returncode == 0
 
 
+def _torch_build_is_cuda(name: str) -> bool | None:
+    """``torch/version.py``ye bakarak cevapla; ``None`` = okunamadi.
+
+    Neden alt surec YERINE dosya
+    ----------------------------
+    Eski yol her motor icin izole yorumlayicida ``import torch`` yapiyordu.
+    Bir sorgu 4-5 saniye ve -- asil sorun -- her biri bir CUDA baglami
+    ayirip yuzlerce MB VRAM ve bir o kadar RAM tutuyor. Katalog dokuz ogeyi
+    PARALEL sorunca makine tek seferde bes torch sureci aciyordu; kullanici
+    bunu "bilgisayarim bok gibi kasiyor" diye bildirdi ve haklıydi.
+
+    Cevap zaten diskte duruyor. Wheel ``torch/version.py``ye yaziyor:
+
+        __version__ = '2.13.0+cu126'
+        cuda: Optional[str] = '12.6'      <- CUDA derlemesi
+        cuda: Optional[str] = None        <- CPU derlemesi
+
+    Yani sorunun tamami bir dosya okumasi: surec yok, ithal yok, VRAM yok.
+
+    Bu, "kart calisiyor mu"yu DEGIL "derleme CUDA'li mi"yi olcuyor -- ama
+    eski sondanin gercekte ayirt ettigi sey de buydu (PyPI'nin Windows
+    tekerlegi CPU-only). Kartin varligi ayri bir soru ve ayri yerde
+    sorulyor (``voice_models._cuda_available``).
+    """
+    base = sidecar_dir(name)
+    candidates = [
+        base / "Lib" / "site-packages" / "torch" / "version.py",
+        base / "lib" / "site-packages" / "torch" / "version.py",
+        *sorted(base.glob("lib/python*/site-packages/torch/version.py")),
+    ]
+
+    for path in candidates:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("cuda"):
+                continue
+            _, _, value = stripped.partition("=")
+            value = value.strip()
+            # ``None`` = CPU derlemesi; tirnak icinde bir surum = CUDA.
+            return value not in ("None", "")
+
+        # Dosya var ama ``cuda`` satiri yok: bicim degismis olabilir, karar
+        # verme -- cagiran taraf pahali sondaya dussun.
+        return None
+
+    return None
+
+
 def has_cuda_torch(name: str) -> bool:
     """Sidecar'daki ``torch`` GERCEKTEN CUDA derlemesi mi?
 
     Paketin varligina bakmak yetmez: PyPI'nin Windows tekerlegi CPU-only'dir
-    ve ayni ada sahiptir. Tek guvenilir olcut ``torch.cuda.is_available()``
-    -- kart varken bile CPU derlemesinde False doner.
+    ve ayni ada sahiptir.
+
+    Once ``torch/version.py`` okunuyor (bkz. ``_torch_build_is_cuda``); ancak
+    o dosya okunamazsa ya da bicimi taninmazsa alt surecli sondaya
+    dusuluyor. Yedegi silmedim: bilinmeyen bir kurulum bicimi karsisinda
+    "CUDA yok" demek, kullanicinin CUDA dugmesini kaybetmesi olurdu.
     """
+    from_file = _torch_build_is_cuda(name)
+    if from_file is not None:
+        return from_file
+
     python = sidecar_python(name)
     if not python.exists():
         return False

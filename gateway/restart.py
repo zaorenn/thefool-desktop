@@ -194,3 +194,32 @@ def resolve_restart_exit_wait_budget(
     except (TypeError, ValueError):
         margin = 0.0
     return drain + after_turn + margin
+
+
+def _fatal_platform_exit_honored() -> bool:
+    """Bu makinede "beni yeniden başlatma" sözleşmesi uygulanıyor mu?
+
+    Çıkış kodu 78, denetleyiciye "bu bir yapılandırma hatası, tekrar deneme"
+    demek. systemd (``RestartPreventExitStatus``) ve s6 bunu onurlandırıyor;
+    Windows başlatıcısı onurlandırmıyor -- süreci koşulsuz yeniden açıyor.
+
+    Ölçüldü (Windows, tek oturum): gateway aynı yapılandırma hatasıyla 37 kez
+    başlayıp çıktı. Her döngü çalışan bütün ses motoru süreçlerini öldürüyor
+    ve bir sonraki cümle modeli sıfırdan yüklüyor (styletts2 67 sn).
+
+    Sözleşmenin uygulanmadığı yerde ölümcül çıkış, "operatör görsün" amacına
+    hizmet etmiyor; yalnızca ürünü kapatıp yerine bir yeniden başlatma
+    döngüsü koyuyor. Orada park edip ayakta kalmak doğru cevap.
+
+    Ortam değişkeni kaçış kapısı: bir dağıtım kendi denetleyicisinin
+    sözleşmeyi uyguladığını biliyorsa eski davranışı geri alabiliyor.
+    """
+    import os
+
+    override = os.environ.get("FOOL_GATEWAY_FATAL_CONFIG_EXIT", "").strip().lower()
+    if override in ("1", "true", "yes", "on"):
+        return True
+    if override in ("0", "false", "no", "off"):
+        return False
+
+    return os.name != "nt"

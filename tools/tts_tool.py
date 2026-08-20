@@ -645,16 +645,6 @@ def _load_tts_config() -> Dict[str, Any]:
         return {}
 
 
-def _voice_mode_provider() -> str:
-    """Kip basina ses ARTIK YOK -- her zaman "" doner.
-
-    Islev SILINMEDI cunku disaridan cagrilabiliyor; sabit "" donmesi
-    cagiranlari genel ``tts.provider``a dusuruyor. Gerekce icin
-    ``_get_provider`` icindeki FOOL-SEAM: voice-mode-provider notuna bak.
-    """
-    return ""
-
-
 def _installed_local_tts() -> set:
     """FOOL-SEAM: local-only-tts
 

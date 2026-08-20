@@ -36,8 +36,9 @@ from typing import Any, Final
 COMPANION: Final[str] = "companion"
 JARVIS: Final[str] = "jarvis"
 
-#: Masaustundeki Friend penceresi. Kendi sesini secebilmesi icin burada da
-#: bir kip: ``voice.modes.friend.provider``.
+#: Masaustundeki Friend penceresi. AYRI bir kip cunku arac kumesi farkli
+#: (hafiza paylasiliyor, terminal yok) -- AYRI bir ses degil: seslendirme
+#: motoru her yuzeyde tek, ``tts.provider``.
 FRIEND: Final[str] = "friend"
 
 DEFAULT_MODE: Final[str] = COMPANION
@@ -157,28 +158,6 @@ def active_mode(config: Any) -> str:
         return DEFAULT_MODE
     key = str(voice.get("mode") or "").strip().lower()
     return key if key in modes() else DEFAULT_MODE
-
-
-def mode_provider(config: Any, mode_id: str) -> str:
-    """Bu kipin seslendirme sağlayıcısı.
-
-    ``voice.modes.<kip>.provider`` -- yazılmamışsa boş dize döner ve çağıran
-    taraf genel ``tts.provider``a düşer. İki kipin AYRI ses kullanabilmesi
-    ayrı panel istemenin asıl sebebi: Jarvis ile arkadaşın aynı sesle
-    konuşması ikisini de zayıflatıyor.
-    """
-    if not isinstance(config, dict):
-        return ""
-    voice = config.get("voice")
-    if not isinstance(voice, dict):
-        return ""
-    per_mode = voice.get("modes")
-    if not isinstance(per_mode, dict):
-        return ""
-    entry = per_mode.get(str(mode_id or "").strip().lower())
-    if not isinstance(entry, dict):
-        return ""
-    return str(entry.get("provider") or "").strip()
 
 
 def requires_benchmark(mode_id: Any) -> bool:

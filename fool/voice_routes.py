@@ -134,35 +134,12 @@ async def voice_select(body: SelectBody) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-class ModeProviderBody(BaseModel):
-    mode: str
-    provider: str = ""
-
-
-@router.get("/api/fool/voice/modes")
-async def voice_modes_route() -> dict[str, Any]:
-    """Kip başına seçili seslendirme sağlayıcıları."""
-    from fool.voice_modes import mode_provider, modes
-    from fool_cli.config import load_config
-
-    config = load_config() or {}
-    return {
-        "providers": {key: mode_provider(config, key) for key in modes()},
-    }
-
-
-@router.post("/api/fool/voice/modes")
-async def voice_set_mode_provider(body: ModeProviderBody) -> dict[str, Any]:
-    """Bir kipin sesini kaydet. Boş sağlayıcı = genel ayara dön."""
-    from fool.voice_modes import modes
-    from fool_cli.config import set_config_value
-
-    mode = str(body.mode or "").strip().lower()
-    if mode not in modes():
-        raise HTTPException(status_code=400, detail=f"bilinmeyen kip: {body.mode}")
-
-    set_config_value(f"voice.modes.{mode}.provider", str(body.provider or "").strip())
-    return {"ok": True, "mode": mode, "provider": body.provider}
+# ``GET/POST /api/fool/voice/modes`` KALDIRILDI.
+#
+# Kip basina ses yazan uclardi ve yazdiklari anahtari artik HIC KIMSE
+# okumuyor. Yazan ama okunmayan bir uc, hatanin geri buyumesi icin hazir bir
+# yol: bir sonraki yuzey onu bulup "kip sesi" diye kullanmaya baslardi.
+# Seslendirme motoru tek yerden seciliyor -- ``tts.provider``.
 
 
 @router.post("/api/fool/voice/warm")

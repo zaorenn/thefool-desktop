@@ -4,10 +4,14 @@
  * Neden ayrı paneller
  * -------------------
  * İki kipin gereksinimleri çelişiyor ve tek panelde göstermek ikisini de
- * belirsizleştiriyordu. Ayrı bölümler somut bir şey de sağlıyor: her kip
- * KENDİ sesini seçebiliyor. Arkadaş için sıcak ve ifadeli bir ses, Jarvis
- * için kısa ve net bir ses istemek doğal; ikisini aynı sese bağlamak
- * ikisini de zayıflatıyor.
+ * belirsizleştiriyordu. Ayıran şey ARAÇ KÜMESİ: Jarvis makineye dokunuyor,
+ * arkadaş dokunmuyor.
+ *
+ * Ayıran şey SES DEĞİL. Bir süre her kip kendi sesini seçebiliyordu ve
+ * ölçülen sonucu şuydu: ``tts.provider=styletts2`` (panelin gösterdiği,
+ * cümle başına 0,56 sn) dururken ``voice.modes.friend.provider=kyutai``
+ * (gerçekten koşan, 11 sn). Kullanıcı panelde bir şey seçip bambaşka bir
+ * sesi duyuyordu. Tek hakikat: Text to speech bölümündeki seçim.
  *
  * Jarvis makineye dokunuyor ve panel bunu SÖYLÜYOR. Sesli bir yüzeye terminal
  * vermek bilinçli bir karar olmalı, keşfedilen bir sürpriz değil.
@@ -16,36 +20,18 @@
  */
 
 import { useStore } from '@nanostores/react'
-import { useCallback, useEffect, useState } from 'react'
 
 import { ListRow, Pill, SettingsContent, SettingsSection } from '@/app/settings/primitives'
 import { Button } from '@/components/ui/button'
 import { triggerHaptic } from '@/lib/haptics'
 import { Mic, Volume2, Zap } from '@/lib/icons'
-import { notifyError } from '@/store/notifications'
 
-import { voiceApi, type VoiceCatalog } from './voice-api'
 import { $voiceMode, VOICE_MODES, type VoiceModeId, voiceModeInfo } from './voice-mode'
 
-/** Bu kipin sesi -- kaydedilmemişse genel ayar kullanılıyor. */
-const MODE_PROVIDER_KEY = (mode: VoiceModeId) => `voice.modes.${mode}.provider`
-
-function ModePanel({
-  catalog,
-  mode,
-  onProvider,
-  provider
-}: {
-  catalog: VoiceCatalog | null
-  mode: VoiceModeId
-  onProvider: (mode: VoiceModeId, provider: string) => void
-  provider: string
-}) {
+function ModePanel({ mode }: { mode: VoiceModeId }) {
   const active = useStore($voiceMode)
   const info = VOICE_MODES[mode]
   const isActive = active === mode
-
-  const tts = (catalog?.items ?? []).filter(item => item.kind === 'tts' && item.installed)
 
   return (
     <SettingsSection
@@ -96,44 +82,6 @@ function ModePanel({
 }
 
 export function VoiceModeSettings() {
-  const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
-  const [providers, setProviders] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    let cancelled = false
-
-    void (async () => {
-      try {
-        const [data, saved] = await Promise.all([voiceApi.catalog(), voiceApi.modeProviders()])
-
-        if (!cancelled) {
-          setCatalog(data)
-          setProviders(saved.providers ?? {})
-        }
-      } catch (error) {
-        if (!cancelled) {
-          notifyError(error, 'Could not load voice modes')
-        }
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const onProvider = useCallback(async (mode: VoiceModeId, provider: string) => {
-    // Iyimser guncelleme: select'in bir tur eski deger gostermesi, kullaniciya
-    // secimi "tutmadi" gibi gorunuyordu.
-    setProviders(previous => ({ ...previous, [mode]: provider }))
-
-    try {
-      await voiceApi.setModeProvider(mode, provider)
-    } catch (error) {
-      notifyError(error, 'Could not save the voice for this mode')
-    }
-  }, [])
-
   return (
     <SettingsContent>
       <SettingsSection icon={Volume2} title="Voice modes">
@@ -144,16 +92,8 @@ export function VoiceModeSettings() {
       </SettingsSection>
 
       {(['companion', 'jarvis'] as const).map(mode => (
-        <ModePanel
-          catalog={catalog}
-          key={mode}
-          mode={mode}
-          onProvider={(id, provider) => void onProvider(id, provider)}
-          provider={providers[mode] ?? ''}
-        />
+        <ModePanel key={mode} mode={mode} />
       ))}
     </SettingsContent>
   )
 }
-
-export { MODE_PROVIDER_KEY }

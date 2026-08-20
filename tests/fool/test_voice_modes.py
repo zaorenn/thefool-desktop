@@ -139,23 +139,21 @@ def test_bozuk_aktif_kip_arkadasa_dusuyor() -> None:
         assert vm.active_mode(bad) == vm.COMPANION
 
 
-def test_kip_basina_ses_okunuyor() -> None:
-    """Ayrı panel istemenin asıl sebebi: iki kip AYRI sesle konuşabilmeli."""
-    config = {"voice": {"modes": {"jarvis": {"provider": "styletts2"}}}}
+def test_kip_basina_ses_OKUYAN_HICBIR_SEY_YOK() -> None:
+    """Kipler araç kümesiyle ayrışıyor, SESLE değil.
 
-    assert vm.mode_provider(config, "jarvis") == "styletts2"
-
-
-def test_kip_basina_ses_yazilmamissa_bos() -> None:
-    """Boş = "genel tts.provider'a düş" -- çağıran taraf karar veriyor."""
-    assert vm.mode_provider({}, "jarvis") == ""
-    assert vm.mode_provider({"voice": {"modes": {}}}, "jarvis") == ""
+    ``mode_provider`` silindi: yazan ama okunmayan bir ayar, hatanın geri
+    büyümesi için hazır bir yoldu -- bir sonraki yüzey onu bulup "kip sesi"
+    diye kullanmaya başlardı. Bu sınav o dönüşü yakalar.
+    """
+    assert not hasattr(vm, "mode_provider")
 
 
-def test_bozuk_kip_yapilandirmasi_cokmuyor() -> None:
-    for bad in (None, [], "x", {"voice": 7}, {"voice": {"modes": "x"}},
-                {"voice": {"modes": {"jarvis": "x"}}}):
-        assert vm.mode_provider(bad, "jarvis") == ""
+def test_hicbir_kip_kendi_sesini_TASIMIYOR() -> None:
+    """Kip tanımında ses alanı yok -- olsaydı ikinci bir hakikat olurdu."""
+    for mode in vm.modes().values():
+        assert not hasattr(mode, "provider")
+        assert not hasattr(mode, "voice")
 
 
 # ---------------------------------------------------------------------------
@@ -216,16 +214,25 @@ def test_kip_sesi_genel_ayari_ARTIK_EZMIYOR(monkeypatch) -> None:
     """
     from tools import tts_tool
 
-    # Eski ezme yolu bilerek taklit ediliyor: donse bile yok sayilmali.
-    monkeypatch.setattr(tts_tool, "_voice_mode_provider", lambda: "styletts2")
+    import fool_cli.config as cfg
+
+    # Eski ezme anahtari bilerek yaziliyor: okunmamali.
+    monkeypatch.setattr(
+        cfg,
+        "load_config",
+        lambda *a, **k: {
+            "tts": {"provider": "kokoro"},
+            "voice": {"mode": "friend", "modes": {"friend": {"provider": "styletts2"}}},
+        },
+    )
 
     assert tts_tool._get_provider({"provider": "kokoro"}) == "kokoro"
+    # Okuyan islev de artik YOK -- geri gelirse bu satir kirilir.
+    assert not hasattr(tts_tool, "_voice_mode_provider")
 
 
-def test_kip_sesi_yoksa_genel_ayar_gecerli(monkeypatch) -> None:
+def test_kip_sesi_yoksa_genel_ayar_gecerli() -> None:
     from tools import tts_tool
-
-    monkeypatch.setattr(tts_tool, "_voice_mode_provider", lambda: "")
 
     assert tts_tool._get_provider({"provider": "kokoro"}) == "kokoro"
 
@@ -260,7 +267,6 @@ def test_ESKI_kip_ayari_yapilandirmada_kalsa_bile_YOK_SAYILIYOR(monkeypatch) -> 
         },
     )
 
-    assert tts_tool._voice_mode_provider() == ""
     assert tts_tool._get_provider({"provider": "kokoro"}) == "kokoro"
 
 

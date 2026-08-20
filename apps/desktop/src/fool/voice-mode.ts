@@ -20,7 +20,7 @@
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
-import { persistentAtom } from '@/lib/persisted'
+import { sharedAtom } from './cross-window-atom'
 
 export type VoiceModeId = 'companion' | 'jarvis'
 
@@ -82,10 +82,17 @@ export const sanitizeVoiceMode = (raw: unknown): VoiceModeId =>
   isVoiceModeId(raw) ? raw : DEFAULT_VOICE_MODE
 
 /**
- * Seçili kip. ``persistentAtom``: notch penceresi ile ayarlar paneli AYRI
+ * Seçili kip. ``sharedAtom``: notch penceresi ile ayarlar paneli AYRI
  * pencereler ve ikisi de aynı kipi görmek zorunda.
+ *
+ * Bunun paylaşılmaması en pahalı hâliydi: ``use-notch-voice`` bu değerden
+ * oturumun KAYNAĞINI seçiyor (``voiceModeInfo(...).source`` -- arkadaş mı
+ * Jarvis mi). Panelde kipi değiştirdiğinde notch penceresindeki atom eskisinde
+ * kalıyordu, yani kullanıcı Jarvis seçip notch'a konuşuyor ve arkadaş
+ * kapsamıyla bir oturum açılıyordu. Panelde bir şey görüp başka bir şey
+ * almanın ses tarafındaki ikizi.
  */
-export const $voiceMode = persistentAtom<VoiceModeId>(
+export const $voiceMode = sharedAtom<VoiceModeId>(
   'fool.desktop.voice.mode',
   DEFAULT_VOICE_MODE,
   {

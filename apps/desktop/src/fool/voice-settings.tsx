@@ -16,12 +16,12 @@
  */
 
 import { useStore } from '@nanostores/react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { ListRow, ListRowSkeleton, Pill, SettingsContent, SettingsSection } from '@/app/settings/primitives'
 import { Button } from '@/components/ui/button'
 import { triggerHaptic } from '@/lib/haptics'
-import { Cpu, Download, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
+import { Cpu, Download, Info, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
 import { DEFAULT_PTT_CODE, formatPttCode, isBindableCode } from './notch/ptt-binding'
@@ -307,13 +307,41 @@ function CloneSection({
   onUpload: (file: File) => void
 }) {
   const [dragging, setDragging] = useState(false)
+  // Motorlar ayni ozelligi FARKLI davraniyor -- chatterbox gercek klonlama,
+  // styletts2 ton/ritim odunc alan bir stil aktarimi, f5-tts kaydin metnini
+  // kendisi cikariyor. Tek bir genel "drop to clone" yazisi bu farki
+  // gizliyordu; kullanici "her ses modeli icin nasil yapilacagi anlatilsin"
+  // istedi. Aciklama varsayilan KAPALI -- her satirda acik durursa kucuk
+  // panel gereksiz uzuyor.
+  const [showHelp, setShowHelp] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
     <div className="mt-3 rounded-lg border border-dashed border-(--stroke-nous) p-3">
+      {/* Suruklemek TEK yol degil -- bir dosyayi Gezgin'den bu pencereye
+          suruklemek herkes icin dogal degil (dokunmatik, ekran okuyucu,
+          bir dosyayi bulup elle suruklemek istemeyen kullanici). Tiklamak
+          AYNI yere ayni dosyayi getiriyor, gizli bir input uzerinden. */}
+      <input
+        accept=".wav,.mp3,.flac,.m4a,.ogg"
+        className="hidden"
+        onChange={event => {
+          const file = event.target.files?.[0]
+
+          if (file) {
+            onUpload(file)
+          }
+
+          event.target.value = ''
+        }}
+        ref={fileInputRef}
+        type="file"
+      />
       <div
-        className={`flex flex-col items-center justify-center gap-1 rounded-md px-3 py-4 text-center transition-colors ${
+        className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-md px-3 py-4 text-center transition-colors ${
           dragging ? 'bg-(--theme-primary)/10' : ''
         }`}
+        onClick={() => fileInputRef.current?.click()}
         onDragLeave={() => setDragging(false)}
         onDragOver={event => {
           event.preventDefault()
@@ -331,10 +359,30 @@ function CloneSection({
         }}
       >
         <Mic className="size-4 text-(--theme-primary)" />
-        <div className="text-[0.72rem] font-medium">Drop a voice sample to clone it</div>
+        <div className="flex items-center gap-1">
+          <span className="text-[0.72rem] font-medium">Drop a voice sample to clone it — or click to browse</span>
+          {item.clone_help && (
+            <button
+              aria-label={`How cloning works on ${item.label}`}
+              className="text-muted-foreground hover:text-(--text-primary)"
+              onClick={event => {
+                event.stopPropagation()
+                setShowHelp(previous => !previous)
+              }}
+              type="button"
+            >
+              <Info className="size-3" />
+            </button>
+          )}
+        </div>
         <div className="text-[0.66rem] text-muted-foreground">
           5–10 seconds of clean speech · wav, mp3, flac, m4a, ogg
         </div>
+        {showHelp && item.clone_help && (
+          <div className="mt-1 max-w-xs text-[0.64rem] text-(--text-secondary)">
+            {item.clone_help}
+          </div>
+        )}
       </div>
 
       {clones.length > 0 && (

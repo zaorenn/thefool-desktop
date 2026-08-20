@@ -6,7 +6,7 @@
  * açıldığında kaldığı yerden görünür ve CUDA düğmesi kart yokken ÇIKMAZ.
  */
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { VoiceCatalog, VoiceItem, VoiceJob } from './voice-api'
@@ -53,6 +53,7 @@ function item(overrides: Partial<VoiceItem> = {}): VoiceItem {
     clone_capable: false,
     cuda_ready: false,
     clone: '',
+    clone_help: '',
     assets_installed: true,
     cuda_available: false,
     devices: ['cpu'],
@@ -201,5 +202,99 @@ describe('VoiceSettings', () => {
     expect(await screen.findByText('Text to speech')).toBeTruthy()
     expect(screen.getByText('Speech to text')).toBeTruthy()
     expect(screen.getByText('Faster-Whisper')).toBeTruthy()
+  })
+
+  describe('ses klonlama', () => {
+    it('klonlamayi DESTEKLEYEN kurulu bir motorda hem surukleme hem TIKLAMA sunuyor', async () => {
+      // Bir dosyayi Gezgin'den suruklemek herkes icin dogal degil --
+      // tiklayip taramak ayni yere ayni dosyayi getiren ikinci bir yol.
+      catalog.mockResolvedValue(
+        reply([item({ clone_capable: true, clone_help: 'Drop 5-10 seconds of clean speech.' })])
+      )
+
+      render(<VoiceSettings />)
+
+      expect(await screen.findByText(/Drop a voice sample to clone it/)).toBeTruthy()
+      expect(screen.getByText(/click to browse/)).toBeTruthy()
+    })
+
+    it('klonlamayi DESTEKLEMEYEN kurulu bir motorda hicbir seyi gostermiyor', async () => {
+      catalog.mockResolvedValue(reply([item({ clone_capable: false })]))
+
+      render(<VoiceSettings />)
+
+      await screen.findByText('Piper')
+      expect(screen.queryByText(/Drop a voice sample/)).toBeNull()
+    })
+
+    it('yardim dugmesi motora ozel aciklamayi ACIP KAPATIYOR', async () => {
+      // Chatterbox/styletts2/f5-tts klonlamayi FARKLI uyguluyor -- tek bir
+      // genel yazi bu farki gizlerdi. Aciklama varsayilan KAPALI: her
+      // satirda acik durursa kucuk panel gereksiz uzardi.
+      catalog.mockResolvedValue(
+        reply([
+          item({
+            clone_capable: true,
+            clone_help: 'StyleTTS 2 borrows the clip tone and pacing.',
+            id: 'styletts2',
+            label: 'StyleTTS 2'
+          })
+        ])
+      )
+
+      render(<VoiceSettings />)
+
+      await screen.findByText(/Drop a voice sample/)
+      expect(screen.queryByText(/borrows the clip tone/)).toBeNull()
+
+      fireEvent.click(screen.getByRole('button', { name: /How cloning works on StyleTTS 2/ }))
+      expect(screen.getByText(/borrows the clip tone/)).toBeTruthy()
+
+      fireEvent.click(screen.getByRole('button', { name: /How cloning works on StyleTTS 2/ }))
+      expect(screen.queryByText(/borrows the clip tone/)).toBeNull()
+    })
+
+    it('klonlama YOKKEN yardim dugmesi de yok', async () => {
+      // Bos bir aciklama icin bos bir dugme gostermek kullaniciyi
+      // tiklayip hicbir sey olmadigini gormeye davet ederdi.
+      catalog.mockResolvedValue(reply([item({ clone_capable: true, clone_help: '' })]))
+
+      render(<VoiceSettings />)
+
+      await screen.findByText(/Drop a voice sample/)
+      expect(screen.queryByRole('button', { name: /How cloning works/ })).toBeNull()
+    })
+
+    it('bolgeye TIKLAMAK gizli dosya secicisini aciyor', async () => {
+      catalog.mockResolvedValue(reply([item({ clone_capable: true, clone_help: 'help text' })]))
+
+      render(<VoiceSettings />)
+
+      const dropZone = await screen.findByText(/Drop a voice sample/)
+      const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click')
+
+      fireEvent.click(dropZone)
+
+      expect(clickSpy).toHaveBeenCalled()
+      clickSpy.mockRestore()
+    })
+
+    it('bilgi dugmesine tiklamak dosya secicisini AÇMIYOR', async () => {
+      // Info dugmesi drop-zone'un icinde -- tiklamasi disariya YAYILIRSA
+      // yardimi acmaya calisan kullanici ayni anda dosya secici de acardi.
+      catalog.mockResolvedValue(
+        reply([item({ clone_capable: true, clone_help: 'help text', id: 'styletts2', label: 'StyleTTS 2' })])
+      )
+
+      render(<VoiceSettings />)
+
+      await screen.findByText(/Drop a voice sample/)
+      const clickSpy = vi.spyOn(HTMLInputElement.prototype, 'click')
+
+      fireEvent.click(screen.getByRole('button', { name: /How cloning works on StyleTTS 2/ }))
+
+      expect(clickSpy).not.toHaveBeenCalled()
+      clickSpy.mockRestore()
+    })
   })
 })

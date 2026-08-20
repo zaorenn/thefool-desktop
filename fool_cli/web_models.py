@@ -304,6 +304,14 @@ class DebugShareRequest(BaseModel):
 
 class TTSSpeakRequest(BaseModel):
     text: str
+    # FOOL-SEAM: surface-voice
+    #
+    # Hangi YUZEYIN konustugu sunucuda bilinmiyordu ve her yuzey genel
+    # ``tts.provider``a dusuyordu. Friend penceresinde StyleTTS 2 secilmis
+    # olmasina ragmen sentez qwen3 ile yapiliyordu (olculdu: 0,60 sn yerine
+    # 10,71 sn) -- kullaniciya "sectigim ses calismiyor, hem de cok yavas"
+    # diye gorunen sey buydu.
+    provider: str = ""
 
 
 # --- from web_server.py (originally lines 11549-11551) ---

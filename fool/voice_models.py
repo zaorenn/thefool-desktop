@@ -430,6 +430,8 @@ def status(entry_id: str) -> dict[str, Any]:
         "assets_installed": assets_ok,
         "installed": engine_ok and assets_ok,
         "cuda_available": _cuda_available() if "cuda" in e.devices else False,
+        # Buyuk bir modeli CPU'ya almanin bedelini ONCEDEN soyle.
+        "cpu_warning": cpu_warning(e),
     }
 
 
@@ -661,6 +663,40 @@ def set_voice(entry_id: str, voice: str) -> dict[str, Any]:
 
     set_config_value(f"tts.{e.provider_id or e.id}.voice", voice)
     return {"ok": True, "voice": voice}
+
+
+#: Bu boyutun ustundeki modeller CPU'da kullanilamaz derecede yavas.
+#:
+#: Olculdu (bu makine): Chatterbox CUDA'da 2,10 sn -- CPU'da difuzyon
+#: adimlari dakikalara cikiyor. Kokoro (~1,3 GB) CPU'da hala kullanilabilir,
+#: Chatterbox (~3 GB) ve Kyutai (~3,5 GB) degil. Esik oraya konuldu.
+CPU_IMPRACTICAL_GB = 2.0
+
+
+def _size_gb(e: VoiceEntry) -> float:
+    """Katalog etiketinden kaba boyut. Okunamazsa 0 -- uyari cikmaz."""
+    label = (e.size_label or "").lower().replace(",", ".")
+    try:
+        number = float("".join(c for c in label if c.isdigit() or c == ".").strip("."))
+    except ValueError:
+        return 0.0
+    return number if "gb" in label else number / 1024.0
+
+
+def cpu_warning(e: VoiceEntry) -> str:
+    """CPU'da calistirmak pratik mi? Degilse kullaniciya soylenecek cumle.
+
+    Panel "CPU" dugmesini gizlemiyor -- kullanicinin makinesinde ne olacagina
+    o karar verir. Ama sessizce dakikalarca bekletmek yerine ONCEDEN
+    soylemek gerekiyor: bir kez tiklayip 4 dakika bekleyen kullanici
+    uygulamanin dondugunu saniyor.
+    """
+    if "cuda" not in e.devices or _size_gb(e) < CPU_IMPRACTICAL_GB:
+        return ""
+    return (
+        f"{e.label} is {e.size_label} — on CPU a single sentence can take "
+        "minutes. CUDA is strongly recommended."
+    )
 
 
 def cuda_ready(e: VoiceEntry) -> bool:

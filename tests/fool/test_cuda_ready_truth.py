@@ -219,3 +219,45 @@ def test_iki_soru_BIRBIRINDEN_bagimsiz(monkeypatch) -> None:
 
     assert vm._cuda_available() is True
     assert vm.cuda_ready(_entry("piper")) is False
+
+
+# ---------------------------------------------------------------------------
+# CPU'da pratik mi
+# ---------------------------------------------------------------------------
+#
+# Ölçüldü: Chatterbox CUDA'da 2,10 sn. CPU'da difüzyon adımları dakikalara
+# çıkıyor. Kullanıcı bir kez tıklayıp dört dakika bekleyince uygulamanın
+# donduğunu sanıyor -- bunu ÖNCEDEN söylemek gerekiyor.
+
+def test_buyuk_modeller_CPU_icin_uyariliyor() -> None:
+    for entry_id in ("chatterbox", "kyutai", "qwen3-tts", "f5-tts"):
+        assert vm.cpu_warning(_entry(entry_id)), f"{entry_id}: uyari yok"
+
+
+def test_kucuk_modeller_uyarilmiyor() -> None:
+    """Kokoro CPU'da hâlâ kullanılabilir; her modelde uyarmak gürültü."""
+    for entry_id in ("piper", "kokoro", "styletts2"):
+        assert vm.cpu_warning(_entry(entry_id)) == "", f"{entry_id}: gereksiz uyari"
+
+
+def test_uyari_SEBEBI_ve_onerisi_iceriyor() -> None:
+    message = vm.cpu_warning(_entry("chatterbox"))
+
+    assert "minutes" in message
+    assert "CUDA is strongly recommended" in message
+
+
+def test_cuda_sunmayan_motor_uyarilmiyor(monkeypatch) -> None:
+    """CUDA seçeneği yoksa "CUDA öner" demek anlamsız."""
+    entry = _entry("chatterbox")
+    cpu_only = type(entry)(**{**entry.__dict__, "devices": ("cpu",)})
+
+    assert vm.cpu_warning(cpu_only) == ""
+
+
+def test_okunamayan_boyut_uyari_URETMIYOR() -> None:
+    """Tahmin edemediğimiz bir şey için uyarmak, uydurmak olurdu."""
+    entry = _entry("chatterbox")
+    unknown = type(entry)(**{**entry.__dict__, "size_label": ""})
+
+    assert vm.cpu_warning(unknown) == ""

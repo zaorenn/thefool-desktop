@@ -36,6 +36,8 @@ export interface VoiceItem {
   /** Motor GERCEKTEN CUDA calistirabiliyor mu? Yapilandirmada "cuda"
    *  yazmasindan AYRI: calisma zamani eksikse sessizce CPU'ya duser. */
   cuda_ready: boolean
+  /** Buyuk model + CPU = dakikalarca bekleme. Bos = uyari yok. */
+  cpu_warning: string
   /** Bu motor ses klonlamayi destekliyor mu? */
   clone_capable: boolean
   /** Secili klon dosyasinin adi ("" = kapali). */

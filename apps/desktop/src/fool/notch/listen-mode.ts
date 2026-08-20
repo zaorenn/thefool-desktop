@@ -15,7 +15,7 @@
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
-import { persistentAtom } from '@/lib/persisted'
+import { sharedAtom } from '../cross-window-atom'
 
 export type ListenMode = 'hands-free' | 'push-to-talk'
 
@@ -35,7 +35,7 @@ const isListenMode = (value: unknown): value is ListenMode =>
 export const sanitizeListenMode = (raw: unknown): ListenMode =>
   isListenMode(raw) ? raw : DEFAULT_LISTEN_MODE
 
-export const $listenMode = persistentAtom<ListenMode>(
+export const $listenMode = sharedAtom<ListenMode>(
   'fool.desktop.voice.listen-mode',
   DEFAULT_LISTEN_MODE,
   {

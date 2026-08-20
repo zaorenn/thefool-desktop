@@ -29,6 +29,7 @@ from .bicim_devral import devral, yonergeye_uygunluk
 from .cozumle import bolumlere_ayir, eksik_bolumler, iskelet_cikar, tur_tahmin
 from .docx_yazici import yaz
 from .kaynak import oku, token_tahmini
+from .pdf_cikti import pdf_uret
 from .model import EKSIK, Alinti, AltBaslik, Bolum, Ek, Kapak, Paragraf, Rapor, Tablo
 from . import taslak
 from .secici import ilgili_kesitler
@@ -486,3 +487,19 @@ def taslak_uret(kimlik: str, hedef: str, bicim_kaynagi: str | None = None) -> st
         cevap["taslak_durumu"] = taslak.durum(kimlik)
 
     return _sonuc(cevap)
+
+
+def rapor_pdf(docx: str, hedef_klasor: str | None = None) -> str:
+    """Üretilmiş bir ``.docx`` raporu PDF'e çevir."""
+    sonuc = pdf_uret(docx, hedef_klasor)
+
+    if not sonuc.basarili:
+        return _hata(sonuc.gerekce, donusturucu=sonuc.donusturucu or None)
+
+    return _sonuc(
+        {
+            "pdf": str(sonuc.yol),
+            "bayt": sonuc.yol.stat().st_size,
+            "donusturucu": sonuc.donusturucu,
+        }
+    )

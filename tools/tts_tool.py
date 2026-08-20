@@ -648,7 +648,13 @@ def _load_tts_config() -> Dict[str, Any]:
 def _installed_local_tts() -> set:
     """FOOL-SEAM: local-only-tts
 
-    Su an KURULU olan yerel seslendirme motorlarinin saglayici adlari.
+    Su an KULLANILABILIR yerel seslendirme motorlarinin saglayici adlari.
+
+    "Kurulu" DEGIL "kullanilabilir": paket yerinde ama motor ice
+    aktarilamiyor olabiliyor. Olculdu -- f5-tts bu makinede kurulu gorunuyor
+    ama ``import torchcodec`` paylasilan FFmpeg DLL'lerini bulamadigi icin
+    dusuyor. Otomatik secim onu secseydi kullanici hicbir sey duymayacak,
+    yalnizca bir gunluk satiri kalacakti (bkz. ``fool/engine_health.py``).
 
     Katalog ``fool/voice_models.py`` icinde; sonda cokerse bos kume donuyor
     ve cagiran taraf "yerel yok" muamelesi yapiyor.
@@ -659,7 +665,7 @@ def _installed_local_tts() -> set:
         return {
             (e.provider_id or e.id).lower()
             for e in _vm.CATALOG
-            if e.kind == "tts" and _vm.status(e.id).get("installed")
+            if e.kind == "tts" and _vm.status(e.id).get("usable")
         }
     except Exception as exc:  # pragma: no cover - katalog yoksa cokmemeli
         logger.debug("local TTS probe failed: %s", exc)

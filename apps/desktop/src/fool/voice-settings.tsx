@@ -93,7 +93,9 @@ function PreviewButton({ item }: { item: VoiceItem }) {
     }
   }, [item.id, item.label])
 
-  if (!item.installed) {
+  // Bozuk motorda dinleme dugmesi YOK: basmak yalnizca bir hata bildirimi
+  // uretirdi ve kullaniciya motorun calistigini ima ederdi.
+  if (!item.installed || item.engine_error) {
     return null
   }
 
@@ -142,6 +144,11 @@ function VoiceRow({
         Installing…
       </Button>
     )
+  } else if (item.engine_error) {
+    // Kurulu ama CALISMIYOR. "Use" gostermek kullaniciyi hicbir sey
+    // duymayacagi bir secime goturuyordu; yeniden kurmak da duzeltmiyor,
+    // o yuzden "Install" de yanlis cevap. Dogru cevap: secilemez + sebep.
+    action = <Pill tone="warn">Unavailable</Pill>
   } else if (item.installed) {
     // Kurulu olmak ile KULLANILIYOR olmak ayri seyler. Yalnizca "Installed"
     // gostermek, dort modelin de kurulu oldugu bir listede hangisinin
@@ -192,6 +199,16 @@ function VoiceRow({
       below={
         pending && pending.state === 'running' ? (
           <ProgressBar job={pending} />
+        ) : item.engine_error ? (
+          /* Motorun NEDEN calismadigi ve NE YAPILACAGI.
+           *
+           * Cihaz dugmelerinin YERINE geciyor, yanina degil: calismayan bir
+           * motorda CPU/CUDA secmek anlamsiz ve motorun calistigini ima
+           * ediyor. Ayrica ``supportsCuda`` kapisinin DISINDA -- CPU-only
+           * bozuk bir motor da sebebini gostermeli. */
+          <div className="mt-2 text-[0.62rem] leading-snug text-(--theme-warm)">
+            {item.engine_error}
+          </div>
         ) : item.installed && supportsCuda ? (
           // Kurulumdaki CPU/CUDA secimi hangi PAKETIN inecegini belirler;
           // bu ise modelin her calismada NEREDE kosacagini. Ikisini tek

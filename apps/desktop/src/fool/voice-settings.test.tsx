@@ -47,6 +47,10 @@ function item(overrides: Partial<VoiceItem> = {}): VoiceItem {
     // ``provider_id`` yapilandirmaya YAZILAN ad (``qwen3-tts`` indirilir,
     // ``qwen3`` secilir). Sunucu zaten gonderiyordu; arayuzde tanimli degildi.
     provider_id: 'test-provider',
+    // Varsayilan SAGLIKLI: motorun bozuk oldugunu iddia eden her sinav bunu
+    // acikca yazsin.
+    engine_error: '',
+    usable: true,
     cpu_warning: '',
     voice: '',
     voices: [],
@@ -202,6 +206,71 @@ describe('VoiceSettings', () => {
     expect(await screen.findByText('Text to speech')).toBeTruthy()
     expect(screen.getByText('Speech to text')).toBeTruthy()
     expect(screen.getByText('Faster-Whisper')).toBeTruthy()
+  })
+
+  /**
+   * KURULU ama CALISMIYOR.
+   *
+   * Olculdu (bu makine, F5-TTS): ``find_spec("f5_tts")`` True donuyordu ama
+   * ``import torchcodec`` paylasilan FFmpeg DLL'lerini bulamadigi icin
+   * dusuyordu. Panel motoru "installed" VE "klonlanabilir" gosteriyor,
+   * kullanici bir ses kaydi yukleyip klonu seciyor ve HICBIR SEY duymuyordu.
+   */
+  describe('kurulu ama calismayan motor', () => {
+    const broken = () =>
+      item({
+        clone_capable: false,
+        engine_error: 'Needs a shared FFmpeg build. Use StyleTTS 2 instead.',
+        installed: true,
+        usable: false
+      })
+
+    it('"Use" DEGIL "Unavailable" gosteriyor', async () => {
+      catalog.mockResolvedValue(reply([broken()]))
+
+      render(<VoiceSettings />)
+
+      expect(await screen.findByText('Unavailable')).toBeTruthy()
+      expect(screen.queryByText('Use')).toBeNull()
+      expect(screen.queryByText('In use')).toBeNull()
+    })
+
+    it('NEDEN calismadigini ve NE YAPILACAGINI yaziyor', async () => {
+      catalog.mockResolvedValue(reply([broken()]))
+
+      render(<VoiceSettings />)
+
+      expect(
+        await screen.findByText('Needs a shared FFmpeg build. Use StyleTTS 2 instead.')
+      ).toBeTruthy()
+    })
+
+    it('dinleme dugmesi YOK -- basmak yalnizca hata verirdi', async () => {
+      catalog.mockResolvedValue(reply([broken()]))
+
+      render(<VoiceSettings />)
+
+      await screen.findByText('Unavailable')
+      expect(screen.queryByText('Listen')).toBeNull()
+    })
+
+    it('klonlama arayuzu ACILMIYOR', async () => {
+      catalog.mockResolvedValue(reply([broken()]))
+
+      render(<VoiceSettings />)
+
+      await screen.findByText('Unavailable')
+      expect(screen.queryByText(/Drop a .*clip/i)).toBeNull()
+    })
+
+    it('SAGLIKLI motor bundan etkilenmiyor', async () => {
+      catalog.mockResolvedValue(reply([item({ active: false })]))
+
+      render(<VoiceSettings />)
+
+      expect(await screen.findByText('Use')).toBeTruthy()
+      expect(screen.queryByText('Unavailable')).toBeNull()
+    })
   })
 
   describe('ses klonlama', () => {

@@ -410,6 +410,27 @@ export function FriendView() {
         {muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
       </button>
 
+      {/* Sohbetin SURDUGUNU goster ve bitirmeyi ACIK bir eylem yap.
+          Eskiden mikrofonu susturmak (sessize almak, bas-konusa gecmek,
+          sayfadan cikmak) oturumu siliyordu ve kullanici bunu hicbir yerden
+          goremiyordu. Olculdu: 14 Friend oturumu, ortalama 4,6 mesaj --
+          masaustu sohbetinde 28,3. */}
+      <div className="flex items-center gap-2 text-[0.68rem] text-muted-foreground">
+        <span className={voice.sessionId ? '' : 'opacity-50'}>
+          {voice.sessionId ? 'Continuing this conversation' : 'New conversation'}
+        </span>
+        {voice.sessionId && (
+          <button
+            className="rounded-full border border-(--stroke-nous) px-2.5 py-0.5 transition-colors hover:bg-(--surface-hover)"
+            onClick={voice.newConversation}
+            title="Forget this conversation and start fresh"
+            type="button"
+          >
+            Start new
+          </button>
+        )}
+      </div>
+
       {/* Kontroller: dinleme kipi ve ses. Ayarlara gitmeden buradan
           degistirilebiliyor -- konusurken "sesi begenmedim" demek icin
           baska bir sayfaya gitmek akisi kesiyordu. */}

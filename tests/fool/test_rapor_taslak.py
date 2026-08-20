@@ -279,3 +279,59 @@ def test_arac_katmani_da_KORUYOR() -> None:
     cevap = json.loads(arac.taslak_baslat("k4", "inceleme"))
 
     assert "zaten var" in cevap["error"]
+
+
+# ---------------------------------------------------------------------------
+# Sıradaki adım -- zayıf modeli akışta tutmak
+# ---------------------------------------------------------------------------
+
+
+def test_her_cevap_SIRADAKI_ADIMI_soyluyor() -> None:
+    """Ölçüldü: model 11 adımlık planın 2. bölümünden sonra durdu.
+
+    "Rapor tamamlandı" dedi; üç bölüm ve kapağın yarısı eksikti. Planı modelin
+    hafızasına bırakmak yerine her cevapta yeniden söylemek dayanıklı.
+    """
+    taslak.baslat("n1", "inceleme")
+
+    adim = taslak.durum("n1")["siradaki_adim"]
+
+    assert "HENÜZ BİTMEDİ" in adim
+    assert "I. GİRİŞ" in adim
+    assert "rapor_taslak_bolum" in adim
+
+
+def test_siradaki_adim_BOLUM_yazildikca_ilerliyor() -> None:
+    taslak.baslat("n2", "inceleme")
+    taslak.bolum_ekle("n2", "I. GİRİŞ", [{"tur": "paragraf", "metin": "x"}])
+
+    assert "II. KONU" in taslak.durum("n2")["siradaki_adim"]
+
+
+def test_bolumler_bitince_EKSIK_KAPAK_alanlarina_yonlendiriyor() -> None:
+    taslak.baslat("n3", "inceleme")
+    for baslik in (
+        "I. GİRİŞ", "II. KONU", "III. İNCELEME VE ARAŞTIRMA",
+        "IV. TARTIŞMA VE DEĞERLENDİRME", "V. SONUÇ",
+    ):
+        taslak.bolum_ekle("n3", baslik, [{"tur": "paragraf", "metin": "x"}])
+
+    adim = taslak.durum("n3")["siradaki_adim"]
+
+    assert "rapor_taslak_kapak" in adim
+    assert "gorev_emri_sayi" in adim
+
+
+def test_her_sey_tamamsa_URET_diyor() -> None:
+    taslak.baslat(
+        "n4", "inceleme",
+        kapak={a: "x" for a in taslak._ZORUNLU_KAPAK},
+    )
+    for baslik in (
+        "I. GİRİŞ", "II. KONU", "III. İNCELEME VE ARAŞTIRMA",
+        "IV. TARTIŞMA VE DEĞERLENDİRME", "V. SONUÇ",
+    ):
+        taslak.bolum_ekle("n4", baslik, [{"tur": "paragraf", "metin": "x"}])
+    taslak.ek_ekle("n4", "Makam Onayı", 1)
+
+    assert "rapor_taslak_uret" in taslak.durum("n4")["siradaki_adim"]

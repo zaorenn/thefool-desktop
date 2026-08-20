@@ -248,7 +248,52 @@ def durum(kimlik: str) -> dict:
         "ek_sayisi": len(taslak.ekler),
         "kapak_alanlari": sorted(taslak.kapak),
         "tamam_mi": not eksik,
+        "siradaki_adim": _siradaki_adim(taslak, eksik),
     }
+
+
+#: MADDE 6(1)'in saydigi, kapakta BULUNMASI ZORUNLU alanlar.
+_ZORUNLU_KAPAK = (
+    "bakanlik", "baskanlik", "baslik", "konu", "gorev_emri_tarih",
+    "gorev_emri_sayi", "rapor_tarih", "rapor_sayi", "ek_adedi", "mufettis_ad",
+)
+
+
+def _siradaki_adim(taslak: "Taslak", eksik: list[str]) -> str:
+    """Sırada ne yapılacağını AÇIKÇA söyle.
+
+    Ölçüldü: yerel model (gemma-4-e4b) on bir adımlık bir planın ikinci
+    bölümünden sonra durdu ve "rapor tamamlandı" dedi -- oysa üç bölüm ve
+    kapağın yarısı eksikti. Araç cevabının içinde sıradaki adımı adıyla
+    söylemek, planı modelin hafızasında tutmaya çalışmaktan çok daha
+    dayanıklı: her turda yeniden hatırlatılıyor.
+    """
+    if eksik:
+        return (
+            f"HENÜZ BİTMEDİ. Sıradaki bölüm: '{eksik[0]}'. "
+            f"rapor_taslak_bolum aracını kimlik='{taslak.kimlik}', "
+            f"baslik='{eksik[0]}' ile çağır. "
+            f"Kalan bölümler: {', '.join(eksik)}."
+        )
+
+    kapak_eksik = [a for a in _ZORUNLU_KAPAK if not str(taslak.kapak.get(a, "")).strip()]
+
+    if kapak_eksik:
+        return (
+            f"Bölümler tamam. Kapakta eksik alan var: {', '.join(kapak_eksik)}. "
+            f"rapor_taslak_kapak aracını kimlik='{taslak.kimlik}' ile çağır."
+        )
+
+    if not taslak.ekler:
+        return (
+            f"Bölümler ve kapak tamam. Şimdi ekleri gir: rapor_taslak_ek, "
+            f"kimlik='{taslak.kimlik}'."
+        )
+
+    return (
+        f"Taslak hazır. rapor_taslak_uret aracını kimlik='{taslak.kimlik}' "
+        f"ve hedef dosya yolu ile çağırıp .docx üret."
+    )
 
 
 def _sade(baslik: str) -> str:

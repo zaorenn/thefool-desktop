@@ -30,22 +30,24 @@ import { notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 
 import { $listenMode } from '../notch/listen-mode'
-import { voiceApi, type VoiceCatalog } from '../voice-api'
+import { voiceApi, type VoiceCatalog, type VoiceItem } from '../voice-api'
 
 import { $friendMode, FRIEND_MODES, friendModeInfo } from './friend-mode'
+import { Orb } from './orb'
+import type { OrbPhase } from './orb-motion'
 import {
-  advance,
-  createOrbState,
-  isHearing,
-  type OrbPhase,
-  ringOpacity,
-  scaleFor
-} from './orb-motion'
+  applyAccent,
+  canChangeVoice,
+  persistAccent,
+  persona,
+  PERSONAS,
+  readAccent,
+  voiceForPersona
+} from './persona'
+import { sessionLabel, type SessionSummary, touchesMachine } from './session-picker'
 import { useFriendVoice } from './use-friend-voice'
 import { isChoosableVoiceId, selectedVoiceId, voiceOptions } from './voice-choice'
 import { isWarming, warmingLabel } from './warming'
-
-const RING_COUNT = 3
 
 /** Windows'ta ``option`` renkleri ``select``ten MIRAS ALINMIYOR; acikca
  *  veriliyor, yoksa koyu temada yazilar okunmuyor. */
@@ -57,73 +59,6 @@ const PHASE_LABEL: Record<OrbPhase, string> = {
   listening: 'Listening',
   speaking: 'Talking',
   thinking: 'Thinking'
-}
-
-function Orb({ level, phase }: { level: number; phase: OrbPhase }) {
-  const stateRef = useRef(createOrbState())
-  const [frame, setFrame] = useState(() => ({ hearing: false, rings: [0, 0, 0], scale: 1 }))
-  const levelRef = useRef(level)
-  const phaseRef = useRef(phase)
-
-  levelRef.current = level
-  phaseRef.current = phase
-
-  useEffect(() => {
-    let raf = 0
-    let last = performance.now()
-
-    const tick = (now: number) => {
-      const dt = now - last
-
-      last = now
-
-      const state = advance(stateRef.current, levelRef.current, dt)
-      const current = phaseRef.current
-
-      setFrame({
-        hearing: isHearing(state, current),
-        rings: Array.from({ length: RING_COUNT }, (_, index) =>
-          ringOpacity(state, current, index)
-        ),
-        scale: scaleFor(state, current)
-      })
-
-      raf = requestAnimationFrame(tick)
-    }
-
-    raf = requestAnimationFrame(tick)
-
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
-  return (
-    <div className="relative flex size-72 items-center justify-center">
-      {frame.rings.map((opacity, index) => (
-        <span
-          className="absolute rounded-full border border-(--theme-primary)"
-          key={`ring-${index}`}
-          style={{
-            height: `${58 + index * 16}%`,
-            opacity,
-            transform: `scale(${frame.scale - index * 0.03})`,
-            width: `${58 + index * 16}%`
-          }}
-        />
-      ))}
-      <span
-        className="absolute rounded-full bg-(--theme-primary)"
-        style={{
-          height: '46%',
-          // Gecis SURESI yok: kare basina zaten yumusatiliyor ve ustune CSS
-          // gecisi koymak iki kat yumusatma demek -- kure sesin GERISINDE
-          // kaliyor ve "duymuyor" hissi geri geliyor.
-          opacity: frame.hearing ? 0.95 : 0.72,
-          transform: `scale(${frame.scale})`,
-          width: '46%'
-        }}
-      />
-    </div>
-  )
 }
 
 export function FriendView() {
@@ -147,6 +82,29 @@ export function FriendView() {
   const voice = useFriendVoice(mode)
 
   const [holding, setHolding] = useState(false)
+
+  // Sohbet secici. Sunucudan CAGRILDIGINDA cekiliyor: panel her acilista
+  // oturum listesi istemek, hic acilmayacak bir menu icin her seferinde bir
+  // ag turu odemek olurdu.
+  const [sessionsOpen, setSessionsOpen] = useState(false)
+  const [sessions, setSessions] = useState<SessionSummary[]>([])
+  const [sessionsError, setSessionsError] = useState('')
+
+  // Persona: ses + vurgu rengi TEK secim.
+  const [activePersona, setActivePersona] = useState(() => readAccent())
+  const selectedRef = useRef<null | VoiceItem>(null)
+
+  // Kayitli persona rengini ACILISTA uygula: renk kalici olmazsa kullanici
+  // her acilista varsayilana donerdi.
+  useEffect(() => {
+    const entry = persona(activePersona)
+
+    applyAccent(entry?.accent ?? '')
+
+    return () => applyAccent('')
+    // Yalnizca montajda: renk secim aninda zaten uygulaniyor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /** Katalogu sunucudan tazele ve GOSTERILEN secimi ona esitle.
    *
@@ -206,6 +164,18 @@ export function FriendView() {
     }
   }, [refreshCatalog])
 
+  const openSessions = useCallback(async () => {
+    setSessionsOpen(previous => !previous)
+
+    try {
+      setSessions(await voice.listSessions())
+      setSessionsError('')
+    } catch (error) {
+      setSessions([])
+      setSessionsError(error instanceof Error ? error.message : 'Could not load conversations')
+    }
+  }, [voice])
+
   /** Motorun KENDI ses tipleri (Kokoro'nun yedi sesi gibi). */
   const chooseSpeaker = useCallback(
     async (entryId: string, next: string) => {
@@ -215,6 +185,49 @@ export function FriendView() {
         await voiceApi.setVoice(entryId, next)
       } catch (error) {
         notifyError(error, 'Could not save the speaker')
+      }
+    },
+    []
+  )
+
+  /**
+   * Persona seç: rengi ve sesi AYNI anda.
+   *
+   * Renk her zaman değişiyor; ses yalnızca motorun birden çok sesi varsa.
+   * Tek sesli bir motorda sessizce yanlış bir ses seçmek, kullanıcının
+   * gördüğü ile duyduğunun ayrışması olurdu -- bu kod tabanında zaten
+   * yaşanmış bir hata.
+   */
+  const choosePersona = useCallback(
+    async (id: string) => {
+      const entry = persona(id)
+
+      if (!entry) {
+        return
+      }
+
+      setActivePersona(id)
+      applyAccent(entry.accent)
+      persistAccent(id)
+
+      const engine = selectedRef.current
+
+      if (!engine || !canChangeVoice(engine)) {
+        return
+      }
+
+      const wanted = voiceForPersona(entry, engine.voices)
+
+      if (!wanted || wanted === (engine.voice || '')) {
+        return
+      }
+
+      setSpeaker(wanted)
+
+      try {
+        await voiceApi.setVoice(engine.id, wanted)
+      } catch (error) {
+        notifyError(error, `Could not switch to ${entry.label}`)
       }
     },
     []
@@ -349,103 +362,32 @@ export function FriendView() {
   // Secili motorun katalog kaydi -- ses tipleri ondan geliyor.
   const selected = provider ? tts.find(item => item.id === provider) : tts.find(item => item.active)
 
+  // ``choosePersona`` bunu okuyor. Bagimliliga almak her katalog
+  // tazelemesinde geri cagriyi yeniden kurardi.
+  selectedRef.current = selected ?? null
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
-      <Orb level={voice.level} phase={voice.phase} />
-
-      <div className="flex min-h-16 max-w-2xl flex-col items-center gap-2 text-center">
-        <span className="text-xs tracking-wide text-muted-foreground uppercase">
-          {muted ? 'Muted' : PHASE_LABEL[voice.phase]}
-        </span>
-        {/* Makineye erisim SESSIZ olmamali: sesli sohbette yanlis anlasilma
-            sik ve normal, kullanici hangi kipte konustugunu gormeli. */}
-        {friendModeInfo(mode).touchesMachine && (
-          <span className="text-xs text-(--theme-warm)">
-            Jarvis — {friendModeInfo(mode).summary}
-          </span>
-        )}
-        {/* Bekleme kacinilmaz (model diskten VRAM'e yuklenecek) ama
-            GORUNMEZ olmasi degil. */}
-        {warming && (
-          <span className="text-xs text-(--theme-warm)">
-            {warmingLabel(selected?.label ?? provider)}
-          </span>
-        )}
-        {/* Son soylenen ve son duyulan: kullanici yanlis anlasilmayi
-            GORMELI. Sesli bir arayuzde bunu gostermemek, hatayi ancak
-            cevap gelince fark etmek demek. */}
-        {voice.transcript && (
-          <p className="text-lg leading-snug text-balance">{voice.transcript}</p>
-        )}
-        {voice.reply && (
-          <p className="text-sm leading-snug text-balance text-muted-foreground">
-            {voice.reply}
-          </p>
-        )}
-        {voice.error && (
-          <p className="text-sm text-(--theme-warm)">{voice.error}</p>
-        )}
-      </div>
-
-      {/* Mikrofon dugmesi kipe gore FARKLI davraniyor: eller serbestte
-          sustur/ac, bas-konusta basili tutulan tus. Tek dugmeye iki anlam
-          yuklemek yerine davranisi kipe baglamak, kullanicinin ne yapacagini
-          tahmin etmesini gerektirmiyor. */}
-      <button
-        aria-label={
-          listenMode === 'push-to-talk' ? 'Hold to talk' : muted ? 'Unmute' : 'Mute'
-        }
-        className={`flex size-14 items-center justify-center rounded-full border transition-colors ${
-          holding
-            ? 'border-(--theme-primary) bg-(--theme-primary)/15'
-            : 'border-(--stroke-nous) hover:bg-(--surface-hover)'
-        }`}
-        onClick={listenMode === 'hands-free' ? toggle : undefined}
-        onPointerCancel={release}
-        onPointerDown={listenMode === 'push-to-talk' ? hold : undefined}
-        onPointerLeave={release}
-        onPointerUp={release}
-        type="button"
-      >
-        {muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-      </button>
-
-      {/* Sohbetin SURDUGUNU goster ve bitirmeyi ACIK bir eylem yap.
-          Eskiden mikrofonu susturmak (sessize almak, bas-konusa gecmek,
-          sayfadan cikmak) oturumu siliyordu ve kullanici bunu hicbir yerden
-          goremiyordu. Olculdu: 14 Friend oturumu, ortalama 4,6 mesaj --
-          masaustu sohbetinde 28,3. */}
-      <div className="flex items-center gap-2 text-[0.68rem] text-muted-foreground">
-        <span className={voice.sessionId ? '' : 'opacity-50'}>
-          {voice.sessionId ? 'Continuing this conversation' : 'New conversation'}
-        </span>
-        {voice.sessionId && (
-          <button
-            className="rounded-full border border-(--stroke-nous) px-2.5 py-0.5 transition-colors hover:bg-(--surface-hover)"
-            onClick={voice.newConversation}
-            title="Forget this conversation and start fresh"
-            type="button"
-          >
-            Start new
-          </button>
-        )}
-      </div>
-
-      {/* Kontroller: dinleme kipi ve ses. Ayarlara gitmeden buradan
-          degistirilebiliyor -- konusurken "sesi begenmedim" demek icin
-          baska bir sayfaya gitmek akisi kesiyordu. */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        {/* KIP secimi. Ayni pencereden iki farkli sey isteniyor: arkadas
-            kipinde cogu tur bir gorev degil (kisa, sicak, aracsiz), Jarvis
-            kipinde gercekten is yapiliyor (terminal, dosya, kod). Secim
-            oturumu yeniden aciyor -- arac kumesi ajan kurulurken donuyor. */}
-        <div className="flex overflow-hidden rounded-full border border-(--stroke-nous)">
+    <div className="relative flex h-full flex-col px-6 pt-5 pb-6 [--ease:cubic-bezier(0.32,0.72,0,1)]">
+      {/* ---- Üst şerit: kip ve sürdürülen sohbet ------------------------
+          macOS segmented control: tek hairline kap, içinde kayan bir pill.
+          İki ayrı düğme yerine tek bir kontrol -- seçimin nerede olduğu
+          şeklin kendisinden okunuyor. */}
+      <header className="flex items-center justify-between">
+        <div className="relative flex rounded-full border border-(--stroke-nous)/70 p-0.5">
+          {/* Kayan pill: düğmelerin ARKASINDA duruyor ve konumu seçime göre
+              değişiyor. Rengi vurgu rengi, yani personayı da taşıyor. */}
+          <span
+            aria-hidden
+            className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full bg-(--theme-primary) transition-transform duration-200 ease-(--ease)"
+            style={{
+              transform: mode === 'jarvis' ? 'translateX(100%)' : 'translateX(0)',
+              width: 'calc(50% - 2px)'
+            }}
+          />
           {(Object.keys(FRIEND_MODES) as (keyof typeof FRIEND_MODES)[]).map(option => (
             <button
-              className={`px-3 py-1 transition-colors ${
-                mode === option
-                  ? 'bg-(--theme-primary) text-white'
-                  : 'hover:bg-(--surface-hover)'
+              className={`relative z-10 w-24 rounded-full py-1 text-[0.7rem] font-medium transition-colors duration-200 ease-(--ease) ${
+                mode === option ? 'text-white' : 'text-muted-foreground hover:text-(--text-primary)'
               }`}
               key={option}
               onClick={() => $friendMode.set(option)}
@@ -457,67 +399,232 @@ export function FriendView() {
           ))}
         </div>
 
-        <div className="flex overflow-hidden rounded-full border border-(--stroke-nous)">
-          {(['hands-free', 'push-to-talk'] as const).map(option => (
-            <button
-              className={`px-3 py-1 transition-colors ${
-                listenMode === option
-                  ? 'bg-(--theme-primary) text-white'
-                  : 'hover:bg-(--surface-hover)'
+        {/* Sürdürülen sohbet. Eskiden görünmüyordu ve mikrofonu susturmak
+            oturumu siliyordu -- kullanıcı yeni mi eski mi konuştuğunu
+            bilemiyordu. */}
+        <div className="relative">
+          <button
+            className="flex items-center gap-1.5 rounded-full border border-(--stroke-nous)/70 px-3 py-1 text-[0.68rem] text-muted-foreground transition-colors duration-200 ease-(--ease) hover:bg-(--surface-hover)"
+            onClick={() => void openSessions()}
+            type="button"
+          >
+            <span
+              className={`size-1.5 rounded-full transition-colors duration-200 ${
+                voice.sessionId ? 'bg-(--theme-primary)' : 'bg-(--stroke-nous)'
               }`}
-              key={option}
-              onClick={() => $listenMode.set(option)}
-              type="button"
-            >
-              {option === 'hands-free' ? 'Hands-free' : 'Push to talk'}
-            </button>
-          ))}
+            />
+            {voice.sessionId ? 'Continuing' : 'New conversation'}
+          </button>
+
+          {sessionsOpen && (
+            <>
+              {/* Dışarı tıklayınca kapansın. Görünmez ama tıklanabilir. */}
+              <button
+                aria-label="Close"
+                className="fixed inset-0 z-20 cursor-default"
+                onClick={() => setSessionsOpen(false)}
+                type="button"
+              />
+              <div className="absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-xl border border-(--stroke-nous)/70 bg-(--surface-1)/95 shadow-2xl backdrop-blur-xl">
+                <div className="border-b border-(--stroke-nous)/50 px-3 py-2 text-[0.6rem] tracking-[0.14em] text-muted-foreground uppercase">
+                  Continue a conversation
+                </div>
+                <div className="max-h-72 overflow-y-auto">
+                  {sessions.length === 0 && (
+                    <p className="px-3 py-4 text-xs text-muted-foreground">
+                      {sessionsError || 'Nothing to continue yet.'}
+                    </p>
+                  )}
+                  {sessions.map(item => (
+                    <button
+                      className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left transition-colors duration-150 hover:bg-(--surface-hover)"
+                      key={item.id}
+                      onClick={() => {
+                        voice.adoptSession(item)
+                        setSessionsOpen(false)
+                      }}
+                      type="button"
+                    >
+                      <span className="w-full truncate text-xs text-(--text-primary)">
+                        {sessionLabel(item)}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[0.6rem] text-muted-foreground">
+                        <span className="tabular-nums">{item.message_count} messages</span>
+                        {/* Bu oturumu sürdürmek TERMİNAL vermek olabilir:
+                            kapsam oturum kurulurken dondu. Sessizce yapmak,
+                            kullanıcıya makineye dokunamayacağını söylemek
+                            olurdu. */}
+                        {touchesMachine(item) && (
+                          <span className="text-(--theme-warm)">· can act on your machine</span>
+                        )}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {voice.sessionId && (
+                  <button
+                    className="w-full border-t border-(--stroke-nous)/50 px-3 py-2 text-left text-xs text-muted-foreground transition-colors duration-150 hover:bg-(--surface-hover)"
+                    onClick={() => {
+                      voice.newConversation()
+                      setSessionsOpen(false)
+                    }}
+                    type="button"
+                  >
+                    Start a new conversation
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* ---- Merkez ---------------------------------------------------- */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-7">
+        <Orb level={voice.level} phase={voice.phase} />
+
+        <div className="flex min-h-24 max-w-xl flex-col items-center gap-2.5 text-center">
+          <span className="text-[0.6rem] tracking-[0.16em] text-muted-foreground uppercase">
+            {muted ? 'Muted' : PHASE_LABEL[voice.phase]}
+          </span>
+
+          {/* Makineye erisim SESSIZ olmamali: sesli sohbette yanlis
+              anlasilma sik ve normal, kullanici hangi kipte konustugunu
+              gormeli. */}
+          {friendModeInfo(mode).touchesMachine && (
+            <span className="text-[0.62rem] text-(--theme-warm)">
+              {friendModeInfo(mode).summary}
+            </span>
+          )}
+
+          {/* Bekleme kacinilmaz (model diskten VRAM'e yuklenecek) ama
+              GORUNMEZ olmasi degil. */}
+          {warming && (
+            <span className="text-[0.62rem] text-(--theme-warm)">
+              {warmingLabel(selected?.label ?? provider)}
+            </span>
+          )}
+
+          {/* Son soylenen ve son duyulan: kullanici yanlis anlasilmayi
+              GORMELI. Sesli bir arayuzde bunu gostermemek, hatayi ancak
+              cevap gelince fark etmek demek. */}
+          {voice.transcript && (
+            <p className="text-xl leading-snug text-balance text-(--text-primary)">
+              {voice.transcript}
+            </p>
+          )}
+          {voice.reply && (
+            <p className="text-sm leading-relaxed text-balance text-muted-foreground">
+              {voice.reply}
+            </p>
+          )}
+          {voice.error && <p className="text-xs text-(--theme-warm)">{voice.error}</p>}
+        </div>
+      </div>
+
+      {/* ---- Alt şerit: persona · mikrofon · giriş --------------------- */}
+      <footer className="grid grid-cols-3 items-end">
+        {/* Persona: ses ve renk TEK seçim. Kullanıcının isteği birebir
+            buydu -- kızdan erkek sesine geçince vurgu da değişsin. */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[0.58rem] tracking-[0.14em] text-muted-foreground uppercase">
+            Voice
+          </span>
+          <div className="flex items-center gap-2">
+            {PERSONAS.map(entry => (
+              <button
+                aria-label={entry.label}
+                className={`size-4 rounded-full transition-all duration-200 ease-(--ease) ${
+                  activePersona === entry.id
+                    ? 'scale-110 ring-2 ring-(--theme-primary) ring-offset-2 ring-offset-(--surface-0)'
+                    : 'opacity-55 hover:opacity-100'
+                }`}
+                key={entry.id}
+                onClick={() => void choosePersona(entry.id)}
+                style={{ background: entry.accent }}
+                title={`${entry.label} — ${entry.summary}`}
+                type="button"
+              />
+            ))}
+          </div>
+          {/* Motorun tek sesi varsa persona rengi degistirir, SESI degil.
+              Sessizce yanlis bir ses secmek yerine bunu soylemek. */}
+          {!canChangeVoice(selected ?? null) && (
+            <span className="text-[0.58rem] text-muted-foreground">
+              {selected?.label ?? 'This engine'} has one voice
+            </span>
+          )}
         </div>
 
-        {/* ``bg-transparent`` YANLISTI: acilir listenin secenekleri isletim
-            sisteminin kendi menusunde ciziliyor ve saydam zeminde koyu tema
-            ile birlesince yazilar OKUNMUYORDU. Zemin ve metin rengi acikca
-            veriliyor; ``option``lara da ayrica, cunku Windows onlari
-            select'ten miras almiyor. */}
-        <select
-          aria-label="Voice"
-          className="h-7 rounded border border-(--stroke-nous) bg-(--surface-1) px-2 text-xs text-(--text-primary)"
-          onChange={event => void chooseProvider(event.target.value)}
-          value={provider}
-        >
-          {/* Bos secenek KALDIRILDI: ``voice_models.select("")`` ->
-              ``ValueError: bilinmeyen oge:`` -> HTTP 400. Yani "Default
-              voice"u secmek bir hata bildirimi cikariyor, motoru
-              degistirmiyor ve acilir listeyi yine de yeni degerde birakiyordu
-              -- panelde bir sey gorup baska bir sesi duymanin ta kendisi.
-              Genel ayar zaten BU listede secili olan; ayrica bir "genel"
-              secenegi olmasinin anlami yok. */}
-          {/* ``select`` KATALOG KIMLIGI bekliyor, saglayici adi degil
-              (``qwen3-tts`` indirilir, ``qwen3`` secilir). */}
-          {tts.map(item => (
-            <option key={item.id} style={OPTION_STYLE} value={item.id}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Motorun KENDI ses tipleri. Yalnizca birden fazlasi varsa
-            gosteriliyor: tek secenekli bir acilir liste gurultu. */}
-        {selected && selected.voices.length > 1 && (
-          <select
-            aria-label="Speaker"
-            className="h-7 rounded border border-(--stroke-nous) bg-(--surface-1) px-2 text-xs text-(--text-primary)"
-            onChange={event => void chooseSpeaker(selected.id, event.target.value)}
-            value={speaker || selected.voice || selected.voices[0]?.id || ''}
+        {/* Mikrofon dugmesi kipe gore FARKLI davraniyor: eller serbestte
+            sustur/ac, bas-konusta basili tutulan tus. Tek dugmeye iki anlam
+            yuklemek yerine davranisi kipe baglamak, kullanicinin ne
+            yapacagini tahmin etmesini gerektirmiyor. */}
+        <div className="flex justify-center">
+          <button
+            aria-label={
+              listenMode === 'push-to-talk' ? 'Hold to talk' : muted ? 'Unmute' : 'Mute'
+            }
+            className={`flex size-14 items-center justify-center rounded-full border transition-all duration-200 ease-(--ease) ${
+              holding
+                ? 'scale-95 border-(--theme-primary) bg-(--theme-primary)/20'
+                : muted
+                  ? 'border-(--stroke-nous)/70 text-muted-foreground hover:bg-(--surface-hover)'
+                  : 'border-(--theme-primary)/40 hover:border-(--theme-primary) hover:bg-(--surface-hover)'
+            }`}
+            onClick={listenMode === 'hands-free' ? toggle : undefined}
+            onPointerCancel={release}
+            onPointerDown={listenMode === 'push-to-talk' ? hold : undefined}
+            onPointerLeave={release}
+            onPointerUp={release}
+            type="button"
           >
-            {selected.voices.map(entry => (
-              <option key={entry.id} style={OPTION_STYLE} value={entry.id}>
-                {entry.label}
+            {muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
+          </button>
+        </div>
+
+        {/* Giris kipi ve motor. Ayarlara gitmeden buradan degistirilebiliyor
+            -- konusurken "sesi begenmedim" demek icin baska bir sayfaya
+            gitmek akisi kesiyordu. */}
+        <div className="flex flex-col items-end gap-2">
+          <span className="text-[0.58rem] tracking-[0.14em] text-muted-foreground uppercase">
+            Input
+          </span>
+          <div className="flex overflow-hidden rounded-full border border-(--stroke-nous)/70 text-[0.66rem]">
+            {(['hands-free', 'push-to-talk'] as const).map(option => (
+              <button
+                className={`px-2.5 py-1 transition-colors duration-200 ease-(--ease) ${
+                  listenMode === option
+                    ? 'bg-(--theme-primary) text-white'
+                    : 'text-muted-foreground hover:bg-(--surface-hover)'
+                }`}
+                key={option}
+                onClick={() => $listenMode.set(option)}
+                type="button"
+              >
+                {option === 'hands-free' ? 'Hands-free' : 'Push'}
+              </button>
+            ))}
+          </div>
+
+          {/* Bos secenek YOK: ``voice_models.select("")`` -> HTTP 400.
+              "Default voice"u secmek bir hata bildirimi cikariyor, motoru
+              degistirmiyor ve acilir listeyi yine de yeni degerde
+              birakiyordu. */}
+          <select
+            aria-label="Engine"
+            className="h-6 rounded-full border border-(--stroke-nous)/70 bg-transparent px-2 text-[0.66rem] text-muted-foreground"
+            onChange={event => void chooseProvider(event.target.value)}
+            value={provider}
+          >
+            {tts.map(item => (
+              <option key={item.id} style={OPTION_STYLE} value={item.id}>
+                {item.label}
               </option>
             ))}
           </select>
-        )}
-      </div>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -33,6 +33,7 @@ import {
   shouldRearmListening
 } from './hands-free'
 import { $listenMode, listenModeHint, toggleListenMode } from './listen-mode'
+import { NotchPet } from './notch-pet'
 import { formatPttCode } from './ptt-binding'
 import { $pttCode } from './ptt-store'
 import {
@@ -434,7 +435,7 @@ export function NotchShell() {
   }, [pttCode, sessionActive, voice])
 
   return (
-    <div className="flex h-screen w-screen justify-center bg-transparent" data-fool-notch>
+    <div className="flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>
       <motion.div
         animate={{
           height: expanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
@@ -541,6 +542,11 @@ export function NotchShell() {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {/* Masaustundeki pet: cubuktan asagi damliyor ve orada duruyor.
+          Centik penceresi 220 px, cubuk 22-92 px -- altta kalan alan saydam
+          ve fare olaylarini geciriyor, yani masaustunu hic isgal etmiyor. */}
+      {sessionActive && <NotchPet level={voice.level} status={voice.status} />}
     </div>
   )
 }

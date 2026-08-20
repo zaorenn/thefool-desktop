@@ -1575,6 +1575,7 @@ export const ar = defineLocale({
       chat: 'المحادثة',
       settings: 'الإعدادات',
       cron: 'المهام المجدولة',
+      friend: 'Friend',
       agents: 'الوكلاء'
     },
     searchAria: 'البحث في الجلسات',

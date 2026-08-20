@@ -416,6 +416,7 @@ def taslak_baslat(
     ozet: list | None = None,
     imza_yer: str = "",
     imza_tarih: str = "",
+    sifirla: bool = False,
 ) -> str:
     """Yeni bir rapor taslağı aç."""
     try:
@@ -426,6 +427,7 @@ def taslak_baslat(
             ozet=list(ozet or []),
             imza_yer=imza_yer,
             imza_tarih=imza_tarih,
+            sifirla=sifirla,
         )
     except taslak.TaslakHatasi as sebep:
         return _hata(str(sebep))

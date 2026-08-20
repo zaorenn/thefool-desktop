@@ -646,24 +646,13 @@ def _load_tts_config() -> Dict[str, Any]:
 
 
 def _voice_mode_provider() -> str:
-    """FOOL-SEAM: voice-mode-provider
+    """Kip basina ses ARTIK YOK -- her zaman "" doner.
 
-    Aktif sesli kipin kendi seslendirme saglayicisi (``voice.modes.<kip>``).
-    Yazilmamissa bos donuyor ve cagiran taraf genel ``tts.provider``a
-    dusuyor.
-
-    Hata YUTULUYOR: bir kip yapilandirmasi okuma hatasinin seslendirmeyi
-    tamamen susturmasi kabul edilemez.
+    Islev SILINMEDI cunku disaridan cagrilabiliyor; sabit "" donmesi
+    cagiranlari genel ``tts.provider``a dusuruyor. Gerekce icin
+    ``_get_provider`` icindeki FOOL-SEAM: voice-mode-provider notuna bak.
     """
-    try:
-        from fool.voice_modes import active_mode, mode_provider
-        from fool_cli.config import load_config
-
-        config = load_config() or {}
-        return mode_provider(config, active_mode(config)).lower().strip()
-    except Exception as exc:  # pragma: no cover
-        logger.debug("voice mode provider lookup skipped: %s", exc)
-        return ""
+    return ""
 
 
 def _installed_local_tts() -> set:
@@ -713,14 +702,26 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
     """
     # FOOL-SEAM: voice-mode-provider
     #
-    # Iki sesli kip var (arkadas / Jarvis) ve ikisinin AYNI sesle konusmasi
-    # ikisini de zayiflatiyor: arkadas icin sicak ve ifadeli bir ses, Jarvis
-    # icin kisa ve net bir ses isteniyor. Aktif kipin kendi saglayicisi
-    # varsa genel ``tts.provider``i eziyor.
-    _mode_provider = _voice_mode_provider()
-    if _mode_provider:
-        return _mode_provider
-
+    # Kip basina AYRI ses ARTIK YOK -- ve neden kaldirildigi onemli.
+    #
+    # Once "arkadas icin sicak bir ses, Jarvis icin kisa ve net bir ses"
+    # diye tasarlanmisti ve ``voice.modes.<kip>.provider`` genel
+    # ``tts.provider``i EZIYORDU. Sonucu olculdu:
+    #
+    #   tts.provider                  = styletts2   <- panelin gosterdigi
+    #   voice.modes.friend.provider   = kyutai      <- gercekten kosan
+    #
+    # Yani panel "StyleTTS 2" yaziyor (cumle basina 0,56 sn), motor kyutai
+    # kosuyor (11 sn). Kullanici panelde bir sey secip bambaska bir sesi
+    # duyuyordu ve gecikmenin sebebini hicbir yerden goremiyordu. Ustune
+    # tek-motor kurali yuzunden iki yuzey iki farkli motor isteyince her tur
+    # yukle-bosalt donguse giriyordu.
+    #
+    # Kullanicinin karari acikti: "friendin sesi ile global ses ayni
+    # olmali". Tek hakikat ``tts.provider``. Eski anahtar okunmuyor;
+    # yapilandirmada kalmis bir deger artik sessizce YOK SAYILIYOR -- silmek
+    # yerine yok saymak, geri almak isteyen bir kullanicinin degerini
+    # kaybetmemesi icin.
     explicit = str(tts_config.get("provider") or "").lower().strip()
     if explicit:
         return explicit

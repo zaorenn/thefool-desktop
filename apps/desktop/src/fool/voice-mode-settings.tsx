@@ -81,24 +81,14 @@ function ModePanel({
         />
       )}
 
+      {/* Kip basina AYRI ses secici KALDIRILDI.
+          Olculdu: tts.provider=styletts2 (panelin gosterdigi) iken
+          voice.modes.friend.provider=kyutai (gercekten kosan) -- kullanici
+          panelde bir sey secip bambaska bir sesi duyuyordu ve gecikmenin
+          (0,56 sn yerine 11 sn) sebebini hicbir yerden goremiyordu.
+          Tek hakikat: Text to speech bolumundeki secim. */}
       <ListRow
-        action={
-          <select
-            className="h-7 rounded border border-(--stroke-nous) bg-transparent px-1 text-[0.7rem]"
-            onChange={event => onProvider(mode, event.target.value)}
-            value={provider}
-          >
-            {/* Bos = genel ``tts.provider``a dus. Kipin kendi sesi olmak
-                ZORUNDA degil; tek ses yeterliyse kullanici bunu secer. */}
-            <option value="">Use the default voice</option>
-            {tts.map(item => (
-              <option key={item.id} value={item.provider_id || item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        }
-        description="Each mode can speak with its own engine. Listen to them under Text to speech."
+        description="Every mode speaks with the engine you picked under Text to speech — one voice, one place to change it."
         title="Voice"
       />
     </SettingsSection>

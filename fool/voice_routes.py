@@ -157,6 +157,15 @@ async def voice_warm() -> dict[str, Any]:
     """
     from fool import stt_warmup, tts_warmup
 
+    # Sesli oturum aciliyor: kart SESIN de kullandigi kart. Kullanilmayan bir
+    # dil modeli orada durmasin.
+    #
+    # Olculdu (kullanicinin kartinda, 16 GB): gemma 6,33 GB + qwen 6,55 GB =
+    # 12,88 GB, geriye ~3 GB. Gunluklerde sonucu goruluyordu:
+    # ``[TTS/piper] device=cuda istendi ama CUDA bulunamadi``. Ikinci model
+    # hic istenmedigi halde sesin GPU'sunu yiyordu.
+    _free_unused_llms()
+
     # SESLENDIRME de isitiliyor. Olculdu: kokoro soguk 24,17 sn / sicak
     # 0,32 sn; styletts2 soguk 67,21 sn / sicak 0,86 sn. Kullanici bunu
     # "Friend modunda dakikalarca model uyandiriliyor" diye bildirdi -- oysa
@@ -167,6 +176,31 @@ async def voice_warm() -> dict[str, Any]:
     # torch yukluyor, TTS izole bir sidecar surecinde. Sirayla yapmak
     # kazancin yarisini geri verirdi.
     return {"stt": stt_warmup.warm(), "tts": tts_warmup.warm()}
+
+
+def _free_unused_llms() -> None:
+    """Secili olmayan dil modellerini bellekten birak (arka planda, sessizce).
+
+    Hata YUTULUYOR ve is AYRI bir is parcaciginda: isitma ucu HEMEN donmeli.
+    Bir bellek temizligi ugruna sesli oturumun acilisini bekletmek, tam olarak
+    duzeltilmek istenen yavasligi geri getirirdi.
+    """
+    import threading
+
+    def _run() -> None:
+        try:
+            from fool import lmstudio_residency
+            from fool_cli.config import load_config
+
+            model_cfg = (load_config() or {}).get("model") or {}
+            keep = str(model_cfg.get("default") or model_cfg.get("model") or "").strip()
+            base_url = str(model_cfg.get("base_url") or "http://localhost:1234/v1").strip()
+
+            lmstudio_residency.enforce_single(base_url, keep)
+        except Exception:
+            pass
+
+    threading.Thread(target=_run, daemon=True, name="fool-llm-residency").start()
 
 
 @router.post("/api/fool/voice/preview")

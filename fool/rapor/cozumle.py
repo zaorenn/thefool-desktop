@@ -194,19 +194,97 @@ def eksik_bolumler(
 # Örnekten öğrenme
 # ---------------------------------------------------------------------------
 
-#: Örnek raporda geçen, resmî üsluba ait kalıplar. Modelin taklit etmesi
-#: gereken şey bunlar: cümleler değil, KAPANIŞ BİÇİMLERİ.
-_KALIPLAR = (
-    "görüş ve kanaatine varılmıştır",
-    "İfade vermişlerdir",
-    "Arz olunur",
-    "doğrultusunda",
-    "mezkûr",
-    "tespit edilmiş",
-    "anlaşılmıştır",
-    "değerlendirildiğinde",
-    "yapılacak işlem bulunmamaktadır",
+# Üslup kalıpları ÖRNEKTEN ÖĞRENİLİYOR, listeden değil.
+#
+# Önce burada sabit bir liste vardı ("görüş ve kanaatine varılmıştır",
+# "Arz olunur", ...). Bu liste bu örnek rapor için doğruydu ve BAŞKA bir
+# örnek için yanlış olurdu: kullanıcı örneği değiştirebileceğini söyledi ve
+# yeni örneğin kendi kalıpları listede yer almadığı için hiç öğrenilmezdi.
+#
+# Onun yerine örneğin KENDİ cümle sonları sayılıyor: resmî raporda aynı
+# bitiş biçimi defalarca geçiyor ("...varılmıştır", "...tespit edilmiştir")
+# ve tekrar eden bitiş, o belgenin üslubu demek.
+
+#: Bir kalıp sayılmak için cümle sonunun en az kaç kez geçmesi gerekiyor.
+KALIP_ASGARI_TEKRAR = 2
+
+#: Türkçe yüklem sonları -- bildirme ve geçmiş zaman ekleri.
+#: Belgeye değil DİLE ait; örnek değişince bunlar değişmiyor.
+_YUKLEM_SONLARI = (
+    "mıştır", "miştir", "muştur", "müştür",
+    "maktadır", "mektedir",
+    "dır", "dir", "dur", "dür",
+    "tır", "tir", "tur", "tür",
+    "mıştı", "mişti", "lmiş", "lmış",
+    "ılmıştır", "ilmiştir",
+    "acaktır", "ecektir",
+    "olunur", "verilir", "yapılır",
 )
+
+#: Cümle sonundan alınacak sözcük sayısı. Üç sözcük, kalıbı taşıyacak kadar
+#: uzun ("görüş ve kanaatine varılmıştır" -> "ve kanaatine varılmıştır") ve
+#: konuya bulaşmayacak kadar kısa.
+KALIP_SOZCUK = 3
+
+
+def _kaliplari_ogren(metin: str, en_fazla: int = 10) -> list[str]:
+    """Örnekte tekrar eden cümle sonlarını çıkar.
+
+    Tekrar eden şey YÜKLEM. Yalnızca üç sözcüklük kuyruklar sayıldığında
+    hiçbir kalıp bulunamıyordu: "uygun olarak gerçekleştirilmiştir" ile
+    "aynı şekilde gerçekleştirilmiştir" farklı kuyruklar, oysa üslup ikisinde
+    de aynı. O yüzden her yüklem için TEKRAR EDEN EN UZUN kuyruk alınıyor --
+    "ve kanaatine varılmıştır" gibi kalıplaşmış bir bitiş varsa o, yoksa
+    yüklemin kendisi.
+    """
+    from collections import Counter
+
+    kuyruklar: dict[int, Counter[str]] = {n: Counter() for n in (1, 2, 3)}
+
+    for cumle in re.split(r"[.;:]\s+", metin):
+        sozcukler = [k.strip() for k in cumle.split() if k.strip()]
+
+        if not sozcukler:
+            continue
+
+        yuklem = sozcukler[-1].strip(".,").lower()
+
+        # Kalip YUKLEMLE biter. Bu suzgec olmadan sirket ve kisi adlari kalip
+        # sayiliyordu ("tasimacilik sinir tic") -- yani ornegin ICERIGI yeni
+        # rapora sizacak yoldan geri geliyordu. Olcut dilin kendisi, bu
+        # belgenin sozcukleri degil.
+        if not yuklem.endswith(_YUKLEM_SONLARI):
+            continue
+
+        for n in (1, 2, 3):
+            if len(sozcukler) < n:
+                continue
+
+            kuyruk = " ".join(sozcukler[-n:]).strip(".,").lower()
+
+            # Rakam iceren bitisler kalip degil, veridir ("2 Yil 4 Ay").
+            if any(k.isdigit() for k in kuyruk):
+                continue
+
+            kuyruklar[n][kuyruk] += 1
+
+    # Her yuklem icin TEKRAR EDEN EN UZUN kuyruk.
+    secilen: dict[str, tuple[int, str]] = {}
+
+    for n in (1, 2, 3):
+        for kuyruk, adet in kuyruklar[n].items():
+            if adet < KALIP_ASGARI_TEKRAR or len(kuyruk) <= 4:
+                continue
+
+            yuklem = kuyruk.split()[-1]
+            onceki = secilen.get(yuklem)
+
+            if onceki is None or n > onceki[0]:
+                secilen[yuklem] = (n, kuyruk)
+
+    siralama = Counter({k: kuyruklar[1][y] for y, (_, k) in secilen.items()})
+
+    return [kalip for kalip, _ in siralama.most_common(en_fazla)]
 
 
 @dataclass
@@ -271,7 +349,7 @@ def iskelet_cikar(belge: Belge) -> Iskelet:
             if duzgun not in alt_basliklar:
                 alt_basliklar.append(duzgun)
 
-    kaliplar = [k for k in _KALIPLAR if k.lower() in metin.lower()]
+    kaliplar = _kaliplari_ogren(metin)
 
     # Basliklar TEKILLESTIRILIYOR: iskelet yapiyi anlatiyor, belgedeki
     # tekrarlari degil. Tekilleştirmeden, ayni basligin birden cok kez gectigi

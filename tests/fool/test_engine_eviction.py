@@ -73,18 +73,39 @@ def _clean():
 # Tek motor
 # ---------------------------------------------------------------------------
 
-def test_ayni_anda_TEK_motor_kaliyor() -> None:
-    """Seslendirme sıralı: ikinci bir motoru ayakta tutmanın tek etkisi VRAM."""
-    assert eh.MAX_RESIDENT_ENGINES == 1
+def test_sinir_IKI_motor() -> None:
+    """Bir DEGIL iki -- ve sebebi olculdu.
+
+    Once 1 yapmistim: uygulamada AYNI ANDA iki yuzey konusuyor (sohbet
+    paneli genel ``tts.provider`` ile, Friend kendi sectigiyle). Ikisi
+    farkli motor secince her tur yukle-bosalt-yukle donguse giriyordu --
+    qwen3 40 sn + styletts2 37 sn. Makine surekli model yukluyor, hicbir
+    cumle zamaninda seslendirilmiyor.
+
+    Iki motor hem cakismayi bitiriyor hem VRAM'i sinir altinda tutuyor
+    (olculdu: iki motor ayaktayken en dusuk bos VRAM 6688 MB, tahliye
+    oncesi 724 MB).
+    """
+    assert eh.MAX_RESIDENT_ENGINES == 2
 
 
-def test_yeni_motor_istenince_eskisi_bosaltiliyor(monkeypatch) -> None:
-    monkeypatch.setattr(eh, "free_vram_mb", lambda: 20_000, raising=False)
+def test_sinir_asilinca_eskisi_bosaltiliyor() -> None:
     eh._ENGINES["eski"] = _engine(last_used=1.0)
+    eh._ENGINES["orta"] = _engine(last_used=5.0)
 
     eh._evict_for("yeni")
 
     assert "eski" not in eh._ENGINES
+    assert "orta" in eh._ENGINES, "sinir icinde kalan motor korunmali"
+
+
+def test_sinir_altinda_hic_tahliye_YOK() -> None:
+    """Iki yuzey ayni anda konusabilmeli -- gereksiz tahliye thrash demek."""
+    eh._ENGINES["tek"] = _engine(last_used=1.0)
+
+    eh._evict_for("yeni")
+
+    assert "tek" in eh._ENGINES
 
 
 def test_EN_ESKI_kullanilan_once_gidiyor(monkeypatch) -> None:

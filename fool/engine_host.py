@@ -128,9 +128,20 @@ _ENGINES_LOCK = threading.Lock()
 #: calismiyor" diye gorunen sey buydu -- tek tek her motor calisiyor, hepsi
 #: birlikte hicbiri calismiyor.
 #:
-#: Seslendirme SIRALI: ayni anda iki motor konusmuyor. Birden fazlasini
-#: ayakta tutmanin tek etkisi VRAM'i tuketmek.
-MAX_RESIDENT_ENGINES = 1
+#: IKI motor bilincli, bir degil.
+#:
+#: Once 1 yapmistim ve daha kotu bir sorun urettim: uygulamada AYNI ANDA iki
+#: yuzey konusuyor (sohbet paneli genel ``tts.provider`` ile, Friend kendi
+#: sectigiyle). Ikisi farkli motor secince her tur yukle-bosalt-yukle
+#: donguse giriyordu -- olculdu, qwen3 40 sn + styletts2 37 sn, yani makine
+#: surekli model yukluyor ve hicbir cumle zamaninda seslendirilmiyor.
+#: Kullanicinin "bilgisayarim deli gibi kasti ve yine ses gelmedi" dedigi
+#: sey buydu ve sebebi benim yamamdi.
+#:
+#: Iki motor hem yuzeylerin cakismasini bitiriyor hem VRAM'i siniri altinda
+#: tutuyor: olculdu, iki motor ayaktayken en dusuk bos VRAM 6688 MB
+#: (tahliye oncesi 724 MB).
+MAX_RESIDENT_ENGINES = 2
 
 #: Bosta kalan bir motor bu sureden sonra kendiliginden bosaltiliyor.
 #:

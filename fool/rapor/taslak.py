@@ -105,12 +105,34 @@ def baslat(
     ozet: list[str] | None = None,
     imza_yer: str = "",
     imza_tarih: str = "",
+    sifirla: bool = False,
 ) -> Taslak:
-    """Yeni taslak aç -- varsa ÜZERİNE YAZAR."""
+    """Yeni taslak aç. Var olanın ÜZERİNE YAZMAZ.
+
+    Önce yazıyordu ve ölçüldü: uygulama sürülürken model, bölümleri yazdıktan
+    SONRA ``baslat``ı bir kez daha çağırdı ve o ana kadar yazılmış beş bölümün
+    tamamı silindi -- taslakta 5 ek ve 10 kapak alanı kalmış, bölümler boştu.
+    Bir dil modelinin turu yeniden başlatması olağan; 70 sayfalık bir işi
+    sessizce sıfırlamak değil.
+
+    Gerçekten baştan başlanacaksa ``sifirla=True`` açıkça isteniyor.
+    """
     if tur not in RAPOR_TURLERI:
         raise TaslakHatasi(
             f"bilinmeyen rapor türü: {tur} (geçerli: {', '.join(sorted(RAPOR_TURLERI))})"
         )
+
+    if not sifirla and _taslak_yolu(kimlik).exists():
+        mevcut = yukle(kimlik)
+
+        if mevcut.bolumler or mevcut.ekler:
+            raise TaslakHatasi(
+                f"'{kimlik}' taslağı zaten var: "
+                f"{len(mevcut.bolumler)} bölüm, {len(mevcut.ekler)} ek. "
+                "Kaldığın yerden devam et (rapor_taslak_bolum / "
+                "rapor_taslak_durum). Gerçekten baştan başlamak istiyorsan "
+                "sifirla=true gönder."
+            )
 
     taslak = Taslak(
         kimlik=kimlik,

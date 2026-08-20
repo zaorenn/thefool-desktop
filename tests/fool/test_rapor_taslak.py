@@ -238,3 +238,44 @@ def test_dogrudan_rapor_yaz_da_SIRALIYOR(tmp_path) -> None:
     metinler = [t.text or "" for t in kok.iter(f"{W}t")]
 
     assert metinler.index("I. GİRİŞ") < metinler.index("II. KONU")
+
+
+def test_baslat_VAR_OLAN_taslagin_uzerine_YAZMIYOR() -> None:
+    """Ölçüldü: model bölümleri yazdıktan sonra ``baslat``ı tekrar çağırdı.
+
+    Beş bölüm silindi; taslakta yalnızca ekler ve kapak kaldı. Modelin turu
+    yeniden başlatması olağan, 70 sayfalık işi sıfırlaması değil.
+    """
+    taslak.baslat("k1", "inceleme")
+    taslak.bolum_ekle("k1", "I. GİRİŞ", [{"tur": "paragraf", "metin": "yazildi"}])
+
+    with pytest.raises(taslak.TaslakHatasi, match="zaten var"):
+        taslak.baslat("k1", "inceleme")
+
+    assert taslak.durum("k1")["yazilan_bolumler"] == ["I. GİRİŞ"]
+
+
+def test_sifirla_ACIKCA_istenirse_bastan_basliyor() -> None:
+    taslak.baslat("k2", "inceleme")
+    taslak.bolum_ekle("k2", "I. GİRİŞ", [{"tur": "paragraf", "metin": "eski"}])
+
+    taslak.baslat("k2", "inceleme", sifirla=True)
+
+    assert taslak.durum("k2")["yazilan_bolumler"] == []
+
+
+def test_BOS_taslagi_yeniden_baslatmak_serbest() -> None:
+    """Hiçbir şey yazılmamışsa kaybedilecek bir şey de yok."""
+    taslak.baslat("k3", "inceleme")
+    taslak.baslat("k3", "inceleme", kapak={"mufettis_ad": "Cemil KAYA"})
+
+    assert taslak.yukle("k3").kapak["mufettis_ad"] == "Cemil KAYA"
+
+
+def test_arac_katmani_da_KORUYOR() -> None:
+    json.loads(arac.taslak_baslat("k4", "inceleme"))
+    json.loads(arac.taslak_bolum("k4", "I. GİRİŞ", [{"tur": "paragraf", "metin": "x"}]))
+
+    cevap = json.loads(arac.taslak_baslat("k4", "inceleme"))
+
+    assert "zaten var" in cevap["error"]

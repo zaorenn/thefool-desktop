@@ -163,6 +163,14 @@ TASLAK_BASLAT_SCHEMA = {
             "ozet": {"type": "array", "items": {"type": "string"}},
             "imza_yer": {"type": "string"},
             "imza_tarih": {"type": "string"},
+            "sifirla": {
+                "type": "boolean",
+                "description": (
+                    "Only if you truly want to discard an existing draft. "
+                    "Without it, starting an existing draft is refused so "
+                    "already-written sections are not lost."
+                ),
+            },
         },
         "required": ["kimlik", "tur"],
     },
@@ -318,6 +326,7 @@ registry.register(
         ozet=args.get("ozet"),
         imza_yer=args.get("imza_yer", ""),
         imza_tarih=args.get("imza_tarih", ""),
+        sifirla=bool(args.get("sifirla", False)),
     ),
     emoji="🗂️",
 )

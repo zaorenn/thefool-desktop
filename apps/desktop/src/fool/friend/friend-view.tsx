@@ -31,6 +31,7 @@ import { $voicePlayback } from '@/store/voice-playback'
 
 import { voiceApi, type VoiceCatalog } from '../voice-api'
 
+import { $friendMode, FRIEND_MODES, friendModeInfo } from './friend-mode'
 import {
   advance,
   createOrbState,
@@ -127,13 +128,20 @@ function Orb({ level, phase }: { level: number; phase: OrbPhase }) {
 type ListenMode = 'hands-free' | 'push-to-talk'
 
 export function FriendView() {
+  const mode = useStore($friendMode)
   const [muted, setMuted] = useState(false)
   const [listenMode, setListenMode] = useState<ListenMode>('hands-free')
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
   const [provider, setProvider] = useState('')
   const [speaker, setSpeaker] = useState('')
+
   // ``provider`` state'i hook'tan ONCE: hook onu okuyor.
-  const voice = useFriendVoice(provider)
+  // Sentez SAGLAYICI ADI istiyor, katalog kimligi degil.
+  const voice = useFriendVoice(
+    (catalog?.items ?? []).find(item => item.id === provider)?.provider_id || '',
+    mode
+  )
+
   const [holding, setHolding] = useState(false)
 
   // Kurulu motorlar ve bu pencerenin secili sesi.
@@ -142,15 +150,16 @@ export function FriendView() {
 
     void (async () => {
       try {
-        const [data, saved] = await Promise.all([voiceApi.catalog(), voiceApi.modeProviders()])
+        const data = await voiceApi.catalog()
 
         if (!cancelled) {
           setCatalog(data)
-          // Friend'in KENDI secimi yoksa bos birakiliyor: bos = genel
-          // ``tts.provider``. Iki yuzey boylece AYNI motorda bulusuyor ve
-          // hic tahliye gerekmiyor. Farkli secmek serbest ama bedeli var
-          // (motor degisimi yeniden yukleme).
-          setProvider(saved.providers?.friend ?? '')
+          // GENEL secili motor. Friend ayri bir ses tutmuyor: iki yuzey
+          // ayni motoru kullaniyor, yani hic tahliye/yeniden yukleme
+          // olmuyor ve kullanici tek bir hakikat goruyor.
+          const active = data.items.find(item => item.kind === 'tts' && item.active)
+
+          setProvider(active ? active.id : '')
         }
       } catch {
         // Sessizce gec: ses secimi olmadan da pencere calisiyor. Bir katalog
@@ -163,13 +172,21 @@ export function FriendView() {
     }
   }, [])
 
+  /** Ses secimi GENEL ayari degistiriyor, Friend'e ozel bir kopya DEGIL.
+   *
+   * Once kip basina ayri tutuyordum ve iki sorun uretti: (1) sohbet paneli
+   * ile Friend farkli motor secince tek-motor kurali her turu
+   * yukle-bosalt-yukle donguse ceviriyordu, (2) kullanici "Friend'in sesi
+   * ile global ses ayni olmali" dedi -- hakli, iki yerde iki ses tutmak
+   * kullaniciya iki ayri hakikat sunmak.
+   */
   const chooseProvider = useCallback(async (next: string) => {
     setProvider(next)
     // Motor degisti: eski motorun ses tipi yenisinde yok.
     setSpeaker('')
 
     try {
-      await voiceApi.setModeProvider('friend', next)
+      await voiceApi.select(next)
     } catch (error) {
       notifyError(error, 'Could not save the voice')
     }
@@ -219,6 +236,34 @@ export function FriendView() {
     // acip kapatip dururdu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listenMode, muted])
+
+  // Modelleri PENCERE ACILIR ACILMAZ isit.
+  //
+  // Olculdu: kokoro soguk 24,17 sn / sicak 0,32 sn, styletts2 soguk
+  // 67,21 sn / sicak 0,86 sn. Bu pencere isitmayi hic cagirmiyordu, yani
+  // ilk cumlede soguk yuklemeyi kullanici bekliyordu -- ayarlardaki Listen
+  // dugmesi 2,5 sn'de konusurken. Fark buydu.
+  //
+  // Hata YUTULUYOR: isitma bir iyilestirme, gereklilik degil. Basarisiz
+  // olursa ilk cumle modeli kendisi yukler; kullaniciya bildirim gostermek
+  // hicbir sey bozulmamisken telas yaratirdi.
+  useEffect(() => {
+    void voiceApi.warmVoice().catch(() => undefined)
+  }, [provider])
+
+  // Friend acikken NOTCH da acik kalsin.
+  //
+  // Kullanici istegi ve mantikli: notch ekranin ustunde durup durumu
+  // gosteriyor, boylece Friend sekmesinden ciksan bile konusmanin nerede
+  // oldugunu goruyorsun. Notch SESSIZ kaliyor -- ses sahibi Friend
+  // (bkz. fool/voice-owner.ts); notch yalnizca gosterge.
+  useEffect(() => {
+    void window.hermesDesktop?.notch?.open?.()
+
+    return () => {
+      void window.hermesDesktop?.notch?.close?.()
+    }
+  }, [])
 
   // Sayfa kapaninca mikrofonu MUTLAKA birak: acik kalan bir mikrofon
   // kullanicinin gormedigi en kotu durum.
@@ -276,9 +321,7 @@ export function FriendView() {
   const tts = (catalog?.items ?? []).filter(item => item.kind === 'tts' && item.installed)
 
   // Secili motorun katalog kaydi -- ses tipleri ondan geliyor.
-  const selected = provider
-    ? tts.find(item => (item.provider_id || item.id) === provider)
-    : tts.find(item => item.active)
+  const selected = provider ? tts.find(item => item.id === provider) : tts.find(item => item.active)
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
@@ -288,6 +331,13 @@ export function FriendView() {
         <span className="text-xs tracking-wide text-muted-foreground uppercase">
           {muted ? 'Muted' : PHASE_LABEL[voice.phase]}
         </span>
+        {/* Makineye erisim SESSIZ olmamali: sesli sohbette yanlis anlasilma
+            sik ve normal, kullanici hangi kipte konustugunu gormeli. */}
+        {friendModeInfo(mode).touchesMachine && (
+          <span className="text-xs text-(--theme-warm)">
+            Jarvis — {friendModeInfo(mode).summary}
+          </span>
+        )}
         {/* Bekleme kacinilmaz (model diskten VRAM'e yuklenecek) ama
             GORUNMEZ olmasi degil. */}
         {warming && (
@@ -338,19 +388,41 @@ export function FriendView() {
           degistirilebiliyor -- konusurken "sesi begenmedim" demek icin
           baska bir sayfaya gitmek akisi kesiyordu. */}
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        {/* KIP secimi. Ayni pencereden iki farkli sey isteniyor: arkadas
+            kipinde cogu tur bir gorev degil (kisa, sicak, aracsiz), Jarvis
+            kipinde gercekten is yapiliyor (terminal, dosya, kod). Secim
+            oturumu yeniden aciyor -- arac kumesi ajan kurulurken donuyor. */}
         <div className="flex overflow-hidden rounded-full border border-(--stroke-nous)">
-          {(['hands-free', 'push-to-talk'] as const).map(mode => (
+          {(Object.keys(FRIEND_MODES) as (keyof typeof FRIEND_MODES)[]).map(option => (
             <button
               className={`px-3 py-1 transition-colors ${
-                listenMode === mode
+                mode === option
                   ? 'bg-(--theme-primary) text-white'
                   : 'hover:bg-(--surface-hover)'
               }`}
-              key={mode}
-              onClick={() => setListenMode(mode)}
+              key={option}
+              onClick={() => $friendMode.set(option)}
+              title={FRIEND_MODES[option].summary}
               type="button"
             >
-              {mode === 'hands-free' ? 'Hands-free' : 'Push to talk'}
+              {FRIEND_MODES[option].label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex overflow-hidden rounded-full border border-(--stroke-nous)">
+          {(['hands-free', 'push-to-talk'] as const).map(option => (
+            <button
+              className={`px-3 py-1 transition-colors ${
+                listenMode === option
+                  ? 'bg-(--theme-primary) text-white'
+                  : 'hover:bg-(--surface-hover)'
+              }`}
+              key={option}
+              onClick={() => setListenMode(option)}
+              type="button"
+            >
+              {option === 'hands-free' ? 'Hands-free' : 'Push to talk'}
             </button>
           ))}
         </div>
@@ -371,8 +443,10 @@ export function FriendView() {
           <option style={OPTION_STYLE} value="">
             Default voice
           </option>
+          {/* ``select`` KATALOG KIMLIGI bekliyor, saglayici adi degil
+              (``qwen3-tts`` indirilir, ``qwen3`` secilir). */}
           {tts.map(item => (
-            <option key={item.id} style={OPTION_STYLE} value={item.provider_id || item.id}>
+            <option key={item.id} style={OPTION_STYLE} value={item.id}>
               {item.label}
             </option>
           ))}

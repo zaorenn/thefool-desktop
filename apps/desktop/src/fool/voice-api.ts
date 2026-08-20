@@ -123,7 +123,14 @@ export const voiceApi = {
   /** Konusma tanima modelini arka planda yukle. Sesli oturum ACILDIGI anda
    *  cagriliyor: olculdu, isitmasiz ilk transkripsiyon 6,94 sn, isitilmis
    *  0,66 sn. O sure kullanicinin konusmakla gecirdigi zamana gizleniyor. */
-  warmStt: () => call<{ status: string }>('/api/fool/voice/warm', {}),
+  /** STT ve TTS modellerini arka planda yukle; HEMEN donuyor.
+   *
+   *  Adi eskiden ``warmStt``ti ve yalnizca tanimayi isitiyordu. Seslendirme
+   *  disarida kalinca Friend penceresi ilk cumlede soguk yuklemeyi oduyordu
+   *  (kokoro 24 sn, styletts2 67 sn) -- kullaniciya "dakikalarca model
+   *  uyandiriliyor" olarak gorunen sey buydu. */
+  warmVoice: () =>
+    call<{ stt: { status: string }; tts: { status: string } }>('/api/fool/voice/warm', {}),
   /** Kip basina secili seslendirme saglayicilari. */
   modeProviders: () => call<{ providers: Record<string, string> }>('/api/fool/voice/modes'),
   /** Bir kipin sesini kaydet. Bos saglayici = genel ayara don. */

@@ -36,6 +36,7 @@ import {
 import { $activeSessionId, $messages } from '@/store/session'
 
 import { $voiceMode, voiceModeInfo } from '../voice-mode'
+import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
 import {
   type BargeGate,
@@ -177,6 +178,9 @@ export function useNotchVoice(): NotchVoice {
     // Kapıyı ilk gelene bırakmak tuşu sessizce yutardı — mikrofon açılmaz,
     // kullanıcı boşluğa konuşurdu.
     forceClaimBarge(bargeRef.current, 'key')
+    // Kullanici notch'ta konusmaya basladi: sesin sahibi o (Friend
+    // penceresi acik degilse).
+    claimVoice('notch')
     setCapturing(false)
     setHeardSpeech(false)
     setStatus('listening')
@@ -218,6 +222,7 @@ export function useNotchVoice(): NotchVoice {
   /** Notch oturumu kapandı — bir sonraki açılış TEMİZ bir arkadaş oturumu alsın. */
   const endSession = useCallback(() => {
     forgetCompanionSession(companionRef.current)
+    releaseVoice('notch')
   }, [])
 
   const cancel = useCallback(() => {
@@ -332,6 +337,13 @@ export function useNotchVoice(): NotchVoice {
   // eslint-disable-next-line no-restricted-syntax -- yukarıdaki gerekçe
   useEffect(() => {
     if (status !== 'thinking' && status !== 'speaking') {
+      return
+    }
+
+    // Friend penceresi acikken o konusuyor: notch sessiz kalip yalnizca
+    // DURUMU gosteriyor (bkz. fool/voice-owner.ts). Iki yuzey birden
+    // seslendirmeye kalkinca her biri digerini iptal ediyordu.
+    if (!canSpeak('notch')) {
       return
     }
 

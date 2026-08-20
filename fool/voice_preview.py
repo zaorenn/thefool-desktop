@@ -39,7 +39,7 @@ def _status(entry_id: str) -> dict[str, Any]:
     return status(entry_id)
 
 
-def _synthesize(provider: str, path: str) -> str:
+def _synthesize(provider: str, path: str, text: str = PREVIEW_TEXT) -> str:
     """Sentezle ve ÜRETİLEN DOSYANIN YOLUNU döndür.
 
     ``text_to_speech_tool`` bir yol değil JSON DİZESİ döndürüyor
@@ -56,7 +56,7 @@ def _synthesize(provider: str, path: str) -> str:
 
     from tools.tts_tool import text_to_speech_tool
 
-    raw = text_to_speech_tool(PREVIEW_TEXT, output_path=path, provider=provider)
+    raw = text_to_speech_tool(text, output_path=path, provider=provider)
 
     try:
         payload = json.loads(raw)
@@ -77,7 +77,25 @@ def _synthesize(provider: str, path: str) -> str:
     return path
 
 
-def preview(entry_id: str) -> dict[str, Any]:
+def entry_for_provider(provider: str) -> str:
+    """Saglayici adindan katalog kimligi ("" = eslesme yok).
+
+    Ikisi ayni DEGIL: ``qwen3-tts`` indiriliyor, ``qwen3`` calisiyor.
+    Isitma yapilandirmadan saglayici adi okuyor ama katalog kimligiyle
+    calisiyor -- donusum tek yerde olsun.
+    """
+    from fool.voice_models import CATALOG
+
+    key = (provider or "").strip().lower()
+    if not key:
+        return ""
+    for e in CATALOG:
+        if e.kind == "tts" and (e.provider_id or e.id).lower() == key:
+            return e.id
+    return ""
+
+
+def preview(entry_id: str, text: str = PREVIEW_TEXT) -> dict[str, Any]:
     """*entry_id* motoruyla kısa bir cümle seslendir; sesi ve süreyi döndür.
 
     Hata YUTULMUYOR: sessizce başarısız olan bir dinleme düğmesi, düğmenin
@@ -102,7 +120,7 @@ def preview(entry_id: str) -> dict[str, Any]:
 
     try:
         started = time.monotonic()
-        produced = _synthesize(provider, path)
+        produced = _synthesize(provider, path, text)
         elapsed_ms = int((time.monotonic() - started) * 1000)
 
         with open(produced, "rb") as fh:

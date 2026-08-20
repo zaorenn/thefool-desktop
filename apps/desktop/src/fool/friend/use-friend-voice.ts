@@ -43,10 +43,16 @@ import {
 } from '../notch/companion-session'
 import { HANDS_FREE_VAD } from '../notch/hands-free'
 import { interruptThenSubmit } from '../notch/interrupt'
+import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
+import { friendModeSource } from './friend-mode'
 import type { OrbPhase } from './orb-motion'
 
-/** Ağ geçidi bu kaynağı görünce ``friend`` kapsamını uyguluyor. */
+/** Ağ geçidi bu kaynağı görünce ``friend`` kapsamını uyguluyor.
+ *
+ *  Artık VARSAYILAN, tek seçenek değil: pencerede Jarvis de seçilebiliyor
+ *  ve o kip ``desktop`` kaynağıyla açılıyor (bkz. ``friend-mode.ts``).
+ */
 export const FRIEND_SOURCE = 'friend'
 
 export interface FriendVoice {
@@ -66,7 +72,7 @@ export interface FriendVoice {
   endHold: () => void
 }
 
-export function useFriendVoice(provider = ''): FriendVoice {
+export function useFriendVoice(provider = '', mode = 'friend'): FriendVoice {
   const { t } = useI18n()
   const messages = useStore($messages)
   const { handle: mic, level } = useMicRecorder(t.notifications.voice)
@@ -89,6 +95,13 @@ export function useFriendVoice(provider = ''): FriendVoice {
 
   providerRef.current = provider
 
+  // Secili kip: oturum bu kaynakla aciliyor. ``ensureCompanionSession`` kaynak
+  // degisince eski oturumu birakip yenisini aciyor -- arac kumesi ajan
+  // kurulurken donuyor, tur icinde degistirilemez.
+  const sourceRef = useRef(friendModeSource(mode))
+
+  sourceRef.current = friendModeSource(mode)
+
   const sessionRef = useRef(createCompanionSessionState())
   const bargeRef = useRef(createBargeGate())
   const streamRef = useRef<{ sent: number; session: SpeechStreamSession | null } | null>(null)
@@ -100,7 +113,7 @@ export function useFriendVoice(provider = ''): FriendVoice {
     return ensureCompanionSession(sessionRef.current, {
       create: params =>
         requestGateway('session.create', params) as Promise<{ session_id?: string }>,
-      source: FRIEND_SOURCE
+      source: sourceRef.current
     })
   }, [requestGateway])
 
@@ -191,6 +204,8 @@ export function useFriendVoice(provider = ''): FriendVoice {
   listenRef.current = listen
 
   const start = useCallback(() => {
+    // Friend ekranda ve kullanici ona bakarak konusuyor: sesin sahibi o.
+    claimVoice('friend')
     setActive(true)
     listen()
   }, [listen])
@@ -241,6 +256,7 @@ export function useFriendVoice(provider = ''): FriendVoice {
     streamRef.current = null
     releaseBarge(bargeRef.current)
     forgetCompanionSession(sessionRef.current)
+    releaseVoice('friend')
     setCapturing(false)
     setPhase('idle')
   }, [mic])
@@ -252,6 +268,13 @@ export function useFriendVoice(provider = ''): FriendVoice {
   // eslint-disable-next-line no-restricted-syntax -- yukaridaki gerekce
   useEffect(() => {
     if (phase !== 'thinking' && phase !== 'speaking') {
+      return
+    }
+
+    // Ayni cevabi iki yuzey seslendirmeye kalkarsa her biri digerini iptal
+    // ediyor ve HIC ses cikmiyor (bkz. fool/voice-owner.ts). Friend
+    // sahipligi mount'ta aliyor; burada yalnizca dogruluyoruz.
+    if (!canSpeak('friend')) {
       return
     }
 

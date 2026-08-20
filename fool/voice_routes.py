@@ -134,7 +134,7 @@ async def voice_set_mode_provider(body: ModeProviderBody) -> dict[str, Any]:
 
 @router.post("/api/fool/voice/warm")
 async def voice_warm() -> dict[str, Any]:
-    """Konuşma tanıma modelini arka planda yükle.
+    """Konuşma tanıma VE seslendirme modellerini arka planda yükle.
 
     Sesli oturum AÇILDIĞI anda çağrılıyor. Ölçüldü (12,18 sn gerçek konuşma,
     Whisper large-v3-turbo float16, RTX 4070 Ti SUPER):
@@ -145,9 +145,18 @@ async def voice_warm() -> dict[str, Any]:
     O 6 saniye, kullanıcının zaten konuşmakla geçirdiği süreye gizleniyor.
     Yanıt HEMEN dönüyor; yükleme arka planda sürüyor.
     """
-    from fool import stt_warmup
+    from fool import stt_warmup, tts_warmup
 
-    return stt_warmup.warm()
+    # SESLENDIRME de isitiliyor. Olculdu: kokoro soguk 24,17 sn / sicak
+    # 0,32 sn; styletts2 soguk 67,21 sn / sicak 0,86 sn. Kullanici bunu
+    # "Friend modunda dakikalarca model uyandiriliyor" diye bildirdi -- oysa
+    # ayarlardaki Listen dugmesi 2,5 sn'de konusuyordu, cunku orada motor
+    # zaten sicakti.
+    #
+    # Ikisi AYRI is parcaciklarinda ve birbirini beklemiyor: STT ana surecte
+    # torch yukluyor, TTS izole bir sidecar surecinde. Sirayla yapmak
+    # kazancin yarisini geri verirdi.
+    return {"stt": stt_warmup.warm(), "tts": tts_warmup.warm()}
 
 
 @router.post("/api/fool/voice/preview")

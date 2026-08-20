@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { claimBarge, createBargeGate, releaseBarge } from '@/fool/notch/barge-in'
 import { HANDS_FREE_VAD } from '@/fool/notch/hands-free'
+import { canSpeak } from '@/fool/voice-owner'
 import { useI18n } from '@/i18n'
 import { startThinkingSound, stopThinkingSound } from '@/lib/thinking-sound'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
@@ -521,6 +522,20 @@ export function useVoiceConversation({
       // words to a mic re-open. Usually already live (armed at submit).
       ensureBargeMonitor()
 
+      // FOOL-SEAM: shared-voice-policy
+      //
+      // Baska bir yuzey (Friend penceresi) konusuyorsa SESSIZ kal. Oynatma
+      // tek bir kuresel kanal ve her baslangic ``stopVoicePlayback()``
+      // cagiriyor: iki yuzey ayni cevabi seslendirmeye kalkinca her biri
+      // digerini iptal ediyordu. Ekranda "Preparing audio" sonsuza kadar
+      // duruyor, hic ses cikmiyor ve iki sentez isi birden makineyi
+      // kastiriyordu.
+      if (!canSpeak('composer')) {
+        awaitingSpokenResponseRef.current = false
+        settleAfterSpeech(false, true)
+
+        return
+      }
       void (async () => {
         const session = await startSpeechStream({ source: 'voice-conversation' })
 

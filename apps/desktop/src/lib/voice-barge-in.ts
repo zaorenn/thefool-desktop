@@ -56,7 +56,7 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
   let disposed = false
   let stream: MediaStream | null = null
   let context: AudioContext | null = null
-  let frame: number | null = null
+  let meter: ScriptProcessorNode | null = null
   let recorder: MediaRecorder | null = null
   let chunks: Blob[] = []
   let mimeType = ''
@@ -64,9 +64,10 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
   const cleanup = () => {
     disposed = true
 
-    if (frame !== null) {
-      window.cancelAnimationFrame(frame)
-      frame = null
+    if (meter) {
+      meter.onaudioprocess = null
+      meter.disconnect()
+      meter = null
     }
 
     if (recorder && recorder.state !== 'inactive') {
@@ -170,11 +171,41 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
       startSegment()
 
       context = new AudioContext()
-      const analyser = context.createAnalyser()
-      analyser.fftSize = 256
-      context.createMediaStreamSource(stream).connect(analyser)
 
-      const data = new Uint8Array(analyser.fftSize)
+      // Seviye ölçümü SES İŞ PARÇACIĞINDA koşuyor, ``requestAnimationFrame``
+      // ile DEĞİL.
+      //
+      // Ölçülen sorun: rAF sayfa görünürlüğüne bağlı ve Chromium blurlanmış /
+      // örtülmüş / küçültülmüş bir pencerede onu saniyede bire kadar
+      // kısıyor. Araya girme tespiti son ``SUSTAINED_MS`` (300 ms) içindeki
+      // örneklerin %80'ini istiyor; saniyede tek örnekle ``spanMs`` hiçbir
+      // zaman 240 ms'e ulaşmıyor ve tetik ASLA çalışmıyor.
+      //
+      // Bu tam olarak notch'un var olma durumu: kullanıcı başka bir şeye
+      // bakıyor, pencere ön planda değil. Yani araya girme, en çok gerektiği
+      // anda ölüydü. (Uygulama akış sırasında kısmayı açıyor --
+      // ``electron/stream-throttle.ts`` -- ama bu, bir turun "meşgul" diye
+      // bildirilmesine bağlı bir zincir; ses ölçümünün ona bağlı olmaması
+      // gerekiyor.)
+      //
+      // ``ScriptProcessorNode`` ses iş parçacığında çalışıyor ve sayfa
+      // görünürlüğünden ETKİLENMİYOR. Eski (ama her yerde çalışan) bir düğüm;
+      // ``AudioWorklet`` ayrı bir modül dosyası indirmeyi gerektiriyor ve
+      // Electron'un CSP'si altında ek bir kırılganlık olurdu.
+      const source = context.createMediaStreamSource(stream)
+
+      meter = context.createScriptProcessor(2048, 1, 1)
+
+      // ``onaudioprocess`` yalnızca düğüm bir hedefe BAĞLIYSA çalışıyor.
+      // Hedef doğrudan hoparlör olamaz -- mikrofonu geri çalmak demek olurdu,
+      // yani anında geri besleme. Kazancı sıfır bir düğümden geçiriliyor.
+      const sink = context.createGain()
+
+      sink.gain.value = 0
+      source.connect(meter)
+      meter.connect(sink)
+      sink.connect(context.destination)
+
       const floorSamples: number[] = []
       const recentAbove: { above: boolean; at: number }[] = []
       let calibratedSince: number | null = null
@@ -199,21 +230,11 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
         quietFloor = [...floorSamples].sort((a, b) => a - b)[floorSamples.length >> 1] ?? 0
       }
 
-      const tick = () => {
+      const tick = (level: number) => {
         if (disposed) {
           return
         }
 
-        analyser.getByteTimeDomainData(data)
-
-        let sum = 0
-
-        for (const value of data) {
-          const centered = value - 128
-          sum += centered * centered
-        }
-
-        const level = Math.min(1, Math.sqrt(sum / data.length) / 42)
         const now = Date.now()
         const playing = callbacks.isPlaying ? callbacks.isPlaying() : true
 
@@ -313,10 +334,29 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
           }
         }
 
-        frame = window.requestAnimationFrame(tick)
       }
 
-      tick()
+      meter.onaudioprocess = event => {
+        if (disposed) {
+          return
+        }
+
+        const samples = event.inputBuffer.getChannelData(0)
+
+        let sum = 0
+
+        for (const value of samples) {
+          sum += value * value
+        }
+
+        // Eşiklerin hepsi eski BAYT alanına göre ayarlıydı (128 merkezli
+        // Uint8, /42 ile normalize). Float32 (-1..1) aynı ölçeğe taşınıyor:
+        // rms * 128 / 42. Böylece MIN_TRIGGER_LEVEL ve oynatma kenetleri
+        // ölçüldükleri anlamlarını koruyor.
+        const level = Math.min(1, (Math.sqrt(sum / samples.length) * 128) / 42)
+
+        tick(level)
+      }
     } catch {
       cleanup()
     }

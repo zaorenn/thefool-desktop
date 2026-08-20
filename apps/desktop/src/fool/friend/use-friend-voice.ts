@@ -36,6 +36,7 @@ import {
   createBargeGate,
   releaseBarge
 } from '../notch/barge-in'
+import { isPlayingPhase, shouldMonitorBargeIn } from '../notch/barge-in'
 import {
   createCompanionSessionState,
   ensureCompanionSession,
@@ -406,7 +407,11 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
   }, [active, lastSpokenId, messages, phase])
 
   // Araya girme: kullanici TUSA BASMADAN konusmaya baslayinca sus.
-  const monitorActive = phase === 'thinking' || phase === 'speaking' || capturing
+  //
+  // Kapi ORTAK (``notch/barge-in.ts``). Burada satir ici bir kopya vardi ve
+  // kopyalar ayrisir: birinde duzeltilen bir esik digerinde eski kalir ve
+  // araya girme bir yuzeyde sessizce olur.
+  const monitorActive = shouldMonitorBargeIn(phase) || capturing
 
   // eslint-disable-next-line no-restricted-syntax -- ref'ler imperatif tutamac
   useEffect(() => {
@@ -415,7 +420,7 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
     }
 
     return monitorSpeechDuringPlayback({
-      isPlaying: () => phaseRef.current === 'speaking',
+      isPlaying: () => isPlayingPhase(phaseRef.current),
       onSpeech: () => {
         if (!claimBarge(bargeRef.current, 'voice')) {
           return

@@ -81,3 +81,102 @@ describe('izleyici penceresi', () => {
     expect(isPlayingPhase('thinking')).toBe(false)
   })
 })
+
+/**
+ * İKİ YÜZEY AYNI KAPIYI kullanıyor mu?
+ *
+ * Friend penceresinin satır içi bir kopyası vardı:
+ *
+ *     const monitorActive = phase === 'thinking' || phase === 'speaking' || capturing
+ *
+ * Kopyalar ayrışır ve buradaki ayrışmanın bedeli, araya girmenin BİR yüzeyde
+ * sessizce ölmesi. Bu testler kaynağı okuyor -- mantığı kopyalayan bir dosya
+ * eklenirse kırılır.
+ */
+describe('araya girme kapisi TEK yerde', () => {
+  const HERE = import.meta.dirname
+  const SURFACES = [
+    ['notch', 'use-notch-voice.ts'],
+    ['friend', '../friend/use-friend-voice.ts']
+  ] as const
+
+  it('hicbir yuzey evre kosulunu KOPYALAMIYOR', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    for (const [label, relative] of SURFACES) {
+      const source = readFileSync(join(HERE, relative), 'utf8')
+
+      expect(
+        /===\s*'thinking'\s*\|\|.*===\s*'speaking'/.test(source),
+        `${label} evre kosulunu satir ici kopyaliyor -- shouldMonitorBargeIn kullanmali`
+      ).toBe(false)
+    }
+  })
+
+  it('her yuzey ORTAK kapiyi cagiriyor', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    for (const [label, relative] of SURFACES) {
+      const source = readFileSync(join(HERE, relative), 'utf8')
+
+      expect(source.includes('shouldMonitorBargeIn'), `${label} kapiyi cagirmiyor`).toBe(true)
+      expect(source.includes('isPlayingPhase'), `${label} oynatma evresini kendi cikariyor`).toBe(true)
+    }
+  })
+})
+
+/**
+ * Ölçüm saati SES İŞ PARÇACIĞINDA olmalı.
+ *
+ * ``requestAnimationFrame`` sayfa görünürlüğüne bağlı: Chromium blurlanmış,
+ * örtülmüş ya da küçültülmüş bir pencerede onu saniyede bire kadar kısıyor.
+ * Tespit son 300 ms içindeki örneklerin %80'ini istiyor; saniyede tek örnekle
+ * bu koşul hiçbir zaman sağlanmıyor.
+ *
+ * Bu tam olarak notch'un var olma durumu -- kullanıcı başka bir şeye bakıyor.
+ * Yani araya girme en çok gerektiği anda ölüydü.
+ */
+describe('araya girme olcum saati', () => {
+  it('kare saatine BAGLI DEGIL', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const source = readFileSync(join(import.meta.dirname, '../../lib/voice-barge-in.ts'), 'utf8')
+
+    // Yorumlar hariç GERÇEK çağrılar.
+    const code = source
+      .split('\n')
+      .filter(line => !line.trimStart().startsWith('//') && !line.trimStart().startsWith('*'))
+      .join('\n')
+
+    expect(
+      /window\.requestAnimationFrame\s*\(/.test(code),
+      'olcum dongusu rAF ile kosuyor: arka plandaki pencerede bogulur'
+    ).toBe(false)
+  })
+
+  it('ses is parcaciginda kosuyor', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const source = readFileSync(join(import.meta.dirname, '../../lib/voice-barge-in.ts'), 'utf8')
+
+    expect(source.includes('createScriptProcessor')).toBe(true)
+    expect(source.includes('onaudioprocess')).toBe(true)
+  })
+
+  /**
+   * Düğüm bir hedefe bağlı olmadan çalışmıyor, ama hedef doğrudan hoparlör
+   * OLAMAZ: mikrofonu geri çalmak anında geri besleme demek.
+   */
+  it('mikrofonu hoparlore GERI CALMIYOR', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const source = readFileSync(join(import.meta.dirname, '../../lib/voice-barge-in.ts'), 'utf8')
+
+    expect(source.includes('gain.value = 0')).toBe(true)
+  })
+})

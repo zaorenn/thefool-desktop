@@ -25,6 +25,17 @@
 
 import type { NotchStatus } from './use-notch-voice'
 
+/**
+ * İzleyicinin ilgilendiği evreler.
+ *
+ * Notch ``NotchStatus``, Friend penceresi ``OrbPhase`` kullanıyor ve ikisinin
+ * adları çakışıyor (``thinking`` / ``speaking``). Ortak tip bu: iki yüzey de
+ * AYNI kapıyı çağırsın diye. Friend'in kendi satır içi kopyası vardı ve
+ * kopyalar ayrışır -- burada ayrışmanın bedeli, bir yüzeyde araya girmenin
+ * sessizce ölmesi.
+ */
+export type VoiceTurnPhase = NotchStatus | 'idle' | 'listening' | 'speaking' | 'thinking'
+
 /** Turu kimin talep ettiği. */
 export type BargeClaimant = 'key' | 'voice'
 
@@ -80,7 +91,7 @@ export function releaseBarge(gate: BargeGate): void {
  * ``listening`` sırasında KAPALI: mikrofon zaten kaydediyor, ikinci bir
  * ``getUserMedia`` akışı açmak Windows'ta kaydı bozuyor.
  */
-export function shouldMonitorBargeIn(status: NotchStatus): boolean {
+export function shouldMonitorBargeIn(status: VoiceTurnPhase): boolean {
   return status === 'thinking' || status === 'speaking'
 }
 
@@ -91,6 +102,6 @@ export function shouldMonitorBargeIn(status: NotchStatus): boolean {
  * evrede ölçülüyor, oynatma sırasında tetik eşiği hoparlör sızıntısının
  * altında kalmasın diye yukarı kenetleniyor.
  */
-export function isPlayingPhase(status: NotchStatus): boolean {
+export function isPlayingPhase(status: VoiceTurnPhase): boolean {
   return status === 'speaking'
 }

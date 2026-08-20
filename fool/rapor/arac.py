@@ -321,8 +321,10 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
         gizli=bool(kapak_ham.get("gizli", False)),
     )
 
+    # Bolumler YONERGEDEKI siraya diziliyor: model istedigi sirada
+    # gonderebiliyor ve sirasi karismis bir resmi rapor yonergeye aykiri.
     bolumler = []
-    for ham in veri.get("bolumler", []):
+    for ham in taslak.sirala(list(veri.get("bolumler", [])), tur):
         bolum = Bolum(ham.get("baslik", ""))
         try:
             bolum.ogeler = [_oge_kur(o) for o in ham.get("ogeler", [])]

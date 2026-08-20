@@ -251,8 +251,40 @@ def rapor_sozlugu(kimlik: str) -> dict:
         "tur": taslak.tur,
         "kapak": taslak.kapak,
         "ozet": taslak.ozet,
-        "bolumler": taslak.bolumler,
+        "bolumler": sirala(taslak.bolumler, taslak.tur),
         "ekler": taslak.ekler,
         "imza_yer": taslak.imza_yer,
         "imza_tarih": taslak.imza_tarih,
     }
+
+
+def sirala(bolumler: list[dict], tur_kimligi: str) -> list[dict]:
+    """Bölümleri YÖNERGEDEKİ sıraya diz.
+
+    Model bölümleri istediği sırada yazıyor -- ölçüldü: yerel model
+    "IV. TARTIŞMA VE DEĞERLENDİRME"i "III. İNCELEME VE ARAŞTIRMA"dan önce
+    gönderdi. Geliş sırasına göre yazınca ortaya bölümleri karışmış bir resmî
+    rapor çıkıyor; yönerge (MADDE 17) sırayı sayıyor ve o sıra bağlayıcı.
+
+    Yönergede olmayan bir başlık ATILMIYOR, sona ekleniyor: müfettiş kendi alt
+    bölümünü açabiliyor (MADDE 8(7)) ve sessizce silmek veri kaybı olurdu.
+    """
+    tur = RAPOR_TURLERI.get(tur_kimligi)
+
+    if tur is None:
+        return list(bolumler)
+
+    beklenen = [_sade(b) for b in tur.bolumler]
+
+    def anahtar(veri: tuple[int, dict]) -> tuple[int, int]:
+        sira, bolum = veri
+        sade = _sade(bolum.get("baslik", ""))
+
+        for yer, hedef in enumerate(beklenen):
+            if sade == hedef or sade.startswith(hedef) or hedef.startswith(sade):
+                return (yer, sira)
+
+        # Taninmayan baslik sona, kendi arasinda geldigi sirayla.
+        return (len(beklenen), sira)
+
+    return [b for _, b in sorted(enumerate(bolumler), key=anahtar)]

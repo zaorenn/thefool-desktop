@@ -94,10 +94,20 @@ declare global {
         open: () => Promise<{ ok: boolean }>
         close: () => Promise<{ ok: boolean }>
         toggle: () => Promise<{ ok: boolean; open: boolean }>
-        /** Hangi global kisayolun GERCEKTEN kayitli oldugu (aday merdiveni). */
-        shortcut: () => Promise<{ shortcut: null | string }>
+        /** Hangi global kisayolun GERCEKTEN kayitli oldugu (aday merdiveni).
+         *  ``preferred`` kullanicinin SECTIGI; ikisi ayrisirsa secim
+         *  tutulmus demektir ve panel bunu soylemek zorunda. */
+        shortcut: () => Promise<{
+          candidates?: string[]
+          preferred?: string
+          shortcut: null | string
+        }>
+        /** Kisayolu degistir. ``taken`` = istenen tus baska bir uygulamada. */
+        setShortcut: (
+          accelerator: string
+        ) => Promise<{ ok: boolean; shortcut: null | string; taken: boolean }>
         /** Ana surec global kisayoldan dinlemeyi istedi. */
-        onListenRequest: (callback: () => void) => () => void
+        onListenRequest: (callback: (request?: { mode?: string }) => void) => () => void
       }
       hud?: {
         open: (request?: { sessionId?: null | string; profile?: null | string }) => Promise<{ ok: boolean }>

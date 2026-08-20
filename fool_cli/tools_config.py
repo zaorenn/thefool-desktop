@@ -107,6 +107,8 @@ CONFIGURABLE_TOOLSETS = [
     ("x_search",        "🐦 X (Twitter) Search",        "x_search (requires xAI OAuth or XAI_API_KEY)"),
     ("tts",             "🔊 Text-to-Speech",            "text_to_speech"),
     ("stt",             "🎙️ Speech-to-Text",           "voice transcription (gateway voice messages + voice mode)"),
+    # FOOL-SEAM: resmi-rapor
+    ("rapor",           "📄 Resmî Rapor",              "rapor_kaynak_oku, rapor_ornek_ogren, rapor_yarim_cozumle, rapor_yaz"),
     ("skills",          "📚 Skills",                    "list, view, manage"),
     ("todo",            "📋 Task Planning",             "todo"),
     ("memory",          "💾 Memory",                    "persistent memory across sessions"),

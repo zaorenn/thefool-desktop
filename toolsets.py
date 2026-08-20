@@ -290,6 +290,23 @@ TOOLSETS = {
         "includes": []
     },
 
+    # FOOL-SEAM: resmi-rapor
+    #
+    # Resmi rapor uretimi (DSI Teftis Kurulu inceleme/sorusturma raporlari).
+    # Ayri bir takim: bu araclar dosya OKUYOR ve YAZIYOR ama yalnizca rapor
+    # islerinde anlamli, o yuzden ``file`` takimina karistirilmadi -- sesli
+    # kiplerde gereksiz yere disk yuzeyini acmis olurdu (bkz. fool/rapor/).
+    "rapor": {
+        "description": "Official Turkish inspection/investigation reports: read sources with a text-quality gate, learn an example's structure, analyse a half-finished report, and write .docx with the directive's layout applied by code",
+        "tools": [
+            "rapor_kaynak_oku",
+            "rapor_ornek_ogren",
+            "rapor_yarim_cozumle",
+            "rapor_yaz",
+        ],
+        "includes": []
+    },
+
     # FOOL-SEAM: output-file-toolset
     #
     # Uzak platformlarda dosya URETMEK icin ``file`` takimi gerekiyordu, o da

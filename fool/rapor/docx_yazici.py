@@ -41,6 +41,7 @@ _CONTENT_TYPES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
 <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
 <Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+<Override PartName="/word/header2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
 </Types>"""
 
 _RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -52,6 +53,7 @@ _DOC_RELS = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header2.xml"/>
 </Relationships>"""
 
 
@@ -135,12 +137,28 @@ def _header(bicim: Bicim) -> str:
     )
 
 
+def _bos_header() -> str:
+    """Sayfa numarası TAŞIMAYAN üstbilgi -- devralmayı kesmek için."""
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<w:hdr xmlns:w="{_NS_W}"><w:p/></w:hdr>'
+    )
+
+
 def _sect_pr(bicim: Bicim, *, baslik_ref: bool, numara_baslat: int | None) -> str:
     """Bölüm özellikleri: sayfa ölçüsü, kenar boşlukları, sayfa numarası."""
     parcalar = []
 
-    if baslik_ref:
-        parcalar.append('<w:headerReference w:type="default" r:id="rId2"/>')
+    # Ustbilgi HER bolumde ACIKCA bildiriliyor.
+    #
+    # OOXML'de bir bolum kendi ustbilgisini tanimlamazsa BIR ONCEKINDEN
+    # devraliyor ("link to previous"). Once numarasiz bolumlerde referansi
+    # hic yazmiyordum ve olculdu: ek dizini sayfasinda "2/1" numarasi cikti
+    # -- MADDE 9(3) "Ek dizinine sayfa numarasi verilmez" diyor. Devralmayi
+    # kesmenin yolu referansi atlamak degil, BOS bir ustbilgiye baglamak.
+    parcalar.append(
+        f'<w:headerReference w:type="default" r:id="{"rId2" if baslik_ref else "rId3"}"/>'
+    )
 
     parcalar.append(
         f'<w:pgSz w:w="{bicim.sayfa_genislik}" w:h="{bicim.sayfa_yukseklik}"/>'
@@ -355,6 +373,7 @@ def yaz(rapor: Rapor, hedef: str | Path, bicim: Bicim | None = None) -> Path:
         paket.writestr("word/_rels/document.xml.rels", _DOC_RELS)
         paket.writestr("word/styles.xml", _styles(bicim))
         paket.writestr("word/header1.xml", _header(bicim))
+        paket.writestr("word/header2.xml", _bos_header())
         paket.writestr("word/document.xml", belge_xml(rapor, bicim))
 
     return hedef

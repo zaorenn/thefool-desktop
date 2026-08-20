@@ -309,6 +309,7 @@ TOOLSETS = {
             "rapor_taslak_kapak",
             "rapor_taslak_durum",
             "rapor_taslak_uret",
+            "rapor_pdf",
         ],
         "includes": []
     },

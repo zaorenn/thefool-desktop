@@ -187,13 +187,20 @@ def test_sayfa_numarasi_YALNIZCA_rapor_metninde(xml: str) -> None:
     """MADDE 8(11): kapak, özet, ek dizini numaralandırmaya dâhil değil."""
     kok = ET.fromstring(xml)
     sectler = list(kok.iter(f"{W}sectPr"))
+    R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
-    basliklilar = [s for s in sectler if s.find(f"{W}headerReference") is not None]
+    # HER bolum ustbilgisini bildiriyor (devralmayi kesmek icin), ama
+    # numarali olani (rId2) yalnizca BIRI kullaniyor: rapor metni.
+    numaralilar = [
+        s
+        for s in sectler
+        if s.find(f"{W}headerReference") is not None
+        and s.find(f"{W}headerReference").get(f"{R}id") == "rId2"
+    ]
 
-    # Tam olarak BIR bolumde sayfa numarasi var: rapor metni.
-    assert len(basliklilar) == 1
+    assert len(numaralilar) == 1
 
-    metin = basliklilar[0]
+    metin = numaralilar[0]
     numara = metin.find(f"{W}pgNumType")
     assert numara is not None
     # MADDE 8(9): metnin ilk sayfasi 1'dir -- kapak sayilmaz.
@@ -455,3 +462,48 @@ def test_kurum_adi_kapakta_DOGRU_yaziliyor(tmp_path) -> None:
 
     assert "DSİ TEFTİŞ KURULU BAŞKANLIĞI" in govde
     assert "TEFTIŞ" not in govde
+
+
+# ---------------------------------------------------------------------------
+# MADDE 9(3): ek dizinine sayfa numarası VERİLMEZ
+# ---------------------------------------------------------------------------
+
+
+def test_numarasiz_bolumler_BOS_ustbilgiye_bagli(xml: str) -> None:
+    """OOXML'de üstbilgi tanımlamayan bölüm ÖNCEKİNDEN devralıyor.
+
+    Gerçekten render edilip bakıldığında görüldü: ek dizini sayfasında "2/1"
+    çıkıyordu, oysa MADDE 9(3) oraya sayfa numarası verilmemesini istiyor.
+    Devralmayı kesmenin yolu referansı atlamak değil, BOŞ bir üstbilgiye
+    bağlamak.
+    """
+    kok = ET.fromstring(xml)
+    sectler = list(kok.iter(f"{W}sectPr"))
+
+    # Her bolum ustbilgisini ACIKCA bildiriyor.
+    for sect in sectler:
+        assert sect.find(f"{W}headerReference") is not None
+
+    kimlikler = [
+        s.find(f"{W}headerReference").get(
+            "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+        )
+        for s in sectler
+    ]
+
+    # Yalnizca BIR bolum numarali ustbilgiyi (rId2) kullaniyor.
+    assert kimlikler.count("rId2") == 1
+    # Geri kalan hepsi BOS ustbilgiye (rId3) bagli.
+    assert set(kimlikler) == {"rId2", "rId3"}
+
+
+def test_bos_ustbilgi_parcasi_pakette_var(tmp_path) -> None:
+    hedef = dy.yaz(_rapor(), tmp_path / "r.docx")
+
+    with zipfile.ZipFile(hedef) as paket:
+        assert "word/header2.xml" in paket.namelist()
+        bos = paket.read("word/header2.xml").decode("utf-8")
+
+    # Bos ustbilgide alan kodu OLMAMALI.
+    assert "PAGE" not in bos
+    assert "SECTIONPAGES" not in bos

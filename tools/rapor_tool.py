@@ -268,6 +268,25 @@ TASLAK_URET_SCHEMA = {
 }
 
 
+RAPOR_PDF_SCHEMA = {
+    "name": "rapor_pdf",
+    "description": (
+        "Convert a produced .docx report to PDF using an installed converter "
+        "(LibreOffice). The .docx stays the authoritative document - the "
+        "inspector edits and signs that; PDF is a derived output. "
+        "If no converter is installed this reports that plainly instead of "
+        "pretending to produce one."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "docx": {"type": "string", "description": "Path to the .docx."},
+            "hedef_klasor": {"type": "string", "description": "Output folder (default: next to the .docx)."},
+        },
+        "required": ["docx"],
+    },
+}
+
 # Kayitlar EN UST SEVIYEDE, ``try`` icinde DEGIL.
 #
 # ``tools/registry.py::_module_registers_tools`` yalnizca modul govdesindeki
@@ -384,4 +403,15 @@ registry.register(
         bicim_kaynagi=args.get("bicim_kaynagi"),
     ),
     emoji="📘",
+)
+
+registry.register(
+    name="rapor_pdf",
+    toolset="rapor",
+    schema=RAPOR_PDF_SCHEMA,
+    handler=lambda args, **kw: arac.rapor_pdf(
+        docx=args.get("docx", ""),
+        hedef_klasor=args.get("hedef_klasor"),
+    ),
+    emoji="🖨️",
 )

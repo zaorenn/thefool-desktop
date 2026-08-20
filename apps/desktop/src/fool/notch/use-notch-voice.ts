@@ -33,9 +33,9 @@ import {
   startSpeechStream,
   stopVoicePlayback
 } from '@/lib/voice-playback'
-import { $messages } from '@/store/session'
+import { $currentModel, $messages } from '@/store/session'
 
-import { friendSessionStore } from '../friend/friend-session'
+import { friendSessionStoreFor } from '../friend/friend-session'
 import { $voiceMode, voiceModeInfo } from '../voice-mode'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
@@ -292,7 +292,9 @@ export function useNotchVoice(): NotchVoice {
         }
       },
       source: voiceModeInfo($voiceMode.get()).source,
-      store: friendSessionStore
+      // Model kayda giriyor: baska bir modele sabitlenmis bir oturumu
+      // surdurmek, LM Studio'ya IKINCI bir model yukletiyordu.
+      store: friendSessionStoreFor($currentModel.get())
     })
 
     return own

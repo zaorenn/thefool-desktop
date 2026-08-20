@@ -74,13 +74,64 @@ export const $friendSessions = sharedAtom<FriendSessionMap>(
   }
 )
 
-/** Bu kapsamda sürdürülecek oturum ("" = yok). */
-export function readFriendSession(source: string): string {
-  return $friendSessions.get()[source] ?? ''
+/**
+ * Kayıt biçimi: ``"<model>|<oturum-kimliği>"``.
+ *
+ * Model NEDEN burada
+ * ------------------
+ * Oturumlar modele SABİTLENİYOR (``sessions.model`` sütunu). Kullanıcının
+ * deposunda ölçüldü: 9 Friend oturumu ``qwen/qwen3.5-9b``, 7'si
+ * ``google/gemma-4-e4b``. Yani eski bir oturumu sürdürmek, o oturumun
+ * modelini de geri getiriyor -- LM Studio ikinci modeli yüklüyor ve aynı
+ * 16 GB kartta iki model birden duruyor (seslendirme motorları da orada).
+ *
+ * Bu benim ürettiğim bir regresyondu: kalıcılıktan ÖNCE Friend her seferinde
+ * yeni oturum açıyordu ve yeni oturum her zaman geçerli varsayılanı
+ * kullanıyordu. Kullanıcı bunu "arkada qwen yüklenmiş ama çağırmadım" diye
+ * bildirdi.
+ *
+ * Kural: model DEĞİŞTİYSE sürdürme, temiz bir oturum aç. Sohbet kaybı gibi
+ * görünüyor ama değil -- başka bir modelle açılmış bir sohbeti sürdürmek
+ * zaten donmuş sistem promptunu ve önbelleği çöpe atıyor.
+ */
+const SEPARATOR = '|'
+
+function parse(raw: string): { id: string; model: string } {
+  const index = raw.indexOf(SEPARATOR)
+
+  // Ayırıcı yoksa ESKİ biçim: yalnızca kimlik. Modeli bilmiyoruz, yani
+  // sürdürmek güvenli değil -- boş model her karşılaştırmada eşleşmez.
+  if (index < 0) {
+    return { id: raw, model: '' }
+  }
+
+  return { id: raw.slice(index + 1), model: raw.slice(0, index) }
 }
 
-/** Kimliği sakla; boş değer kaydı SİLER. */
-export function writeFriendSession(source: string, sessionId: string): void {
+/**
+ * Bu kapsamda sürdürülecek oturum ("" = yok).
+ *
+ * ``model`` verilirse kayıt AYNI modele aitse döner; değilse boş. Böylece
+ * sürdürme hiçbir zaman ikinci bir modeli yüklemiyor.
+ */
+export function readFriendSession(source: string, model = ''): string {
+  const raw = $friendSessions.get()[source] ?? ''
+
+  if (!raw) {
+    return ''
+  }
+
+  const entry = parse(raw)
+
+  if (model && entry.model !== model) {
+    return ''
+  }
+
+  return entry.id
+}
+
+/** Kimliği (ve modelini) sakla; boş değer kaydı SİLER. */
+export function writeFriendSession(source: string, sessionId: string, model = ''): void {
   const current = $friendSessions.get()
 
   if (!sessionId) {
@@ -95,11 +146,13 @@ export function writeFriendSession(source: string, sessionId: string): void {
     return
   }
 
-  if (current[source] === sessionId) {
+  const next = `${model}${SEPARATOR}${sessionId}`
+
+  if (current[source] === next) {
     return
   }
 
-  $friendSessions.set({ ...current, [source]: sessionId })
+  $friendSessions.set({ ...current, [source]: next })
 }
 
 /**
@@ -108,7 +161,13 @@ export function writeFriendSession(source: string, sessionId: string): void {
  * Bağımlılık olarak geçiriliyor, doğrudan içeriden okunmuyor: oturum mantığı
  * saf kalınca sınanabiliyor (deponun kendisi ``localStorage``a dokunuyor).
  */
-export const friendSessionStore = {
-  read: readFriendSession,
-  write: writeFriendSession
+export function friendSessionStoreFor(model: string) {
+  return {
+    read: (source: string) => readFriendSession(source, model),
+    write: (source: string, sessionId: string) =>
+      writeFriendSession(source, sessionId, model)
+  }
 }
+
+/** Model bilinmiyorken: sürdürme yapılmaz, yalnızca yazma çalışır. */
+export const friendSessionStore = friendSessionStoreFor('')

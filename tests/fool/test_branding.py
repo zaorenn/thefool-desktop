@@ -210,6 +210,7 @@ EXPECTED_SEAMS = {
     "update-self-deadlock",
     "engine-vram-eviction",
     "one-voice",
+    "os-text-encoding",
     "resmi-rapor",
 }
 

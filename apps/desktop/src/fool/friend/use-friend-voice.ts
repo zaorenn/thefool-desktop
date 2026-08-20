@@ -29,7 +29,7 @@ import {
   startSpeechStream,
   stopVoicePlayback
 } from '@/lib/voice-playback'
-import { $messages } from '@/store/session'
+import { $currentModel, $messages } from '@/store/session'
 
 import {
   claimBarge,
@@ -47,7 +47,7 @@ import { interruptThenSubmit } from '../notch/interrupt'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
 import { $friendMode, friendModeSource } from './friend-mode'
-import { friendSessionStore } from './friend-session'
+import { friendSessionStoreFor } from './friend-session'
 import type { OrbPhase } from './orb-motion'
 import { modeForSession, resumableSessions, type SessionSummary } from './session-picker'
 
@@ -118,7 +118,7 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
   // Jarvis ayri oturumlar surduruyor ve panelin birini gosterip digerini
   // konusturmasi, sesin kendisinde yasanan hatanin aynisi olurdu.
   useEffect(() => {
-    setSessionId(friendSessionStore.read(friendModeSource(mode)))
+    setSessionId(friendSessionStoreFor($currentModel.get()).read(friendModeSource(mode)))
   }, [mode])
   const bargeRef = useRef(createBargeGate())
   const streamRef = useRef<{ sent: number; session: SpeechStreamSession | null } | null>(null)
@@ -128,7 +128,7 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
   // GÖSTEREBİLMELİ, aksi hâlde kullanıcı yeni mi eski mi konuştuğunu bilemez.
   // Çözüldüğü ANDA yazılıyor; yoklamak, bilgi zaten elimizdeyken sahte bir
   // gecikme yaratmak olurdu.
-  const [sessionId, setSessionId] = useState(() => friendSessionStore.read(friendModeSource(mode)))
+  const [sessionId, setSessionId] = useState(() => friendSessionStoreFor($currentModel.get()).read(friendModeSource(mode)))
 
   const resolveSessionId = useCallback(async () => {
     // Kapsam ``friend``: arac yok ama hafiza ajanla ORTAK. Ayirmak arkadasi
@@ -152,7 +152,9 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
         }
       },
       source: sourceRef.current,
-      store: friendSessionStore
+      // Model kayda giriyor: baska bir modele sabitlenmis bir oturumu
+      // surdurmek, LM Studio'ya IKINCI bir model yukletiyordu.
+      store: friendSessionStoreFor($currentModel.get())
     })
 
     setSessionId(resolved ?? '')
@@ -179,7 +181,7 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
     const nextMode = modeForSession(session)
     const scope = friendModeSource(nextMode)
 
-    friendSessionStore.write(scope, session.id)
+    friendSessionStoreFor($currentModel.get()).write(scope, session.id)
 
     // Bellek durumunu da hizala, yoksa ``ensureCompanionSession`` eski
     // kimlikte kalirdi.
@@ -195,7 +197,7 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
 
   /** Kullanıcı AÇIKÇA yeni bir sohbet istedi. */
   const newConversation = useCallback(() => {
-    forgetCompanionSession(sessionRef.current, friendSessionStore)
+    forgetCompanionSession(sessionRef.current, friendSessionStoreFor($currentModel.get()))
     setSessionId('')
     setTranscript('')
     setReply('')

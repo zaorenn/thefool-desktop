@@ -35,6 +35,7 @@ import {
 } from '@/lib/voice-playback'
 import { $activeSessionId, $messages } from '@/store/session'
 
+import { friendSessionStore } from '../friend/friend-session'
 import { $voiceMode, voiceModeInfo } from '../voice-mode'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
@@ -49,8 +50,7 @@ import {
 } from './barge-in'
 import {
   createCompanionSessionState,
-  ensureCompanionSession,
-  forgetCompanionSession
+  ensureCompanionSession
 } from './companion-session'
 import {
   type BeginActivation,
@@ -219,9 +219,15 @@ export function useNotchVoice(): NotchVoice {
       })
   }, [haltTurn, mic])
 
-  /** Notch oturumu kapandı — bir sonraki açılış TEMİZ bir arkadaş oturumu alsın. */
+  /**
+   * Notch kapandı — mikrofonu bırak ama SOHBETİ BİTİRME.
+   *
+   * Eskiden burada ``forgetCompanionSession`` vardı ve notch'u kapatmak
+   * hafızayı siliyordu. Ölçüldü (kullanıcının ``state.db``si): 14 Friend
+   * oturumu, ortalama 4,6 mesaj -- masaüstü sohbetinde 28,3. Yeni bir sohbet
+   * artık açık bir eylem (bkz. ``friend-session.ts``).
+   */
   const endSession = useCallback(() => {
-    forgetCompanionSession(companionRef.current)
     releaseVoice('notch')
   }, [])
 
@@ -245,7 +251,24 @@ export function useNotchVoice(): NotchVoice {
     const own = await ensureCompanionSession(companionRef.current, {
       create: params =>
         requestGateway('session.create', params) as Promise<{ session_id?: string }>,
-      source: voiceModeInfo($voiceMode.get()).source
+      // Notch ve Friend penceresi AYNI kalici depoyu kullaniyor: ikisi de
+      // ayni kapsamin sohbetini surduruyor ve ayri tutmak kullaniciya iki
+      // ayri hafiza sunmak olurdu.
+      resume: async (sessionId: string) => {
+        try {
+          await requestGateway('session.resume', {
+            defer_history: true,
+            omit_messages: true,
+            session_id: sessionId
+          })
+
+          return true
+        } catch {
+          return false
+        }
+      },
+      source: voiceModeInfo($voiceMode.get()).source,
+      store: friendSessionStore
     })
 
     return own ?? $activeSessionId.get()

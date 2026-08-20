@@ -142,3 +142,152 @@ describe('kip degisimi', () => {
     expect(create.mock.calls[0][0]).toMatchObject({ source: COMPANION_SOURCE })
   })
 })
+
+/**
+ * SÜRDÜRME — ölçülen hatanın kendisi.
+ *
+ * Oturum kimliği ``useRef`` içindeydi ve ``stop()`` her çağrıldığında
+ * siliniyordu; ``stop()`` ise mikrofonla ilgili HER şeyde çağrılıyor. Yani
+ * sessize almak arkadaşın hafızasını siliyordu. Kullanıcının ``state.db``sinde
+ * ölçüldü:
+ *
+ *     cli       33 oturum, ortalama 24,6 mesaj
+ *     desktop    8 oturum, ortalama 28,3 mesaj
+ *     friend    14 oturum, ortalama  4,6 mesaj   <- altı kat parçalı
+ *
+ * 14 Friend oturumunun 7'si tek turluk, 2'si SIFIR mesajlı.
+ */
+describe('oturum surdurme', () => {
+  const store = (initial: Record<string, string> = {}) => {
+    const data = { ...initial }
+
+    return {
+      data,
+      read: (source: string) => data[source] ?? '',
+      write: (source: string, id: string) => {
+        if (id) {
+          data[source] = id
+        } else {
+          delete data[source]
+        }
+      }
+    }
+  }
+
+  it('SAKLANAN oturumu surduruyor -- yeni acmiyor', async () => {
+    const shelf = store({ friend: 'oturum-1' })
+    const create = vi.fn()
+
+    const id = await ensureCompanionSession(createCompanionSessionState(), {
+      create,
+      resume: async () => true,
+      source: 'friend',
+      store: shelf
+    })
+
+    expect(id).toBe('oturum-1')
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('acilan oturumu SAKLIYOR', async () => {
+    const shelf = store()
+
+    await ensureCompanionSession(createCompanionSessionState(), {
+      create: async () => ({ session_id: 'yeni-1' }),
+      source: 'friend',
+      store: shelf
+    })
+
+    expect(shelf.data.friend).toBe('yeni-1')
+  })
+
+  /**
+   * ``state.db`` budanmış ya da uygulama verisi sıfırlanmış olabilir. Var
+   * olmayan bir kimliğe göndermek, kullanıcının konuşup HİÇ cevap alamaması
+   * olurdu -- deposunda sıfır mesajlı iki oturum tam olarak buna benziyor.
+   */
+  it('oturum ARTIK YOKSA kaydi birakip temiz bir tane aciyor', async () => {
+    const shelf = store({ friend: 'olu-oturum' })
+    const create = vi.fn(async () => ({ session_id: 'yeni-2' }))
+
+    const id = await ensureCompanionSession(createCompanionSessionState(), {
+      create,
+      resume: async () => false,
+      source: 'friend',
+      store: shelf
+    })
+
+    expect(id).toBe('yeni-2')
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(shelf.data.friend).toBe('yeni-2')
+  })
+
+  it('kapsamlar AYRI kimlik surduruyor', async () => {
+    const shelf = store({ desktop: 'jarvis-1', friend: 'arkadas-1' })
+
+    const asFriend = await ensureCompanionSession(createCompanionSessionState(), {
+      create: async () => ({ session_id: 'olmamali' }),
+      resume: async () => true,
+      source: 'friend',
+      store: shelf
+    })
+
+    const asJarvis = await ensureCompanionSession(createCompanionSessionState(), {
+      create: async () => ({ session_id: 'olmamali' }),
+      resume: async () => true,
+      source: 'desktop',
+      store: shelf
+    })
+
+    expect(asFriend).toBe('arkadas-1')
+    expect(asJarvis).toBe('jarvis-1')
+  })
+
+  it('kip degisimi DIGER kapsamin kimligini SILMIYOR', async () => {
+    const shelf = store({ friend: 'arkadas-1' })
+    const state = createCompanionSessionState()
+
+    await ensureCompanionSession(state, {
+      create: async () => ({ session_id: 'x' }),
+      resume: async () => true,
+      source: 'friend',
+      store: shelf
+    })
+
+    await ensureCompanionSession(state, {
+      create: async () => ({ session_id: 'jarvis-yeni' }),
+      resume: async () => true,
+      source: 'desktop',
+      store: shelf
+    })
+
+    // Jarvis'e gecmek arkadas sohbetini BITIRMEZ: geri donunce yerinde olmali.
+    expect(shelf.data.friend).toBe('arkadas-1')
+    expect(shelf.data.desktop).toBe('jarvis-yeni')
+  })
+
+  it('sohbeti bitirmek kaydi da siliyor', () => {
+    const shelf = store({ friend: 'arkadas-1' })
+    const state = createCompanionSessionState()
+
+    state.id = 'arkadas-1'
+    state.source = 'friend'
+
+    forgetCompanionSession(state, shelf)
+
+    expect(state.id).toBeNull()
+    expect(shelf.data.friend).toBeUndefined()
+  })
+
+  it('depo YOKKEN eski davranis suruyor', async () => {
+    const create = vi.fn(async () => ({ session_id: 'yeni-3' }))
+
+    const id = await ensureCompanionSession(createCompanionSessionState(), {
+      create,
+      source: 'friend'
+    })
+
+    expect(id).toBe('yeni-3')
+    expect(create).toHaveBeenCalledTimes(1)
+  })
+})

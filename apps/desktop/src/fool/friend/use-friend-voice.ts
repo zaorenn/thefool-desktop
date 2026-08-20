@@ -46,6 +46,7 @@ import { interruptThenSubmit } from '../notch/interrupt'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
 import { friendModeSource } from './friend-mode'
+import { friendSessionStore } from './friend-session'
 import type { OrbPhase } from './orb-motion'
 
 /** Ağ geçidi bu kaynağı görünce ``friend`` kapsamını uyguluyor.
@@ -70,6 +71,14 @@ export interface FriendVoice {
   beginHold: () => void
   /** Bas-konuş: bırakıldı. */
   endHold: () => void
+  /**
+   * Sohbeti bitir ve bir sonrakinde TEMİZ bir oturum aç.
+   *
+   * Açıkça bir eylem: mikrofonu durdurmak artık bunu yapmıyor.
+   */
+  newConversation: () => void
+  /** Sürdürülen oturumun kimliği ("" = henüz açılmadı). */
+  sessionId: string
 }
 
 export function useFriendVoice(mode = 'friend'): FriendVoice {
@@ -98,19 +107,61 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
   sourceRef.current = friendModeSource(mode)
 
   const sessionRef = useRef(createCompanionSessionState())
+
+  // Kip degisince GOSTERILEN kimlik de o kapsamin kimligi olmali: Friend ve
+  // Jarvis ayri oturumlar surduruyor ve panelin birini gosterip digerini
+  // konusturmasi, sesin kendisinde yasanan hatanin aynisi olurdu.
+  useEffect(() => {
+    setSessionId(friendSessionStore.read(friendModeSource(mode)))
+  }, [mode])
   const bargeRef = useRef(createBargeGate())
   const streamRef = useRef<{ sent: number; session: SpeechStreamSession | null } | null>(null)
   const listenRef = useRef<() => void>(() => undefined)
 
+  // Sürdürülen kimlik render'a taşınıyor: panel hangi sohbette olduğunu
+  // GÖSTEREBİLMELİ, aksi hâlde kullanıcı yeni mi eski mi konuştuğunu bilemez.
+  // Çözüldüğü ANDA yazılıyor; yoklamak, bilgi zaten elimizdeyken sahte bir
+  // gecikme yaratmak olurdu.
+  const [sessionId, setSessionId] = useState(() => friendSessionStore.read(friendModeSource(mode)))
+
   const resolveSessionId = useCallback(async () => {
     // Kapsam ``friend``: arac yok ama hafiza ajanla ORTAK. Ayirmak arkadasi
     // hafizasiz birakirdi -- her seferinde kendini yeniden anlatmak.
-    return ensureCompanionSession(sessionRef.current, {
+    const resolved = await ensureCompanionSession(sessionRef.current, {
       create: params =>
         requestGateway('session.create', params) as Promise<{ session_id?: string }>,
-      source: sourceRef.current
+      // Saklanan oturuma yeniden baglan. ``session.resume`` var olmayan bir
+      // kimlikte hata donuyor ve cagiran taraf temiz bir oturum aciyor.
+      resume: async (sessionId: string) => {
+        try {
+          await requestGateway('session.resume', {
+            defer_history: true,
+            omit_messages: true,
+            session_id: sessionId
+          })
+
+          return true
+        } catch {
+          return false
+        }
+      },
+      source: sourceRef.current,
+      store: friendSessionStore
     })
+
+    setSessionId(resolved ?? '')
+
+    return resolved
   }, [requestGateway])
+
+  /** Kullanıcı AÇIKÇA yeni bir sohbet istedi. */
+  const newConversation = useCallback(() => {
+    forgetCompanionSession(sessionRef.current, friendSessionStore)
+    setSessionId('')
+    setTranscript('')
+    setReply('')
+    setLastSpokenId(null)
+  }, [])
 
   const haltTurn = useCallback(async () => {
     const id = sessionRef.current.id
@@ -243,6 +294,16 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
     })()
   }, [mic, submitAudio])
 
+  /**
+   * Mikrofonu bırak. Sohbeti BİTİRMEZ.
+   *
+   * Eskiden burada ``forgetCompanionSession`` vardı ve ``stop()`` mikrofonla
+   * ilgili her şeyde çağrılıyor: sessize almak, bas-konuşa geçmek, sayfadan
+   * çıkmak. Yani mikrofonu susturmak arkadaşın hafızasını siliyordu.
+   * Kullanıcının ``state.db``sinde ölçüldü: 14 Friend oturumu, ortalama 4,6
+   * mesaj (masaüstü sohbetinde 28,3); yarısı tek turluk, ikisi hiç cevap
+   * alamamış. Sohbeti bitirmek artık yalnızca ``newConversation`` ile.
+   */
   const stop = useCallback(() => {
     setActive(false)
     void mic.stop()
@@ -250,7 +311,6 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
     streamRef.current?.session?.finish()
     streamRef.current = null
     releaseBarge(bargeRef.current)
-    forgetCompanionSession(sessionRef.current)
     releaseVoice('friend')
     setCapturing(false)
     setPhase('idle')
@@ -397,5 +457,17 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
     })
   }, [haltTurn, monitorActive, submitAudio])
 
-  return { beginHold, endHold, error, level, phase, reply, start, stop, transcript }
+  return {
+    beginHold,
+    endHold,
+    error,
+    level,
+    newConversation,
+    phase,
+    reply,
+    sessionId,
+    start,
+    stop,
+    transcript
+  }
 }

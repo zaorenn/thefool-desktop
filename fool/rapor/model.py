@@ -32,9 +32,21 @@ from typing import Iterator, Sequence
 EKSIK = "[EKSİK]"
 
 
-def eksik_mi(deger: str | None) -> bool:
-    """Alan gerçekten dolu mu?"""
-    return not deger or not deger.strip() or deger.strip() == EKSIK
+def eksik_mi(deger: object) -> bool:
+    """Alan gerçekten dolu mu?
+
+    Tür ZORLANIYOR. Alanlar bir dil modelinden geliyor ve model ``ek_adedi``yi
+    ``"5"`` yerine ``5`` gönderiyor -- ölçüldü, yerel model tam bunu yaptı ve
+    ``.strip()`` çağrısı ``AttributeError`` ile patladı. Raporun tamamı
+    hazırken üretimin son adımında çökmek, kullanıcı için işin başa dönmesi
+    demek; sayı gönderilmesi de zaten makul bir davranış.
+    """
+    if deger is None:
+        return True
+
+    metin = str(deger).strip()
+
+    return not metin or metin == EKSIK
 
 
 # ---------------------------------------------------------------------------

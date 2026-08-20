@@ -152,3 +152,89 @@ def test_arac_katmani_da_ayni_sekilde_calisiyor() -> None:
 
     assert cevap["yazilan_bolumler"] == ["I. GİRİŞ"]
     assert "mufettis_ad" in cevap["kapak_alanlari"]
+
+
+# ---------------------------------------------------------------------------
+# Modelin GERÇEKTE yaptıkları -- uygulamayı sürerken ölçüldü
+# ---------------------------------------------------------------------------
+
+
+def test_SAYI_gonderilen_alan_cokme_yerine_kabul_ediliyor(tmp_path) -> None:
+    """Model ``ek_adedi``yi ``"5"`` yerine ``5`` gönderdi ve üretim çöktü.
+
+    ``AttributeError: 'int' object has no attribute 'strip'`` -- raporun
+    tamamı hazırken son adımda. Sayı göndermek makul bir davranış.
+    """
+    taslak.baslat(
+        "s1", "inceleme",
+        kapak={"bakanlik": "B", "baskanlik": "K", "baslik": "İnceleme Raporu",
+               "konu": "K", "gorev_emri_tarih": "05.03.2026",
+               "gorev_emri_sayi": 7118342, "rapor_tarih": "01.06.2026",
+               "rapor_sayi": "8-2026/3", "ek_adedi": 5, "mufettis_ad": "Cemil KAYA"},
+        imza_yer="Ankara", imza_tarih="01.06.2026",
+    )
+    taslak.bolum_ekle("s1", "I. GİRİŞ", [{"tur": "paragraf", "metin": "x"}])
+
+    cevap = json.loads(arac.taslak_uret("s1", str(tmp_path / "s1.docx")))
+
+    assert "error" not in cevap
+    assert cevap["eksik_alanlar"] == []
+
+
+def test_bolumler_YONERGEDEKI_siraya_diziliyor() -> None:
+    """Model IV'ü III'ten önce gönderdi -- ölçüldü."""
+    taslak.baslat("s2", "inceleme")
+    for baslik in (
+        "IV. TARTIŞMA VE DEĞERLENDİRME",
+        "I. GİRİŞ",
+        "V. SONUÇ VE ÖNERİLER",
+        "III. İNCELEME VE ARAŞTIRMA",
+        "II. KONU",
+    ):
+        taslak.bolum_ekle("s2", baslik, [{"tur": "paragraf", "metin": "x"}])
+
+    sirali = [b["baslik"] for b in taslak.rapor_sozlugu("s2")["bolumler"]]
+
+    assert sirali == [
+        "I. GİRİŞ",
+        "II. KONU",
+        "III. İNCELEME VE ARAŞTIRMA",
+        "IV. TARTIŞMA VE DEĞERLENDİRME",
+        "V. SONUÇ VE ÖNERİLER",
+    ]
+
+
+def test_YONERGEDE_OLMAYAN_bolum_atilmiyor_sona_gidiyor() -> None:
+    """MADDE 8(7): müfettiş kendi alt bölümünü açabiliyor."""
+    taslak.baslat("s3", "inceleme")
+    taslak.bolum_ekle("s3", "EK DEĞERLENDİRME", [{"tur": "paragraf", "metin": "x"}])
+    taslak.bolum_ekle("s3", "I. GİRİŞ", [{"tur": "paragraf", "metin": "x"}])
+
+    sirali = [b["baslik"] for b in taslak.rapor_sozlugu("s3")["bolumler"]]
+
+    assert sirali == ["I. GİRİŞ", "EK DEĞERLENDİRME"]
+
+
+def test_dogrudan_rapor_yaz_da_SIRALIYOR(tmp_path) -> None:
+    """Taslak kullanmayan çağrı da yönerge sırasına uymalı."""
+    import xml.etree.ElementTree as ET
+    import zipfile as _zip
+
+    istek = {
+        "tur": "inceleme",
+        "kapak": {"mufettis_ad": "Cemil KAYA"},
+        "bolumler": [
+            {"baslik": "II. KONU", "ogeler": [{"tur": "paragraf", "metin": "konu"}]},
+            {"baslik": "I. GİRİŞ", "ogeler": [{"tur": "paragraf", "metin": "giris"}]},
+        ],
+    }
+    hedef = tmp_path / "sirali.docx"
+    arac.rapor_yaz(json.dumps(istek), str(hedef))
+
+    with _zip.ZipFile(hedef) as paket:
+        kok = ET.fromstring(paket.read("word/document.xml"))
+
+    W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    metinler = [t.text or "" for t in kok.iter(f"{W}t")]
+
+    assert metinler.index("I. GİRİŞ") < metinler.index("II. KONU")

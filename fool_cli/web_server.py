@@ -5124,11 +5124,16 @@ async def speak_text(payload: TTSSpeakRequest, profile: Optional[str] = None):
             # resolution, so the task-local override inside this worker
             # thread is sufficient (same reasoning as the MCP probe scope).
             with _config_profile_scope(profile):
-                # FOOL-SEAM: surface-voice -- cagiran yuzey kendi sesini
-                # secebiliyor; bos birakmak genel ayara dusmek demek.
-                requested = str(getattr(payload, "provider", "") or "").strip()
-                if requested:
-                    return text_to_speech_tool(text, provider=requested)
+                # FOOL-SEAM: one-voice
+                #
+                # Cagiran YUZEY kendi sesini SECEMIYOR: tek hakikat
+                # ``tts.provider``. Yuzey basina secim bir sure vardi ve tam
+                # da kullanicinin bildirdigi hatayi uretiyordu -- ustelik
+                # yalnizca YARIM calisiyordu: cumle-cumle akis yolu
+                # (``speak_stream_ws``) istekteki saglayiciyi hic okumuyor,
+                # yalnizca bu tek-seferlik yol okuyordu. Yani ayni pencere,
+                # ayni cevap, akis calisirsa X motoruyla, geri dususte Y
+                # motoruyla konusuyordu. Iki kaynak yerine sifir kaynak.
                 return text_to_speech_tool(text)
 
         loop = asyncio.get_running_loop()

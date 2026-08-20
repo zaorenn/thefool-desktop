@@ -1908,13 +1908,14 @@ export function transcribeAudio(dataUrl: string, mimeType?: string): Promise<Aud
   })
 }
 
-export function speakText(text: string, provider = ''): Promise<AudioSpeakResponse> {
+export function speakText(text: string): Promise<AudioSpeakResponse> {
   return window.hermesDesktop.api<AudioSpeakResponse>({
     ...profileScoped(),
     path: '/api/audio/speak',
     method: 'POST',
-    // FOOL-SEAM: surface-voice -- cagiran yuzeyin sesi. Bos = genel ayar.
-    body: { provider, text },
+    // FOOL-SEAM: one-voice -- yuzey kendi sesini SECMIYOR. Sunucu
+    // ``tts.provider``i okuyor; akis yolu da zaten hep onu okuyordu.
+    body: { text },
     // TTS blocks until provider synthesis, file read, and base64 encoding
     // finish. Remote providers and large messages regularly exceed the
     // default 15s Electron backend timeout.

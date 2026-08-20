@@ -262,3 +262,100 @@ def test_ESKI_kip_ayari_yapilandirmada_kalsa_bile_YOK_SAYILIYOR(monkeypatch) -> 
 
     assert tts_tool._voice_mode_provider() == ""
     assert tts_tool._get_provider({"provider": "kokoro"}) == "kokoro"
+
+
+# ---------------------------------------------------------------------------
+# Yüzey başına ses -- İSTEK katmanındaki son kaynak
+# ---------------------------------------------------------------------------
+#
+# Kip başına ses (``voice.modes.<kip>.provider``) kaldırıldıktan sonra bile
+# ikinci bir ezme yolu AYAKTA kalmıştı: masaüstü ``POST /api/audio/speak``
+# gövdesinde bir ``provider`` gönderebiliyordu ve Friend penceresi bunu
+# gönderiyordu. Neden hata olduğu ölçüldü:
+#
+#   * Tek seferlik yol (``/api/audio/speak``) istekteki adı OKUYORDU.
+#   * Cümle-cümle akış yolu (``speak_stream_ws``) hiç okumuyordu, her zaman
+#     genel ``tts.provider``ı çözüyordu.
+#
+# Yani AYNI pencere, AYNI cevap: akış çalışırsa X motoruyla, geri düşüşte Y
+# motoruyla konuşuyordu. Üstelik gönderilen ad yalnızca pencere açılırken bir
+# kez okunan bir React state'iydi -- kullanıcı motoru Ayarlar'dan
+# değiştirdiğinde Friend eski adı tutuyordu.
+
+
+def test_speak_istegi_yuzeye_ozel_ses_TASIMIYOR() -> None:
+    """Gövdedeki ``provider`` sessizce DÜŞÜYOR -- alan artık yok.
+
+    Eski masaüstü paketleri (güncellenmemiş bir pencere) hâlâ alanı
+    gönderiyor olabilir; düşürülmesi doğru davranış: tek hakikat sunucuda.
+    """
+    from fool_cli.web_models import TTSSpeakRequest
+
+    request = TTSSpeakRequest(text="merhaba", provider="kyutai")
+
+    assert not hasattr(request, "provider")
+    assert request.model_dump() == {"text": "merhaba"}
+
+
+def test_speak_ucu_saglayiciyi_SENTEZ_ARACINA_GECIRMIYOR(monkeypatch) -> None:
+    """Uç, sentez aracını saglayıcı vermeden çağırıyor.
+
+    Doğrudan davranış: aracın aldığı argümanlar kaydediliyor. Bir ``provider``
+    anahtar argümanı geçilseydi yüzey yine kendi sesini seçebiliyor olurdu.
+    """
+    import asyncio
+
+    from fool_cli.web_models import TTSSpeakRequest
+    from tools import tts_tool
+
+    seen: dict[str, object] = {}
+
+    def _record(text, **kwargs):
+        seen["text"] = text
+        seen["kwargs"] = kwargs
+        # Sentezi gerçekten yapmadan çık: ölçtüğümüz şey ARGÜMANLAR.
+        return '{"success": false, "error": "test"}'
+
+    monkeypatch.setattr(tts_tool, "text_to_speech_tool", _record)
+
+    from fastapi import HTTPException
+
+    import fool_cli.web_server as web_server
+
+    with pytest.raises(HTTPException):
+        asyncio.run(web_server.speak_text(TTSSpeakRequest(text="merhaba"), None))
+
+    assert seen["text"] == "merhaba"
+    assert seen["kwargs"] == {}, (
+        f"Uc sentez aracina fazladan argüman geçiyor: {seen['kwargs']}. "
+        "Yüzey başına ses geri gelmiş olabilir."
+    )
+
+
+def test_akis_ve_tek_seferlik_yollar_AYNI_saglayiciyi_cozuyor(monkeypatch) -> None:
+    """İki yolun çözümlemesi tek işlevden geliyor: ``_get_provider``.
+
+    Ayrıştıkları an kullanıcı aynı pencerede iki farklı ses duyuyor. Burada
+    ölçülen şey, ikisinin de aynı yapılandırma anahtarına bakması.
+    """
+    from tools.tts_tool import _get_provider
+
+    config = {"provider": "styletts2"}
+
+    # Akış yolu (``speak_stream_ws::_resolve``) ve tek seferlik yol
+    # (``text_to_speech_tool``) ikisi de bunu çağırıyor.
+    assert _get_provider(config) == "styletts2"
+
+    # Eski ezme anahtarları yazılı olsa BİLE sonuç değişmiyor.
+    import fool_cli.config as cfg
+
+    monkeypatch.setattr(
+        cfg,
+        "load_config",
+        lambda *a, **k: {
+            "tts": {"provider": "styletts2"},
+            "voice": {"mode": "friend", "modes": {"friend": {"provider": "kyutai"}}},
+        },
+    )
+
+    assert _get_provider(config) == "styletts2"

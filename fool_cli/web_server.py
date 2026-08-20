@@ -5228,8 +5228,26 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
                ``{"stop": true}`` or disconnect = barge-in
       server → ``{"type": "start", "sample_rate": N, "channels": 1}``,
                binary PCM frames, then ``{"type": "end"}``
-      server → ``{"type": "fallback"}`` when the configured provider has no
-               chunked API — the client uses the POST endpoint instead.
+      server → ``{"type": "fallback"}`` only when NO provider at all is
+               usable (``tts.provider`` unset/``none``) — the client then
+               falls all the way back to the whole-file POST endpoint.
+
+    # FOOL-SEAM: local-sentence-streaming
+    #
+    # A "chunked API" (elevenlabs/openai/gemini/xai — see
+    # ``tools/tts_streaming.py``) is one way to get per-sentence audio. A
+    # FAST synchronous engine cutting sentences is another: kokoro measures
+    # 0.20s per sentence warm, styletts2 0.56s — well inside "feels live".
+    # Before this seam, any local provider took the ``fallback`` branch
+    # above, which made the client wait for the ENTIRE reply to finish
+    # AND synthesize the whole thing in one call — measured as a ~10s
+    # silence the user reported as "doesn't feel like Jarvis". STT was
+    # never the bottleneck (the transcript already goes to the model the
+    # instant it's ready); the TTS side was.
+    #
+    # ``LocalSentenceStreamer`` (``fool/voice_stream_local.py``) gives a
+    # local provider the same ``sample_rate``/``channels``/``stream()``
+    # shape a true streamer has, so the loop below treats both uniformly.
     """
     if not _ws_auth_ok(ws):
         await ws.close(code=4401)
@@ -5250,29 +5268,46 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
     def _resolve():
         from tools.tts_streaming import resolve_streaming_provider
         from tools.tts_tool import _get_provider, _load_tts_config, _resolve_max_text_length
+        from fool.voice_stream_local import LocalSentenceStreamer, usable_local_provider
 
         with _config_profile_scope(profile):
             cfg = _load_tts_config()
             streamer = resolve_streaming_provider(cfg)
-            cap = _resolve_max_text_length(_get_provider(cfg), cfg) if streamer else 0
+            provider_name = _get_provider(cfg)
+            cap = _resolve_max_text_length(provider_name, cfg) if (streamer or provider_name) else 0
+            # Chunked API yoksa ve kullanılabilir bir yerel motor varsa
+            # (bkz. FOOL-SEAM: local-sentence-streaming) senkron cümle-cümle
+            # akışa düşülüyor; ikisi de yoksa gerçekten fallback.
+            local = (
+                LocalSentenceStreamer(provider_name)
+                if streamer is None and usable_local_provider(provider_name)
+                else None
+            )
         # FOOL-SEAM: speech-pauses -- duraklama ayari TTS bolumunde yasiyor ve
         # profil kapsami icinde okunmasi gerekiyor.
-        return streamer, cap, cfg
+        return streamer, local, cap, cfg
 
     try:
-        streamer, cap, _tts_cfg_for_pauses = await loop.run_in_executor(None, _resolve)
+        streamer, local, cap, _tts_cfg_for_pauses = await loop.run_in_executor(None, _resolve)
     except Exception:
         _log.exception("speak-stream provider resolution failed")
-        streamer, cap, _tts_cfg_for_pauses = None, 0, {}
-    if streamer is None:
+        streamer, local, cap, _tts_cfg_for_pauses = None, None, 0, {}
+    if streamer is None and local is None:
         with contextlib.suppress(Exception):
             await ws.send_json({"type": "fallback"})
             await ws.close()
         return
 
-    await ws.send_json(
-        {"type": "start", "sample_rate": streamer.sample_rate, "channels": streamer.channels}
-    )
+    # True streamer'lar orneklem hizini SENKRON olarak biliyor (API'nin
+    # sabiti) -- hemen duyuruluyor. Yerel senkron akista bu bilgi ANCAK ilk
+    # gercek cumle sentezlenince ortaya cikiyor (bkz. FOOL-SEAM:
+    # local-sentence-streaming); "start" o zaman gonderiliyor. Istemci
+    # tarafi bunu zaten bekliyor -- ``start`` gecikmesi zamanlamayla ilgili
+    # bir varsayim yapmiyor, yalnizca ondan ONCE ikili bir kare gelmiyor.
+    if streamer is not None:
+        await ws.send_json(
+            {"type": "start", "sample_rate": streamer.sample_rate, "channels": streamer.channels}
+        )
 
     stop = threading.Event()
     text_q: queue.Queue = queue.Queue()  # str deltas; None = end-of-text
@@ -5331,19 +5366,50 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
         _pauses = pauses_enabled(_tts_cfg_for_pauses)
         _rate = int(getattr(streamer, "sample_rate", 24_000) or 24_000)
 
+        # ``engine`` iki taraftan biri: gercek chunked saglayici ya da yerel
+        # senkron sarmalayici. Ikisi de ``sample_rate``/``channels``/
+        # ``stream()`` sunuyor, dongu farki bilmiyor.
+        engine = streamer if streamer is not None else local
+        # True streamer icin "start" YUKARIDA zaten gonderildi. Yerel akista
+        # henuz gonderilmedi -- ilk basarili sentezden sonra ASAGIDA gonderilecek.
+        start_announced = streamer is not None
+
+        def _announce_local_start() -> None:
+            nonlocal start_announced
+
+            if start_announced:
+                return
+
+            future = asyncio.run_coroutine_threadsafe(
+                ws.send_json(
+                    {"type": "start", "sample_rate": engine.sample_rate, "channels": engine.channels}
+                ),
+                loop,
+            )
+            # Kucuk bir JSON gonderimi -- engelleyerek beklemek senkron
+            # sentez sirasinda zaten alt surecte oldugumuz icin sorun degil.
+            future.result(timeout=5)
+            start_announced = True
+
         try:
             for sentence in _sentences():
                 cleaned = _strip_markdown_for_tts(sentence)
                 if not cleaned:
                     continue
                 for piece in _split_text_for_speak_stream(cleaned, cap):
-                    for chunk in streamer.stream(piece):
+                    for chunk in engine.stream(piece):
                         if stop.is_set():
                             return
+                        if not start_announced:
+                            # Yerel motorun GERCEK orneklem hizi bu chunk
+                            # sentezlenirken ogrenildi (bkz. LocalSentenceStreamer) --
+                            # once o duyuruluyor, sonra ses.
+                            _announce_local_start()
                         loop.call_soon_threadsafe(chunks.put_nowait, chunk)
                 # Duraklama CUMLENIN sonunda, uzunluk sinirindan bolunmus her
                 # parcanin degil: ikincisi cumle ortasinda kekelemek olurdu.
-                _gap = pause_pcm_after(cleaned, _rate, enabled=_pauses)
+                _gap_rate = int(getattr(engine, "sample_rate", 0) or _rate)
+                _gap = pause_pcm_after(cleaned, _gap_rate, enabled=_pauses)
                 if _gap and not stop.is_set():
                     loop.call_soon_threadsafe(chunks.put_nowait, _gap)
         except Exception as exc:

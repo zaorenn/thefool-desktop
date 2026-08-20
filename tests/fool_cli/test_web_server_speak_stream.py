@@ -54,6 +54,12 @@ def _patch_provider(monkeypatch, streamer, cap=4000):
     monkeypatch.setattr("tools.tts_tool._load_tts_config", lambda: {})
     monkeypatch.setattr("tools.tts_tool._get_provider", lambda cfg: "fake")
     monkeypatch.setattr("tools.tts_tool._resolve_max_text_length", lambda provider, cfg: cap)
+    # Bu testler saglayici parcalamasini olcuyor, cumle arasi sessizligi
+    # degil -- o "fool/prosody.py"nin kendi test dosyasinda kapsanmis
+    # (bkz. tests/fool/test_prosody.py). Sessizlik varsayilan ACIK ve her
+    # cumleden sonra bir PCM parcasi daha ekliyor; kapatmadan "bir istek =
+    # bir kare" varsayimi burada gecerli olmazdi.
+    monkeypatch.setattr("fool.prosody.pauses_enabled", lambda cfg: False)
 
 
 
@@ -121,3 +127,105 @@ def test_split_text_respects_cap_and_preserves_content():
         assert word in joined
 
 
+
+
+# ---------------------------------------------------------------------------
+# Yerel motorlar (chunked API'si yok) — FOOL-SEAM: local-sentence-streaming
+# ---------------------------------------------------------------------------
+#
+# Onceki davranis: yerel bir motor secili oldugunda bu uc HEMEN
+# ``{"type": "fallback"}`` gonderiyordu ve istemci AJANIN TUM CEVABINI
+# bekleyip metnin TAMAMINI TEK CAGRIDA sentezliyordu. Kullanicinin "cevap
+# 10 saniye gec geliyor, Jarvis gibi hissettirmiyor" dedigi sey buydu.
+
+
+def _write_wav(path, *, rate=22050, channels=1, frames=b"\x01\x00\x02\x00"):
+    import wave
+
+    with wave.open(path, "wb") as handle:
+        handle.setnchannels(channels)
+        handle.setsampwidth(2)
+        handle.setframerate(rate)
+        handle.writeframes(frames)
+
+
+def _patch_local_provider(monkeypatch, *, provider="kokoro", rate=22050, calls=None):
+    def fake_synth(text, output_path=None, provider=None, **kw):
+        _write_wav(output_path, rate=rate)
+        if calls is not None:
+            calls.append(text)
+        return json.dumps({"success": True, "file_path": output_path})
+
+    monkeypatch.setattr("tools.tts_streaming.resolve_streaming_provider", lambda cfg: None)
+    monkeypatch.setattr("tools.tts_tool._load_tts_config", lambda: {})
+    monkeypatch.setattr("tools.tts_tool._get_provider", lambda cfg: provider)
+    monkeypatch.setattr("tools.tts_tool._resolve_max_text_length", lambda provider, cfg: 4000)
+    monkeypatch.setattr("tools.tts_tool.text_to_speech_tool", fake_synth)
+
+
+def test_local_provider_streams_per_sentence_with_learned_rate(stream_client, monkeypatch):
+    """"start" bekleniyor: gercek orneklem hizi ilk cumle sentezlenene kadar
+    bilinmiyor, o yuzden yalniz o ANDAN sonra gonderiliyor -- eager degil."""
+    calls: list[str] = []
+    _patch_local_provider(monkeypatch, provider="kokoro", rate=22050, calls=calls)
+
+    with stream_client.websocket_connect(_url()) as conn:
+        conn.send_text(json.dumps({"text": "First sentence. Second sentence.", "done": True}))
+
+        start = conn.receive_json()
+        assert start == {"type": "start", "sample_rate": 22050, "channels": 1}
+
+        frames = 0
+        while True:
+            message = conn.receive()
+            if message.get("bytes") is not None:
+                frames += 1
+            else:
+                assert json.loads(message["text"]) == {"type": "end"}
+                break
+
+    assert frames >= 1
+    assert any("First sentence" in c for c in calls)
+    assert any("Second sentence" in c for c in calls)
+
+
+def test_no_provider_at_all_still_falls_back_immediately(stream_client, monkeypatch):
+    """``_get_provider`` "none" dönerse (hiçbir motor kurulu/yapılandırılı
+    değil) davranış AYNEN eski gibi: hemen fallback, senkron yol denenmiyor."""
+    monkeypatch.setattr("tools.tts_streaming.resolve_streaming_provider", lambda cfg: None)
+    monkeypatch.setattr("tools.tts_tool._load_tts_config", lambda: {})
+    monkeypatch.setattr("tools.tts_tool._get_provider", lambda cfg: "none")
+    monkeypatch.setattr("tools.tts_tool._resolve_max_text_length", lambda provider, cfg: 4000)
+
+    with stream_client.websocket_connect(_url()) as conn:
+        assert conn.receive_json() == {"type": "fallback"}
+        with pytest.raises(WebSocketDisconnect):
+            conn.receive_json()
+
+
+def test_local_synthesis_failure_ends_session_CLEANLY_without_start(stream_client, monkeypatch):
+    """Bir cümle patlarsa sunucu ÇÖKMEMELİ, oturumu düzgün bitirmeli.
+
+    Sunucu tarafında dogru sozlesme "end" gonderip kapanmak -- bu bir
+    protokol hatasi degil, gercekten hicbir sey uretilemedi. Hicbir "start"
+    gelmemis olmasi onemli: istemci taraf bunu ``started`` bayragiyla ayirt
+    edip tam-metin fallback'ine duser (bkz. lib/voice-playback.ts,
+    ``end`` isleyicisi -- once bu senaryoda YANLISLIKLA 'done' donduruyordu,
+    yani sentez patladiginda kullanici HICBIR SEY duymuyor ve fallback da
+    tetiklenmiyordu).
+    """
+
+    def fake_synth(text, output_path=None, provider=None, **kw):
+        return json.dumps({"success": False, "error": "motor coktu"})
+
+    monkeypatch.setattr("tools.tts_streaming.resolve_streaming_provider", lambda cfg: None)
+    monkeypatch.setattr("tools.tts_tool._load_tts_config", lambda: {})
+    monkeypatch.setattr("tools.tts_tool._get_provider", lambda cfg: "kokoro")
+    monkeypatch.setattr("tools.tts_tool._resolve_max_text_length", lambda provider, cfg: 4000)
+    monkeypatch.setattr("tools.tts_tool.text_to_speech_tool", fake_synth)
+
+    with stream_client.websocket_connect(_url()) as conn:
+        conn.send_text(json.dumps({"text": "This will fail.", "done": True}))
+        # "start" hic gelmiyor -- hicbir sentez basarili olmadi. Tek mesaj
+        # "end" olmali, arada ne ikili bir kare ne baska bir sey.
+        assert conn.receive_json() == {"type": "end"}

@@ -295,7 +295,21 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
 
       nextStartAt = 0
     } else if (frame.type === 'end') {
-      finishWhenDrained()
+      // Synthesis can fail on the very first sentence (a crashed sidecar, a
+      // transient engine timeout) with zero audio ever produced. The server
+      // still closes the session cleanly with `end` in that case — nothing
+      // is technically wrong with the WS itself. Treating that as `done`
+      // told the caller "played successfully" when NOTHING was ever heard,
+      // so a synthesis failure produced total silence with no fallback and
+      // no retry. Same rule as onerror/onclose below: only a session that
+      // actually started audio counts as done — and a started one must
+      // still wait for the scheduled buffers to finish (`finishWhenDrained`),
+      // not settle immediately and cut the last sentence off.
+      if (started) {
+        finishWhenDrained()
+      } else {
+        settle('fallback')
+      }
     } else if (frame.type === 'fallback') {
       settle(started ? 'done' : 'fallback')
     }

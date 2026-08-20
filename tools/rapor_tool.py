@@ -139,6 +139,127 @@ RAPOR_YAZ_SCHEMA = {
 }
 
 
+# --- Parca parca kurma ---------------------------------------------------
+#
+# Tek dev JSON yerine diskte biriken taslak. Olculdu: yerel model (gemma-4-e4b)
+# tek seferde uzun bir rapor JSON'unu yeniden kurarken kapak alanlarini
+# dusuruyor; ayrica 70 sayfalik bir rapor tek cagriya zaten sigmiyor.
+
+TASLAK_BASLAT_SCHEMA = {
+    "name": "rapor_taslak_baslat",
+    "description": (
+        "Start a new report draft that accumulates on disk. Use this for any "
+        "real report instead of building one giant JSON: each later call adds "
+        "ONE section, so nothing large is ever held in context and a 70-page "
+        "report is possible. "
+        "Pick a short `kimlik` (draft id) and reuse it for every later call."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string", "description": "Draft id, e.g. 'fazla-mesai-2026'."},
+            "tur": {"type": "string", "description": "inceleme | disiplin | adli | on_inceleme"},
+            "kapak": {"type": "object", "description": "Cover fields; can also be filled in later."},
+            "ozet": {"type": "array", "items": {"type": "string"}},
+            "imza_yer": {"type": "string"},
+            "imza_tarih": {"type": "string"},
+        },
+        "required": ["kimlik", "tur"],
+    },
+}
+
+TASLAK_BOLUM_SCHEMA = {
+    "name": "rapor_taslak_bolum",
+    "description": (
+        "Write ONE section into the draft. Sending the same `baslik` again "
+        "replaces that section rather than duplicating it, so you can revise. "
+        "`ogeler` items: {tur:'paragraf', metin, ek?, kalin?} | "
+        "{tur:'alt_baslik', metin} | {tur:'alinti', metin, kaynak?, ek?} | "
+        "{tur:'tablo', baslik, basliklar:[...], satirlar:[[...]]}"
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string"},
+            "baslik": {"type": "string", "description": "e.g. 'III. INCELEME VE ARASTIRMA'"},
+            "ogeler": {"type": "array", "items": {"type": "object"}},
+        },
+        "required": ["kimlik", "baslik", "ogeler"],
+    },
+}
+
+TASLAK_EK_SCHEMA = {
+    "name": "rapor_taslak_ek",
+    "description": (
+        "Add one entry to the annex index. Numbering follows the order added, "
+        "which is what the directive asks for (first mention in the report)."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string"},
+            "icerik": {"type": "string", "description": "What the annex is."},
+            "sayfa_sayisi": {"type": "integer"},
+        },
+        "required": ["kimlik", "icerik"],
+    },
+}
+
+TASLAK_KAPAK_SCHEMA = {
+    "name": "rapor_taslak_kapak",
+    "description": (
+        "Update ONLY the given cover fields, leaving the rest untouched. "
+        "Use this rather than resending the whole cover - resending a long "
+        "object is exactly where fields get dropped."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string"},
+            "alanlar": {
+                "type": "object",
+                "description": (
+                    "Any of: bakanlik, baskanlik, baslik, konu, "
+                    "gorev_emri_tarih, gorev_emri_sayi, rapor_tarih, "
+                    "rapor_sayi, ek_adedi, mufettis_ad, mufettis_unvan, gizli"
+                ),
+            },
+        },
+        "required": ["kimlik", "alanlar"],
+    },
+}
+
+TASLAK_DURUM_SCHEMA = {
+    "name": "rapor_taslak_durum",
+    "description": (
+        "What the draft contains and which required sections are still "
+        "missing. Check this before producing the document."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {"kimlik": {"type": "string"}},
+        "required": ["kimlik"],
+    },
+}
+
+TASLAK_URET_SCHEMA = {
+    "name": "rapor_taslak_uret",
+    "description": (
+        "Produce the .docx from the accumulated draft. Pass `bicim_kaynagi` "
+        "when completing a half-finished report so both halves match."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string"},
+            "hedef": {"type": "string", "description": "Output .docx path."},
+            "bicim_kaynagi": {"type": "string"},
+        },
+        "required": ["kimlik", "hedef"],
+    },
+}
+
+
 # Kayitlar EN UST SEVIYEDE, ``try`` icinde DEGIL.
 #
 # ``tools/registry.py::_module_registers_tools`` yalnizca modul govdesindeki
@@ -184,4 +305,74 @@ registry.register(
         bicim_kaynagi=args.get("bicim_kaynagi"),
     ),
     emoji="📄",
+)
+
+registry.register(
+    name="rapor_taslak_baslat",
+    toolset="rapor",
+    schema=TASLAK_BASLAT_SCHEMA,
+    handler=lambda args, **kw: arac.taslak_baslat(
+        kimlik=args.get("kimlik", ""),
+        tur=args.get("tur", "inceleme"),
+        kapak=args.get("kapak"),
+        ozet=args.get("ozet"),
+        imza_yer=args.get("imza_yer", ""),
+        imza_tarih=args.get("imza_tarih", ""),
+    ),
+    emoji="🗂️",
+)
+
+registry.register(
+    name="rapor_taslak_bolum",
+    toolset="rapor",
+    schema=TASLAK_BOLUM_SCHEMA,
+    handler=lambda args, **kw: arac.taslak_bolum(
+        kimlik=args.get("kimlik", ""),
+        baslik=args.get("baslik", ""),
+        ogeler=args.get("ogeler"),
+    ),
+    emoji="✍️",
+)
+
+registry.register(
+    name="rapor_taslak_ek",
+    toolset="rapor",
+    schema=TASLAK_EK_SCHEMA,
+    handler=lambda args, **kw: arac.taslak_ek(
+        kimlik=args.get("kimlik", ""),
+        icerik=args.get("icerik", ""),
+        sayfa_sayisi=int(args.get("sayfa_sayisi", 1)),
+    ),
+    emoji="📎",
+)
+
+registry.register(
+    name="rapor_taslak_kapak",
+    toolset="rapor",
+    schema=TASLAK_KAPAK_SCHEMA,
+    handler=lambda args, **kw: arac.taslak_kapak(
+        kimlik=args.get("kimlik", ""),
+        alanlar=args.get("alanlar"),
+    ),
+    emoji="🏷️",
+)
+
+registry.register(
+    name="rapor_taslak_durum",
+    toolset="rapor",
+    schema=TASLAK_DURUM_SCHEMA,
+    handler=lambda args, **kw: arac.taslak_durum(kimlik=args.get("kimlik", "")),
+    emoji="📋",
+)
+
+registry.register(
+    name="rapor_taslak_uret",
+    toolset="rapor",
+    schema=TASLAK_URET_SCHEMA,
+    handler=lambda args, **kw: arac.taslak_uret(
+        kimlik=args.get("kimlik", ""),
+        hedef=args.get("hedef", ""),
+        bicim_kaynagi=args.get("bicim_kaynagi"),
+    ),
+    emoji="📘",
 )

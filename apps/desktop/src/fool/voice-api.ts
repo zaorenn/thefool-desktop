@@ -145,10 +145,7 @@ export const voiceApi = {
   warmVoice: () =>
     call<{ stt: { status: string }; tts: { status: string } }>('/api/fool/voice/warm', {}),
   /** Kip basina secili seslendirme saglayicilari. */
-  modeProviders: () => call<{ providers: Record<string, string> }>('/api/fool/voice/modes'),
   /** Bir kipin sesini kaydet. Bos saglayici = genel ayara don. */
-  setModeProvider: (mode: string, provider: string) =>
-    call<{ ok: boolean }>('/api/fool/voice/modes', { mode, provider }),
   /** Kisa bir cumle seslendir. ``elapsed_ms`` panelde gosteriliyor: motorun
    *  GERCEKTEN CUDA'da kosup kosmadiginin tek durust kaniti. */
   preview: (entryId: string) =>

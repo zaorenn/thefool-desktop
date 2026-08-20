@@ -42,6 +42,7 @@ import {
   scaleFor
 } from './orb-motion'
 import { useFriendVoice } from './use-friend-voice'
+import { isChoosableVoiceId, selectedVoiceId, voiceOptions } from './voice-choice'
 import { isWarming, warmingLabel } from './warming'
 
 const RING_COUNT = 3
@@ -136,42 +137,46 @@ export function FriendView() {
   const [provider, setProvider] = useState('')
   const [speaker, setSpeaker] = useState('')
 
-  // ``provider`` state'i hook'tan ONCE: hook onu okuyor.
-  // Sentez SAGLAYICI ADI istiyor, katalog kimligi degil.
-  const voice = useFriendVoice(
-    (catalog?.items ?? []).find(item => item.id === provider)?.provider_id || '',
-    mode
-  )
+  // Hook'a ARTIK ses gecilmiyor. Bu pencere sentez saglayicisini SECMIYOR;
+  // sunucu ``tts.provider``i okuyor. Gecirdigim surece iki kaynak vardi ve
+  // ikisi ayrisabiliyordu: asagidaki ``provider`` bir React state'i, yalnizca
+  // montajda dolduruluyor -- kullanici motoru Ayarlar'dan degistirdiginde
+  // burasi ESKI adi tutuyordu ve tek-seferlik geri dusus yolu o eski motorla
+  // konusuyordu (cumle-cumle akis yolu zaten hep geneli okuyordu). Ayni
+  // pencere, ayni cevap, iki farkli ses.
+  const voice = useFriendVoice(mode)
 
   const [holding, setHolding] = useState(false)
 
-  // Kurulu motorlar ve bu pencerenin secili sesi.
-  useEffect(() => {
-    let cancelled = false
+  /** Katalogu sunucudan tazele ve GOSTERILEN secimi ona esitle.
+   *
+   * Gosterim tek yonlu: hakikat sunucuda (``tts.provider``), buradaki state
+   * yalnizca onun kopyasi. Yazdiktan sonra da bu cagriliyor, yani basarisiz
+   * bir yazimdan sonra acilir liste gercekten kayitli olan sese geri doner.
+   */
+  const refreshCatalog = useCallback(async () => {
+    try {
+      const data = await voiceApi.catalog()
 
-    void (async () => {
-      try {
-        const data = await voiceApi.catalog()
-
-        if (!cancelled) {
-          setCatalog(data)
-          // GENEL secili motor. Friend ayri bir ses tutmuyor: iki yuzey
-          // ayni motoru kullaniyor, yani hic tahliye/yeniden yukleme
-          // olmuyor ve kullanici tek bir hakikat goruyor.
-          const active = data.items.find(item => item.kind === 'tts' && item.active)
-
-          setProvider(active ? active.id : '')
-        }
-      } catch {
-        // Sessizce gec: ses secimi olmadan da pencere calisiyor. Bir katalog
-        // hatasinin sohbeti engellemesi yanlis olurdu.
-      }
-    })()
-
-    return () => {
-      cancelled = true
+      setCatalog(data)
+      setProvider(selectedVoiceId(data))
+    } catch {
+      // Sessizce gec: ses secimi olmadan da pencere calisiyor. Bir katalog
+      // hatasinin sohbeti engellemesi yanlis olurdu.
     }
   }, [])
+
+  useEffect(() => {
+    void refreshCatalog()
+
+    // Pencere one gelince yeniden oku: motor Ayarlar'dan ya da ``fool config
+    // set`` ile degismis olabilir ve bu pencerenin bunu GORMESI gerekiyor --
+    // aksi halde panel bir sey gosterip baska bir ses duyuluyor, ki bu tam
+    // olarak kullanicinin bildirdigi hata.
+    window.addEventListener('focus', refreshCatalog)
+
+    return () => window.removeEventListener('focus', refreshCatalog)
+  }, [refreshCatalog])
 
   /** Ses secimi GENEL ayari degistiriyor, Friend'e ozel bir kopya DEGIL.
    *
@@ -182,6 +187,10 @@ export function FriendView() {
    * kullaniciya iki ayri hakikat sunmak.
    */
   const chooseProvider = useCallback(async (next: string) => {
+    if (!isChoosableVoiceId(next)) {
+      return
+    }
+
     setProvider(next)
     // Motor degisti: eski motorun ses tipi yenisinde yok.
     setSpeaker('')
@@ -190,8 +199,12 @@ export function FriendView() {
       await voiceApi.select(next)
     } catch (error) {
       notifyError(error, 'Could not save the voice')
+    } finally {
+      // Basarida da hatada da sunucuya sor: iyimser gosterim yazim
+      // tutmadiginda acilir listeyi yalanci birakiyordu.
+      await refreshCatalog()
     }
-  }, [])
+  }, [refreshCatalog])
 
   /** Motorun KENDI ses tipleri (Kokoro'nun yedi sesi gibi). */
   const chooseSpeaker = useCallback(
@@ -331,7 +344,7 @@ export function FriendView() {
     return () => clearInterval(timer)
   }, [playback.status, preparingSince])
 
-  const tts = (catalog?.items ?? []).filter(item => item.kind === 'tts' && item.installed)
+  const tts = voiceOptions(catalog)
 
   // Secili motorun katalog kaydi -- ses tipleri ondan geliyor.
   const selected = provider ? tts.find(item => item.id === provider) : tts.find(item => item.active)
@@ -451,11 +464,13 @@ export function FriendView() {
           onChange={event => void chooseProvider(event.target.value)}
           value={provider}
         >
-          {/* Bos = genel ``tts.provider``a dus. Bu pencerenin kendi sesi
-              olmak ZORUNDA degil. */}
-          <option style={OPTION_STYLE} value="">
-            Default voice
-          </option>
+          {/* Bos secenek KALDIRILDI: ``voice_models.select("")`` ->
+              ``ValueError: bilinmeyen oge:`` -> HTTP 400. Yani "Default
+              voice"u secmek bir hata bildirimi cikariyor, motoru
+              degistirmiyor ve acilir listeyi yine de yeni degerde birakiyordu
+              -- panelde bir sey gorup baska bir sesi duymanin ta kendisi.
+              Genel ayar zaten BU listede secili olan; ayrica bir "genel"
+              secenegi olmasinin anlami yok. */}
           {/* ``select`` KATALOG KIMLIGI bekliyor, saglayici adi degil
               (``qwen3-tts`` indirilir, ``qwen3`` secilir). */}
           {tts.map(item => (

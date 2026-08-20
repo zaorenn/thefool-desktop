@@ -72,7 +72,7 @@ export interface FriendVoice {
   endHold: () => void
 }
 
-export function useFriendVoice(provider = '', mode = 'friend'): FriendVoice {
+export function useFriendVoice(mode = 'friend'): FriendVoice {
   const { t } = useI18n()
   const messages = useStore($messages)
   const { handle: mic, level } = useMicRecorder(t.notifications.voice)
@@ -89,11 +89,6 @@ export function useFriendVoice(provider = '', mode = 'friend'): FriendVoice {
   const phaseRef = useRef<OrbPhase>('idle')
 
   phaseRef.current = phase
-  // Secili ses render sirasinda yaziliyor: efektlerin bagimliligina almak
-  // her ses degisiminde konusma dongusunu yeniden kurardi.
-  const providerRef = useRef(provider)
-
-  providerRef.current = provider
 
   // Secili kip: oturum bu kaynakla aciliyor. ``ensureCompanionSession`` kaynak
   // degisince eski oturumu birakip yenisini aciyor -- arac kumesi ajan
@@ -307,7 +302,6 @@ export function useFriendVoice(provider = '', mode = 'friend'): FriendVoice {
           if (!session) {
             void playSpeechText(spoken.text, {
               messageId: spoken.id,
-              provider: providerRef.current,
               source: 'voice-conversation'
             }).catch(() => undefined)
 
@@ -318,7 +312,6 @@ export function useFriendVoice(provider = '', mode = 'friend'): FriendVoice {
             if (outcome === 'fallback') {
               void playSpeechText(spoken.text, {
                 messageId: spoken.id,
-                provider: providerRef.current,
                 source: 'voice-conversation'
               }).catch(() => undefined)
             }

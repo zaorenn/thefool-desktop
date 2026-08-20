@@ -124,6 +124,15 @@ class VoiceEntry:
     #: DLL asamasinda 0,9 sn'de dusuyor. Sonuc zaten onbellekleniyor
     #: (``fool/engine_health.py``).
     runtime_imports: tuple[str, ...] = ()
+    #: Panelde GOSTERILMIYOR.
+    #:
+    #: Kayit SILINMIYOR: kurulu bir motoru katalogdan cikarmak, kullanicinin
+    #: diskindeki gigabaytlari gorunmez yapardi ve secili olan oysa sesi
+    #: sessizce keserdi. Gizlemek geri alinabilir; silmek degil.
+    #:
+    #: Olculen gerekce (cumle basina, sicak): gercek zamanin cok altinda
+    #: kalan motorlar sesli sohbette kullanilamiyor.
+    hidden: bool = False
     #: ``runtime_imports`` dustugunde KULLANICIYA gosterilecek cumle.
     #:
     #: Ham istisna metni yetmiyor: torchcodec'in ilk satiri ``Could not load
@@ -249,6 +258,8 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="kyutai",
+        # Olculdu: 2,5-11 sn/cumle. Sesli sohbet icin kullanilamaz.
+        hidden=True,
         label="Kyutai TTS",
         kind="tts",
         summary=(
@@ -281,6 +292,8 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="f5-tts",
+        # Bu makinede hic calismiyor (torchcodec/paylasilan FFmpeg) ve yavas.
+        hidden=True,
         label="F5-TTS",
         kind="tts",
         summary=(
@@ -335,6 +348,8 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="qwen3-tts",
+        # Olculdu: 9,42 sn/cumle. Sesli sohbet icin kullanilamaz.
+        hidden=True,
         label="Qwen3-TTS",
         kind="tts",
         summary=(
@@ -1040,6 +1055,21 @@ def _catalog_row(e: VoiceEntry, active: dict[str, str]) -> dict[str, Any]:
     return row
 
 
+def visible_catalog() -> list[VoiceEntry]:
+    """Panelde gosterilecek ogeler.
+
+    Gizli bir motor SECILIYSE yine gosteriliyor: aksi halde kullanici
+    ayarlarda hicbir sey secili gormez ve sesin nereden geldigini anlayamaz.
+    """
+    active = active_providers()
+    return [
+        e
+        for e in CATALOG
+        if not e.hidden
+        or active.get(e.kind, "") == (e.model_id if (e.kind == "stt" and e.model_id) else (e.provider_id or e.id))
+    ]
+
+
 def catalog_status() -> list[dict[str, Any]]:
     """Panelin gordugu tam liste.
 
@@ -1059,12 +1089,16 @@ def catalog_status() -> list[dict[str, Any]]:
     from concurrent.futures import ThreadPoolExecutor
 
     active = active_providers()
+    # Yavas motorlar panelde YOK (bkz. ``VoiceEntry.hidden``). Kayitlari
+    # duruyor: kurulu bir motoru katalogdan silmek, kullanicinin diskindeki
+    # gigabaytlari gorunmez yapardi.
+    entries = visible_catalog()
 
-    if len(CATALOG) < 2:
-        return [_catalog_row(e, active) for e in CATALOG]
+    if len(entries) < 2:
+        return [_catalog_row(e, active) for e in entries]
 
-    with ThreadPoolExecutor(max_workers=len(CATALOG), thread_name_prefix="fool-catalog") as pool:
-        return list(pool.map(lambda e: _catalog_row(e, active), CATALOG))
+    with ThreadPoolExecutor(max_workers=len(entries), thread_name_prefix="fool-catalog") as pool:
+        return list(pool.map(lambda e: _catalog_row(e, active), entries))
 
 
 # ---------------------------------------------------------------------------

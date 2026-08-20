@@ -30,6 +30,7 @@ from .cozumle import bolumlere_ayir, eksik_bolumler, iskelet_cikar, tur_tahmin
 from .docx_yazici import yaz
 from .kaynak import oku, token_tahmini
 from .pdf_cikti import pdf_uret
+from .sayfa_toplami import sabitle as _toplami_sabitle
 from .model import EKSIK, Alinti, AltBaslik, Bolum, Ek, Kapak, Paragraf, Rapor, Tablo
 from . import taslak
 from .secici import ilgili_kesitler
@@ -389,9 +390,20 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
 
     eksikler = rapor.eksikler()
 
+    # Sayfa toplamini SABITLE.
+    #
+    # ``SECTIONPAGES`` alanini Word hesapliyor, LibreOffice hesaplamiyor:
+    # olculdu, uc sayfalik metin "1/1, 2/1, 3/1" cikti. Yonergenin istedigi
+    # "1/3". Belgeyi bir kez bastirip metin sayfalarini sayiyor ve toplami
+    # duz sayi olarak yaziyoruz; boylece hangi programla acildigina bagli
+    # olmuyor.
+    sabitleme = _toplami_sabitle(yazilan)
+
     return _sonuc(
         {
             "yazildi": str(yazilan),
+            "metin_sayfasi": sabitleme.metin_sayfasi or None,
+            "sayfa_toplami_notu": None if sabitleme.yapildi else sabitleme.gerekce,
             "bayt": yazilan.stat().st_size,
             "tur": tur,
             "bolum_sayisi": len(bolumler),
@@ -425,8 +437,25 @@ def taslak_baslat(
     imza_yer: str = "",
     imza_tarih: str = "",
     sifirla: bool = False,
+    ornek_rapor: str | None = None,
 ) -> str:
-    """Yeni bir rapor taslağı aç."""
+    """Yeni bir rapor taslağı aç.
+
+    ``ornek_rapor`` verilirse bölüm uzunlukları oradan HEDEF olarak alınıyor:
+    kullanıcının şartı "örnek rapordan kısa olamaz" ve bunu güvence altına
+    almanın yolu örneği ÖLÇMEK, modelin uzun yazacağını ummak değil.
+    """
+    hedef: dict[str, int] = {}
+
+    if ornek_rapor:
+        try:
+            belge = oku(Path(ornek_rapor))
+            hedef = {
+                b: int(u) for b, u in iskelet_cikar(belge).bolum_uzunluklari.items()
+            }
+        except Exception as sebep:  # noqa: BLE001
+            return _hata(f"örnek rapor okunamadı: {sebep}")
+
     try:
         taslak.baslat(
             kimlik,
@@ -436,6 +465,7 @@ def taslak_baslat(
             imza_yer=imza_yer,
             imza_tarih=imza_tarih,
             sifirla=sifirla,
+            hedef_uzunluk=hedef,
         )
     except taslak.TaslakHatasi as sebep:
         return _hata(str(sebep))
@@ -520,3 +550,121 @@ def rapor_pdf(docx: str, hedef_klasor: str | None = None) -> str:
             "donusturucu": sonuc.donusturucu,
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# 6. Deliller -- ifade tutanakları, şikâyet dilekçeleri
+# ---------------------------------------------------------------------------
+#
+# İş bölümü: ÖRNEK rapor üslubu öğretiyor, DELİLLER içeriği veriyor. Şirket
+# adı, kişi, tarih ve sayı buradan geliyor -- örnekten değil. Örneğin
+# içeriğinin yeni rapora sızmaması bilerek engelleniyor (bkz. ``cozumle``).
+
+
+def delil_ekle(kimlik: str, yol: str, icerik: str | None = None) -> str:
+    """Bir ifade/şikâyet belgesini rapora dayanak yap.
+
+    Belge okunuyor, kalitesi ölçülüyor, künyesi çıkarılıyor ve ek dizinine
+    yazılıyor. TAM METİN taslağa kopyalanmıyor: diskte duruyor ve
+    ``rapor_delil_oku`` ile parça parça okunuyor -- on dilekçenin tamamı
+    bağlama sığmıyor.
+    """
+    hedef = Path(yol)
+
+    if not hedef.exists():
+        return _hata(f"delil bulunamadı: {yol}")
+
+    try:
+        belge = oku(hedef)
+    except Exception as sebep:  # noqa: BLE001
+        return _hata(f"delil okunamadı: {sebep}")
+
+    if not belge.kalite.guvenilir:
+        return _hata(
+            f"'{belge.ad}' metni güvenilir değil; rapora dayanak yapılmadı",
+            gerekce=belge.kalite.gerekce,
+        )
+
+    from .kaynak import kart_cikar
+
+    kart = kart_cikar(belge, ek_no=0)
+    kunye = {
+        "ad": kart.ad,
+        "tur": kart.tur,
+        "tarih": kart.tarih,
+        "sayi": kart.sayi,
+        "kisiler": kart.kisiler,
+        "sayfa_sayisi": kart.sayfa_sayisi,
+        "icerik": icerik or f"{kart.tur or 'Belge'} - {kart.ad}",
+    }
+
+    try:
+        taslak.delil_ekle(kimlik, kunye, str(hedef))
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    durum = taslak.durum(kimlik)
+    eklenen = taslak.yukle(kimlik).deliller[-1]
+
+    return _sonuc(
+        {
+            "ek_no": eklenen["ek_no"],
+            "kunye": kunye,
+            "kurtarma": belge.kurtarma_aciklamasi or None,
+            "atif_ornegi": f"(Ek: {eklenen['ek_no']}/1)",
+            "ek_sayisi": durum["ek_sayisi"],
+            "siradaki_adim": durum["siradaki_adim"],
+        }
+    )
+
+
+def delil_listesi(kimlik: str) -> str:
+    """Rapora dayanak yapılmış belgelerin künyeleri.
+
+    Yalnızca künye dönüyor: on belgenin tam metni bağlama sığmaz, künyeleri
+    sığar. Model önce buraya bakıyor, sonra gerekeni açıyor.
+    """
+    try:
+        veri = taslak.yukle(kimlik)
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    return _sonuc(
+        {
+            "kimlik": kimlik,
+            "deliller": [
+                {
+                    "ek_no": d.get("ek_no"),
+                    "ad": d.get("ad"),
+                    "tur": d.get("tur"),
+                    "tarih": d.get("tarih"),
+                    "sayi": d.get("sayi"),
+                    "kisiler": d.get("kisiler", []),
+                    "sayfa_sayisi": d.get("sayfa_sayisi"),
+                    "atif": f"(Ek: {d.get('ek_no')}/1)",
+                }
+                for d in veri.deliller
+            ],
+        }
+    )
+
+
+def delil_oku(kimlik: str, ek_no: int, sorgu: str | None = None,
+              token_butcesi: int = 4000) -> str:
+    """Bir delilin ilgili kısımlarını oku.
+
+    ``sorgu`` verilirse yalnızca ona uyan kesitler dönüyor; uzun bir ifade
+    tutanağının tamamını bağlama koymak gereksiz ve çoğu zaman imkânsız.
+    """
+    try:
+        yol = taslak.delil_yolu(kimlik, int(ek_no))
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    cevap = json.loads(kaynak_oku(yol, sorgu=sorgu, token_butcesi=token_butcesi))
+
+    if "error" not in cevap:
+        cevap["ek_no"] = int(ek_no)
+        cevap["atif"] = f"(Ek: {int(ek_no)}/1)"
+
+    return _sonuc(cevap)

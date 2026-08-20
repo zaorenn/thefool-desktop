@@ -93,6 +93,13 @@ class Taslak:
     ekler: list[dict] = field(default_factory=list)
     imza_yer: str = ""
     imza_tarih: str = ""
+    #: Bölüm başlığı -> örnek rapordaki karakter sayısı. Hedef, dilek değil:
+    #: örnekten belirgin kısa bir rapor, örneği taklit etmiyor demektir.
+    hedef_uzunluk: dict = field(default_factory=dict)
+    #: Rapora dayanak yapılan belgeler (ifade tutanakları, şikâyet
+    #: dilekçeleri...). Künyeleri burada; TAM METİNLERİ diskte kalıyor ve
+    #: yalnızca sorulduğunda parça parça okunuyor.
+    deliller: list = field(default_factory=list)
 
     def sozluk(self) -> dict:
         return asdict(self)
@@ -106,6 +113,7 @@ def baslat(
     imza_yer: str = "",
     imza_tarih: str = "",
     sifirla: bool = False,
+    hedef_uzunluk: dict | None = None,
 ) -> Taslak:
     """Yeni taslak aç. Var olanın ÜZERİNE YAZMAZ.
 
@@ -141,6 +149,7 @@ def baslat(
         ozet=list(ozet or []),
         imza_yer=imza_yer,
         imza_tarih=imza_tarih,
+        hedef_uzunluk=dict(hedef_uzunluk or {}),
     )
     _yaz(taslak)
 
@@ -251,7 +260,12 @@ def durum(kimlik: str) -> dict:
         "oge_sayisi": {b.get("baslik", ""): len(b.get("ogeler", [])) for b in taslak.bolumler},
         "ek_sayisi": len(taslak.ekler),
         "kapak_alanlari": sorted(taslak.kapak),
-        "tamam_mi": not eksik,
+        "uzunluk": {b.get("baslik", ""): bolum_uzunlugu(b) for b in taslak.bolumler},
+        "hedef_uzunluk": dict(taslak.hedef_uzunluk),
+        "kisa_bolumler": [
+            {"baslik": b, "mevcut": m, "hedef": h} for b, m, h in _kisa_kalanlar(taslak)
+        ],
+        "tamam_mi": not eksik and not _kisa_kalanlar(taslak),
         "siradaki_adim": _siradaki_adim(taslak, eksik),
     }
 
@@ -273,11 +287,32 @@ def _siradaki_adim(taslak: "Taslak", eksik: list[str]) -> str:
     dayanıklı: her turda yeniden hatırlatılıyor.
     """
     if eksik:
+        hedef = ""
+        for ornek_baslik, uzunluk in taslak.hedef_uzunluk.items():
+            if _sade(ornek_baslik) == _sade(eksik[0]):
+                hedef = (
+                    f" Bu bölüm örnek raporda ~{int(uzunluk)} karakter; "
+                    f"en az {int(int(uzunluk) * HEDEF_ORANI)} karakter yaz."
+                )
+                break
+
         return (
-            f"HENÜZ BİTMEDİ. Sıradaki bölüm: '{eksik[0]}'. "
+            f"HENÜZ BİTMEDİ. Sıradaki bölüm: '{eksik[0]}'.{hedef} "
             f"rapor_taslak_bolum aracını kimlik='{taslak.kimlik}', "
             f"baslik='{eksik[0]}' ile çağır. "
             f"Kalan bölümler: {', '.join(eksik)}."
+        )
+
+    kisa = _kisa_kalanlar(taslak)
+
+    if kisa:
+        baslik, mevcut, hedef = kisa[0]
+        return (
+            f"'{baslik}' bölümü ÇOK KISA: {mevcut} karakter, örnekte "
+            f"~{hedef}. En az {int(hedef * HEDEF_ORANI)} karakter olmalı. "
+            f"rapor_taslak_bolum ile aynı başlığı DAHA DOLU yazarak gönder "
+            f"(aynı başlık üzerine yazar). Kalan kısa bölümler: "
+            f"{', '.join(b for b, _, _ in kisa)}."
         )
 
     kapak_eksik = [a for a in _ZORUNLU_KAPAK if not str(taslak.kapak.get(a, "")).strip()]
@@ -305,6 +340,56 @@ def _siradaki_adim(taslak: "Taslak", eksik: list[str]) -> str:
         f"Taslak hazır. rapor_taslak_uret aracını kimlik='{taslak.kimlik}' "
         f"ve hedef dosya yolu ile çağırıp .docx üret."
     )
+
+
+#: Yazilan bir bolum, ornekteki karsiliginin bu kadarina ulasmali.
+#:
+#: Kullanicinin sozu: "ne sana attigim ornek rapordan kisa olamaz". Birebir
+#: esitlik istenmiyor -- konu farkli, dava sayisi farkli -- ama ucte birinde
+#: kalan bir bolum ornegi taklit etmiyor. %60 hem gercekci hem olculebilir.
+HEDEF_ORANI = 0.6
+
+
+def bolum_uzunlugu(bolum: dict) -> int:
+    """Bir bölümdeki gerçek metin uzunluğu (karakter)."""
+    toplam = 0
+
+    for oge in bolum.get("ogeler", []):
+        if not isinstance(oge, dict):
+            continue
+
+        toplam += len(str(oge.get("metin", "")))
+        toplam += len(str(oge.get("baslik", "")))
+
+        for satir in oge.get("satirlar", []) or []:
+            toplam += sum(len(str(h)) for h in satir)
+
+    return toplam
+
+
+def _kisa_kalanlar(taslak: "Taslak") -> list[tuple[str, int, int]]:
+    """Örnekteki karşılığının belirgin altında kalan bölümler."""
+    kisa = []
+
+    for bolum in taslak.bolumler:
+        baslik = bolum.get("baslik", "")
+        hedef = 0
+
+        for ornek_baslik, uzunluk in taslak.hedef_uzunluk.items():
+            sade = _sade(ornek_baslik)
+            if sade == _sade(baslik) or sade.startswith(_sade(baslik)) or _sade(baslik).startswith(sade):
+                hedef = int(uzunluk)
+                break
+
+        if hedef <= 0:
+            continue
+
+        mevcut = bolum_uzunlugu(bolum)
+
+        if mevcut < hedef * HEDEF_ORANI:
+            kisa.append((baslik, mevcut, hedef))
+
+    return kisa
 
 
 def _sade(baslik: str) -> str:
@@ -479,3 +564,47 @@ def ozet_yaz(kimlik: str, satirlar: list[str]) -> Taslak:
     _yaz(taslak)
 
     return taslak
+
+
+def delil_ekle(kimlik: str, kart: dict, yol: str) -> Taslak:
+    """Bir delil belgesini taslağa bağla ve ek dizinine yaz.
+
+    Ek numarası ekleme sırasından geliyor (MADDE 10(4): rapora ilk konu
+    edilen eke ilk numara). Aynı belge iki kez eklenmiyor -- MADDE 10(8)
+    "bir belge rapora birden fazla ek yapılmaz" diyor.
+    """
+    taslak = yukle(kimlik)
+
+    for mevcut in taslak.deliller:
+        if mevcut.get("yol") == yol:
+            raise TaslakHatasi(
+                f"bu belge zaten Ek:{mevcut.get('ek_no')} olarak ekli "
+                "(MADDE 10(8): bir belge rapora birden fazla ek yapılmaz). "
+                f"Atıf için (Ek: {mevcut.get('ek_no')}/1) kullan."
+            )
+
+    ek_no = len(taslak.ekler) + 1
+    kayit = {**kart, "ek_no": ek_no, "yol": yol}
+
+    taslak.deliller.append(kayit)
+    taslak.ekler.append(
+        {
+            "no": ek_no,
+            "icerik": kart.get("icerik") or kart.get("ad", ""),
+            "sayfa_sayisi": int(kart.get("sayfa_sayisi", 1)),
+        }
+    )
+    _yaz(taslak)
+
+    return taslak
+
+
+def delil_yolu(kimlik: str, ek_no: int) -> str:
+    """Bir ekin dosya yolu."""
+    taslak = yukle(kimlik)
+
+    for delil in taslak.deliller:
+        if int(delil.get("ek_no", 0)) == int(ek_no):
+            return str(delil.get("yol", ""))
+
+    raise TaslakHatasi(f"Ek:{ek_no} bu taslakta yok")

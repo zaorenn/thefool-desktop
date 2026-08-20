@@ -335,3 +335,86 @@ def test_her_sey_tamamsa_URET_diyor() -> None:
     taslak.ek_ekle("n4", "Makam Onayı", 1)
 
     assert "rapor_taslak_uret" in taslak.durum("n4")["siradaki_adim"]
+
+
+# ---------------------------------------------------------------------------
+# Şekli anlaşılmayan girdi SESSİZCE kabul edilmiyor
+# ---------------------------------------------------------------------------
+#
+# Ölçüldü: model bölüm öğesi olarak şunu gönderdi ve kod kabul etti --
+# ``tur`` yok sayıldı, ``metin`` boş kaldı, beş bölümü de BOŞ olan bir rapor
+# üretildi ve araç "başarılı" dedi. Resmî evrakta en kötü sonuç bu: hata
+# görünmüyor, belge boş çıkıyor.
+
+MODELIN_GONDERDIGI = [
+    {'"icerik"': [{'"metin"': [{'"aciklama"': 1, '"tur"': 0}], '"paragraf"': 1}]}
+]
+
+
+def test_modelin_BOZUK_yapisi_reddediliyor() -> None:
+    taslak.baslat("v1", "inceleme")
+
+    with pytest.raises(taslak.TaslakHatasi, match="metin"):
+        taslak.bolum_ekle("v1", "I. GİRİŞ", MODELIN_GONDERDIGI)
+
+    # Taslak KIRLENMEDI.
+    assert taslak.durum("v1")["yazilan_bolumler"] == []
+
+
+def test_hata_DOGRU_SEKLI_soyluyor() -> None:
+    """Model düzeltip tekrar gönderebilmeli; "geçersiz" demek yetmez."""
+    taslak.baslat("v2", "inceleme")
+
+    with pytest.raises(taslak.TaslakHatasi) as bilgi:
+        taslak.bolum_ekle("v2", "I. GİRİŞ", MODELIN_GONDERDIGI)
+
+    assert '"tur": "paragraf"' in str(bilgi.value)
+
+
+def test_BOS_bolum_reddediliyor() -> None:
+    taslak.baslat("v3", "inceleme")
+
+    with pytest.raises(taslak.TaslakHatasi, match="boş gönderildi"):
+        taslak.bolum_ekle("v3", "I. GİRİŞ", [])
+
+
+def test_bilinmeyen_OGE_TURU_reddediliyor() -> None:
+    taslak.baslat("v4", "inceleme")
+
+    with pytest.raises(taslak.TaslakHatasi, match="bilinmeyen tür"):
+        taslak.bolum_ekle("v4", "I. GİRİŞ", [{"tur": "sekil", "metin": "x"}])
+
+
+def test_eksik_TABLO_alanlari_reddediliyor() -> None:
+    taslak.baslat("v5", "inceleme")
+
+    with pytest.raises(taslak.TaslakHatasi, match="basliklar"):
+        taslak.bolum_ekle("v5", "IV. TARTIŞMA", [{"tur": "tablo", "baslik": "Tablo 1"}])
+
+
+def test_TANINMAYAN_kapak_alani_reddediliyor() -> None:
+    """Model ``rapor_tarih`` yerine ``rapor_date`` yazdı; tarih [EKSİK] kaldı."""
+    taslak.baslat("v6", "inceleme")
+
+    with pytest.raises(taslak.TaslakHatasi, match="rapor_date"):
+        taslak.kapak_guncelle("v6", {"rapor_date": "01.06.2026"})
+
+
+def test_dogru_kapak_alani_KABUL_ediliyor() -> None:
+    taslak.baslat("v7", "inceleme")
+    taslak.kapak_guncelle("v7", {"rapor_tarih": "01.06.2026"})
+
+    assert taslak.yukle("v7").kapak["rapor_tarih"] == "01.06.2026"
+
+
+def test_dogrudan_rapor_yaz_da_BOZUGU_reddediyor(tmp_path) -> None:
+    istek = {
+        "tur": "inceleme",
+        "kapak": {"mufettis_ad": "Cemil KAYA"},
+        "bolumler": [{"baslik": "I. GİRİŞ", "ogeler": MODELIN_GONDERDIGI}],
+    }
+
+    cevap = json.loads(arac.rapor_yaz(json.dumps(istek), str(tmp_path / "r.docx")))
+
+    assert "error" in cevap
+    assert not (tmp_path / "r.docx").exists()

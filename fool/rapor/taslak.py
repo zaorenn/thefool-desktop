@@ -181,6 +181,8 @@ def bolum_ekle(kimlik: str, baslik: str, ogeler: list[dict]) -> Taslak:
     gönderiyor ve iki "III. İNCELEME VE ARAŞTIRMA" bölümü olan bir rapor,
     tamamlanmamış bir rapordan daha kötü.
     """
+    ogeleri_dogrula(list(ogeler), baslik)
+
     taslak = yukle(kimlik)
     yeni = {"baslik": baslik, "ogeler": list(ogeler)}
 
@@ -220,6 +222,8 @@ def kapak_guncelle(kimlik: str, alanlar: dict) -> Taslak:
     Tümünü birden göndermek zorunda kalmamak önemli: ölçülen hata tam olarak
     modelin uzun bir kapak nesnesini yeniden kurarken alan düşürmesiydi.
     """
+    kapak_alanlarini_dogrula(alanlar)
+
     taslak = yukle(kimlik)
     taslak.kapak.update({k: v for k, v in alanlar.items() if v not in (None, "")})
     _yaz(taslak)
@@ -355,3 +359,93 @@ def sirala(bolumler: list[dict], tur_kimligi: str) -> list[dict]:
         return (len(beklenen), sira)
 
     return [b for _, b in sorted(enumerate(bolumler), key=anahtar)]
+
+
+# ---------------------------------------------------------------------------
+# Doğrulama -- modelin gönderdiği şekli SESSİZCE kabul etmemek
+# ---------------------------------------------------------------------------
+#
+# Ölçülen olay: yerel model bölüm öğeleri yerine şunu gönderdi::
+#
+#     {"\"icerik\"": [{"\"metin\"": [{"\"aciklama\"": 1, "\"tur\"": 0}]}]}
+#
+# Kod bunu kabul etti: ``tur`` yoktu -> "paragraf" varsayıldı, ``metin`` yoktu
+# -> boş dizi. Sonuçta beş bölümü de BOŞ olan bir rapor üretildi ve araç
+# "başarılı" dedi. Kapakta da model ``rapor_tarih`` yerine ``rapor_date``
+# yazdı; bilinmeyen alan sessizce yutuldu ve tarih [EKSİK] kaldı.
+#
+# İkisi de aynı kusur: anlaşılmayanı sessizce düşürmek. Resmî evrakta en kötü
+# sonuç bu -- hata görünmüyor, belge boş çıkıyor. Artık anlaşılmayan şey
+# REDDEDİLİYOR ve doğru şeklin ne olduğu söyleniyor, böylece model düzeltip
+# tekrar gönderebiliyor.
+
+#: Bir bölüm öğesinin alabileceği türler ve o türde ZORUNLU alanlar.
+_OGE_ALANLARI = {
+    "paragraf": ("metin",),
+    "alt_baslik": ("metin",),
+    "alinti": ("metin",),
+    "tablo": ("basliklar", "satirlar"),
+}
+
+#: Kapakta tanınan alanlar. MADDE 6(1) + imza/gizlilik.
+_KAPAK_ALANLARI = frozenset(
+    (
+        "bakanlik", "baskanlik", "baslik", "konu", "gorev_emri_tarih",
+        "gorev_emri_sayi", "rapor_tarih", "rapor_sayi", "ek_adedi",
+        "mufettis_ad", "mufettis_unvan", "gizli",
+    )
+)
+
+
+def ogeleri_dogrula(ogeler: list[dict], baslik: str) -> None:
+    """Bölüm öğeleri gerçekten yazılabilir mi? Değilse NEDEN olmadığını söyle."""
+    if not ogeler:
+        raise TaslakHatasi(
+            f"'{baslik}' bölümü boş gönderildi. En az bir öğe gerekiyor: "
+            '{"tur": "paragraf", "metin": "..."}'
+        )
+
+    for sira, oge in enumerate(ogeler, start=1):
+        yer = f"'{baslik}' bölümü, {sira}. öğe"
+
+        if not isinstance(oge, dict):
+            raise TaslakHatasi(f"{yer}: nesne olmalı, {type(oge).__name__} geldi.")
+
+        tur = oge.get("tur", "paragraf")
+
+        if tur not in _OGE_ALANLARI:
+            raise TaslakHatasi(
+                f"{yer}: bilinmeyen tür {tur!r}. "
+                f"Geçerli türler: {', '.join(sorted(_OGE_ALANLARI))}."
+            )
+
+        for alan in _OGE_ALANLARI[tur]:
+            deger = oge.get(alan)
+
+            if alan == "metin":
+                if not isinstance(deger, str) or not deger.strip():
+                    raise TaslakHatasi(
+                        f"{yer} ({tur}): 'metin' dolu bir yazı olmalı. "
+                        'Doğru şekli: {"tur": "%s", "metin": "..."}' % tur
+                    )
+            elif not isinstance(deger, list) or not deger:
+                raise TaslakHatasi(
+                    f"{yer} (tablo): '{alan}' dolu bir dizi olmalı. "
+                    'Doğru şekli: {"tur": "tablo", "baslik": "Tablo 1: ...", '
+                    '"basliklar": ["A","B"], "satirlar": [["1","2"]]}'
+                )
+
+
+def kapak_alanlarini_dogrula(alanlar: dict) -> None:
+    """Kapakta tanınmayan alan varsa reddet.
+
+    Sessizce yutmak, modelin ``rapor_date`` yazıp tarihin boş kalmasına yol
+    açıyordu -- belge [EKSİK] ile basıldı ve kimse fark etmedi.
+    """
+    bilinmeyen = sorted(set(alanlar) - _KAPAK_ALANLARI)
+
+    if bilinmeyen:
+        raise TaslakHatasi(
+            f"Kapakta tanınmayan alan: {', '.join(bilinmeyen)}. "
+            f"Geçerli alanlar: {', '.join(sorted(_KAPAK_ALANLARI))}."
+        )

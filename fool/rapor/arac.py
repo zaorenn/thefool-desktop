@@ -327,10 +327,17 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
     bolumler = []
     for ham in taslak.sirala(list(veri.get("bolumler", [])), tur):
         bolum = Bolum(ham.get("baslik", ""))
+        ogeler = list(ham.get("ogeler", []))
+
+        # Sekli ANLASILMAYAN oge sessizce bos paragrafa donusmuyor: modelin
+        # bozuk yapisi bes bolumu de bos birakmisti ve arac "basarili"
+        # demisti (bkz. taslak.ogeleri_dogrula).
         try:
-            bolum.ogeler = [_oge_kur(o) for o in ham.get("ogeler", [])]
-        except ValueError as sebep:
-            return _hata(f"bölüm '{bolum.baslik}': {sebep}")
+            taslak.ogeleri_dogrula(ogeler, bolum.baslik)
+            bolum.ogeler = [_oge_kur(o) for o in ogeler]
+        except (taslak.TaslakHatasi, ValueError) as sebep:
+            return _hata(str(sebep))
+
         bolumler.append(bolum)
 
     ekler = [

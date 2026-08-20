@@ -67,10 +67,21 @@ export interface VoiceClone {
   path: string
 }
 
+/** Secili motor OLCULMUS olarak yavassa gosterilecek ipucu. */
+export interface SlowEngineHint {
+  alternative: string
+  alternative_ms: number
+  message: string
+  selected: string
+  selected_ms: number
+}
+
 export interface VoiceCatalog {
   active: { stt: string; tts: string }
   cuda_available: boolean
   items: VoiceItem[]
+  /** ``null`` = secili motor yeterince hizli ya da hic olculmemis. */
+  slow_engine?: null | SlowEngineHint
   voice_dir: string
 }
 

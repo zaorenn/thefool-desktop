@@ -97,10 +97,31 @@ def is_measured(selected: str, results: Any) -> bool:
         return False
 
 
+#: Anlaşılır ama YAPAY duyulan motorlar.
+#:
+#: Ayrım gerekli, çünkü öneri yalnızca hıza bakınca saçmalıyor: ölçümde
+#: piper 120 ms, kyutai 2517 ms. Yani "piper'a geç" en hızlı cevap -- ama
+#: kyutai'yi seçen kullanıcı onu GERÇEKÇİLİĞİ için seçti ve piper o işi
+#: yapmıyor. Hızlı ama kulağa robot gibi gelen bir motoru önermek,
+#: kullanıcının çözdüğü sorunu geri getirmek olurdu.
+#:
+#: Doğal duyulan bir motordan doğal duyulan bir motora öneri serbest
+#: (kyutai 2517 ms -> styletts2 556 ms gibi); tersi değil.
+BASIC_QUALITY: frozenset[str] = frozenset({"piper"})
+
+
+def _is_downgrade(selected: str, candidate: str) -> bool:
+    """*candidate*, *selected*'a göre bir KALİTE düşüşü mü?"""
+    return candidate in BASIC_QUALITY and selected not in BASIC_QUALITY
+
+
 def faster_alternative(
     selected: str, results: dict, *, factor: float = SLOW_FACTOR
 ) -> tuple[str, int, int] | None:
     """Seçili motordan belirgin şekilde hızlı, ölçülmüş bir motor var mı?
+
+    Yalnızca KALİTE DÜŞÜŞÜ OLMAYAN adaylar değerlendiriliyor
+    (bkz. ``BASIC_QUALITY``).
 
     Döner: ``(motor, o_motorun_ms, secilinin_ms)`` ya da ``None``.
     """
@@ -121,6 +142,8 @@ def faster_alternative(
     for entry_id, row in results.items():
         if entry_id == str(selected) or not isinstance(row, dict):
             continue
+        if _is_downgrade(str(selected), entry_id):
+            continue
         try:
             ms = int(row.get("elapsed_ms") or 0)
         except (TypeError, ValueError):
@@ -138,13 +161,21 @@ def faster_alternative(
 
 
 def slow_engine_message(selected: str, alternative: str, alt_ms: int, current_ms: int) -> str:
-    """Ne olduğunu VE ne yapacağını birlikte söyle."""
+    """Ne olduğunu VE ne yapacağını birlikte söyle.
+
+    Sayı GEÇİYOR: "daha hızlı bir seçenek var" tek başına inandırıcı değil ve
+    kullanıcı zaten bir motoru bilerek seçmiş. Ölçülen fark ise bir karar
+    verdirir.
+
+    Metin bir KABUK KOMUTU önermiyor artık. Bunu okuyan kişi masaüstü
+    panelinde duruyor ve seçim orada tek tık; terminale göndermek, aynı işi
+    daha zor bir yerde yaptırmaktı.
+    """
     return (
         f"{selected} takes {current_ms / 1000:.2f}s per sentence; "
-        f"{alternative} is installed and takes {alt_ms / 1000:.2f}s "
-        f"({current_ms / max(alt_ms, 1):.0f}x faster). "
-        f"Switch with `fool config set tts.provider {alternative}`, "
-        "or listen to both in Settings > Text to speech."
+        f"{alternative} takes {alt_ms / 1000:.2f}s "
+        f"({current_ms / max(alt_ms, 1):.0f}x faster) and is already installed. "
+        "Both are here — press Listen to compare."
     )
 
 

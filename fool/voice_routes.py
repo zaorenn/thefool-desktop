@@ -82,7 +82,40 @@ async def voice_catalog() -> dict[str, Any]:
         "voice_dir": str(voice_models.voice_dir()),
         "active": voice_models.active_providers(),
         "cuda_available": voice_models._cuda_available(),
+        # Secili motor OLCULMUS olarak yavassa panel bunu soylesin.
+        # Olculdu: kyutai cumle basina 2,52 sn, kokoro 0,20 sn. Kullanici
+        # "cevaplar nerdeyse realtime olmali" istedi ama en yavas motorda
+        # kalmisti ve bunu hicbir yerden goremiyordu.
+        "slow_engine": _slow_engine_hint(),
     }
+
+
+def _slow_engine_hint() -> dict[str, Any] | None:
+    """Secili motor icin "daha hizlisi var" ipucu (``None`` = yok).
+
+    Hata YUTULUYOR: bir ipucu ugruna katalogu dusurmek, kullanicinin ses
+    panelini tumden kaybetmesi olurdu.
+    """
+    try:
+        from fool import voice_bench
+
+        selected = voice_models.active_providers().get("tts") or ""
+        found = voice_bench.faster_alternative(selected, voice_bench.load_results() or {})
+        if not found:
+            return None
+
+        alternative, alt_ms, current_ms = found
+        return {
+            "alternative": alternative,
+            "alternative_ms": alt_ms,
+            "message": voice_bench.slow_engine_message(
+                selected, alternative, alt_ms, current_ms
+            ),
+            "selected": selected,
+            "selected_ms": current_ms,
+        }
+    except Exception:
+        return None
 
 
 @router.post("/api/fool/voice/install")

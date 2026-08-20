@@ -22,10 +22,12 @@
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
+import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Mic, MicOff } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
+import { $voicePlayback } from '@/store/voice-playback'
 
 import { voiceApi, type VoiceCatalog } from '../voice-api'
 
@@ -38,6 +40,7 @@ import {
   scaleFor
 } from './orb-motion'
 import { useFriendVoice } from './use-friend-voice'
+import { isWarming, warmingLabel } from './warming'
 
 const RING_COUNT = 3
 
@@ -143,6 +146,10 @@ export function FriendView() {
 
         if (!cancelled) {
           setCatalog(data)
+          // Friend'in KENDI secimi yoksa bos birakiliyor: bos = genel
+          // ``tts.provider``. Iki yuzey boylece AYNI motorda bulusuyor ve
+          // hic tahliye gerekmiyor. Farkli secmek serbest ama bedeli var
+          // (motor degisimi yeniden yukleme).
           setProvider(saved.providers?.friend ?? '')
         }
       } catch {
@@ -238,6 +245,34 @@ export function FriendView() {
     voice.endHold()
   }, [holding, voice])
 
+  // Model uyaniyor mu? Olculdu: soguk yukleme 4,67-40,52 sn ve o sure
+  // boyunca ekranda "Talking" yazip HIC ses cikmiyordu -- kullanici icin
+  // "bozuk"tan ayirt edilemez.
+  const playback = useStore($voicePlayback)
+  const [preparingSince, setPreparingSince] = useState<null | number>(null)
+  const [warming, setWarming] = useState(false)
+
+  useEffect(() => {
+    if (playback.status !== 'preparing') {
+      setPreparingSince(null)
+      setWarming(false)
+
+      return
+    }
+
+    const startedAt = preparingSince ?? Date.now()
+
+    if (preparingSince === null) {
+      setPreparingSince(startedAt)
+    }
+
+    const timer = setInterval(() => {
+      setWarming(isWarming({ elapsedMs: Date.now() - startedAt, preparing: true }))
+    }, 300)
+
+    return () => clearInterval(timer)
+  }, [playback.status, preparingSince])
+
   const tts = (catalog?.items ?? []).filter(item => item.kind === 'tts' && item.installed)
 
   // Secili motorun katalog kaydi -- ses tipleri ondan geliyor.
@@ -253,6 +288,13 @@ export function FriendView() {
         <span className="text-xs tracking-wide text-muted-foreground uppercase">
           {muted ? 'Muted' : PHASE_LABEL[voice.phase]}
         </span>
+        {/* Bekleme kacinilmaz (model diskten VRAM'e yuklenecek) ama
+            GORUNMEZ olmasi degil. */}
+        {warming && (
+          <span className="text-xs text-(--theme-warm)">
+            {warmingLabel(selected?.label ?? provider)}
+          </span>
+        )}
         {/* Son soylenen ve son duyulan: kullanici yanlis anlasilmayi
             GORMELI. Sesli bir arayuzde bunu gostermemek, hatayi ancak
             cevap gelince fark etmek demek. */}

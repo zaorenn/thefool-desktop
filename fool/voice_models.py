@@ -826,10 +826,50 @@ def clone_dir() -> Path:
 #: Klonlamayi DESTEKLEYEN motorlar. Digerleri sabit ses kumesiyle calisiyor ve
 #: onlara referans kayit vermek sessizce yok sayilirdi -- kullanici sesini
 #: yukleyip hicbir sey degismedigini gorurdu.
-CLONE_CAPABLE: Final[frozenset[str]] = frozenset({"chatterbox"})
+#:
+#: Ucu de zaten sifir-atis klonluyordu (egitim yok, tek referans kayit
+#: yetiyor) ama yalnizca chatterbox arayuzden erisilebilirdi -- styletts2 ve
+#: f5-tts'in kendi eklentileri ``reference`` kwarg'ini zaten okuyordu, panel
+#: hic yol vermiyordu. Kullanici bunu "her ses modeli icin klonlamayi
+#: arayuzden yapalim" diye istedi.
+CLONE_CAPABLE: Final[frozenset[str]] = frozenset({"chatterbox", "styletts2", "f5tts"})
 
-#: Kabul edilen bicimler. Chatterbox 5-10 saniyelik temiz bir kayitla calisiyor.
+#: Her motorun REFERANS DOSYASINI okudugu yapilandirma anahtari -- AYNI degil.
+#: Chatterbox'in kendi eklentisi ``voice_sample`` diyor (Resemble AI'nin
+#: orijinal API'siyle uyumlu kalmak icin), styletts2 ve f5-tts ``reference``
+#: (kendi API'lerinin adi). Tek bir sabit anahtar kullanmak SESSIZCE yanlis
+#: alana yazardi -- motor referansi hic gormez, kullanici yukledigini
+#: duymaya devam ederdi.
+CLONE_CONFIG_KEY: Final[dict[str, str]] = {
+    "chatterbox": "voice_sample",
+    "styletts2": "reference",
+    "f5tts": "reference",
+}
+
+#: Kabul edilen bicimler. Uc motor da 5-10 saniyelik temiz bir kayitla calisiyor.
 CLONE_SUFFIXES: Final[tuple[str, ...]] = (".wav", ".mp3", ".flac", ".m4a", ".ogg")
+
+#: Panelde "nasil calisir" dugmesinin gosterdigi kisa aciklama. Motor basina
+#: farkli: f5-tts kaydin METNINI de istiyor gibi gorunse de BOS birakilirsa
+#: kendi ic Whisper'i ile otomatik cikariyor -- kullaniciya bunu soylemezsek
+#: gereksiz bir alan bekler.
+CLONE_HELP: Final[dict[str, str]] = {
+    "chatterbox": (
+        "Drop 5-10 seconds of clean, single-speaker speech (no music, no "
+        "background noise). Chatterbox clones the voice instantly — no "
+        "training step, no waiting."
+    ),
+    "styletts2": (
+        "Drop 5-10 seconds of clean speech. StyleTTS 2 borrows the clip's "
+        "tone and pacing on top of its own voice — closer to a style "
+        "transfer than a perfect copy."
+    ),
+    "f5tts": (
+        "Drop 5-10 seconds of clean speech. F5-TTS transcribes the clip "
+        "itself before cloning, so you don't need to type out what's said "
+        "in it."
+    ),
+}
 
 
 def list_clones() -> list[dict[str, Any]]:
@@ -892,20 +932,26 @@ def set_clone(entry_id: str, clone_id: str) -> dict[str, Any]:
     e = entry(entry_id)
     if e is None:
         raise ValueError(f"bilinmeyen oge: {entry_id}")
-    if (e.provider_id or e.id) not in CLONE_CAPABLE:
+    provider = e.provider_id or e.id
+    if provider not in CLONE_CAPABLE:
         raise ValueError(f"{e.label} ses klonlamayi desteklemiyor")
+
+    # Motor basina FARKLI anahtar -- bkz. CLONE_CONFIG_KEY. Yanlis anahtara
+    # yazmak motorun referansi hic gormemesi demek, ama HATA da vermiyor:
+    # kullanici yukledigini duymaya devam eder, sebebini asla ogrenemez.
+    key = CLONE_CONFIG_KEY.get(provider, "voice_sample")
 
     from fool_cli.config import set_config_value
 
     if not clone_id:
-        set_config_value(f"tts.{e.provider_id or e.id}.voice_sample", "")
+        set_config_value(f"tts.{provider}.{key}", "")
         return {"ok": True, "clone": ""}
 
     target = clone_dir() / Path(clone_id).name
     if not target.is_file():
         raise ValueError(f"klon bulunamadi: {clone_id}")
 
-    set_config_value(f"tts.{e.provider_id or e.id}.voice_sample", str(target))
+    set_config_value(f"tts.{provider}.{key}", str(target))
     return {"ok": True, "clone": target.name}
 
 
@@ -916,8 +962,10 @@ def current_clone(e: VoiceEntry) -> str:
         cfg = load_config() or {}
     except Exception:
         return ""
-    node = ((cfg.get("tts") or {}).get(e.provider_id or e.id) or {})
-    return Path(str(node.get("voice_sample") or "")).name
+    provider = e.provider_id or e.id
+    key = CLONE_CONFIG_KEY.get(provider, "voice_sample")
+    node = ((cfg.get("tts") or {}).get(provider) or {})
+    return Path(str(node.get(key) or "")).name
 
 
 def _catalog_row(e: VoiceEntry, active: dict[str, str]) -> dict[str, Any]:
@@ -931,6 +979,7 @@ def _catalog_row(e: VoiceEntry, active: dict[str, str]) -> dict[str, Any]:
     row["cuda_ready"] = cuda_ready(e)
     row["clone_capable"] = (e.provider_id or e.id) in CLONE_CAPABLE
     row["clone"] = current_clone(e) if row["clone_capable"] else ""
+    row["clone_help"] = CLONE_HELP.get(e.provider_id or e.id, "") if row["clone_capable"] else ""
     row["voices"] = available_voices(e) if e.kind == "tts" else []
     row["voice"] = current_voice(e) if e.kind == "tts" else ""
     return row

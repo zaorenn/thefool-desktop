@@ -459,3 +459,67 @@ class TestSesKlonlama:
 
         vm.delete_clone(clones[0]["id"])
         assert vm.list_clones() == []
+
+    def test_styletts2_ve_f5tts_de_klonluyor(self):
+        """Ikisi de zaten sifir-atis klonluyordu (eklentileri ``reference``
+        kwarg'ini okuyordu) ama arayuzden erisilebilir DEGILDI -- kullanici
+        "her ses modeli icin klonlamayi arayuzden yapalim" diye istedi."""
+        from fool.voice_models import CLONE_CAPABLE
+
+        assert "styletts2" in CLONE_CAPABLE
+        assert "f5tts" in CLONE_CAPABLE
+
+    def test_motor_basina_DOGRU_yapilandirma_anahtarina_yaziyor(self, tmp_path, monkeypatch):
+        """Chatterbox'in eklentisi ``voice_sample`` okuyor, styletts2 ve
+        f5-tts ``reference``. Tek bir sabit anahtar kullanmak SESSIZCE yanlis
+        alana yazardi -- motor referansi hic gormez, kullanici yukledigini
+        duymaya devam ederdi."""
+        from fool import voice_models as vm
+
+        monkeypatch.setattr(vm, "clone_dir", lambda: tmp_path)
+        saved: dict[str, str] = {}
+        monkeypatch.setattr(
+            "fool_cli.config.set_config_value",
+            lambda key, value: saved.__setitem__(key, value),
+        )
+
+        clip = vm.save_clone("ses.wav", b"x" * 8192)
+
+        vm.set_clone("chatterbox", clip["id"])
+        assert "tts.chatterbox.voice_sample" in saved
+        assert "tts.chatterbox.reference" not in saved
+
+        vm.set_clone("styletts2", clip["id"])
+        assert "tts.styletts2.reference" in saved
+
+        vm.set_clone("f5-tts", clip["id"])
+        assert "tts.f5tts.reference" in saved
+
+    def test_current_clone_DOGRU_anahtardan_okuyor(self, monkeypatch):
+        from fool import voice_models as vm
+
+        monkeypatch.setattr(
+            "fool_cli.config.load_config",
+            lambda: {"tts": {"styletts2": {"reference": "/klonlar/ben.wav"}}},
+        )
+
+        entry = vm.entry("styletts2")
+        assert entry is not None
+        assert vm.current_clone(entry) == "ben.wav"
+
+    def test_her_klonlanabilir_motorun_YARDIM_metni_var(self):
+        """Yardim eksikse panelde bos bir dugme olurdu -- boyle bir motor
+        eklenirse bu test kirilip hatirlatir."""
+        from fool.voice_models import CLONE_CAPABLE, CLONE_HELP
+
+        for provider in CLONE_CAPABLE:
+            assert CLONE_HELP.get(provider, "").strip(), f"{provider}: yardim metni yok"
+
+    def test_klon_yeteneksiz_motorda_yardim_BOS(self):
+        from fool import voice_models as vm
+
+        entry = vm.entry("kokoro")
+        assert entry is not None
+
+        rows = [r for r in vm.catalog_status() if r["id"] == "kokoro"]
+        assert rows[0]["clone_help"] == ""

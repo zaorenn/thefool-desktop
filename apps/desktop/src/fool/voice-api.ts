@@ -42,6 +42,8 @@ export interface VoiceItem {
   clone_capable: boolean
   /** Secili klon dosyasinin adi ("" = kapali). */
   clone: string
+  /** Bu motora ozel klonlama aciklamasi (bos = klonlama yok). */
+  clone_help: string
   assets_installed: boolean
   cuda_available: boolean
   devices: ('cpu' | 'cuda')[]

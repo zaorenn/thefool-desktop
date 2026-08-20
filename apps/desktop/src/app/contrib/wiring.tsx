@@ -25,6 +25,7 @@ import { $newSessionTabAction, registerPaneCloser } from '@/components/pane-shel
 import { FloatingPet } from '@/components/pet/floating-pet'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
+import { isNotchWindow } from '@/fool/notch/window'
 import { getLatestSessionMessages } from '@/hermes'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
 import { isMessagingSource } from '@/lib/session-source'
@@ -68,7 +69,6 @@ import {
 } from '@/store/session'
 import { clearSessionTodos, setSessionTodos, todosForHydration } from '@/store/todos'
 import { armWakeWord, stopClientCapture } from '@/store/wake-word'
-import { isNotchWindow } from '@/fool/notch/window'
 import { isAuxiliaryWindow, isHudWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
 
@@ -1078,8 +1078,14 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         profile={activeGatewayProfile}
       />
       <UpdatesOverlay />
-      <GatewayConnectingOverlay />
-      <BootFailureOverlay />
+      {/* Notch 460x220, her zaman ustte ve yari saydam -- ana pencerenin
+          "baglaniyor" / "gateway'e ulasilamadi" tam ekran anlatimi onun
+          icinde anlamsiz, kucuk bir kutuda sikisip kaliyor ve kullaniciya
+          notch'un kendisi bozulmus gibi gorunuyor. Notch'un kendi durum
+          gostergesi zaten var (bkz. fool/notch/notch-shell.tsx); bu ikisi
+          onun YERINE degil, USTUNE biniyordu. */}
+      {!isNotchWindow() && <GatewayConnectingOverlay />}
+      {!isNotchWindow() && <BootFailureOverlay />}
       <CommandPalette />
       <PetGenerateOverlay />
       <SessionSwitcher />

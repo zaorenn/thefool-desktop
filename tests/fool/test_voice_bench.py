@@ -44,9 +44,42 @@ def test_cok_yavas_secim_yakalaniyor() -> None:
 
     assert hit is not None
     alternative, alt_ms, current_ms = hit
-    assert alternative == "piper"
-    assert alt_ms == 110
+    # ``piper`` DEGIL (110 ms ile en hizlisi o): bkz. asagidaki kalite testi.
+    assert alternative == "kokoro"
+    assert alt_ms == 140
     assert current_ms == 9_260
+
+
+def test_HIZLI_ama_YAPAY_motor_onerilmiyor() -> None:
+    """Öneri yalnızca hıza bakınca saçmalıyordu.
+
+    Ölçümde piper 110 ms ile en hızlısı, ama qwen3-tts'i seçen kullanıcı onu
+    GERÇEKÇİLİĞİ için seçti. "piper'a geç" demek, kullanıcının çözdüğü
+    sorunu geri getirmek olurdu -- hızlı ama kulağa robot gibi gelen bir ses.
+    """
+    alternative, _, _ = vb.faster_alternative("qwen3-tts", RESULTS)
+
+    assert alternative not in vb.BASIC_QUALITY
+
+
+def test_YAPAY_motordan_yapay_motora_oneri_serbest() -> None:
+    """Ters yön: kısıt kalite DÜŞÜŞÜNE karşı, kalite artışına değil.
+
+    Zaten piper kullanan biri için daha iyi bir seçenek gizlenmemeli.
+    """
+    results = {"piper": {"elapsed_ms": 9_000}, "kokoro": {"elapsed_ms": 140}}
+
+    hit = vb.faster_alternative("piper", results)
+
+    assert hit is not None
+    assert hit[0] == "kokoro"
+
+
+def test_tek_secenek_YAPAY_ise_oneri_YOK() -> None:
+    """Elde yalnızca bir kalite düşüşü varsa susmak doğru cevap."""
+    results = {"kyutai": {"elapsed_ms": 9_000}, "piper": {"elapsed_ms": 110}}
+
+    assert vb.faster_alternative("kyutai", results) is None
 
 
 def test_zaten_hizli_secim_uyarilmiyor() -> None:
@@ -99,7 +132,11 @@ def test_mesaj_olcumu_ve_cozumu_birlikte_veriyor() -> None:
 
     assert "9.26s" in message
     assert "0.14s" in message
-    assert "fool config set tts.provider kokoro" in message
+    # KABUK KOMUTU YOK: bunu okuyan kisi masaustu panelinde duruyor ve secim
+    # orada tek tik. Terminale gondermek ayni isi daha zor bir yerde
+    # yaptirmakti.
+    assert "fool config set" not in message
+    assert "Listen" in message
 
 
 def test_mesaj_kat_farkini_soyluyor() -> None:

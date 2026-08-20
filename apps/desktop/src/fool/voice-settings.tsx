@@ -775,6 +775,18 @@ export function VoiceSettings() {
         meta={catalog?.cuda_available ? 'CUDA available' : 'CPU only'}
         title="Text to speech"
       >
+        {/* OLCULMUS yavaslik uyarisi.
+            Sayi geciyor, cunku "daha hizli bir secenek var" tek basina
+            inandirici degil ve kullanici bir motoru bilerek secmis. Olculen
+            fark ise karar verdirir (kyutai 2,52 sn / kokoro 0,20 sn).
+            Kalite dususu ONERILMIYOR: piper daha da hizli ama kyutai'yi
+            gercekciligi icin secen kisiye onu onermek, cozulen sorunu geri
+            getirmek olurdu (bkz. fool/voice_bench.py::BASIC_QUALITY). */}
+        {catalog?.slow_engine && (
+          <div className="mb-2 rounded-md border border-(--theme-warm)/40 bg-(--theme-warm)/10 px-3 py-2 text-xs text-(--text-secondary)">
+            {catalog.slow_engine.message}
+          </div>
+        )}
         {tts.map(item => (
           <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}

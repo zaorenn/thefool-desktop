@@ -333,6 +333,7 @@ def test_her_sey_tamamsa_URET_diyor() -> None:
     ):
         taslak.bolum_ekle("n4", baslik, [{"tur": "paragraf", "metin": "x"}])
     taslak.ek_ekle("n4", "Makam Onayı", 1)
+    taslak.ozet_yaz("n4", ["Özet."])
 
     assert "rapor_taslak_uret" in taslak.durum("n4")["siradaki_adim"]
 
@@ -418,3 +419,36 @@ def test_dogrudan_rapor_yaz_da_BOZUGU_reddediyor(tmp_path) -> None:
 
     assert "error" in cevap
     assert not (tmp_path / "r.docx").exists()
+
+
+def test_ozet_SONRADAN_yazilabiliyor() -> None:
+    """MADDE 7 özeti raporun uzunluğuna göre ölçüyor: önce metin, sonra özet."""
+    taslak.baslat("o1", "inceleme")
+    taslak.bolum_ekle("o1", "I. GİRİŞ", [{"tur": "paragraf", "metin": "x"}])
+
+    taslak.ozet_yaz("o1", ["Kamu zararı oluşmadığı değerlendirilmiştir."])
+
+    assert taslak.yukle("o1").ozet == ["Kamu zararı oluşmadığı değerlendirilmiştir."]
+
+
+def test_BOS_ozet_reddediliyor() -> None:
+    taslak.baslat("o2", "inceleme")
+
+    with pytest.raises(taslak.TaslakHatasi, match="MADDE 7"):
+        taslak.ozet_yaz("o2", ["", "   "])
+
+
+def test_ekler_bitince_OZETE_yonlendiriyor() -> None:
+    taslak.baslat("o3", "inceleme", kapak={a: "x" for a in taslak._ZORUNLU_KAPAK})
+    for baslik in (
+        "I. GİRİŞ", "II. KONU", "III. İNCELEME VE ARAŞTIRMA",
+        "IV. TARTIŞMA VE DEĞERLENDİRME", "V. SONUÇ",
+    ):
+        taslak.bolum_ekle("o3", baslik, [{"tur": "paragraf", "metin": "x"}])
+    taslak.ek_ekle("o3", "Makam Onayı", 1)
+
+    assert "rapor_taslak_ozet" in taslak.durum("o3")["siradaki_adim"]
+
+    taslak.ozet_yaz("o3", ["Özet."])
+
+    assert "rapor_taslak_uret" in taslak.durum("o3")["siradaki_adim"]

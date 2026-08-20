@@ -473,6 +473,16 @@ def taslak_kapak(kimlik: str, alanlar: dict | None = None) -> str:
     return _sonuc(taslak.durum(kimlik))
 
 
+def taslak_ozet(kimlik: str, satirlar: list | None = None) -> str:
+    """Raporun özetini yaz (MADDE 7)."""
+    try:
+        taslak.ozet_yaz(kimlik, list(satirlar or []))
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    return _sonuc(taslak.durum(kimlik))
+
+
 def taslak_durum(kimlik: str) -> str:
     """Taslakta ne var, yönergeye göre ne eksik?"""
     try:

@@ -592,7 +592,10 @@ export function FriendView() {
 
       {/* ---- Merkez ---------------------------------------------------- */}
       <div className="flex flex-1 flex-col items-center justify-center gap-7">
-        <Orb dropping level={voice.level} phase={voice.phase} />
+        {/* Damlama BURADA DEGIL: bu sayfa zaten bir sekme, orb hicbir
+            yerden damlamiyordu -- sadece sayfanin icinde beliriyordu.
+            Masaustunde damlayan pet centikte (bkz. notch/notch-pet.tsx). */}
+        <Orb level={voice.level} phase={voice.phase} />
 
         <div className="flex min-h-24 max-w-xl flex-col items-center gap-2.5 text-center">
           <span className="text-[0.6rem] tracking-[0.16em] text-muted-foreground uppercase">

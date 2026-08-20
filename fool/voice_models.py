@@ -111,6 +111,25 @@ class VoiceEntry:
     sidecar_cuda_index: str = ""
     #: PyPI'da olmayan, resmi URL'den gelen ek tekerlekler.
     sidecar_wheels: tuple[str, ...] = ()
+    #: GERCEKTEN ice aktarilabilmesi gereken modul(ler).
+    #:
+    #: ``probe_module`` yalnizca DISKTE var mi diye bakiyor (``find_spec``).
+    #: Bu alan ise "ice aktariliyor mu" sorusunun cevabini istiyor ve ikisi
+    #: ayrisabiliyor: F5-TTS'in ``f5_tts``i diskte duruyor ama ``torchcodec``
+    #: paylasilan FFmpeg DLL'lerini bulamadigi icin patliyor. Panel "kurulu"
+    #: diyor, sentez sessizce dusuyordu.
+    #:
+    #: AYIRT EDICI ve UCUZ modul secilmeli: motorun kendisini ice aktarmak
+    #: torch yuklemek demek (olculdu, motor basina 4-5 sn), oysa torchcodec
+    #: DLL asamasinda 0,9 sn'de dusuyor. Sonuc zaten onbellekleniyor
+    #: (``fool/engine_health.py``).
+    runtime_imports: tuple[str, ...] = ()
+    #: ``runtime_imports`` dustugunde KULLANICIYA gosterilecek cumle.
+    #:
+    #: Ham istisna metni yetmiyor: torchcodec'in ilk satiri ``Could not load
+    #: libtorchcodec. Likely causes:`` ve asil bilgi 30 satir asagida.
+    #: Kullanicinin panelde gormesi gereken sey NE YAPACAGI.
+    runtime_help: str = ""
     #: Paket kurulduktan SONRA agirliklari indiren Python parcasi.
     #:
     #: Neden gerekli: faster-whisper paketi model agirliklarini TASIMIYOR;
@@ -270,6 +289,19 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         provider_id="f5tts",
         probe_module="f5_tts",
+        # Olculdu (bu makine): ``import torchcodec`` -> OSError, cunku
+        # torchcodec 0.15.0'in libtorchcodec_core4..8.dll'lerinin her biri
+        # PAYLASILAN FFmpeg kutuphanelerini ariyor ve sistemde statik bir
+        # FFmpeg 9 var. Paket kurulu, motor calismiyor.
+        runtime_imports=("torchcodec",),
+        runtime_help=(
+            "F5-TTS cannot run here: it loads audio through torchcodec, which "
+            "needs shared FFmpeg libraries (avcodec/avformat/avutil, version "
+            "4-7). This machine has a static FFmpeg build, which ships no "
+            "DLLs. Install a shared ('full-shared') FFmpeg build and put its "
+            "bin folder on PATH, then reinstall F5-TTS. Until then use "
+            "StyleTTS 2 or Chatterbox for voice cloning."
+        ),
         sidecar_specs=("f5-tts==1.1.22",),
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
@@ -435,6 +467,16 @@ def status(entry_id: str) -> dict[str, Any]:
     else:
         engine_ok = _module_available(e.probe_module) if e.probe_module else True
     assets_ok = all(asset_present(a) for a in e.assets)
+
+    # KURULU ile CALISIYOR ayri sorular. Ikincisini sormadan "installed"
+    # demek, kullaniciyi klon yukleyip hicbir sey duymayacagi bir yola
+    # sokuyordu -- bkz. ``fool/engine_health.py``.
+    engine_error = ""
+    if engine_ok and assets_ok:
+        from fool import engine_health
+
+        engine_error = engine_health.error_for(e)
+
     return {
         "id": e.id,
         "provider_id": e.provider_id or e.id,
@@ -447,6 +489,11 @@ def status(entry_id: str) -> dict[str, Any]:
         "engine_installed": engine_ok,
         "assets_installed": assets_ok,
         "installed": engine_ok and assets_ok,
+        #: Paket yerinde ama motor ice aktarilamiyor. ``installed`` BILEREK
+        #: True kaliyor: yeniden kurmak bunu duzeltmiyor, o yuzden panelde
+        #: "Install" degil SEBEP gosterilmeli.
+        "engine_error": engine_error,
+        "usable": engine_ok and assets_ok and not engine_error,
         "cuda_available": _cuda_available() if "cuda" in e.devices else False,
         # Buyuk bir modeli CPU'ya almanin bedelini ONCEDEN soyle.
         "cpu_warning": cpu_warning(e),
@@ -615,11 +662,17 @@ def current_device(e: VoiceEntry) -> str:
 
 
 def _forget_cuda_probe(entry_id: str) -> None:
-    """CUDA sondasinin saklanan cevabini birak (sessizce)."""
+    """Bu motorun saklanan sonda cevaplarini birak (sessizce).
+
+    Saglik sondasi da burada: yeni bir kurulum eksik bir DLL'i getirmis
+    olabilir ve panelin "calismiyor" demeye devam etmesi, kullanicinin
+    duzelttigi seyi gormemesi olurdu.
+    """
     try:
-        from fool import cuda_probe_cache
+        from fool import cuda_probe_cache, engine_health
 
         cuda_probe_cache.invalidate(entry_id)
+        engine_health.invalidate(entry_id)
     except Exception:
         # Onbellek gecersizlestirilemedi: en kotu ihtimalle parmak izi
         # degisene kadar eski cevap gorunur. Kurulumu bunun icin
@@ -977,7 +1030,9 @@ def _catalog_row(e: VoiceEntry, active: dict[str, str]) -> dict[str, Any]:
     # gelmiyor. Sidecar'in torch'u CPU derlemesiyse motor sessizce CPU'ya
     # dusuyor ve kullanici yalnizca "cok yavas" goruyor.
     row["cuda_ready"] = cuda_ready(e)
-    row["clone_capable"] = (e.provider_id or e.id) in CLONE_CAPABLE
+    # Bozuk bir motoru "klonlanabilir" gostermek, kullanicinin ses kaydi
+    # yukleyip hicbir sey duymamasi demek. §6.2'nin somut zarari buydu.
+    row["clone_capable"] = (e.provider_id or e.id) in CLONE_CAPABLE and row.get("usable", True)
     row["clone"] = current_clone(e) if row["clone_capable"] else ""
     row["clone_help"] = CLONE_HELP.get(e.provider_id or e.id, "") if row["clone_capable"] else ""
     row["voices"] = available_voices(e) if e.kind == "tts" else []

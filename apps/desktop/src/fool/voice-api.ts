@@ -45,6 +45,18 @@ export interface VoiceItem {
   /** Bu motora ozel klonlama aciklamasi (bos = klonlama yok). */
   clone_help: string
   assets_installed: boolean
+  /**
+   * Paket yerinde ama motor ICE AKTARILAMIYOR -- sebebi ve caresi.
+   *
+   * ``installed`` bunun icin false YAPILMIYOR: yeniden kurmak duzeltmiyor,
+   * o yuzden panelde "Install" degil SEBEP gosterilmeli. Olculdu: f5-tts bu
+   * makinede kurulu gorunuyor, ``import torchcodec`` paylasilan FFmpeg
+   * DLL'lerini bulamadigi icin dusuyor ve kullanici klon yukleyip hicbir sey
+   * duymuyordu.
+   */
+  engine_error: string
+  /** Kurulu VE gercekten calisiyor. Klonlama ve otomatik secim buna bakiyor. */
+  usable: boolean
   cuda_available: boolean
   devices: ('cpu' | 'cuda')[]
   engine_installed: boolean

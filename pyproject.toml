@@ -172,6 +172,11 @@ anthropic = ["anthropic==0.87.0"]  # CVE-2026-34450, CVE-2026-34452
 exa = ["exa-py==2.10.2"]
 firecrawl = ["firecrawl-py==4.17.0"]
 parallel-web = ["parallel-web==0.4.2"]
+# FOOL-SEAM: resmi-rapor
+# Resmi rapor uretiminde bozuk PDF metin katmanini geri kazanmak icin.
+# Yalnizca ``fool/rapor/pdf_kurtar.py`` kullaniyor ve yoklugunda o yol
+# kendini kapatiyor (``kullanilabilir()``), okuma pdftotext ile devam ediyor.
+rapor = ["pdfminer.six==20260107"]
 # Image generation backends
 fal = ["fal-client==0.13.1"]
 # Edge TTS — default TTS provider but still optional (users can pick

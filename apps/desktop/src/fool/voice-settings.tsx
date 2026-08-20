@@ -232,6 +232,14 @@ function VoiceRow({
             {/* Kulakla secim + gercek gecikme. Panelin "CUDA" yazmasindan
                 daha inandirici bir kanit. */}
             {item.kind === 'tts' && <PreviewButton item={item} />}
+            {/* Buyuk bir modeli CPU'ya almanin bedelini ONCEDEN soyle:
+                bir kez tiklayip dort dakika bekleyen kullanici uygulamanin
+                dondugunu saniyor. Dugme gizlenmiyor -- karar onun. */}
+            {item.cpu_warning && item.device === 'cpu' && (
+              <span className="ml-1 text-[0.62rem] text-(--theme-warm)">
+                {item.cpu_warning}
+              </span>
+            )}
           </div>
         ) : null
       }

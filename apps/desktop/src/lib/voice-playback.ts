@@ -67,6 +67,16 @@ function currentState(
 export interface VoicePlaybackOptions {
   messageId?: string | null
   source: VoicePlaybackSource
+  /**
+   * FOOL-SEAM: surface-voice
+   *
+   * Bu yuzeyin sesi. Bos = genel ``tts.provider``.
+   *
+   * Sunucu hangi yuzeyin konustugunu bilmiyordu ve her yuzey genel ayara
+   * dusuyordu: Friend penceresinde StyleTTS 2 secili olmasina ragmen sentez
+   * qwen3 ile yapiliyordu -- olculdu, 0,60 sn yerine 10,71 sn.
+   */
+  provider?: string
 }
 
 export function stopVoicePlayback() {
@@ -356,7 +366,7 @@ async function playSpeechDataUrl(
   options: VoicePlaybackOptions,
   isCurrent: () => boolean
 ): Promise<boolean> {
-  const response = await speakText(speakableText)
+  const response = await speakText(speakableText, options.provider ?? '')
 
   if (!isCurrent()) {
     return false

@@ -41,6 +41,10 @@ import { useFriendVoice } from './use-friend-voice'
 
 const RING_COUNT = 3
 
+/** Windows'ta ``option`` renkleri ``select``ten MIRAS ALINMIYOR; acikca
+ *  veriliyor, yoksa koyu temada yazilar okunmuyor. */
+const OPTION_STYLE = { background: '#1a1a1a', color: '#f0f0f0' } as const
+
 /** Durum satırı — kullanıcıya görünen metin İngilizce (deponun kuralı). */
 const PHASE_LABEL: Record<OrbPhase, string> = {
   idle: 'Tap to talk',
@@ -120,11 +124,13 @@ function Orb({ level, phase }: { level: number; phase: OrbPhase }) {
 type ListenMode = 'hands-free' | 'push-to-talk'
 
 export function FriendView() {
-  const voice = useFriendVoice()
   const [muted, setMuted] = useState(false)
   const [listenMode, setListenMode] = useState<ListenMode>('hands-free')
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
   const [provider, setProvider] = useState('')
+  const [speaker, setSpeaker] = useState('')
+  // ``provider`` state'i hook'tan ONCE: hook onu okuyor.
+  const voice = useFriendVoice(provider)
   const [holding, setHolding] = useState(false)
 
   // Kurulu motorlar ve bu pencerenin secili sesi.
@@ -152,6 +158,8 @@ export function FriendView() {
 
   const chooseProvider = useCallback(async (next: string) => {
     setProvider(next)
+    // Motor degisti: eski motorun ses tipi yenisinde yok.
+    setSpeaker('')
 
     try {
       await voiceApi.setModeProvider('friend', next)
@@ -159,6 +167,20 @@ export function FriendView() {
       notifyError(error, 'Could not save the voice')
     }
   }, [])
+
+  /** Motorun KENDI ses tipleri (Kokoro'nun yedi sesi gibi). */
+  const chooseSpeaker = useCallback(
+    async (entryId: string, next: string) => {
+      setSpeaker(next)
+
+      try {
+        await voiceApi.setVoice(entryId, next)
+      } catch (error) {
+        notifyError(error, 'Could not save the speaker')
+      }
+    },
+    []
+  )
 
   const toggle = useCallback(() => {
     setMuted(previous => {
@@ -217,6 +239,11 @@ export function FriendView() {
   }, [holding, voice])
 
   const tts = (catalog?.items ?? []).filter(item => item.kind === 'tts' && item.installed)
+
+  // Secili motorun katalog kaydi -- ses tipleri ondan geliyor.
+  const selected = provider
+    ? tts.find(item => (item.provider_id || item.id) === provider)
+    : tts.find(item => item.active)
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-8 px-8">
@@ -286,21 +313,45 @@ export function FriendView() {
           ))}
         </div>
 
+        {/* ``bg-transparent`` YANLISTI: acilir listenin secenekleri isletim
+            sisteminin kendi menusunde ciziliyor ve saydam zeminde koyu tema
+            ile birlesince yazilar OKUNMUYORDU. Zemin ve metin rengi acikca
+            veriliyor; ``option``lara da ayrica, cunku Windows onlari
+            select'ten miras almiyor. */}
         <select
           aria-label="Voice"
-          className="h-7 rounded border border-(--stroke-nous) bg-transparent px-2 text-xs"
+          className="h-7 rounded border border-(--stroke-nous) bg-(--surface-1) px-2 text-xs text-(--text-primary)"
           onChange={event => void chooseProvider(event.target.value)}
           value={provider}
         >
           {/* Bos = genel ``tts.provider``a dus. Bu pencerenin kendi sesi
               olmak ZORUNDA degil. */}
-          <option value="">Default voice</option>
+          <option style={OPTION_STYLE} value="">
+            Default voice
+          </option>
           {tts.map(item => (
-            <option key={item.id} value={item.provider_id || item.id}>
+            <option key={item.id} style={OPTION_STYLE} value={item.provider_id || item.id}>
               {item.label}
             </option>
           ))}
         </select>
+
+        {/* Motorun KENDI ses tipleri. Yalnizca birden fazlasi varsa
+            gosteriliyor: tek secenekli bir acilir liste gurultu. */}
+        {selected && selected.voices.length > 1 && (
+          <select
+            aria-label="Speaker"
+            className="h-7 rounded border border-(--stroke-nous) bg-(--surface-1) px-2 text-xs text-(--text-primary)"
+            onChange={event => void chooseSpeaker(selected.id, event.target.value)}
+            value={speaker || selected.voice || selected.voices[0]?.id || ''}
+          >
+            {selected.voices.map(entry => (
+              <option key={entry.id} style={OPTION_STYLE} value={entry.id}>
+                {entry.label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
     </div>
   )

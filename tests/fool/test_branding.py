@@ -206,6 +206,8 @@ EXPECTED_SEAMS = {
     "voice-modes",
     "friend-window",
     "update-self-deadlock",
+    "engine-vram-eviction",
+    "surface-voice",
 }
 
 

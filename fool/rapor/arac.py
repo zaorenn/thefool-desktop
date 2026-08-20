@@ -30,6 +30,7 @@ from .cozumle import bolumlere_ayir, eksik_bolumler, iskelet_cikar, tur_tahmin
 from .docx_yazici import yaz
 from .kaynak import oku, token_tahmini
 from .model import EKSIK, Alinti, AltBaslik, Bolum, Ek, Kapak, Paragraf, Rapor, Tablo
+from . import taslak
 from .secici import ilgili_kesitler
 from .yonerge import RAPOR_TURLERI
 
@@ -395,3 +396,89 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
             else None,
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# 5. Parça parça rapor kurma
+# ---------------------------------------------------------------------------
+#
+# Tek dev JSON yerine biriken taslak. Gerekçe ``taslak.py`` başında ölçümle
+# yazılı: yerel model uzun bir yapıyı yeniden kurarken alan düşürüyor, ve 70
+# sayfalık bir rapor zaten tek çağrıya sığmıyor.
+
+
+def taslak_baslat(
+    kimlik: str,
+    tur: str = "inceleme",
+    kapak: dict | None = None,
+    ozet: list | None = None,
+    imza_yer: str = "",
+    imza_tarih: str = "",
+) -> str:
+    """Yeni bir rapor taslağı aç."""
+    try:
+        taslak.baslat(
+            kimlik,
+            tur,
+            kapak=kapak,
+            ozet=list(ozet or []),
+            imza_yer=imza_yer,
+            imza_tarih=imza_tarih,
+        )
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    return _sonuc(taslak.durum(kimlik))
+
+
+def taslak_bolum(kimlik: str, baslik: str, ogeler: list | None = None) -> str:
+    """Taslağa tek bir bölüm yaz (aynı başlık gelirse üzerine yazar)."""
+    try:
+        taslak.bolum_ekle(kimlik, baslik, list(ogeler or []))
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    return _sonuc(taslak.durum(kimlik))
+
+
+def taslak_ek(kimlik: str, icerik: str, sayfa_sayisi: int = 1) -> str:
+    """Ek dizinine bir kayıt ekle."""
+    try:
+        taslak.ek_ekle(kimlik, icerik, sayfa_sayisi)
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    return _sonuc(taslak.durum(kimlik))
+
+
+def taslak_kapak(kimlik: str, alanlar: dict | None = None) -> str:
+    """Kapağın YALNIZCA verilen alanlarını güncelle."""
+    try:
+        taslak.kapak_guncelle(kimlik, dict(alanlar or {}))
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    return _sonuc(taslak.durum(kimlik))
+
+
+def taslak_durum(kimlik: str) -> str:
+    """Taslakta ne var, yönergeye göre ne eksik?"""
+    try:
+        return _sonuc(taslak.durum(kimlik))
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+
+def taslak_uret(kimlik: str, hedef: str, bicim_kaynagi: str | None = None) -> str:
+    """Biriken taslaktan ``.docx`` üret."""
+    try:
+        sozluk = taslak.rapor_sozlugu(kimlik)
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    cevap = json.loads(rapor_yaz(sozluk, hedef, bicim_kaynagi))
+
+    if "error" not in cevap:
+        cevap["taslak_durumu"] = taslak.durum(kimlik)
+
+    return _sonuc(cevap)

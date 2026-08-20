@@ -303,6 +303,12 @@ TOOLSETS = {
             "rapor_ornek_ogren",
             "rapor_yarim_cozumle",
             "rapor_yaz",
+            "rapor_taslak_baslat",
+            "rapor_taslak_bolum",
+            "rapor_taslak_ek",
+            "rapor_taslak_kapak",
+            "rapor_taslak_durum",
+            "rapor_taslak_uret",
         ],
         "includes": []
     },

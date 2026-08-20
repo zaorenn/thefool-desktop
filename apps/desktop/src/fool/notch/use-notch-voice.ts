@@ -33,7 +33,7 @@ import {
   startSpeechStream,
   stopVoicePlayback
 } from '@/lib/voice-playback'
-import { $activeSessionId, $messages } from '@/store/session'
+import { $messages } from '@/store/session'
 
 import { friendSessionStore } from '../friend/friend-session'
 import { $voiceMode, voiceModeInfo } from '../voice-mode'
@@ -144,6 +144,7 @@ export function useNotchVoice(): NotchVoice {
   // olculdu, 21 takim / 73 arac / 8 tanesi makineye dokunuyor. Yani "hava
   // nasil?" diyen arkadas ``terminal_run`` ve ``computer_use``a sahipti.
   const companionRef = useRef(createCompanionSessionState())
+  const prewarmRef = useRef<() => void>(() => undefined)
   // ``onSilence`` geri çağrımı ``commit``ten ÖNCE kuruluyor; ref olmadan
   // tanımlanmamış bir değere kapanır.
   const commitRef = useRef<() => void>(() => undefined)
@@ -160,9 +161,15 @@ export function useNotchVoice(): NotchVoice {
       return
     }
 
-    // Durdurma ARKADAS oturumuna gitmeli: paylasilan oturumu durdurmak,
-    // kullanicinin sohbet panelinde suren isini kesmek olurdu.
-    const sessionId = companionRef.current.id ?? $activeSessionId.get()
+    // Durdurma YALNIZCA arkadas oturumuna gidiyor.
+    //
+    // Burada ``?? $activeSessionId.get()`` vardi ve hemen ustundeki yorumun
+    // yasaklad|g| seyi yap|yordu: arkadas oturumu henuz acilmamisken
+    // bas-konusa basmak, kullanicinin SOHBET PANELINDE suren isini
+    // kesiyordu. Yorum ile kod ayrismisti.
+    //
+    // Durduracak bir sey yoksa dogru davranis hicbir sey yapmamak.
+    const sessionId = companionRef.current.id
 
     if (!sessionId) {
       return
@@ -184,6 +191,10 @@ export function useNotchVoice(): NotchVoice {
     setCapturing(false)
     setHeardSpeech(false)
     setStatus('listening')
+    // Oturumu SIMDIDEN ac: kullanici konusurken cozulsun, sonra degil.
+    // REF uzerinden: ``prewarmSession`` asagida tanimli ve ``begin``i ona
+    // bagimli kilmak her oturum degisiminde geri cagriyi yeniden kurardi.
+    prewarmRef.current()
     // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
     // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
     // seslendirilmeye devam eder.
@@ -239,10 +250,23 @@ export function useNotchVoice(): NotchVoice {
     setStatus('idle')
   }, [mic])
 
-  // Arkadas oturumunu getir; acilamazsa PAYLASILAN oturuma dus.
+  // Arkadas oturumunu getir. ACILAMAZSA KONUSMA -- eskiden sahibinin CALISAN
+  // oturumuna dusuyordu ve bu iki sey birden yapiyordu:
   //
-  // Sesli sohbetin HIC calismamasi, kisitlanmamis calismasindan daha kotu bir
-  // sonuc: ag gecidi henuz ayakta degilse kullanici yine konusabilmeli.
+  //   1. Sesli arkadasi ``desktop`` kapsamina sokuyordu: 21 takim, 73 arac,
+  //      icinde ``terminal``, ``computer_use``, ``execute_code``,
+  //      ``delegate_task``. Yani bu modulun ve ``fool/session_scope.py``nin
+  //      var olma sebebini sessizce geri aliyordu.
+  //   2. Sesli turu kullanicinin uzerinde CALISTIGI oturumun gecmisine
+  //      karistiriyordu.
+  //
+  // Ikisi de gorunmez oluyordu: hata yok, yalnizca sesli arkadasin birden
+  // terminali var. Friend penceresi zaten hata gosteriyordu; iki yuzeyin ayni
+  // durumda farkli davranmasi da ayri bir hataydi.
+  //
+  // Oturumun KALICI olmasi (bkz. ``friend/friend-session.ts``) bu geri
+  // dususu zaten nadir kildi: ag gecidi ayaktaysa oturum aciliyor, degilse
+  // zaten hicbir sey gonderilemez.
   const resolveSessionId = useCallback(async () => {
     // Kapsami SESLI KIP belirliyor: arkadas kisitli, Jarvis sahibinin tam
     // yuzeyi. Kip degistiyse ``ensureCompanionSession`` yeni bir oturum aciyor
@@ -271,8 +295,30 @@ export function useNotchVoice(): NotchVoice {
       store: friendSessionStore
     })
 
-    return own ?? $activeSessionId.get()
+    return own
   }, [requestGateway])
+
+  /**
+   * Oturumu ŞİMDİDEN aç -- kullanıcı daha konuşurken.
+   *
+   * Ölçülen hata: oturum çözümü ``submitAudio`` içinde, transkripsiyon
+   * BİTTİKTEN sonra bekleniyordu. Yani kullanıcı konuşmayı bitiriyor, metni
+   * ekranda görüyor, sonra ``session.resume``/``session.create`` turu
+   * (sunucuda ajan + MCP kurulumu) için saniyelerce bekliyordu. Kullanıcı
+   * bunu "sesim algılandıktan sonra birkaç saniye boş geçiyor" diye bildirdi.
+   *
+   * Konuşma zaten saniyeler sürüyor; oturum o sürenin içinde açılıyor ve
+   * kritik yoldan tamamen çıkıyor. ``ensureCompanionSession`` aynı anda gelen
+   * iki çağrıyı zaten tek oturuma indiriyor, yani bu çağrı bedava.
+   *
+   * Hata YUTULUYOR: burada bir bildirim göstermek erken olurdu -- gerçek
+   * gönderim yine deneyecek ve hatayı orada bildirecek.
+   */
+  const prewarmSession = useCallback(() => {
+    void resolveSessionId().catch(() => undefined)
+  }, [resolveSessionId])
+
+  prewarmRef.current = prewarmSession
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
   // araya girerken yakalanan cümle. Ayrı yazmak, ikisinden birinin canlı
@@ -307,6 +353,16 @@ export function useNotchVoice(): NotchVoice {
       // denk gelmiyor ve mesaj sessizce kayboluyor -- ilk yazimda tam bu
       // oldu, kullanici "soyledigim seyler modele gitmiyor" dedi.
       const sessionId = await resolveSessionId()
+
+      if (!sessionId) {
+        // Sessizce yutmak, kullanicinin konusup hicbir sey olmadigini
+        // gormesi olurdu -- ve deposunda tam olarak bu vardi: sifir mesajli
+        // oturumlar.
+        setError('Could not open a voice session')
+        setStatus('idle')
+
+        return
+      }
 
       await requestGateway('prompt.submit', {
         session_id: sessionId,

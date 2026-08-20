@@ -108,6 +108,7 @@ declare global {
         ) => Promise<{ ok: boolean; shortcut: null | string; taken: boolean }>
         /** Ana surec global kisayoldan dinlemeyi istedi. */
         onListenRequest: (callback: (request?: { mode?: string }) => void) => () => void
+        takeListenRequest: () => Promise<null | { mode?: string }>
       }
       hud?: {
         open: (request?: { sessionId?: null | string; profile?: null | string }) => Promise<{ ok: boolean }>

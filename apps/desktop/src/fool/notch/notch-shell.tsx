@@ -377,7 +377,7 @@ export function NotchShell() {
     //
     // Dogru model: kisayol oturumu ACAR, oturum boyunca sag Ctrl calisir,
     // ayni kisayol oturumu KAPATIR.
-    const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(request => {
+    const handleListenRequest = (request?: null | { mode?: string }) => {
       // Kisayol yalnizca centigi acmiyor, ARKADAS turunu de basliyor.
       // Kip oturum ACILIRKEN yaziliyor: arac kumesi ajan kurulurken donuyor,
       // tur icinde degistirilemez (bkz. fool/voice-mode.ts).
@@ -402,6 +402,20 @@ export function NotchShell() {
 
         return true
       })
+    }
+
+    const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(handleListenRequest)
+
+    // Montajda BEKLEYEN niyeti al.
+    //
+    // Yeni acilan bir pencerede ana surecin ``send``i buraya HIC ulasmiyor:
+    // mesaj, renderer ``ipcRenderer.on`` cagirmadan once gidiyor ve dusuyor.
+    // Kullanicinin gordugu buydu -- ilk Ctrl+Alt+V hicbir sey yapmiyor,
+    // ikincisi aciyor. Ustune ac/kapa sayaci bir kayiyordu.
+    void window.hermesDesktop?.notch?.takeListenRequest?.().then(pending => {
+      if (pending) {
+        handleListenRequest(pending)
+      }
     })
 
     window.addEventListener('keydown', onDown)

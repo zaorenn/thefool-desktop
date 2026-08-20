@@ -255,6 +255,16 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
   const listen = useCallback(() => {
     setError(null)
     setPhase('listening')
+
+    // Oturumu ŞİMDİDEN aç -- kullanıcı daha konuşurken.
+    //
+    // Ölçülen hata: oturum çözümü ``submitAudio`` içinde, transkripsiyon
+    // BİTTİKTEN sonra bekleniyordu; yani metin ekranda görünüyor, sonra
+    // ``session.resume`` turu (sunucuda ajan + MCP kurulumu) için saniyeler
+    // geçiyordu. Konuşma zaten saniyeler sürüyor ve oturum o sürenin içinde
+    // açılabiliyor. ``ensureCompanionSession`` eşzamanlı çağrıları tek
+    // oturuma indirdiği için bu çağrı bedava.
+    void resolveSessionId().catch(() => undefined)
     void mic
       .start({
         ...HANDS_FREE_VAD,
@@ -284,7 +294,7 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
         setPhase('idle')
         setError(cause instanceof Error ? cause.message : String(cause))
       })
-  }, [mic, submitAudio])
+  }, [mic, resolveSessionId, submitAudio])
 
   listenRef.current = listen
 

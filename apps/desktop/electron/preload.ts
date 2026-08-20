@@ -68,6 +68,9 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.invoke('fool:notch:set-shortcut', accelerator),
     // Istek KIPI de tasiniyor: kisayol yalnizca centigi acmiyor, arkadas
     // turunu de basliyor ve notch oturumu o kapsamla aciyor.
+    // Montajda BEKLEYEN niyeti al (ve tuket). Yeni acilan pencerede
+    // ``send`` renderer dinleyiciyi kurmadan geliyor ve mesaj dusuyor.
+    takeListenRequest: () => ipcRenderer.invoke('fool:notch:take-intent'),
     onListenRequest: (callback: (request?: { mode?: string }) => void) => {
       const listener = (_event: unknown, request?: { mode?: string }) => callback(request)
 

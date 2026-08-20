@@ -39,7 +39,44 @@ const TICKS = 48
 /** Dışa doğru açılan halkalar. */
 const RINGS = 3
 
-export function Orb({ level, phase }: { level: number; phase: OrbPhase }) {
+/**
+ * Notch'tan DAMLAYAN açılış.
+ *
+ * Küre yukarıdan bir damla gibi düşüyor, yere değince eziliyor ve küreye
+ * dönüşüyor. Süre kısa (760 ms) ve bilerek: uzun bir açılış animasyonu ikinci
+ * kez izlendiğinde gecikmeye dönüşüyor.
+ *
+ * Fizik gerçek: düşüşte ivmelenme (``cubic-bezier(.55,0,.85,.35)`` -- yerçekimi
+ * eğrisi), çarpmada ezilme, sonra yaylanarak oturma. Sabit hızla düşen bir
+ * damla animasyon gibi görünüyor; ivmelenen bir damla DÜŞÜYOR gibi görünüyor.
+ */
+const DROP_KEYFRAMES = `
+@keyframes fool-orb-drop {
+  0%   { transform: translateY(-46vh) scaleX(0.42) scaleY(1.55); opacity: 0; }
+  12%  { opacity: 1; }
+  55%  { transform: translateY(0) scaleX(0.62) scaleY(1.34); }
+  70%  { transform: translateY(0) scaleX(1.24) scaleY(0.72); }
+  84%  { transform: translateY(0) scaleX(0.92) scaleY(1.08); }
+  100% { transform: translateY(0) scaleX(1) scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes fool-orb-drop {
+    0%   { opacity: 0; }
+    100% { opacity: 1; }
+  }
+}
+`
+
+export function Orb({
+  dropping = false,
+  level,
+  phase
+}: {
+  /** Açılış damlaması oynasın mı? */
+  dropping?: boolean
+  level: number
+  phase: OrbPhase
+}) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const levelRef = useRef(level)
   const phaseRef = useRef(phase)
@@ -88,7 +125,18 @@ export function Orb({ level, phase }: { level: number; phase: OrbPhase }) {
     <div
       className="relative grid size-64 place-items-center [--orb-hearing:0] [--orb-level:0] [--orb-scale:1]"
       ref={rootRef}
+      style={
+        dropping
+          ? {
+              animation: 'fool-orb-drop 760ms cubic-bezier(.55,0,.85,.35) both',
+              // Ezilme ALTTAN olmali: bir damla merkezinden degil, degdigi
+              // yerden yayiliyor.
+              transformOrigin: '50% 100%'
+            }
+          : undefined
+      }
     >
+      <style>{DROP_KEYFRAMES}</style>
       {/* Çentik halkası: dönmüyor, SABİT duruyor. Dönen bir halka "yükleniyor"
           demek ve burada hiçbir şey yüklenmiyor -- alet açık, o kadar. */}
       <svg className="absolute size-full" viewBox="0 0 200 200">

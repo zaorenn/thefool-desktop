@@ -26,6 +26,7 @@ import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Mic, MicOff } from '@/lib/icons'
+import { playSpeechText } from '@/lib/voice-playback'
 import { notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 
@@ -33,6 +34,15 @@ import { $listenMode } from '../notch/listen-mode'
 import { voiceApi, type VoiceCatalog, type VoiceItem } from '../voice-api'
 
 import { $friendMode, FRIEND_MODES, friendModeInfo } from './friend-mode'
+import {
+  greetingFor,
+  needsWaking,
+  stageLine,
+  WAKING_LINE,
+  type WarmReply,
+  warmupCaption,
+  warmupSettled
+} from './greeting'
 import { Orb } from './orb'
 import type { OrbPhase } from './orb-motion'
 import {
@@ -89,6 +99,12 @@ export function FriendView() {
   const [sessionsOpen, setSessionsOpen] = useState(false)
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [sessionsError, setSessionsError] = useState('')
+
+  // Acilis dizisi: damlama -> (soguksa) uyanma cumlesi -> asamalar -> selam.
+  // ``opening`` TRUE iken mikrofon ACILMIYOR: selamlama kendi mikrofonuna
+  // kaydedilirdi ve ajan kendi "Hello"suna cevap verirdi.
+  const [opening, setOpening] = useState(true)
+  const [warmCaption, setWarmCaption] = useState('')
 
   // Persona: ses + vurgu rengi TEK secim.
   const [activePersona, setActivePersona] = useState(() => readAccent())
@@ -233,6 +249,99 @@ export function FriendView() {
     []
   )
 
+  /**
+   * Aç, konuş, sonra dinle.
+   *
+   * Sıra ÖNEMLİ. Sesli bir yüzeyin ilk işi sesli olduğunu kanıtlamak, ama
+   * selamlama mikrofon açıkken söylenirse kendi kaydına düşüyor ve ajan
+   * kendi "Hello"suna cevap veriyor. Bu yüzden dinleme ``opening`` bitene
+   * kadar bekliyor.
+   *
+   * Soğuk motorda ilk cümlenin KENDİSİ ısınma: ölçüldü, styletts2 soğuk
+   * 22,5 sn / sıcak 0,52 sn. O cümle duyulduğu anda motor sıcak demek, yani
+   * sonraki aşama satırları gerçekten hızlı akıyor.
+   */
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      // Damlama otursun; hemen konusmak animasyonu yutuyordu.
+      await new Promise(resolve => setTimeout(resolve, 780))
+
+      let seen: WarmReply = {}
+
+      try {
+        seen = (await voiceApi.warmVoice()) as WarmReply
+      } catch {
+        // Isitma cagrilamadi: yine de selamla. Ilk cumle modeli kendi yukler.
+      }
+
+      if (cancelled) {
+        return
+      }
+
+      setWarmCaption(warmupCaption(seen))
+
+      // Motor soguksa ONCE uyanma cumlesi: bu cagri modeli yukluyor ve
+      // duyuldugu anda motor sicak.
+      if (needsWaking(seen)) {
+        await playSpeechText(WAKING_LINE, { source: 'voice-conversation' }).catch(
+          () => undefined
+        )
+      }
+
+      // Asamalari izle; her SOGUKTAN SICAGA gecisi soyle.
+      const deadline = Date.now() + 90_000
+
+      while (!cancelled && !warmupSettled(seen) && Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, 700))
+
+        let next: WarmReply = seen
+
+        try {
+          next = (await voiceApi.warmVoice()) as WarmReply
+        } catch {
+          break
+        }
+
+        if (cancelled) {
+          return
+        }
+
+        setWarmCaption(warmupCaption(next))
+
+        for (const surface of ['tts', 'stt'] as const) {
+          const line = stageLine(surface, seen, next)
+
+          if (line) {
+            await playSpeechText(line, { source: 'voice-conversation' }).catch(() => undefined)
+          }
+        }
+
+        seen = next
+      }
+
+      if (cancelled) {
+        return
+      }
+
+      setWarmCaption('')
+      await playSpeechText(greetingFor(mode), { source: 'voice-conversation' }).catch(
+        () => undefined
+      )
+
+      if (!cancelled) {
+        setOpening(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+    // Yalnizca MONTAJDA: kip degisimi pencereyi yeniden selamlatmamali.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const toggle = useCallback(() => {
     setMuted(previous => {
       const next = !previous
@@ -250,7 +359,9 @@ export function FriendView() {
   // Kip degisince mikrofonu ona gore ayarla: eller serbest surekli dinliyor,
   // bas-konus yalnizca basiliyken.
   useEffect(() => {
-    if (muted) {
+    // Selamlama bitmeden mikrofon ACILMIYOR -- yoksa ajan kendi selamini
+    // duyup ona cevap veriyor.
+    if (muted || opening) {
       return
     }
 
@@ -262,7 +373,7 @@ export function FriendView() {
     // ``voice`` her render'da yeni bir nesne; bagimliliga almak mikrofonu
     // acip kapatip dururdu.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listenMode, muted])
+  }, [listenMode, muted, opening])
 
   // Modelleri PENCERE ACILIR ACILMAZ isit.
   //
@@ -481,7 +592,7 @@ export function FriendView() {
 
       {/* ---- Merkez ---------------------------------------------------- */}
       <div className="flex flex-1 flex-col items-center justify-center gap-7">
-        <Orb level={voice.level} phase={voice.phase} />
+        <Orb dropping level={voice.level} phase={voice.phase} />
 
         <div className="flex min-h-24 max-w-xl flex-col items-center gap-2.5 text-center">
           <span className="text-[0.6rem] tracking-[0.16em] text-muted-foreground uppercase">
@@ -503,6 +614,12 @@ export function FriendView() {
             <span className="text-[0.62rem] text-(--theme-warm)">
               {warmingLabel(selected?.label ?? provider)}
             </span>
+          )}
+
+          {/* Acilis isinmasi. 22 saniyelik SESSIZ bir bekleme "bozuldu" gibi
+              gorunuyor; ne beklendigi ve ne kadar surecegi yaziyor. */}
+          {warmCaption && (
+            <span className="text-[0.62rem] text-muted-foreground">{warmCaption}</span>
           )}
 
           {/* Son soylenen ve son duyulan: kullanici yanlis anlasilmayi

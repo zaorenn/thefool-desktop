@@ -63,14 +63,35 @@ AGENT_SCOPES = frozenset({"cli", "desktop", "tui"})
 #:   delegation  -- alt ajan kısıtlamayı dolanır
 #:   cronjob     -- kalıcı zamanlanmış iş bırakır
 #:   browser     -- oturum açılmış hesaplar
+#:   tts         -- MASAÜSTÜ ZATEN SESLENDİRİYOR (bkz. aşağıdaki not)
 COMPANION_TOOLSETS = (
     "clarify",
     "image_gen",
     "output_file",
-    "tts",
     "vision",
     "web",
 )
+
+# ``tts`` BİLEREK dışarıda -- ölçülen gerçek hata
+# ---------------------------------------------------
+# Masaüstü zaten HER cevabı kendi hattından seslendiriyor
+# (``use-friend-voice.ts`` / ``use-notch-voice.ts``, cümle cümle akıtarak).
+# Ajana AYRICA bir ``text_to_speech`` aracı vermek, WhatsApp/Telegram gibi
+# istemci tarafı sesi OLMAYAN yüzeyler için doğru (orada "konuşmak" = ses
+# dosyası üretip mesaj olarak göndermek, başka yolu yok) ama masaüstü sesli
+# yüzeylerinde yanlış: ajan kendi kendine de sentez çağırmaya başlıyor.
+#
+# Gerçekte gözlemlendi (kullanıcının ekran görüntüsü): tek bir "hava nasıl"
+# turunda ajan ÜÇ KEZ "Thought → Text To Speech" döngüsüne girdi, final
+# metin öncekiyle YİNELENEREK göründü (aynı cümle art arda iki kez), ve
+# masaüstünün kendi sentezi -- aynı motoru paylaştığı için -- "Preparing
+# audio" / "Waking the model" durumunda TAKILI kaldı. Üç gereksiz araç
+# çağrısı final metnin gelişini de geciktiriyordu -- kullanıcının "sonrasında
+# model uyandırılıyor dedi" şikayetinin bir parçası buydu.
+#
+# Kapsam bilerek FRIEND_TOOLSETS ile PAYLAŞILMIYOR (ikisi de ayrı tanımlı,
+# ortak bir sabite çıkarılmadı): biri değişip diğeri unutulursa sessizce
+# ayrışırlardı; burada ikisinin de "tts" içermediği ayrı ayrı test ediliyor.
 
 #: Notch'un ``prompt.submit`` ile gönderdiği yüzey ipucu. Bugün sunucu
 #: tarafında hiçbir şey okumuyor -- bu modülün var olma sebeplerinden biri.
@@ -82,12 +103,12 @@ COMPANION_SURFACES = frozenset({"companion", "hud", "notch"})
 #: kullanıcı uzakta ve tanınmıyor, burada makinenin sahibi kendi
 #: penceresinde. ``session_search`` yine DIŞARIDA -- geçmiş sohbetleri
 #: taramak hatırlamaktan farklı bir şey ve sohbet için gerekmiyor.
+#: ``tts`` burada da YOK, aynı sebepten -- yukarıdaki notu bkz.
 FRIEND_TOOLSETS = (
     "clarify",
     "image_gen",
     "memory",
     "output_file",
-    "tts",
     "vision",
     "web",
 )

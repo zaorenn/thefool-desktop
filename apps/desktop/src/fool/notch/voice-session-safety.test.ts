@@ -24,6 +24,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const SOURCE = readFileSync(join(import.meta.dirname, 'use-notch-voice.ts'), 'utf8')
+
 const FRIEND = readFileSync(
   join(import.meta.dirname, '../friend/use-friend-voice.ts'),
   'utf8'

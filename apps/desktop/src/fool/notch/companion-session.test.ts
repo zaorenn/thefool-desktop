@@ -291,3 +291,48 @@ describe('oturum surdurme', () => {
     expect(create).toHaveBeenCalledTimes(1)
   })
 })
+
+/**
+ * Sürdürme İKİNCİ bir modeli yüklememeli.
+ *
+ * Oturumlar modele sabitleniyor (``sessions.model``). Kullanıcının deposunda
+ * ölçüldü: 9 Friend oturumu ``qwen/qwen3.5-9b``, 7'si ``google/gemma-4-e4b``.
+ * Eski bir oturumu sürdürmek onun modelini de geri getiriyor ve LM Studio
+ * ikinci modeli yüklüyor -- aynı 16 GB kartta, seslendirme motorlarının
+ * yanında. Kullanıcı bunu "arkada qwen yüklenmiş ama çağırmadım" diye
+ * bildirdi; kalıcılığı ben eklediğim için regresyon da benimdi.
+ */
+describe('surdurme modeli DEGISTIRMIYOR', () => {
+  it('AYNI modelin oturumu surduruluyor', async () => {
+    const { friendSessionStoreFor, writeFriendSession } = await import('../friend/friend-session')
+
+    writeFriendSession('friend', 'oturum-1', 'gemma')
+
+    expect(friendSessionStoreFor('gemma').read('friend')).toBe('oturum-1')
+  })
+
+  it('BASKA modelin oturumu surdurulmuyor', async () => {
+    const { friendSessionStoreFor, writeFriendSession } = await import('../friend/friend-session')
+
+    writeFriendSession('friend', 'oturum-qwen', 'qwen')
+
+    expect(friendSessionStoreFor('gemma').read('friend')).toBe('')
+  })
+
+  /** Ayırıcısı olmayan ESKİ kayıtların modeli bilinmiyor -- sürdürülemez. */
+  it('modeli BILINMEYEN eski kayit surdurulmuyor', async () => {
+    const { $friendSessions, friendSessionStoreFor } = await import('../friend/friend-session')
+
+    $friendSessions.set({ friend: 'eski-kimlik-ayiricisiz' })
+
+    expect(friendSessionStoreFor('gemma').read('friend')).toBe('')
+  })
+
+  it('model sorulmazsa kayit oldugu gibi okunuyor', async () => {
+    const { readFriendSession, writeFriendSession } = await import('../friend/friend-session')
+
+    writeFriendSession('friend', 'oturum-2', 'qwen')
+
+    expect(readFriendSession('friend')).toBe('oturum-2')
+  })
+})

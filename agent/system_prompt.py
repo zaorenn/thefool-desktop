@@ -844,7 +844,32 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     _iana = getattr(_tz, "key", None)
     if _iana:
         _zone_bits.append(_iana)
-    _abbrev = now.strftime("%Z")
+    # FOOL-SEAM: os-text-encoding
+    #
+    # ``%Z`` ISLETIM SISTEMINDEN geliyor ve UTF-8 olmak zorunda degil.
+    # Windows onu C calisma zamanindan sistemin ANSI kod sayfasinda veriyor;
+    # bu makinede cp1254 ve saat diliminin adi "Turkiye Standart Saati".
+    # Python cozemedigi baytlara ``surrogateescape`` uyguluyor ve dizede
+    # YARIM VEKILLER (U+DC80..U+DCFF) kaliyor -- boyle bir dize UTF-8'e
+    # kodlanamiyor ve BU SATIR patliyordu:
+    #
+    #   UnicodeEncodeError: 'utf-8' codec can't encode character
+    #   (U+DCFC) in position 1: surrogates not allowed
+    #
+    # Patladigi yer sistem promptunun kuruldugu yer, yani ajan turu HIC
+    # baslamiyordu (``conversation_loop._restore_or_build_system_prompt``).
+    # Ag gecidinin cokme kaydinda alti kez var. Kullanicinin "cevap bile
+    # vermiyordu" dedigi seyin altinda bu vardi.
+    #
+    # ``safe_os_text`` baytlari geri cikarip gercek kod sayfasiyla cozuyor,
+    # yani ad KAYBOLMUYOR. Hata yutuluyor: bir kisaltma ugruna promptu
+    # dusurmek, tam olarak duzeltilen hatayi geri getirmek olurdu.
+    try:
+        from fool.text_safety import safe_os_text
+
+        _abbrev = safe_os_text(now.strftime("%Z"))
+    except Exception:
+        _abbrev = ""
     if _abbrev and _abbrev != _iana:
         _zone_bits.append(_abbrev)
     _offset = now.strftime("%z")

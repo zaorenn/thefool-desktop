@@ -452,3 +452,96 @@ def test_ekler_bitince_OZETE_yonlendiriyor() -> None:
     taslak.ozet_yaz("o3", ["Özet."])
 
     assert "rapor_taslak_uret" in taslak.durum("o3")["siradaki_adim"]
+
+
+# ---------------------------------------------------------------------------
+# "Örnek rapordan kısa olamaz" -- dilek değil, ölçülen kural
+# ---------------------------------------------------------------------------
+
+
+def test_hedef_uzunluk_ORNEKTEN_olculuyor() -> None:
+    """Kullanıcının şartı ölçülebilir hâle geliyor: örneği ölç, hedef yap."""
+    taslak.baslat(
+        "u1", "inceleme",
+        hedef_uzunluk={"III. İNCELEME VE ARAŞTIRMA": 9230},
+    )
+    taslak.bolum_ekle(
+        "u1", "III. İNCELEME VE ARAŞTIRMA", [{"tur": "paragraf", "metin": "Kısa."}]
+    )
+
+    durum = taslak.durum("u1")
+
+    assert durum["kisa_bolumler"][0]["hedef"] == 9230
+    assert durum["kisa_bolumler"][0]["mevcut"] < 100
+
+
+def test_KISA_bolum_varken_rapor_TAMAM_sayilmiyor() -> None:
+    """Aksi hâlde model ince bir raporla "bitti" diyebiliyordu."""
+    hedefler = {
+        b: 1000
+        for b in (
+            "I. GİRİŞ", "II. KONU", "III. İNCELEME VE ARAŞTIRMA",
+            "IV. TARTIŞMA VE DEĞERLENDİRME", "V. SONUÇ",
+        )
+    }
+    taslak.baslat("u2", "inceleme", hedef_uzunluk=hedefler)
+    for baslik in hedefler:
+        taslak.bolum_ekle("u2", baslik, [{"tur": "paragraf", "metin": "Kısa."}])
+
+    assert taslak.durum("u2")["tamam_mi"] is False
+
+
+def test_YETERINCE_dolu_bolum_kisa_sayilmiyor() -> None:
+    """Birebir eşitlik istenmiyor; %60 eşiği yeterli."""
+    taslak.baslat("u3", "inceleme", hedef_uzunluk={"I. GİRİŞ": 100})
+    taslak.bolum_ekle("u3", "I. GİRİŞ", [{"tur": "paragraf", "metin": "x" * 70}])
+
+    assert taslak.durum("u3")["kisa_bolumler"] == []
+
+
+def test_siradaki_adim_KAC_KARAKTER_yazilacagini_soyluyor() -> None:
+    taslak.baslat("u4", "inceleme", hedef_uzunluk={"I. GİRİŞ": 288})
+
+    adim = taslak.durum("u4")["siradaki_adim"]
+
+    assert "~288 karakter" in adim
+    assert "en az 172 karakter" in adim
+
+
+def test_kisa_bolum_icin_AYNI_basligi_tekrar_gondermesi_soyleniyor() -> None:
+    taslak.baslat("u5", "inceleme", hedef_uzunluk={b: 1000 for b in (
+        "I. GİRİŞ", "II. KONU", "III. İNCELEME VE ARAŞTIRMA",
+        "IV. TARTIŞMA VE DEĞERLENDİRME", "V. SONUÇ")})
+    for baslik in ("I. GİRİŞ", "II. KONU", "III. İNCELEME VE ARAŞTIRMA",
+                   "IV. TARTIŞMA VE DEĞERLENDİRME", "V. SONUÇ"):
+        taslak.bolum_ekle(baslik="x" and baslik, kimlik="u5",
+                          ogeler=[{"tur": "paragraf", "metin": "Kısa."}])
+
+    adim = taslak.durum("u5")["siradaki_adim"]
+
+    assert "ÇOK KISA" in adim
+    assert "rapor_taslak_bolum" in adim
+
+
+def test_tablo_ve_alt_basliklar_da_uzunluga_sayiliyor() -> None:
+    """Bölümün doluluğu yalnızca paragraflardan ibaret değil."""
+    taslak.baslat("u6", "inceleme")
+    taslak.bolum_ekle("u6", "IV. TARTIŞMA VE DEĞERLENDİRME", [
+        {"tur": "alt_baslik", "metin": "İlgili Hukuk"},
+        {"tur": "tablo", "baslik": "Tablo 1: Süreler",
+         "basliklar": ["Madde", "Süre"], "satirlar": [["2", "2 Yıl 4 Ay"]]},
+    ])
+
+    uzunluk = taslak.durum("u6")["uzunluk"]["IV. TARTIŞMA VE DEĞERLENDİRME"]
+
+    assert uzunluk > len("İlgili Hukuk")
+
+
+def test_hedef_YOKSA_kisalik_denetimi_yapilmiyor() -> None:
+    """Örnek verilmemişse kıyaslanacak bir şey yok."""
+    taslak.baslat("u7", "inceleme")
+    for baslik in ("I. GİRİŞ", "II. KONU", "III. İNCELEME VE ARAŞTIRMA",
+                   "IV. TARTIŞMA VE DEĞERLENDİRME", "V. SONUÇ"):
+        taslak.bolum_ekle("u7", baslik, [{"tur": "paragraf", "metin": "Kısa."}])
+
+    assert taslak.durum("u7")["tamam_mi"] is True

@@ -391,3 +391,51 @@ def test_iskelet_ornek_METNI_TASIMIYOR(tmp_path) -> None:
     iskelet = iskelet_cikar(_rapor_belgesi(tmp_path, satirlar))
 
     assert "TOPKAFA" not in iskelet.metin()
+
+
+# ---------------------------------------------------------------------------
+# Üslup ÖRNEKTEN öğreniliyor, sabit listeden değil
+# ---------------------------------------------------------------------------
+
+
+def test_kaliplar_ORNEGIN_kendi_cumle_sonlarindan_ogreniliyor(tmp_path) -> None:
+    """Örnek değişebilir; sabit bir kalıp listesi yeni örneği ıskalardı."""
+    satirlar = [
+        *_TAM_RAPOR,
+        "Ödeme işlemi usulüne uygun olarak gerçekleştirilmiştir.",
+        "İkinci ödeme de aynı şekilde gerçekleştirilmiştir.",
+        "Üçüncü ödeme yine gerçekleştirilmiştir.",
+    ]
+    iskelet = iskelet_cikar(_rapor_belgesi(tmp_path, satirlar))
+
+    assert any("gerçekleştirilmiştir" in k for k in iskelet.kalip_ifadeler)
+
+
+def test_TEK_KEZ_gecen_bitis_kalip_sayilmiyor(tmp_path) -> None:
+    """Bir kez geçen cümle sonu üslup değil, o cümlenin kendisi."""
+    satirlar = [*_TAM_RAPOR, "Bu cümle bir kez yazılmıştır."]
+    iskelet = iskelet_cikar(_rapor_belgesi(tmp_path, satirlar))
+
+    assert not any("bir kez yazılmıştır" in k for k in iskelet.kalip_ifadeler)
+
+
+def test_ISIM_ve_UNVANLAR_kalip_sayilmiyor(tmp_path) -> None:
+    """Şirket adları kalıp sayılınca örneğin İÇERİĞİ yeni rapora sızıyordu."""
+    satirlar = [
+        *_TAM_RAPOR,
+        "Yüklenici GÖK-ER Taşımacılık Sınır Tic.",
+        "Karşı taraf GÖK-ER Taşımacılık Sınır Tic.",
+        "Ayrıca GÖK-ER Taşımacılık Sınır Tic.",
+    ]
+    metin = iskelet_cikar(_rapor_belgesi(tmp_path, satirlar)).metin()
+
+    assert "Taşımacılık" not in metin
+    assert "GÖK-ER" not in metin
+
+
+def test_RAKAMLI_bitisler_kalip_sayilmiyor(tmp_path) -> None:
+    """"2 Yıl 4 Ay" bir üslup değil, bir ölçüm."""
+    satirlar = [*_TAM_RAPOR, "Süre 2 Yıl 4 Ay.", "Diğer süre 2 Yıl 4 Ay."]
+    iskelet = iskelet_cikar(_rapor_belgesi(tmp_path, satirlar))
+
+    assert not any(any(k.isdigit() for k in kalip) for kalip in iskelet.kalip_ifadeler)

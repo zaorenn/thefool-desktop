@@ -44,8 +44,16 @@ export const VOICE_MODES: Record<VoiceModeId, VoiceModeInfo> = {
   companion: {
     id: 'companion',
     label: 'Friend',
-    source: 'companion',
-    summary: 'Just talk. No tools, nothing to break — it cannot touch the machine.',
+    // ``friend``, ``companion`` DEGIL.
+    //
+    // Ikisi de "Friend" diye etiketleniyordu ama farkli seylerdi: notch
+    // hafizasiz ``companion`` kapsamini, Friend penceresi hafizali ``friend``
+    // kapsamini aciyordu. Ayni isimde iki farkli yetenek, kullanicinin
+    // gordugu tek bir "Friend" -- notch'ta anlattigini Friend penceresi
+    // hatirlamiyordu. Kapsam farki arac degil HAFIZA: ikisinde de terminal,
+    // dosya, kod yok (bkz. fool/session_scope.py).
+    source: 'friend',
+    summary: 'Just talk. No terminal, no files — it cannot touch the machine.',
     touchesMachine: false
   },
   jarvis: {

@@ -26,6 +26,11 @@ import { notifyError } from '@/store/notifications'
 
 import { DEFAULT_PTT_CODE, formatPttCode, isBindableCode } from './notch/ptt-binding'
 import { $pttCode } from './notch/ptt-store'
+import {
+  DEFAULT_NOTCH_SHORTCUT,
+  formatAccelerator,
+  toAccelerator
+} from './notch/shortcut-accelerator'
 import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem, type VoiceJob } from './voice-api'
 
 //: Süren bir kurulum varken yoklama aralığı. Saniyede bir, dakikalarca sürebilen
@@ -445,6 +450,123 @@ function PushToTalkRow() {
   )
 }
 
+/**
+ * Notch'u acan GLOBAL kisayol.
+ *
+ * Bas-konus tusundan (yukaridaki satir) FARKLI bir sey ve ikisini
+ * karistirmak kolay:
+ *
+ *   * Global kisayol notch'u ACAR ve arkadas turunu baslatir; uygulama
+ *     odakta olmasa bile calisir.
+ *   * Bas-konus tusu yalnizca notch ACIKKEN ve odaktayken is gorur.
+ *
+ * Kayit BASARISIZ olabiliyor: istenen tusu baska bir uygulama tutuyorsa
+ * Electron sessizce ``false`` donuyor. O durum kullaniciya SOYLENIYOR --
+ * yoksa tusa basip hicbir sey olmadigini gorur ve sebebini ogrenemez.
+ */
+function NotchShortcutRow() {
+  const [shortcut, setShortcut] = useState('')
+  const [capturing, setCapturing] = useState(false)
+  const [taken, setTaken] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    void (async () => {
+      const state = await window.hermesDesktop?.notch?.shortcut?.()
+
+      if (!cancelled && state) {
+        setShortcut(state.shortcut ?? '')
+        setTaken(Boolean(state.preferred && state.shortcut !== state.preferred))
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const apply = useCallback(async (accelerator: string) => {
+    const result = await window.hermesDesktop?.notch?.setShortcut?.(accelerator)
+
+    if (result) {
+      setShortcut(result.shortcut ?? '')
+      setTaken(Boolean(result.taken))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!capturing) {
+      return
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      // Escape her zaman cikis yolu -- yakalamayi iptal eder.
+      if (event.code === 'Escape') {
+        event.preventDefault()
+        setCapturing(false)
+
+        return
+      }
+
+      // Bos donen bilesim (tek basina degistirici, bilinmeyen tus) YOK
+      // SAYILIYOR: yakalama acik kaliyor ve kullanici tekrar deneyebiliyor.
+      // Gecersiz bir seyi kaydedip "olmadi" demek daha kotu olurdu.
+      const accelerator = toAccelerator({
+        alt: event.altKey,
+        code: event.code,
+        ctrl: event.ctrlKey,
+        meta: event.metaKey,
+        shift: event.shiftKey
+      })
+
+      if (!accelerator) {
+        return
+      }
+
+      event.preventDefault()
+      setCapturing(false)
+      void apply(accelerator)
+    }
+
+    window.addEventListener('keydown', onKey, true)
+
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [apply, capturing])
+
+  return (
+    <ListRow
+      action={
+        <div className="flex items-center gap-2">
+          <Pill>{capturing ? 'Press a combination…' : formatAccelerator(shortcut)}</Pill>
+          <Button
+            onClick={() => { triggerHaptic(); setCapturing(previous => !previous) }}
+            size="sm"
+            variant="outline"
+          >
+            {capturing ? 'Cancel' : 'Rebind'}
+          </Button>
+          {shortcut !== DEFAULT_NOTCH_SHORTCUT && (
+            <Button
+              onClick={() => { triggerHaptic(); void apply(DEFAULT_NOTCH_SHORTCUT) }}
+              size="sm"
+              variant="ghost"
+            >
+              Reset
+            </Button>
+          )}
+        </div>
+      }
+      description={
+        taken
+          ? `Another app already owns your choice — ${formatAccelerator(shortcut)} is active instead.`
+          : 'Opens the notch and starts a Friend turn, even when the app is not focused. Escape cancels a rebind.'
+      }
+      title="Notch shortcut"
+    />
+  )
+}
+
 export function VoiceSettings() {
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
   const [jobs, setJobs] = useState<Record<string, VoiceJob>>({})
@@ -659,6 +781,7 @@ export function VoiceSettings() {
       </SettingsSection>
 
       <SettingsSection icon={Keyboard} title="Voice controls">
+        <NotchShortcutRow />
         <PushToTalkRow />
       </SettingsSection>
 

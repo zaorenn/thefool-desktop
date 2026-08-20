@@ -29,6 +29,7 @@ import { Mic, MicOff } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 
+import { $listenMode } from '../notch/listen-mode'
 import { voiceApi, type VoiceCatalog } from '../voice-api'
 
 import { $friendMode, FRIEND_MODES, friendModeInfo } from './friend-mode'
@@ -124,13 +125,13 @@ function Orb({ level, phase }: { level: number; phase: OrbPhase }) {
   )
 }
 
-/** Bu pencerenin dinleme kipi. */
-type ListenMode = 'hands-free' | 'push-to-talk'
-
 export function FriendView() {
   const mode = useStore($friendMode)
   const [muted, setMuted] = useState(false)
-  const [listenMode, setListenMode] = useState<ListenMode>('hands-free')
+  // Dinleme kipi notch ile ORTAK depo: ikisi ayni mikrofonu kullaniyor ve
+  // ayri tutmak kullaniciya iki ayri hakikat sunardi (sesin kendisinde tam
+  // bu hata yasandi).
+  const listenMode = useStore($listenMode)
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
   const [provider, setProvider] = useState('')
   const [speaker, setSpeaker] = useState('')
@@ -251,19 +252,31 @@ export function FriendView() {
     void voiceApi.warmVoice().catch(() => undefined)
   }, [provider])
 
-  // Friend acikken NOTCH da acik kalsin.
+  // Friend KONUSURKEN notch da acik kalsin.
   //
-  // Kullanici istegi ve mantikli: notch ekranin ustunde durup durumu
-  // gosteriyor, boylece Friend sekmesinden ciksan bile konusmanin nerede
-  // oldugunu goruyorsun. Notch SESSIZ kaliyor -- ses sahibi Friend
-  // (bkz. fool/voice-owner.ts); notch yalnizca gosterge.
+  // Kullanici istegi: notch ekranin ustunde durup durumu gosteriyor, boylece
+  // Friend penceresinden ciksan bile konusmanin nerede oldugunu goruyorsun.
+  // Notch SESSIZ kaliyor -- ses sahibi Friend (bkz. fool/voice-owner.ts);
+  // notch yalnizca gosterge.
+  //
+  // Kosul MONTAJ DEGIL, GERCEK ETKINLIK. Once montajda aciyordum ve sonucu
+  // sacmaydi: uygulama en son Friend sayfasindayken kapatilmissa, acilista
+  // ana pencere daha "Connecting" derken notch uzerine biniyordu -- kullanici
+  // uygulamanin notch icinde bir mini uygulama olarak basladigini goruyordu.
+  // Sohbet baslamadan gosterecek bir durum da yok zaten.
+  const talking = !muted && voice.phase !== 'idle'
+
   useEffect(() => {
+    if (!talking) {
+      return
+    }
+
     void window.hermesDesktop?.notch?.open?.()
 
     return () => {
       void window.hermesDesktop?.notch?.close?.()
     }
-  }, [])
+  }, [talking])
 
   // Sayfa kapaninca mikrofonu MUTLAKA birak: acik kalan bir mikrofon
   // kullanicinin gormedigi en kotu durum.
@@ -419,7 +432,7 @@ export function FriendView() {
                   : 'hover:bg-(--surface-hover)'
               }`}
               key={option}
-              onClick={() => setListenMode(option)}
+              onClick={() => $listenMode.set(option)}
               type="button"
             >
               {option === 'hands-free' ? 'Hands-free' : 'Push to talk'}

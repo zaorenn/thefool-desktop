@@ -12288,7 +12288,36 @@ ipcMain.handle('fool:notch:open', async () => {
 
 // Notch arayuzu hangi kisayolun GERCEKTEN kayitli oldugunu gosterebilsin --
 // aday merdiveni yuzunden bu makineden makineye degisiyor.
-ipcMain.handle('fool:notch:shortcut', async () => ({ shortcut: notchShortcut }))
+ipcMain.handle('fool:notch:shortcut', async () => ({
+  shortcut: notchShortcut,
+  // Kullanicinin SECTIGI ayri gosteriliyor: secim tutulmussa merdiven baska
+  // bir tusa dusuyor ve panelde yalnizca kazanani gostermek "ayarim
+  // uygulanmadi mi?" sorusunu cevapsiz birakirdi.
+  preferred: storedNotchShortcut(),
+  candidates: NOTCH_SHORTCUT_CANDIDATES
+}))
+
+// Kisayolu DEGISTIR. Once eskisi birakiliyor: birakmadan yenisini kaydetmek
+// iki kisayol birden acik birakirdi ve kullanici eskisinin neden hala
+// calistigini anlamazdi.
+ipcMain.handle('fool:notch:set-shortcut', async (_event, accelerator) => {
+  const wanted = typeof accelerator === 'string' ? accelerator.trim() : ''
+
+  unregisterNotchShortcut()
+  writeNotchShortcut(wanted)
+
+  const applied = registerNotchShortcut()
+
+  rememberLog(
+    applied
+      ? `[notch] shortcut set to ${applied}${wanted && applied !== wanted ? ` (requested ${wanted} was taken)` : ''}`
+      : `[notch] NO shortcut could be registered (requested ${wanted || 'ladder'})`
+  )
+
+  // ``taken``: istenen tus baska bir uygulamada. Sessizce baska bir tusa
+  // dusup "tamam" demek, kullanicinin ayarinin yok sayildigini gizlerdi.
+  return { ok: Boolean(applied), shortcut: applied, taken: Boolean(wanted && applied !== wanted) }
+})
 
 ipcMain.handle('fool:notch:close', async () => {
   closeNotchWindow()
@@ -12313,34 +12342,83 @@ ipcMain.handle('fool:notch:close', async () => {
 //
 // Sirayla denenip ILK bos olan aliniyor ve hangisinin kazandigi hem gunluge
 // hem de notch'un kendi arayuzune yaziliyor.
+// Ilk aday Ctrl+Alt+V: kullanicinin ACIKCA istedigi kombinasyon. Once
+// Ctrl+Shift+Space bastaydi ve o tus Windows'ta klavye duzeni degistirmeyle
+// carpisiyor.
 const NOTCH_SHORTCUT_CANDIDATES = [
+  'CommandOrControl+Alt+V',
   'CommandOrControl+Shift+Space',
   'CommandOrControl+Alt+Space',
   'CommandOrControl+Shift+Semicolon',
-  'CommandOrControl+Alt+V',
   'F13'
 ]
 
 let notchShortcut = null
 
-function registerNotchShortcut() {
-  const onFire = () => {
-    const win = openNotchWindow()
+// Kullanicinin sectigi kisayol Quick Entry ile AYNI yerde ve ayni bicimde
+// saklaniyor: ikisi de global kisayol, ikisinin de sahibi ana surec.
+const NOTCH_SHORTCUT_CONFIG_PATH = path.join(app.getPath('userData'), 'notch-shortcut.json')
 
-    // Odagi vermek SART: bunun ardindan gelen sag Ctrl basisi ancak notch
-    // odaktaysa renderer'a ulasir.
-    win.show()
-    win.focus()
-    win.webContents.send('fool:notch:listen')
+/** Kullanicinin ayarlardan sectigi kisayol ("" = secim yok, merdiven kosar). */
+function storedNotchShortcut() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(NOTCH_SHORTCUT_CONFIG_PATH, 'utf8'))
+
+    return typeof raw?.accelerator === 'string' ? raw.accelerator.trim() : ''
+  } catch {
+    // Eksik / okunamayan / bozuk dosya: aday merdiveni zaten calisir bir
+    // kisayol bulacak. Burada patlamak, kisayolu TUMDEN kaybetmek olurdu.
+    return ''
   }
+}
 
-  for (const accelerator of NOTCH_SHORTCUT_CANDIDATES) {
+function writeNotchShortcut(accelerator) {
+  try {
+    fs.mkdirSync(path.dirname(NOTCH_SHORTCUT_CONFIG_PATH), { recursive: true })
+    fs.writeFileSync(
+      NOTCH_SHORTCUT_CONFIG_PATH,
+      JSON.stringify({ accelerator }, null, 2),
+      'utf8'
+    )
+  } catch (error) {
+    rememberLog(`[notch] shortcut write failed: ${error.message}`)
+  }
+}
+
+function fireNotchShortcut() {
+  const win = openNotchWindow()
+
+  // Odagi vermek SART: bunun ardindan gelen bas-konus tusu ancak notch
+  // odaktaysa renderer'a ulasir.
+  win.show()
+  win.focus()
+  // ``friend`` bayragi: kisayol yalnizca centigi acmiyor, ARKADAS turunu de
+  // basliyor (kullanicinin istegi). Notch o kaynakla oturum aciyor -- arac
+  // yok ama hafiza ajanla ortak.
+  win.webContents.send('fool:notch:listen', { mode: 'friend' })
+}
+
+/**
+ * Notch kisayolunu kaydet ve KAZANANI dondur.
+ *
+ * Once kullanicinin sectigi kombinasyon deneniyor; tutulmussa ya da
+ * gecersizse aday merdivenine dusuluyor. Sessizce hicbir sey kaydetmemek en
+ * kotu sonuc: kullanici tusa basiyor, hicbir sey olmuyor, sebebini
+ * ogrenemiyor.
+ */
+function registerNotchShortcut() {
+  const preferred = storedNotchShortcut()
+  const candidates = preferred
+    ? [preferred, ...NOTCH_SHORTCUT_CANDIDATES.filter(item => item !== preferred)]
+    : NOTCH_SHORTCUT_CANDIDATES
+
+  for (const accelerator of candidates) {
     try {
       if (globalShortcut.isRegistered(accelerator)) {
         continue
       }
 
-      if (globalShortcut.register(accelerator, onFire)) {
+      if (globalShortcut.register(accelerator, fireNotchShortcut)) {
         notchShortcut = accelerator
 
         return accelerator
@@ -12351,6 +12429,21 @@ function registerNotchShortcut() {
   }
 
   return null
+}
+
+/** Kayitli notch kisayolunu birak -- yeniden baglamadan once. */
+function unregisterNotchShortcut() {
+  if (!notchShortcut) {
+    return
+  }
+
+  try {
+    globalShortcut.unregister(notchShortcut)
+  } catch {
+    // Zaten kayitli degilse sorun yok.
+  }
+
+  notchShortcut = null
 }
 
 ipcMain.handle('fool:notch:toggle', async () => {

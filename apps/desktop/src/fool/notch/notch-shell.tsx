@@ -25,12 +25,14 @@ import { onGatewayEvent } from '@/contrib/events'
 import { Mic } from '@/lib/icons'
 
 import { voiceApi } from '../voice-api'
+import { $voiceMode } from '../voice-mode'
 
 import {
   MAX_IDLE_ROUNDS,
   nextIdleRounds,
   shouldRearmListening
 } from './hands-free'
+import { $listenMode, listenModeHint, toggleListenMode } from './listen-mode'
 import { formatPttCode } from './ptt-binding'
 import { $pttCode } from './ptt-store'
 import {
@@ -325,6 +327,9 @@ export function NotchShell() {
   // bazi kullanicilar onu IME degistirmeye baglamis. O makinelerde bas-konus
   // hic calismiyordu ve sebebi gorunmuyordu.
   const pttCode = useStore($pttCode)
+  // Dinleme kipi Friend penceresiyle ORTAK: iki yuzey ayni mikrofonu
+  // kullaniyor ve kipi ayri tutmak kullaniciya iki ayri hakikat sunardi.
+  const listenMode = useStore($listenMode)
 
   useEffect(() => {
     const onDown = (event: KeyboardEvent) => {
@@ -372,7 +377,14 @@ export function NotchShell() {
     //
     // Dogru model: kisayol oturumu ACAR, oturum boyunca sag Ctrl calisir,
     // ayni kisayol oturumu KAPATIR.
-    const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(() => {
+    const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(request => {
+      // Kisayol yalnizca centigi acmiyor, ARKADAS turunu de basliyor.
+      // Kip oturum ACILIRKEN yaziliyor: arac kumesi ajan kurulurken donuyor,
+      // tur icinde degistirilemez (bkz. fool/voice-mode.ts).
+      if (request?.mode === 'friend') {
+        $voiceMode.set('companion')
+      }
+
       setSessionActive(previous => {
         if (previous) {
           // Kapatiliyor: suren bir kayit varsa atilir ve ARKADAS OTURUMU
@@ -454,10 +466,34 @@ export function NotchShell() {
             >
               <Waveform active={voice.status === 'listening'} level={voice.level} />
 
-              <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
-                {voice.status === 'idle' && paused
-                  ? pausedLabel(formatPttCode(pttCode))
-                  : LABEL[voice.status]}
+              <div className="flex items-center gap-2">
+                <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
+                  {voice.status === 'idle' && paused
+                    ? pausedLabel(formatPttCode(pttCode))
+                    : LABEL[voice.status]}
+                </div>
+
+                {/* Bas-konus anahtari. Ayarlara gitmeden buradan
+                    degistirilebiliyor: gurultulu bir ortamda mikrofonun
+                    surekli acik olmasi konusmayi bozuyor ve o an panele
+                    gitmek akisi kesiyordu.
+
+                    ``pointerEvents`` ACIKCA geri veriliyor: bu kutunun ust
+                    katmani tiklamalari gecirmiyor (centik tikla-gec olsun
+                    diye) ve dugme onsuz olu kalirdi. */}
+                <button
+                  className={`rounded-full px-2 py-0.5 text-[0.6rem] font-medium transition-colors ${
+                    listenMode === 'push-to-talk'
+                      ? 'bg-(--theme-primary) text-white'
+                      : 'bg-white/10 text-(--ui-text-tertiary) hover:bg-white/20'
+                  }`}
+                  onClick={() => toggleListenMode()}
+                  style={{ pointerEvents: 'auto' }}
+                  title={listenModeHint(listenMode, formatPttCode(pttCode))}
+                  type="button"
+                >
+                  PTT
+                </button>
               </div>
 
               {/* Yazıya dökülen metin: kullanıcı ne anlaşıldığını GÖRMELİ.

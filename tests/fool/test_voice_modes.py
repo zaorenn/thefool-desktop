@@ -200,17 +200,26 @@ def test_iki_persona_da_kisa() -> None:
 # Gerçek seslendirme yolu
 # ---------------------------------------------------------------------------
 
-def test_kip_sesi_genel_ayari_EZIYOR(monkeypatch) -> None:
-    """İki kip aynı sesle konuşursa ayrı panel istemenin anlamı kalmıyor."""
+def test_kip_sesi_genel_ayari_ARTIK_EZMIYOR(monkeypatch) -> None:
+    """Tek hakikat ``tts.provider`` -- kip başına ses KALDIRILDI.
+
+    Ölçülen hata (kullanıcının kurulumundan, birebir):
+
+        tts.provider                = styletts2   <- panelin gösterdiği
+        voice.modes.friend.provider = kyutai      <- gerçekten koşan
+
+    Panel "StyleTTS 2" yazıyor (cümle başına 0,56 sn), motor kyutai koşuyor
+    (11 sn). Kullanıcı panelde bir şey seçip bambaşka bir sesi duyuyordu ve
+    gecikmenin sebebini hiçbir yerden göremiyordu. Üstüne tek-motor kuralı
+    yüzünden iki yüzey iki farklı motor isteyince her tur yükle-boşalt
+    döngüsüne giriyordu.
+    """
     from tools import tts_tool
 
-    monkeypatch.setattr(
-        tts_tool,
-        "_voice_mode_provider",
-        lambda: "styletts2",
-    )
+    # Eski ezme yolu bilerek taklit ediliyor: donse bile yok sayilmali.
+    monkeypatch.setattr(tts_tool, "_voice_mode_provider", lambda: "styletts2")
 
-    assert tts_tool._get_provider({"provider": "kokoro"}) == "styletts2"
+    assert tts_tool._get_provider({"provider": "kokoro"}) == "kokoro"
 
 
 def test_kip_sesi_yoksa_genel_ayar_gecerli(monkeypatch) -> None:
@@ -234,7 +243,12 @@ def test_kip_sesi_okuma_hatasi_seslendirmeyi_SUSTURMUYOR(monkeypatch) -> None:
     assert tts_tool._get_provider({"provider": "kokoro"}) == "kokoro"
 
 
-def test_kip_sesi_gercek_yapilandirmadan_okunuyor(monkeypatch) -> None:
+def test_ESKI_kip_ayari_yapilandirmada_kalsa_bile_YOK_SAYILIYOR(monkeypatch) -> None:
+    """Eski kurulumlarda ``voice.modes.<kip>.provider`` yazılı kalmış olabilir.
+
+    Silmek yerine YOK SAYMAK bilinçli: kararı geri almak isteyen bir
+    kullanıcının değeri kaybolmuyor, ama sessizce sesi ezmiyor da.
+    """
     import fool_cli.config as cfg
     from tools import tts_tool
 
@@ -246,4 +260,5 @@ def test_kip_sesi_gercek_yapilandirmadan_okunuyor(monkeypatch) -> None:
         },
     )
 
-    assert tts_tool._voice_mode_provider() == "orpheus"
+    assert tts_tool._voice_mode_provider() == ""
+    assert tts_tool._get_provider({"provider": "kokoro"}) == "kokoro"

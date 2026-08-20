@@ -42,7 +42,7 @@ def test_basarili_onizleme_ses_ve_sure_donuyor(monkeypatch, tmp_path) -> None:
     audio.write_bytes(b"RIFFsahte")
 
     monkeypatch.setattr(vp, "_status", lambda entry_id: {"installed": True})
-    monkeypatch.setattr(vp, "_synthesize", lambda provider, path: str(audio))
+    monkeypatch.setattr(vp, "_synthesize", lambda provider, path, text='': str(audio))
 
     result = vp.preview("kokoro")
 
@@ -70,7 +70,7 @@ def test_olculen_sure_gercekten_sentezi_kapsiyor(monkeypatch, tmp_path) -> None:
         return value
 
     monkeypatch.setattr(vp, "_status", lambda entry_id: {"installed": True})
-    monkeypatch.setattr(vp, "_synthesize", lambda provider, path: str(audio))
+    monkeypatch.setattr(vp, "_synthesize", lambda provider, path, text='': str(audio))
     monkeypatch.setattr(vp.time, "monotonic", _clock)
 
     assert vp.preview("kokoro")["elapsed_ms"] == 2500
@@ -78,7 +78,7 @@ def test_olculen_sure_gercekten_sentezi_kapsiyor(monkeypatch, tmp_path) -> None:
 
 def test_sentez_patlarsa_hata_yutulmuyor(monkeypatch) -> None:
     """Sessizce başarısız olan bir dinleme düğmesi, düğmenin bozuk olması."""
-    def _boom(provider, path):
+    def _boom(provider, path, text=''):
         raise RuntimeError("engine died")
 
     monkeypatch.setattr(vp, "_status", lambda entry_id: {"installed": True})
@@ -92,7 +92,7 @@ def test_gecici_dosya_temizleniyor(monkeypatch, tmp_path) -> None:
     """Her önizleme diske bir dosya bırakmamalı."""
     created: list = []
 
-    def _synth(provider, path):
+    def _synth(provider, path, text=''):
         p = tmp_path / "out.wav"
         p.write_bytes(b"RIFF")
         created.append(path)

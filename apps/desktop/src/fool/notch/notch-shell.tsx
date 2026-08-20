@@ -259,7 +259,7 @@ export function NotchShell() {
       return
     }
 
-    void voiceApi.warmStt().catch(() => undefined)
+    void voiceApi.warmVoice().catch(() => undefined)
   }, [sessionActive])
 
   // Eller serbest tur alma: oturum açıkken tur biter bitmez mikrofon

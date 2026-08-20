@@ -223,6 +223,9 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
         cuda_probe="torch",
+        # Yerlesik ses bir tane; ikinci bir ses referans kayit birakilarak
+        # klonlaniyor (bkz. eklentinin ``target_voice_path`` yolu).
+        voices=(("default", "Built-in voice - or drop in a reference clip"),),
         size_label="~1,5 GB",
     ),
     VoiceEntry(
@@ -246,6 +249,15 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
         cuda_probe="torch",
+        # Eklentideki ``_VOICES`` ile AYNI olmak zorunda: panel katalogu
+        # okuyor, eklentiyi degil. Once burasi bostu ve kullanici uc sesi
+        # olan bir motorun tek sesi varmis gibi goruyordu.
+        # ``tests/fool/test_voice_choices.py`` ikisini karsilastiriyor.
+        voices=(
+            ("expresso/ex03-ex01_happy_001_channel1_334s.wav", "Neseli, canli"),
+            ("expresso/ex03-ex02_narration_001_channel1_674s.wav", "Anlatici, sakin"),
+            ("expresso/ex04-ex01_happy_001_channel1_334s.wav", "Neseli, ikinci konusmaci"),
+        ),
         size_label="~3,5 GB",
     ),
     VoiceEntry(
@@ -262,6 +274,10 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
         cuda_probe="torch",
+        # Tek yerlesik ses; asil kimlik yuklenen referans kayittan geliyor.
+        # Bos birakmak panelde "ses secilemiyor" olarak gorunuyordu -- oysa
+        # dogru cevap "tek secenek var, o da bu".
+        voices=(("default", "Reference clip - upload one to clone"),),
         size_label="~3 GB",
     ),
     VoiceEntry(
@@ -281,6 +297,8 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         sidecar_specs=("chatterbox-tts==0.1.7", "soundfile==0.14.0", "setuptools==80.10.2"),
         sidecar_cuda_index="https://download.pytorch.org/whl/cu126",
         devices=("cpu", "cuda"),
+        # Yerlesik ses bir tane; cesitlilik KLONDAN geliyor (``CLONE_CAPABLE``).
+        voices=(("default", "Built-in voice - or clone one from a clip"),),
         size_label="~3 GB",
     ),
     VoiceEntry(
@@ -596,6 +614,19 @@ def current_device(e: VoiceEntry) -> str:
     return value if value in ("auto", "cpu", "cuda") else "auto"
 
 
+def _forget_cuda_probe(entry_id: str) -> None:
+    """CUDA sondasinin saklanan cevabini birak (sessizce)."""
+    try:
+        from fool import cuda_probe_cache
+
+        cuda_probe_cache.invalidate(entry_id)
+    except Exception:
+        # Onbellek gecersizlestirilemedi: en kotu ihtimalle parmak izi
+        # degisene kadar eski cevap gorunur. Kurulumu bunun icin
+        # basarisiz saymak oransiz olurdu.
+        pass
+
+
 def set_device(entry_id: str, device: str) -> dict[str, Any]:
     """Ogenin CALISMA cihazini ayarla.
 
@@ -717,12 +748,19 @@ def cuda_ready(e: VoiceEntry) -> bool:
     hatanin ilk halini uretmisti.
     """
     if e.sidecar_specs:
-        from fool import sidecar as _sidecar
+        from fool import cuda_probe_cache, sidecar as _sidecar
 
-        try:
-            return bool(_sidecar.has_cuda_torch(e.id))
-        except Exception:
-            return False
+        def _probe() -> bool:
+            try:
+                return bool(_sidecar.has_cuda_torch(e.id))
+            except Exception:
+                return False
+
+        # ONBELLEKLI: sonda izole bir yorumlayicida ``import torch`` demek ve
+        # motor basina 4-5 sn suruyor. Katalog bunu her ogede yapinca ayarlarin
+        # ses bolumu 15-20 sn bos duruyordu. Onbellek torch dizininin parmak
+        # izine bagli -- derleme degisince kendiliginden gecersiz oluyor.
+        return cuda_probe_cache.cached(e.id, _probe)
 
     # Surucu on elemesi BILEREK yok: her sondanin kendi cevabi zaten kesin ve
     # surucusuz bir makinede olumsuz doner. Ustune bir ``nvidia-smi`` kontrolu
@@ -767,6 +805,9 @@ def install_cuda_runtime(entry_id: str) -> dict[str, Any]:
     _sidecar.pip_install(
         e.id, (f"torch=={base}+{tag}",), index_url=e.sidecar_cuda_index, timeout=2400
     )
+    # torch DEGISTI: saklanan cevap kesinlikle eskidi.
+    _forget_cuda_probe(e.id)
+
     return {"ok": True, "cuda_ready": cuda_ready(e)}
 
 
@@ -879,24 +920,47 @@ def current_clone(e: VoiceEntry) -> str:
     return Path(str(node.get("voice_sample") or "")).name
 
 
+def _catalog_row(e: VoiceEntry, active: dict[str, str]) -> dict[str, Any]:
+    row = status(e.id)
+    key = e.model_id if (e.kind == "stt" and e.model_id) else (e.provider_id or e.id)
+    row["active"] = active.get(e.kind, "") == key
+    row["device"] = current_device(e)
+    # GERCEK yetenek: yapilandirmada "cuda" yazmasi CUDA calistigi anlamina
+    # gelmiyor. Sidecar'in torch'u CPU derlemesiyse motor sessizce CPU'ya
+    # dusuyor ve kullanici yalnizca "cok yavas" goruyor.
+    row["cuda_ready"] = cuda_ready(e)
+    row["clone_capable"] = (e.provider_id or e.id) in CLONE_CAPABLE
+    row["clone"] = current_clone(e) if row["clone_capable"] else ""
+    row["voices"] = available_voices(e) if e.kind == "tts" else []
+    row["voice"] = current_voice(e) if e.kind == "tts" else ""
+    return row
+
+
 def catalog_status() -> list[dict[str, Any]]:
+    """Panelin gordugu tam liste.
+
+    Satirlar PARALEL kuruluyor. Maliyetin neredeyse tamami alt surec
+    beklemesi: her sidecar motorunun CUDA sondasi izole bir yorumlayicida
+    ``import torch`` yapiyor ve 4-5 sn suruyor. Sirayla kosunca dokuz oge
+    27,6 saniye ediyordu -- kullanici bunu "ayarlardaki ses kismi gec
+    yukleniyor" diye bildirdi.
+
+    Bekleme GIL'i birakiyor, yani is parcaciklari burada gercekten paralel.
+    Onbellekle birlikte (bkz. ``fool/cuda_probe_cache.py``) ilk acilis
+    ~6 sn'ye, sonrakiler 1 sn altina iniyor.
+
+    Sira KORUNUYOR: ``map`` girdi sirasiyla donuyor ve panelin listesi her
+    acilista yer degistirseydi kullanici aradigini bulamazdi.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
     active = active_providers()
-    rows = []
-    for e in CATALOG:
-        row = status(e.id)
-        key = e.model_id if (e.kind == "stt" and e.model_id) else (e.provider_id or e.id)
-        row["active"] = active.get(e.kind, "") == key
-        row["device"] = current_device(e)
-        # GERCEK yetenek: yapilandirmada "cuda" yazmasi CUDA calistigi anlamina
-        # gelmiyor. Sidecar'in torch'u CPU derlemesiyse motor sessizce CPU'ya
-        # dusuyor ve kullanici yalnizca "cok yavas" goruyor.
-        row["cuda_ready"] = cuda_ready(e)
-        row["clone_capable"] = (e.provider_id or e.id) in CLONE_CAPABLE
-        row["clone"] = current_clone(e) if row["clone_capable"] else ""
-        row["voices"] = available_voices(e) if e.kind == "tts" else []
-        row["voice"] = current_voice(e) if e.kind == "tts" else ""
-        rows.append(row)
-    return rows
+
+    if len(CATALOG) < 2:
+        return [_catalog_row(e, active) for e in CATALOG]
+
+    with ThreadPoolExecutor(max_workers=len(CATALOG), thread_name_prefix="fool-catalog") as pool:
+        return list(pool.map(lambda e: _catalog_row(e, active), CATALOG))
 
 
 # ---------------------------------------------------------------------------
@@ -1160,6 +1224,11 @@ def _run(job: Job, e: VoiceEntry) -> None:
         job.stage = "done"
         job.detail = ""
         job.state = "done"
+        # Kurulum torch'u degistirmis olabilir: CUDA sondasinin saklanan
+        # cevabini birak. Parmak izi zaten degisiyor ama dosya sistemi zaman
+        # damgasi cozunurlugu dusuk olabilir ve hemen sorulan soru eski
+        # cevabi gorebilirdi.
+        _forget_cuda_probe(e.id)
     except InterruptedError:
         job.state = "cancelled"
         job.stage = "cancelled"
@@ -1233,6 +1302,7 @@ def _run_cuda(job: Job, e: VoiceEntry) -> None:
         job.stage = "done"
         job.detail = ""
         job.state = "done"
+        _forget_cuda_probe(e.id)
     except Exception as exc:  # noqa: BLE001 - hata kullaniciya gosterilecek
         job.state = "failed"
         job.stage = "failed"

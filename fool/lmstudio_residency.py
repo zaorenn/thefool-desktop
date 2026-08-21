@@ -76,6 +76,46 @@ def _api_root(base_url: str) -> str:
     return cleaned or "http://localhost:1234"
 
 
+def busy_models() -> set[str]:
+    """ŞU AN üretim yapan modeller -- bunlara DOKUNULMAZ.
+
+    ``lms ps --json`` her model için ``status`` veriyor (``idle`` /
+    ``generating``). Üreten bir modeli boşaltmak, süren bir turu ortasından
+    kesmek demek: kullanıcı cevabın yarısını alır ve sebebini göremez.
+
+    Sonda koşamıyorsa BOŞ küme DÖNMÜYOR -- ``None`` gibi davranmak yerine
+    çağıran taraf hiçbir şey boşaltmıyor (bkz. ``enforce_single``).
+    """
+    cli = _cli()
+    if not cli:
+        return set()
+
+    try:
+        completed = subprocess.run(
+            [cli, "ps", "--json"],
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            timeout=_TIMEOUT_SECONDS,
+            check=False,
+        )
+        rows = json.loads(completed.stdout or "[]")
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        logger.debug("lms ps okunamadi: %s", exc)
+        return set()
+
+    if not isinstance(rows, list):
+        return set()
+
+    return {
+        str(row.get("modelKey") or "")
+        for row in rows
+        if isinstance(row, dict)
+        and str(row.get("status") or "").lower() not in ("idle", "")
+        and row.get("modelKey")
+    }
+
+
 def loaded_models(base_url: str) -> list[str]:
     """ŞU AN yüklü sohbet modellerinin kimlikleri.
 
@@ -140,9 +180,18 @@ def enforce_single(base_url: str, keep: str) -> list[str]:
     if not wanted:
         return []
 
+    # UREYEN modele dokunulmuyor.
+    #
+    # Kullanicinin sohbet oturumlarinin 43'u qwen'e sabitli
+    # (``sessions.model``), yani bu makinede baska bir modelin ustunde
+    # gercekten bir tur koseabiliyor. Onu boslatmak turu ortasindan keser ve
+    # LM Studio hemen yeniden yukler -- 6,5 GB'lik bir yukle-bosalt dongusu,
+    # ki donmanin sebeplerinden biri tam olarak bu.
+    busy = busy_models()
+
     dropped: list[str] = []
     for model_id in loaded_models(base_url):
-        if model_id == wanted:
+        if model_id == wanted or model_id in busy:
             continue
         if unload(model_id):
             dropped.append(model_id)

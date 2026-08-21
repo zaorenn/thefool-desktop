@@ -688,9 +688,24 @@ export function FriendView() {
                 </option>
               ))}
             </select>
+          ) : selected?.clone_capable ? (
+            /* KLONLAYAN motorda "tek sesi var" demek yaniltiyordu.
+               Olculdu:
+                 kokoro      7 hazir ses, klonlama YOK
+                 chatterbox  hazir ses YOK, klonlama VAR
+                 piper       1 ses, klonlama YOK
+               Yani chatterbox'in ses bankasi yok cunku sesi SEN veriyorsun.
+               Bunu bir kisit gibi gostermek, motorun asil ozelligini eksiklik
+               gibi okutuyordu. */
+            <span className="text-[0.58rem] text-muted-foreground">
+              {selected.clone
+                ? `Cloned voice: ${selected.clone.replace(/\.[^.]+$/, '')}`
+                : 'Voice comes from a clip you upload — Settings › Voice'}
+            </span>
           ) : (
-            /* Tek sesli motorda persona rengi degistirir, SESI degil.
-               Sessizce yanlis bir ses secmek yerine bunu soylemek. */
+            /* Gercekten tek sesli ve klonlamayan motor (Piper). Persona rengi
+               degistirir, SESI degil -- sessizce yanlis bir ses secmek yerine
+               bunu soylemek. */
             <span className="text-[0.58rem] text-muted-foreground">
               {selected?.label ?? 'This engine'} has one voice
             </span>

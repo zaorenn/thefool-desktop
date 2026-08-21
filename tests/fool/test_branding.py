@@ -212,6 +212,7 @@ EXPECTED_SEAMS = {
     "one-voice",
     "os-text-encoding",
     "engine-namespaced-config",
+    "plugin-tts-config",
     "resmi-rapor",
 }
 

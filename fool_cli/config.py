@@ -5335,6 +5335,27 @@ def _validate_config_key(key: str) -> tuple[bool, Optional[str]]:
         # providers.<name>.api_key, etc.).
         return True, None
 
+    # FOOL-SEAM: engine-namespaced-config
+    #
+    # ``tts.<motor>.<ayar>`` ve ``stt.<motor>.<ayar>`` acik kaplar: motor
+    # adlari EKLENTI katalogundan geliyor (``fool/voice_models.py``), sabit
+    # semada olamaz. Sema bunlari taniyamayinca uygulama KENDI yazdigi ayar
+    # icin "The Fool may not read it" uyarisi basiyordu:
+    #
+    #   $ (ses panelinden klon secildi)
+    #   ✓ Set tts.chatterbox.voice_sample = ...
+    #   ⚠ 'tts.chatterbox.voice_sample' is not a recognized config key
+    #
+    # Oysa okuyor: ``plugins/tts/fool-chatterbox/__init__.py`` her istekte o
+    # anahtari okuyor. Ses panelindeki HER islem (cihaz, ses tipi, klon) bu
+    # yanlis uyariyi uretiyordu -- kullaniciya yaptigi seyin tutmadigini
+    # soylemek, tutuyorken.
+    #
+    # Yalnizca UCUNCU segment aciliyor: ``tts.provider`` gibi ikinci seviye
+    # anahtarlar semada duruyor ve bir yazim hatasi hala yakalaniyor.
+    if top in ("tts", "stt") and len(segments) >= 3:
+        return True, None
+
     node: Any = DEFAULT_CONFIG.get(top)
     consumed = [top]
     for seg in segments[1:]:

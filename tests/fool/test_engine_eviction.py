@@ -212,3 +212,92 @@ def test_VRAM_olculemezse_tahliye_yapilmiyor(monkeypatch) -> None:
 def test_bos_kayitta_cokmuyor() -> None:
     assert eh._evict_for("herhangi") == []
     assert eh._idle_sweep() == []
+
+
+# ---------------------------------------------------------------------------
+# Seçili motor daha uzun yaşıyor
+# ---------------------------------------------------------------------------
+
+def test_SECILI_motor_bes_dakikada_BIRAKILMIYOR(monkeypatch) -> None:
+    """Ölçüldü (ürün yolu, Chatterbox Turbo): sıcak 0,78 sn/cümle, soğuk
+    13,08 sn. Beş dakikalık bir ara -- kahve molası kadar -- bir sonraki
+    cümleyi 13 saniye geciktiriyordu.
+    """
+    import time
+
+    from fool import engine_host as eh
+
+    monkeypatch.setattr(eh, "_selected_engine", lambda: "chatterbox")
+    stopped: list[str] = []
+    monkeypatch.setattr(eh, "_stop_locked", lambda name: stopped.append(name))
+
+    now = time.monotonic()
+
+    class _E:
+        def __init__(self, age):
+            self.lock = threading.Lock()
+            self.last_used = now - age
+
+    # 10 dakika bosta: secili olan KALIR, digeri gider.
+    monkeypatch.setattr(eh, "_ENGINES", {"chatterbox": _E(600), "kokoro": _E(600)})
+
+    assert eh._idle_sweep() == ["kokoro"]
+    assert stopped == ["kokoro"]
+
+
+def test_SECILI_motor_da_SONSUZA_kadar_tutmuyor(monkeypatch) -> None:
+    """Kullanıcı gerçekten başka işe geçtiyse kart bırakılıyor."""
+    import time
+
+    from fool import engine_host as eh
+
+    monkeypatch.setattr(eh, "_selected_engine", lambda: "chatterbox")
+    monkeypatch.setattr(eh, "_stop_locked", lambda name: None)
+
+    now = time.monotonic()
+
+    class _E:
+        def __init__(self, age):
+            self.lock = threading.Lock()
+            self.last_used = now - age
+
+    # Yarim saati gecti.
+    monkeypatch.setattr(eh, "_ENGINES", {"chatterbox": _E(2000)})
+
+    assert eh._idle_sweep() == ["chatterbox"]
+
+
+def test_KULLANIMDAKI_motor_hicbir_esikte_kesilmiyor(monkeypatch) -> None:
+    """Kilidi tutulan bir süreç süren bir sentezin ortasında; onu durdurmak
+    cümleyi yarıda kesmek demek."""
+    import time
+
+    from fool import engine_host as eh
+
+    monkeypatch.setattr(eh, "_selected_engine", lambda: "")
+    monkeypatch.setattr(eh, "_stop_locked", lambda name: None)
+
+    busy = threading.Lock()
+    busy.acquire()
+
+    class _E:
+        def __init__(self):
+            self.lock = busy
+            self.last_used = time.monotonic() - 99_999
+
+    monkeypatch.setattr(eh, "_ENGINES", {"kokoro": _E()})
+
+    assert eh._idle_sweep() == []
+
+
+def test_yapilandirma_okunamazsa_ESKI_davranis(monkeypatch) -> None:
+    """Güvenli taraf: herkes aynı eşiğe tabi."""
+    from fool import engine_host as eh
+    import fool_cli.config as cfg
+
+    def _boom(*a, **k):
+        raise RuntimeError("config unreadable")
+
+    monkeypatch.setattr(cfg, "load_config", _boom)
+
+    assert eh._selected_engine() == ""

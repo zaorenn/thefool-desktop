@@ -1015,7 +1015,20 @@ def _dispatch_to_plugin_provider(
     # treat all of these as optional and fall back to their own defaults
     # when None is passed (matches the ABC contract documented on
     # ``TTSProvider.synthesize``).
-    voice = tts_config.get("voice") if isinstance(tts_config, dict) else None
+    # FOOL-SEAM: plugin-tts-config
+    #
+    # MOTOR BASINA ses once. Panel secimi ``tts.<motor>.voice``a yaziyor
+    # (``voice_models.set_voice``) ama burasi yalnizca ust seviye
+    # ``tts.voice``i okuyordu -- yani panelden bir konusmaci secmek
+    # (Kokoro'nun kadin/erkek sesleri gibi) HICBIR SEY yapmiyordu.
+    # Kullanicinin bildirdigi "uygulama icinde secsem bile degisen bir sey
+    # olmuyor" tam olarak buydu.
+    #
+    # Ust seviye ``tts.voice`` geri dusus olarak duruyor: motor ad alani
+    # olmayan bulut saglayicilari onu kullaniyor.
+    _engine_cfg = tts_config.get(key) if isinstance(tts_config, dict) else None
+    _engine_voice = _engine_cfg.get("voice") if isinstance(_engine_cfg, dict) else None
+    voice = _engine_voice or (tts_config.get("voice") if isinstance(tts_config, dict) else None)
     model = tts_config.get("model") if isinstance(tts_config, dict) else None
     speed = tts_config.get("speed") if isinstance(tts_config, dict) else None
     fmt = (
@@ -1034,6 +1047,29 @@ def _dispatch_to_plugin_provider(
         model=model if isinstance(model, str) and model else None,
         speed=float(speed) if isinstance(speed, (int, float)) else None,
         format=str(fmt).lower() if fmt else "mp3",
+        # FOOL-SEAM: plugin-tts-config
+        #
+        # TAM ``tts`` bolumu gecirilmeli. Yerel motorlarin HEPSI
+        # (chatterbox, kokoro, styletts2, kyutai, f5tts) ayarlarini
+        # ``extra["config"]`` icinden okuyor:
+        #
+        #     config = extra.get("config") or {}
+        #     cfg = config.get("chatterbox")      -> device, voice_sample
+        #
+        # Bu argumaan HIC gecilmiyordu, yani ``cfg`` her zaman BOS bir
+        # sozluktu ve motor basina ne varsa sessizce yok sayiliyordu:
+        #
+        #   * ses klonu (``voice_sample`` / ``reference``) -- kullanici bir
+        #     kayit yukluyor, seciyor, panel "secili" gosteriyor ve motor
+        #     yerlesik sesiyle konusmaya devam ediyordu. Kullanicinin
+        #     bildirdigi "chatterboxtaki ses ultron degil kadin sesiydi"
+        #     tam olarak buydu.
+        #   * ``device`` -- her zaman "auto" gidiyordu, yani panelde CUDA
+        #     secili olsa bile karar sidecar'a birakiliyordu.
+        #
+        # Ust seviye ``voice``/``model``/``speed`` zaten ayri geciliyor;
+        # bu, motor AD ALANINDAKI ayarlar icin.
+        config=tts_config if isinstance(tts_config, dict) else {},
     )
     # Provider contract: returns the (possibly rewritten) output path.
     # Defensive against a provider returning None or a non-string —

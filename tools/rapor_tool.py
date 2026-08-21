@@ -163,6 +163,14 @@ TASLAK_BASLAT_SCHEMA = {
             "ozet": {"type": "array", "items": {"type": "string"}},
             "imza_yer": {"type": "string"},
             "imza_tarih": {"type": "string"},
+            "ornek_rapor": {
+                "type": "string",
+                "description": (
+                    "Path to an example report. Its per-section lengths become "
+                    "TARGETS, so the new report cannot come out far shorter "
+                    "than the example it imitates. Strongly recommended."
+                ),
+            },
             "sifirla": {
                 "type": "boolean",
                 "description": (
@@ -368,6 +376,7 @@ registry.register(
         imza_yer=args.get("imza_yer", ""),
         imza_tarih=args.get("imza_tarih", ""),
         sifirla=bool(args.get("sifirla", False)),
+        ornek_rapor=args.get("ornek_rapor"),
     ),
     emoji="🗂️",
 )

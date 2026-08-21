@@ -16,6 +16,57 @@ import { sanitizeTextForSpeech } from './speech-text'
 // tick, so legitimately long speech is never cut off).
 const PLAYBACK_STALL_MS = 15_000
 
+/**
+ * BİR cevap, BİR ses.
+ *
+ * Sahiplik (``fool/voice-owner.ts``) YÜZEYLER arasını çözüyor ama aynı
+ * yüzeyin içindeki iki çağıranı çözmüyor: sohbet panelinin hem otomatik
+ * okuması hem sesli turu var ve ikisi de ``canSpeak('composer')`` sorusundan
+ * geçiyor -- ``canSpeak`` sahip yokken de ``true`` dönüyor, çünkü sahiplik
+ * konuşmayı engellemek için değil ÇAKIŞMAYI engellemek için.
+ *
+ * Kullanıcının bildirdiği hâli: Friend sessize alınınca sohbet paneli cevabı
+ * okuyor -- ve AYNI cevabı iki kez okuyor.
+ *
+ * Bunun doğru yeri burası: her seslendiren yol bu iki işlevden geçiyor, yani
+ * kaç çağıran olursa olsun bir mesaj bir kez seslendiriliyor. Kayıt kimliğe
+ * göre; kimliksiz metin (uyanma cümlesi, aşama satırları) her zaman geçiyor.
+ */
+const spokenMessages = new Set<string>()
+
+/** Bu mesajı ilk talep eden kazanır. ``false`` = başkası zaten seslendiriyor. */
+function claimSpeech(messageId: null | string | undefined): boolean {
+  if (!messageId) {
+    return true
+  }
+
+  if (spokenMessages.has(messageId)) {
+    return false
+  }
+
+  spokenMessages.add(messageId)
+
+  // Sınırsız büyümesin: uzun bir oturumda her mesaj kimliği burada
+  // birikirdi. Son 200 yeterli -- bir cevap ancak geldiği anda iki kez
+  // seslendirilmeye çalışılıyor, saatler sonra değil.
+  if (spokenMessages.size > 200) {
+    const oldest = spokenMessages.values().next().value
+
+    if (oldest !== undefined) {
+      spokenMessages.delete(oldest)
+    }
+  }
+
+  return true
+}
+
+/** Kullanıcı AÇIKÇA yeniden okutmak isterse kaydı bırak. */
+export function forgetSpokenMessage(messageId: null | string | undefined): void {
+  if (messageId) {
+    spokenMessages.delete(messageId)
+  }
+}
+
 let currentAudio: HTMLAudioElement | null = null
 let currentStop: (() => void) | null = null
 let sequence = 0
@@ -336,6 +387,11 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
  * whole-text `playSpeechText`.
  */
 export async function startSpeechStream(options: VoicePlaybackOptions): Promise<null | SpeechStreamSession> {
+  // BIR cevap, BIR ses. Ikinci cagiran sessizce vazgeciyor.
+  if (!claimSpeech(options.messageId)) {
+    return null
+  }
+
   const wsUrl = await resolveSpeakStreamUrl()
 
   if (!wsUrl) {
@@ -450,6 +506,12 @@ async function playSpeechDataUrl(
 }
 
 export async function playSpeechText(text: string, options: VoicePlaybackOptions): Promise<boolean> {
+  // BIR cevap, BIR ses. ``stopVoicePlayback``tan ONCE: ikinci cagiranin ilk
+  // cagiranin sesini kesmesi, tam olarak kacinilan sonuc.
+  if (!claimSpeech(options.messageId)) {
+    return false
+  }
+
   stopVoicePlayback()
 
   const speakableText = sanitizeTextForSpeech(text)

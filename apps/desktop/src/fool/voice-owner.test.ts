@@ -142,3 +142,55 @@ describe('seslendiren HER yuzey sahiplik soruyor', () => {
     expect(source.includes("canSpeak('composer')")).toBe(true)
   })
 })
+
+/**
+ * BİR cevap, BİR ses — yüzey İÇİNDEKİ çakışma.
+ *
+ * Sahiplik yüzeyler arasını çözüyor ama ``canSpeak`` sahip YOKKEN de ``true``
+ * dönüyor (bilerek: sahiplik konuşmayı engellemek için değil, çakışmayı
+ * engellemek için). Sonuçta sohbet panelinin İKİ seslendiren yolu -- otomatik
+ * okuma ve sesli tur -- aynı kapıdan birlikte geçiyordu.
+ *
+ * Kullanıcının bildirdiği: "friend'i mutelediğimde okuyor, sadece onda da
+ * 2 kere okuyor aynı şeyi."
+ *
+ * Doğru yer oynatma katmanı: her seslendiren yol oradan geçiyor.
+ */
+describe('bir cevap bir ses', () => {
+  it('oynatma katmani mesaj basina kayit tutuyor', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const source = readFileSync(join(import.meta.dirname, '../lib/voice-playback.ts'), 'utf8')
+
+    expect(source.includes('function claimSpeech')).toBe(true)
+    // IKI giris de talep ediyor.
+    expect(source.match(/claimSpeech\(options\.messageId\)/g)?.length).toBe(2)
+  })
+
+  it('ELLE okuma kaydi birakiyor -- ikinci tiklama calisiyor', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const source = readFileSync(
+      join(import.meta.dirname, '../components/assistant-ui/thread/assistant-message.tsx'),
+      'utf8'
+    )
+
+    expect(source.includes('forgetSpokenMessage(messageId)')).toBe(true)
+  })
+
+  /**
+   * Friend ekranda duran SESLİ yüzey. Eskiden yalnızca kendi mikrofonundan
+   * başlayan turları okuyordu; kullanıcı sohbet panelinden yazınca ne Friend
+   * ne panel konuşuyordu (panel sahiplik yüzünden susuyor). Hiç ses çıkmıyordu.
+   */
+  it('Friend SAHIPKEN evresine bakmadan seslendiriyor', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const source = readFileSync(join(import.meta.dirname, './friend/use-friend-voice.ts'), 'utf8')
+
+    expect(source.includes("if (!active && phase !== 'thinking' && phase !== 'speaking')")).toBe(true)
+  })
+})

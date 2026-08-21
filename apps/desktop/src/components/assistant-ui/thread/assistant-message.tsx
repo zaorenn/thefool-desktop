@@ -32,7 +32,7 @@ import { AudioLines, GitForkIcon, Loader2Icon, RefreshCwIcon, SmilePlusIcon, Vol
 import { extractPreviewTargets } from '@/lib/preview-targets'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
-import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
+import { forgetSpokenMessage, playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
 import { notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 
@@ -353,6 +353,9 @@ const ReadAloudButton: FC<{ getText: () => string; messageId: string }> = ({ get
     }
 
     try {
+      // ACIK kullanici eylemi: "bir cevap bir ses" kaydini birak, yoksa
+      // ikinci tiklama sessizce hicbir sey yapmazdi.
+      forgetSpokenMessage(messageId)
       await playSpeechText(text, { messageId, source: 'read-aloud' })
     } catch (error) {
       notifyError(error, copy.readAloudFailed)

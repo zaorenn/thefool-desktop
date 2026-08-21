@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 
+import { canSpeak } from '@/fool/voice-owner'
 import { playSpeechText } from '@/lib/voice-playback'
 import { ownsAmbientCue } from '@/store/ambient'
 import { notifyError } from '@/store/notifications'
@@ -60,6 +61,27 @@ export function useAutoSpeakReplies({
       const { conversationActive, failureLabel, markSpoken, pendingReply } = latest.current
 
       if (conversationActive || $voicePlayback.get().status !== 'idle') {
+        return
+      }
+
+      // FOOL-SEAM: voice-owner
+      //
+      // Friend penceresi ya da notch konusuyorsa sohbet paneli SUSMALI.
+      //
+      // ``ownsAmbientCue`` yalnizca PENCERELER arasi: ayni sohbet iki
+      // pencerede acikken tek biri okusun diye. Yuzeyler arasinda hicbir sey
+      // yoktu ve sonucu kullanicinin gunlugunde goruluyor -- ayni cumle iki
+      // kez sentezleniyordu:
+      //
+      //   fool-speak-stream-nl_653jl.wav   (Friend'in akis yolu)
+      //   cache/audio/tts_20260821_...wav  (buranin tek-seferlik yolu)
+      //
+      // Ustteki ``$voicePlayback`` kontrolu YETMIYOR: iki yuzey de ayni
+      // ``$messages`` tikinda uyaniyor ve burasi, Friend daha 'preparing'
+      // yazmadan geciyor. Sahiplik o yarisi tasimiyor -- kim konusacaksa
+      // ONCEDEN yazili (bkz. ``fool/voice-owner.ts``, ki basligi tam olarak
+      // bu hatayi anlatiyor).
+      if (!canSpeak('composer')) {
         return
       }
 

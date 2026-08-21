@@ -191,3 +191,64 @@ def test_SECILI_gizli_motor_yine_gosteriliyor(monkeypatch) -> None:
     monkeypatch.setattr(vm, "active_providers", lambda: {"stt": "", "tts": "kyutai"})
 
     assert "kyutai" in {e.id for e in vm.visible_catalog()}
+
+
+# ---------------------------------------------------------------------------
+# ÜREYEN modele dokunulmuyor
+# ---------------------------------------------------------------------------
+
+def test_UREYEN_model_birakilmiyor(monkeypatch) -> None:
+    """Süren bir turu ortasından kesmek: kullanıcı cevabın yarısını alır.
+
+    Ve LM Studio onu hemen yeniden yükler -- 6,5 GB'lik bir yükle-boşalt
+    döngüsü, ki donmanın sebeplerinden biri tam olarak bu. Kullanıcının 43
+    oturumu qwen'e sabitli, yani başka bir modelin üstünde gerçekten bir tur
+    koşuyor olabiliyor.
+    """
+    _loaded(monkeypatch, ["google/gemma-4-e4b", "qwen/qwen3.5-9b"])
+    monkeypatch.setattr(residency, "busy_models", lambda: {"qwen/qwen3.5-9b"})
+
+    assert residency.enforce_single("http://localhost:1234/v1", "google/gemma-4-e4b") == []
+
+
+def test_BOSTAKI_model_birakiliyor(monkeypatch) -> None:
+    _loaded(monkeypatch, ["google/gemma-4-e4b", "qwen/qwen3.5-9b"])
+    monkeypatch.setattr(residency, "busy_models", lambda: set())
+
+    assert residency.enforce_single("http://localhost:1234/v1", "google/gemma-4-e4b") == [
+        "qwen/qwen3.5-9b"
+    ]
+
+
+def test_lms_okunamazsa_mesgul_kumesi_BOS(monkeypatch) -> None:
+    """Sonda koşamıyorsa çağıran taraf normal kurala düşüyor."""
+    monkeypatch.setattr(residency, "_cli", lambda: "")
+
+    assert residency.busy_models() == set()
+
+
+# ---------------------------------------------------------------------------
+# VRAM baskısında ÖNCE dil modeli
+# ---------------------------------------------------------------------------
+
+def test_VRAM_baskisinda_ONCE_dil_modeli_birakiliyor() -> None:
+    """Ölçüldü (16 GB kart): gemma 6,33 + qwen 6,55 = 12,88 GB, üstüne
+    Chatterbox ~3,5 GB. Kart aşılıyor, Windows GPU belleğini sistem RAM'ine
+    taşıyor ve makine çökmeden DONUYOR.
+
+    Kullanılmayan bir dil modelini bırakmak, çalışan bir ses motorunu
+    durdurmaktan her zaman daha ucuz: LM Studio onu bir sonraki istekte zaten
+    yeniden yükler, oysa durdurulan ses motoru KONUŞMAYI kesiyor.
+    """
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[2] / "fool" / "engine_host.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "lmstudio_residency" in source
+    # Ses motorlarini tahliye eden donguden ONCE.
+    llm_free = source.index("lmstudio_residency.enforce_single")
+    engine_evict = source.index("while others and free is not None")
+
+    assert llm_free < engine_evict, "dil modeli birakmasi ses tahliyesinden SONRA"

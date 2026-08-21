@@ -231,6 +231,34 @@ def _evict_for(name: str) -> list[str]:
         from fool.gpu_budget import fits_in_vram, free_vram_mb
 
         free = free_vram_mb()
+
+        # ONCE kullanilmayan DIL MODELLERINI birak, sonra ses motorlarini.
+        #
+        # Olculdu (kullanicinin karti, 16 GB): gemma 6,33 GB + qwen 6,55 GB =
+        # 12,88 GB, ustune Chatterbox ~3,5 GB. Kart asiliyor ve Windows GPU
+        # bellegini sistem RAM'ine tasimaya basliyor (WDDM paylasimli bellek)
+        # -- makine cokmuyor ama DONUYOR. Kullanicinin "iki is ayni anda
+        # isteyince bilgisayar donuyor" dedigi durum bu.
+        #
+        # Kullanilmayan bir dil modelini birakmak, calisan bir ses motorunu
+        # durdurmaktan her zaman daha ucuz: LM Studio onu bir sonraki istekte
+        # zaten yeniden yukler, oysa durdurulan ses motoru KONUSMAYI kesiyor.
+        # UREYEN model korunuyor (bkz. ``lmstudio_residency.busy_models``).
+        if free is not None and not fits_in_vram(name, free):
+            try:
+                from fool import lmstudio_residency
+                from fool_cli.config import load_config
+
+                model_cfg = (load_config() or {}).get("model") or {}
+                if lmstudio_residency.enforce_single(
+                    str(model_cfg.get("base_url") or "http://localhost:1234/v1"),
+                    str(model_cfg.get("default") or model_cfg.get("model") or ""),
+                ):
+                    # Tahmin etmek yerine karta yeniden sor.
+                    free = free_vram_mb()
+            except Exception as exc:  # pragma: no cover
+                logger.debug("LM Studio bosaltmasi atlandi: %s", exc)
+
         while others and free is not None and not fits_in_vram(name, free):
             victim = others.pop(0)[0]
             victims.append(victim)

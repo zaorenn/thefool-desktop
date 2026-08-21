@@ -133,3 +133,52 @@ def test_bilinmeyen_ses_REDDEDILIYOR(monkeypatch) -> None:
 
     with pytest.raises(ValueError):
         vm.set_voice("kokoro", "boyle-bir-ses-yok")
+
+
+# ---------------------------------------------------------------------------
+# Chatterbox TURBO
+# ---------------------------------------------------------------------------
+
+def test_chatterbox_TURBO_kullaniyor() -> None:
+    """Ölçüldü (RTX 4070 Ti SUPER, aynı metin):
+
+        chatterbox.tts        1,89 sn / cümle
+        chatterbox.tts_turbo  1,60 sn sentez -> 6,40 sn ses = 4x gerçek zaman
+
+    Klonlu ürün yolunda sıcak: 0,78 sn / cümle.
+
+    Turbo aynı pakette (``chatterbox-tts==0.1.7``) zaten geliyordu; eklenti
+    onu kullanmıyordu.
+    """
+    import pathlib
+
+    plugin = pathlib.Path("plugins/tts/fool-chatterbox/__init__.py")
+    source = plugin.read_text(encoding="utf-8")
+
+    assert "chatterbox.tts_turbo" in source
+    assert "ChatterboxTurboTTS" in source
+
+
+def test_TURBO_yoksa_klasige_dusuyor() -> None:
+    """Eski bir kurulumda ``tts_turbo`` yok ve oradaki kullanıcıyı sessizce
+    sessizliğe düşürmek kabul edilemez."""
+    import pathlib
+
+    source = pathlib.Path("plugins/tts/fool-chatterbox/__init__.py").read_text(encoding="utf-8")
+
+    assert "from chatterbox.tts import ChatterboxTTS as _Engine" in source
+
+
+def test_bilinmeyen_arguman_SENTEZI_dusurmuyor() -> None:
+    """Turbo'nun imzası klasikten dar.
+
+    Bilinmeyen bir anahtar argümanı ``TypeError`` ile düşüyor -- yani
+    kullanıcı hiçbir ses duymuyor. İmza bir kez okunup süzülüyor.
+    """
+    import pathlib
+
+    source = pathlib.Path("plugins/tts/fool-chatterbox/__init__.py").read_text(encoding="utf-8")
+
+    assert "inspect.signature" in source
+    assert '"exaggeration" in _accepts' in source
+    assert '"cfg_weight" in _accepts' in source

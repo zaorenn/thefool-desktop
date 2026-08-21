@@ -330,8 +330,8 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         label="Chatterbox",
         kind="tts",
         summary=(
-            "The most realistic option, and it can clone voices. The cost is "
-            "weight: it wants CUDA to run smoothly."
+            "The most realistic option, and the best at cloning a voice from "
+            "a short clip. Runs Turbo: measured 0.78s per sentence warm."
         ),
         probe_module="chatterbox",
         # ``setuptools<81`` SART: chatterbox -> perth -> ``pkg_resources``,

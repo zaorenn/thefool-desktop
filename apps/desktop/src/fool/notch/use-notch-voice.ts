@@ -71,6 +71,8 @@ export interface NotchVoice {
   heardSpeech: boolean
   /** Mikrofon seviyesi 0..1; dalga formunu bu besliyor. */
   level: number
+  /** Ajanın son cevabı -- notch onu GÖSTERİYOR, sadece okumuyor. */
+  reply: string
   /** Kullanıcının son söylediği (yazıya dökülmüş) metin. */
   transcript: string
   status: NotchStatus
@@ -104,6 +106,9 @@ export function useNotchVoice(): NotchVoice {
 
   statusRef.current = status
   const [transcript, setTranscript] = useState('')
+  // Ajanin cevabi. Notch artik sohbet yuzeyi: kullanici ne dendigini
+  // GORMELI, yalnizca duymak gurultulu bir odada yetmiyor.
+  const [reply, setReply] = useState('')
   const [error, setError] = useState<null | string>(null)
 
   // Hangi baloncuğa kadar seslendirdiğimiz. Bu olmadan her cevap baştan
@@ -276,6 +281,7 @@ export function useNotchVoice(): NotchVoice {
       }
 
       setTranscript(text)
+      setReply('')
       // Yeni tur: doldurma hakki yenileniyor, sessizlik sayaci sifirlaniyor.
       resetTurn(fillerRef.current)
       speechStartedRef.current = false
@@ -364,6 +370,10 @@ export function useNotchVoice(): NotchVoice {
     }
 
     const pending = collectUnspokenTurnSpeech([...messages], lastSpokenId)
+
+    if (pending?.text) {
+      setReply(pending.text)
+    }
 
     if (!pending || !pending.text.trim()) {
       return
@@ -566,6 +576,7 @@ export function useNotchVoice(): NotchVoice {
     error,
     heardSpeech,
     level,
+    reply,
     status,
     transcript
   }

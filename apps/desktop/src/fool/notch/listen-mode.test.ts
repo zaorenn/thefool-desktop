@@ -109,3 +109,55 @@ describe('notch secilen dinleme kipine uyuyor', () => {
     ).toBe(true)
   })
 })
+
+/**
+ * Notch artık SOHBET yüzeyi.
+ *
+ * Friend penceresi kaldırıldı (kullanıcının kararı) ve konuşma tamamen
+ * çentiğe taşındı. Kullanıcı ne dediğini ve ne dendiğini GÖRMELİ -- gürültülü
+ * bir odada yalnızca duymak yetmiyor, ve uzun bir cevapta ilk cümle
+ * seslendirilirken metnin de akması gerekiyor.
+ */
+describe('notch sohbet yuzeyi', () => {
+  const source = async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    return readFileSync(join(import.meta.dirname, 'notch-shell.tsx'), 'utf8')
+  }
+
+  it('AYRI bir sohbet boyu var', async () => {
+    const text = await source()
+
+    expect(text.includes('CONVERSATION_HEIGHT')).toBe(true)
+    expect(text.includes('CONVERSATION_WIDTH')).toBe(true)
+  })
+
+  /** Yalnızca duruma bakmak, cevap ekranda dururken çentiği küçültürdü. */
+  it('sohbet boyu ICERIGE bakiyor, yalnizca duruma degil', async () => {
+    const text = await source()
+
+    expect(text.includes('voice.transcript || voice.reply')).toBe(true)
+  })
+
+  it('SOYLENEN ve DENILEN ikisi de gosteriliyor', async () => {
+    const text = await source()
+
+    expect(text.includes('{voice.transcript')).toBe(true)
+    expect(text.includes('{voice.reply}')).toBe(true)
+  })
+
+  it('sohbette orb var, pet YOK -- ikisi birden gurultu', async () => {
+    const text = await source()
+
+    expect(text.includes('<Orb ')).toBe(true)
+    expect(text.includes('!conversing && (')).toBe(true)
+  })
+
+  it('orb centige sigan boyda', async () => {
+    const text = await source()
+
+    // 184 px'lik centige 256'lik kure sigmaz.
+    expect(/size=\{5[0-9]\}/.test(text)).toBe(true)
+  })
+})

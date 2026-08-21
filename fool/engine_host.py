@@ -185,6 +185,39 @@ def _hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
+def _free_vram_from_llms(name: str) -> None:
+    """Kart doluysa BOSTAKI dil modellerini birak.
+
+    Olculdu (kullanicinin karti, 16 GB): gemma 6,33 GB + qwen 6,55 GB =
+    12,88 GB, ustune Chatterbox ~3,5 GB. Kart asiliyor ve Windows GPU
+    bellegini sistem RAM'ine tasimaya basliyor (WDDM paylasimli bellek) --
+    makine cokmuyor ama DONUYOR.
+
+    UREYEN model korunuyor (bkz. ``lmstudio_residency.busy_models``): suren
+    bir turu ortasindan kesmek, ustune LM Studio'nun onu hemen yeniden
+    yuklemesi demek -- 6,5 GB'lik bir yukle-bosalt dongusu.
+
+    Hata YUTULUYOR: bir bellek temizligi ugruna sentezi dusurmek yanlis.
+    """
+    try:
+        from fool.gpu_budget import fits_in_vram, free_vram_mb
+
+        free = free_vram_mb()
+        if free is None or fits_in_vram(name, free):
+            return
+
+        from fool import lmstudio_residency
+        from fool_cli.config import load_config
+
+        model_cfg = (load_config() or {}).get("model") or {}
+        lmstudio_residency.enforce_single(
+            str(model_cfg.get("base_url") or "http://localhost:1234/v1"),
+            str(model_cfg.get("default") or model_cfg.get("model") or ""),
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.debug("LM Studio bosaltmasi atlandi: %s", exc)
+
+
 def _evict_for(name: str) -> list[str]:
     """FOOL-SEAM: engine-vram-eviction
 
@@ -213,6 +246,18 @@ def _evict_for(name: str) -> list[str]:
             if n != name and not e.lock.locked()
         ]
 
+    # Ses motorlarindan ONCE kullanilmayan DIL MODELLERINI birak.
+    #
+    # Buraya tasindi cunku asagidaki ``if not others: return []`` yolu en sik
+    # yasanan durum: tek bir ses motoru var. Blok orada dururken hic
+    # calismiyordu -- olculdu, sentez sirasinda VRAM 12.393 -> 15.768 MiB
+    # (16.376'nin %96'si) cikti ve hicbir model birakilmadi.
+    #
+    # Kullanilmayan bir dil modelini birakmak, calisan bir ses motorunu
+    # durdurmaktan her zaman daha ucuz: LM Studio onu bir sonraki istekte
+    # zaten yeniden yukler, oysa durdurulan ses motoru KONUSMAYI kesiyor.
+    _free_vram_from_llms(name)
+
     if not others:
         return []
 
@@ -231,33 +276,6 @@ def _evict_for(name: str) -> list[str]:
         from fool.gpu_budget import fits_in_vram, free_vram_mb
 
         free = free_vram_mb()
-
-        # ONCE kullanilmayan DIL MODELLERINI birak, sonra ses motorlarini.
-        #
-        # Olculdu (kullanicinin karti, 16 GB): gemma 6,33 GB + qwen 6,55 GB =
-        # 12,88 GB, ustune Chatterbox ~3,5 GB. Kart asiliyor ve Windows GPU
-        # bellegini sistem RAM'ine tasimaya basliyor (WDDM paylasimli bellek)
-        # -- makine cokmuyor ama DONUYOR. Kullanicinin "iki is ayni anda
-        # isteyince bilgisayar donuyor" dedigi durum bu.
-        #
-        # Kullanilmayan bir dil modelini birakmak, calisan bir ses motorunu
-        # durdurmaktan her zaman daha ucuz: LM Studio onu bir sonraki istekte
-        # zaten yeniden yukler, oysa durdurulan ses motoru KONUSMAYI kesiyor.
-        # UREYEN model korunuyor (bkz. ``lmstudio_residency.busy_models``).
-        if free is not None and not fits_in_vram(name, free):
-            try:
-                from fool import lmstudio_residency
-                from fool_cli.config import load_config
-
-                model_cfg = (load_config() or {}).get("model") or {}
-                if lmstudio_residency.enforce_single(
-                    str(model_cfg.get("base_url") or "http://localhost:1234/v1"),
-                    str(model_cfg.get("default") or model_cfg.get("model") or ""),
-                ):
-                    # Tahmin etmek yerine karta yeniden sor.
-                    free = free_vram_mb()
-            except Exception as exc:  # pragma: no cover
-                logger.debug("LM Studio bosaltmasi atlandi: %s", exc)
 
         while others and free is not None and not fits_in_vram(name, free):
             victim = others.pop(0)[0]

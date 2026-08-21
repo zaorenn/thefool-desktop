@@ -631,6 +631,20 @@ def active_providers() -> dict[str, str]:
     return {"stt": stt, "tts": tts}
 
 
+def _entry_id_for_provider(provider: str) -> str:
+    """Saglayici adindan katalog kimligi (``qwen3`` -> ``qwen3-tts``).
+
+    Motor surecleri KATALOG kimligiyle aniliyor; yapilandirmada ise saglayici
+    adi duruyor. Ikisini karistirmak, var olmayan bir motoru durdurmaya
+    calismak olurdu.
+    """
+    key = (provider or "").strip().lower()
+    for entry in CATALOG:
+        if entry.kind == "tts" and (entry.provider_id or entry.id).lower() == key:
+            return entry.id
+    return key
+
+
 def select(entry_id: str) -> dict[str, Any]:
     """Bu ogeyi AKTIF saglayici yap."""
     e = entry(entry_id)
@@ -642,7 +656,25 @@ def select(entry_id: str) -> dict[str, Any]:
     from fool_cli.config import set_config_value
 
     if e.kind == "tts":
+        previous = active_providers().get("tts", "")
         set_config_value("tts.provider", e.provider_id or e.id)
+
+        # ESKI motoru HEMEN birak: kullanici baska bir ses sectiyse oncekinin
+        # karti tutmasinin hicbir sebebi yok ve bes dakika beklemek, o sure
+        # boyunca iki motorluk VRAM tutmak demek. Kullanicinin istegi birebir
+        # buydu: "ses modeli degistigi anda tekrar kapatilsin".
+        #
+        # Hata YUTULUYOR: motor durdurulamadiysa bosta-bosaltma zaten
+        # yakalayacak; secimi bunun icin dusurmek oransiz olurdu.
+        if previous and previous != (e.provider_id or e.id):
+            try:
+                from fool import engine_host
+
+                engine_host.stop(_entry_id_for_provider(previous))
+            except Exception as exc:  # pragma: no cover
+                import logging
+
+                logging.getLogger(__name__).debug("eski motor durdurulamadi: %s", exc)
     else:
         # Yerel whisper: saglayici "local", asil secim model boyutu.
         set_config_value("stt.provider", "local")

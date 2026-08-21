@@ -106,6 +106,10 @@ export function FriendView() {
   const [opening, setOpening] = useState(true)
   const [warmCaption, setWarmCaption] = useState('')
 
+  // Hangi motor bu oturumda KONUSTU. Motor degisince sifirlaniyor: yeni bir
+  // motor gercekten yeniden yuklenecek, uyari orada dogru.
+  const spokeRef = useRef('')
+
   // Persona: ses + vurgu rengi TEK secim.
   const [activePersona, setActivePersona] = useState(() => readAccent())
   const selectedRef = useRef<null | VoiceItem>(null)
@@ -466,11 +470,24 @@ export function FriendView() {
     }
 
     const timer = setInterval(() => {
-      setWarming(isWarming({ elapsedMs: Date.now() - startedAt, preparing: true }))
+      setWarming(
+        isWarming({
+          elapsedMs: Date.now() - startedAt,
+          preparing: true,
+          // Bu motor bu oturumda konustuysa uyari YOK.
+          spokeBefore: spokeRef.current === provider
+        })
+      )
     }, 300)
 
     return () => clearInterval(timer)
   }, [playback.status, preparingSince])
+
+  // Ses DUYULDUGU anda motor "konustu" sayiliyor -- render sirasinda, efektte
+  // DEGIL: efekt bir render geriden gelir ve uyari o bir karede yine cikardi.
+  if (playback.status === 'speaking') {
+    spokeRef.current = provider
+  }
 
   const tts = voiceOptions(catalog)
 

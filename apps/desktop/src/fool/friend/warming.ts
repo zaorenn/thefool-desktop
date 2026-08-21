@@ -32,10 +32,26 @@ export interface WarmingInput {
   preparing: boolean
   /** Hazırlık ne zamandır sürüyor (ms). */
   elapsedMs: number
+  /**
+   * Bu motor bu oturumda DAHA ÖNCE konuştu mu?
+   *
+   * Etiketin kendisi "once per session" diyordu ama kod bunu uygulamıyordu:
+   * ölçüt yalnızca "hazırlık 1,2 sn'yi geçti mi"ydi. Chatterbox SICAKKEN
+   * bile hazırlık o eşiği aşabiliyor (sıcak sentez 0,78 sn + akış kurulumu),
+   * yani uyarı HER mesajda çıkıyordu -- kullanıcının bildirdiği "her mesajda
+   * sürekli waking chatterbox diyor".
+   *
+   * Motor bir kez konuştuysa yüklüdür; ikinci kez "yükleniyor" demek yalan.
+   */
+  spokeBefore?: boolean
 }
 
 /** Kullanıcıya "model uyanıyor" denmeli mi? */
 export function isWarming(input: WarmingInput): boolean {
+  if (input.spokeBefore) {
+    return false
+  }
+
   return input.preparing && input.elapsedMs >= WARMING_AFTER_MS
 }
 

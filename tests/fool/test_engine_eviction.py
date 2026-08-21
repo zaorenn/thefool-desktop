@@ -218,10 +218,15 @@ def test_bos_kayitta_cokmuyor() -> None:
 # Seçili motor daha uzun yaşıyor
 # ---------------------------------------------------------------------------
 
-def test_SECILI_motor_bes_dakikada_BIRAKILMIYOR(monkeypatch) -> None:
-    """Ölçüldü (ürün yolu, Chatterbox Turbo): sıcak 0,78 sn/cümle, soğuk
-    13,08 sn. Beş dakikalık bir ara -- kahve molası kadar -- bir sonraki
-    cümleyi 13 saniye geciktiriyordu.
+def test_BES_DAKIKA_sessizlikten_sonra_birakiliyor(monkeypatch) -> None:
+    """Kullanıcının istediği politika: beş dakika kullanılmazsa kapansın.
+
+    Sayaç HER kullanımda sıfırlanıyor (``last_used``), yani sürekli konuşulan
+    bir oturumda motor hiç boşalmıyor -- beş dakika SESSİZLİKTEN sonra
+    bırakılıyor.
+
+    Ölçüldü (ürün yolu, Chatterbox Turbo): sıcak 0,78 sn/cümle, soğuk
+    13,08 sn.
     """
     import time
 
@@ -238,11 +243,19 @@ def test_SECILI_motor_bes_dakikada_BIRAKILMIYOR(monkeypatch) -> None:
             self.lock = threading.Lock()
             self.last_used = now - age
 
-    # 10 dakika bosta: secili olan KALIR, digeri gider.
-    monkeypatch.setattr(eh, "_ENGINES", {"chatterbox": _E(600), "kokoro": _E(600)})
+    # Dort dakika: HENUZ degil. Alti dakika: birakiliyor.
+    monkeypatch.setattr(eh, "_ENGINES", {"chatterbox": _E(240)})
+    assert eh._idle_sweep() == []
 
-    assert eh._idle_sweep() == ["kokoro"]
-    assert stopped == ["kokoro"]
+    monkeypatch.setattr(eh, "_ENGINES", {"chatterbox": _E(360)})
+    assert eh._idle_sweep() == ["chatterbox"]
+
+
+def test_SECILI_ve_digerleri_AYNI_esikte(monkeypatch) -> None:
+    """Seçili olmayan bir motorun kartı daha uzun tutmasının sebebi yok."""
+    from fool import engine_host as eh
+
+    assert eh.SELECTED_IDLE_UNLOAD_SECONDS == eh.IDLE_UNLOAD_SECONDS == 300.0
 
 
 def test_SECILI_motor_da_SONSUZA_kadar_tutmuyor(monkeypatch) -> None:
@@ -261,7 +274,7 @@ def test_SECILI_motor_da_SONSUZA_kadar_tutmuyor(monkeypatch) -> None:
             self.lock = threading.Lock()
             self.last_used = now - age
 
-    # Yarim saati gecti.
+    # Bes dakikayi fazlasiyla gecti.
     monkeypatch.setattr(eh, "_ENGINES", {"chatterbox": _E(2000)})
 
     assert eh._idle_sweep() == ["chatterbox"]

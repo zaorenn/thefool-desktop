@@ -151,20 +151,18 @@ MAX_RESIDENT_ENGINES = 2
 #: konusma tanima esigiyle ayni buyukluk.
 IDLE_UNLOAD_SECONDS = 300.0
 
-#: SECILI motor icin bosta suresi -- yarim saat.
+#: SECILI motor icin bosta suresi -- BES DAKIKA (kullanicinin istegi).
 #:
-#: Bes dakika secili motor icin cok kisa: sesli bir arkadasa arada bir
-#: konusuluyor ve her arada soguk yukleme odeniyordu. Olculdu (urun yolu,
-#: Chatterbox Turbo): sicak 0,78 sn/cumle, soguk 13,08 sn. Yani kahve molasi
-#: kadar bir ara, bir sonraki cumleyi 13 saniye geciktiriyordu.
+#: Sayac HER kullanimda sifirlaniyor (``last_used``), yani surekli konusulan
+#: bir oturumda motor hic bosalmiyor; bes dakika SESSIZLIKTEN sonra
+#: birakiliyor. Kullanicinin istedigi davranis birebir bu.
 #:
-#: Secili OLMAYAN motorlar 5 dakikada birakilmaya devam ediyor: onlar
-#: kullanilmiyor ve kartta yer tutmalarinin sebebi yok.
+#: Olculdu (urun yolu, Chatterbox Turbo): sicak 0,78 sn/cumle, soguk
+#: 13,08 sn. Bes dakika, kartin bos yere tutulmasi ile her aradan sonra
+#: soguk yukleme odemek arasindaki denge.
 #:
-#: Sonsuza kadar tutmuyor: kullanici gercekten baska ise gectiyse yarim saat
-#: sonra kart birakiliyor. Basinc altinda ``_evict_for`` zaten devrede --
-#: baska bir motor istenirse secili olan da tahliye edilebilir.
-SELECTED_IDLE_UNLOAD_SECONDS = 1800.0
+#: Secili OLMAYAN motorlar da ayni surede birakiliyor.
+SELECTED_IDLE_UNLOAD_SECONDS = 300.0
 
 
 def _selected_engine() -> str:

@@ -373,7 +373,20 @@ export function useFriendVoice(mode = 'friend'): FriendVoice {
   // oturumu ve o oturuma kac karakter gonderildigi.
   // eslint-disable-next-line no-restricted-syntax -- yukaridaki gerekce
   useEffect(() => {
-    if (phase !== 'thinking' && phase !== 'speaking') {
+    // Evre kapisi GENISLETILDI.
+    //
+    // Eskiden yalnizca ``thinking``/``speaking`` gecerdi, yani Friend
+    // SADECE kendi mikrofonundan baslayan turlari seslendiriyordu. Kullanici
+    // sohbet panelinden YAZDIGINDA Friend'in evresi degismiyor, o yuzden
+    // okumuyordu -- ve panel de sahiplik Friend'de oldugu icin susuyordu.
+    // Sonuc: hic ses cikmiyor. Kullanicinin "her seferinde cevaplari sesli
+    // okumuyor" dedigi sey buydu.
+    //
+    // Friend ekranda duran SESLI yuzey: sahibiyse cevabi kim yazdirmis olursa
+    // olsun o seslendirir. ``idle``da da geciyor; ``claimSpeech`` (bkz.
+    // ``lib/voice-playback.ts``) ayni cevabin iki kez okunmasini zaten
+    // engelliyor.
+    if (!active && phase !== 'thinking' && phase !== 'speaking') {
       return
     }
 

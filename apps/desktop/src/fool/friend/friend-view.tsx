@@ -201,9 +201,13 @@ export function FriendView() {
         await voiceApi.setVoice(entryId, next)
       } catch (error) {
         notifyError(error, 'Could not save the speaker')
+      } finally {
+        // Sunucuya sor: iyimser gosterim yazim tutmadiginda acilir listeyi
+        // yalanci birakiyordu (ayni gerekce ``chooseProvider``da da yazili).
+        await refreshCatalog()
       }
     },
-    []
+    [refreshCatalog]
   )
 
   /**
@@ -667,9 +671,26 @@ export function FriendView() {
               />
             ))}
           </div>
-          {/* Motorun tek sesi varsa persona rengi degistirir, SESI degil.
-              Sessizce yanlis bir ses secmek yerine bunu soylemek. */}
-          {!canChangeVoice(selected ?? null) && (
+          {/* Motorun KENDI ses tipleri -- persona kisayoldu, bu ACIK secim.
+              Yeniden tasarimda bu acilir listeyi dusurmusum ve sonucu:
+              Kokoro'nun yedi sesi arasindan (kadin/erkek dahil) secim yapmanin
+              paneldeki tek yolu dort persona noktasi kalmisti. */}
+          {canChangeVoice(selected ?? null) ? (
+            <select
+              aria-label="Voice type"
+              className="h-6 max-w-[11rem] rounded-full border border-(--stroke-nous)/70 bg-transparent px-2 text-[0.66rem] text-muted-foreground"
+              onChange={event => void chooseSpeaker(selected!.id, event.target.value)}
+              value={speaker || selected?.voice || selected?.voices[0]?.id || ''}
+            >
+              {(selected?.voices ?? []).map(entry => (
+                <option key={entry.id} style={OPTION_STYLE} value={entry.id}>
+                  {entry.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            /* Tek sesli motorda persona rengi degistirir, SESI degil.
+               Sessizce yanlis bir ses secmek yerine bunu soylemek. */
             <span className="text-[0.58rem] text-muted-foreground">
               {selected?.label ?? 'This engine'} has one voice
             </span>

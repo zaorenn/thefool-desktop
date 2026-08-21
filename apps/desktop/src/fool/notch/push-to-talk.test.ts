@@ -15,7 +15,8 @@ import {
   onBlur,
   onKeyDown,
   onKeyUp,
-  PUSH_TO_TALK_CODE
+  PUSH_TO_TALK_CODE,
+  STALE_HOLD_MS
 } from './push-to-talk'
 
 describe('bas-konuş', () => {
@@ -107,5 +108,61 @@ describe('bas-konuş', () => {
 
     expect(onKeyDown(state, { code: 'F13' }, 0, 'F13')).toEqual({ type: 'start' })
     expect(onKeyUp(state, { code: 'F13' }, MIN_HOLD_MS + 1, 'F13')).toMatchObject({ type: 'commit' })
+  })
+})
+
+/**
+ * Sağ Ctrl BİR KEZ çalışıp ölmemeli.
+ *
+ * ``heldSince`` yalnızca ``keyup`` ile temizleniyordu. Notch odağı
+ * kaybettiğinde ``keyup`` artık bize gelmiyor -- o olay odağı alan
+ * uygulamaya gidiyor. Bayrak takılı kalıyor ve sonraki HER ``keydown``
+ * ``null`` dönüyor.
+ *
+ * Kullanıcının bildirdiği: "sadece tek seferlik çalışıyor, sağ ctrl
+ * sonrasında hemen işe yaramaz hale geliyor."
+ */
+describe('kayip keyup bas-konusu OLDURMUYOR', () => {
+  const key = { code: PUSH_TO_TALK_CODE, repeat: false }
+
+  it('keyup HIC gelmese bile sonraki basis calisiyor', () => {
+    const state = createPushToTalkState()
+
+    // Ilk basis: baslıyor.
+    expect(onKeyDown(state, key, 0)).toEqual({ type: 'start' })
+
+    // ``keyup`` HIC gelmiyor (odak gitti). Kullanici bir dakika sonra
+    // tekrar basiyor.
+    expect(onKeyDown(state, key, 60_000)).toEqual({ type: 'start' })
+  })
+
+  it('GERCEKTEN basili tutarken ikinci start kaydi SIFIRLAMIYOR', () => {
+    const state = createPushToTalkState()
+
+    onKeyDown(state, key, 0)
+
+    // Ayni basis suruyor: tekrar 'start' vermek ilk heceyi yerdi.
+    expect(onKeyDown(state, key, 500)).toBeNull()
+    expect(onKeyDown(state, key, STALE_HOLD_MS - 1)).toBeNull()
+  })
+
+  it('bayat sinirinda taze sayiliyor', () => {
+    const state = createPushToTalkState()
+
+    onKeyDown(state, key, 0)
+
+    expect(onKeyDown(state, key, STALE_HOLD_MS)).toEqual({ type: 'start' })
+  })
+
+  it('bayat basistan sonra keyup normal calisiyor', () => {
+    const state = createPushToTalkState()
+
+    onKeyDown(state, key, 0)
+    onKeyDown(state, key, 60_000)
+
+    const released = onKeyUp(state, key, 60_000 + MIN_HOLD_MS + 1)
+
+    // Yeni basisin suresinden olculuyor, kayip olandan DEGIL.
+    expect(released?.type).toBe('commit')
   })
 })

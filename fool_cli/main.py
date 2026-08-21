@@ -464,6 +464,7 @@ from fool_cli.subcommands.import_cmd import build_import_cmd_parser
 from fool_cli.subcommands.import_agent import build_import_agent_parser
 from fool_cli.subcommands.config import build_config_parser
 from fool_cli.subcommands.skin import build_skin_parser
+from fool_cli.subcommands.voice import build_voice_parser
 from fool_cli.subcommands.console import build_console_parser
 from fool_cli.subcommands.version import build_version_parser
 from fool_cli.subcommands.update import build_update_parser
@@ -5625,6 +5626,80 @@ def cmd_config(args):
     from fool_cli.config import config_command
 
     config_command(args)
+
+
+def cmd_voice(args):
+    """``fool voice`` -- konusan sesi goster ve degistir.
+
+    Ajanin sesi degistirebilmesinin baska yolu yoktu: elinde yalnizca ham
+    ``fool config set`` vardi ve motor adini, ayar anahtarini ve ses kimligini
+    birlikte dogru bilmesi gerekiyordu (``tts.kokoro.voice`` = ``am_michael``).
+    Uydurmaya calisiyor ve tur bosa gidiyordu.
+    """
+    from fool import voice_models as _vm
+
+    command = getattr(args, "voice_command", None) or "list"
+
+    active = _vm.active_providers().get("tts", "")
+    entry = next(
+        (e for e in _vm.CATALOG if e.kind == "tts" and (e.provider_id or e.id) == active),
+        None,
+    )
+
+    if command == "engine":
+        wanted = str(getattr(args, "engine", "") or "").strip()
+        try:
+            _vm.select(wanted)
+        except ValueError as exc:
+            print(f"✗ {exc}")
+            return 1
+        print(f"✓ Speaking engine is now {wanted}")
+        return 0
+
+    if entry is None:
+        print("No speaking engine is selected. Run `fool voice list` after installing one.")
+        return 1
+
+    if command == "set":
+        wanted = str(getattr(args, "voice", "") or "").strip()
+        available = {v["id"] for v in _vm.available_voices(entry)}
+        if wanted not in available:
+            # Var olmayan bir kimligi sessizce yazmak, kullanicinin ses
+            # degismedigini gormesi olurdu -- sebebini de goremez.
+            print(f"✗ {entry.label} has no voice called {wanted!r}.")
+            print("  Available: " + ", ".join(sorted(available)))
+            return 1
+        _vm.set_voice(entry.id, wanted)
+        print(f"✓ Now speaking as {wanted} ({entry.label})")
+        return 0
+
+    # list
+    print(f"Engine in use: {entry.label} ({entry.provider_id or entry.id})")
+    voices = _vm.available_voices(entry)
+    current = _vm.current_voice(entry)
+    if len(voices) <= 1:
+        clone = _vm.current_clone(entry)
+        if clone:
+            print(f"  Voice comes from the cloned clip: {clone}")
+        else:
+            print("  This engine has a single built-in voice.")
+    else:
+        for row in voices:
+            mark = "*" if row["id"] == current else " "
+            print(f"  {mark} {row['id']:<16} {row['label']}")
+        print("")
+        print("  Switch with: fool voice set <id>")
+
+    others = [
+        e.id
+        for e in _vm.visible_catalog()
+        if e.kind == "tts" and e.id != entry.id and _vm.status(e.id).get("usable")
+    ]
+    if others:
+        print("")
+        print("Other engines ready: " + ", ".join(others))
+        print("  Switch with: fool voice engine <id>")
+    return 0
 
 
 def cmd_skin(args):
@@ -12549,6 +12624,7 @@ def main():
     # skin command  (parser built in fool_cli/subcommands/skin.py)
     # =========================================================================
     build_skin_parser(subparsers, cmd_skin=cmd_skin)
+    build_voice_parser(subparsers, cmd_voice=cmd_voice)
 
     # =========================================================================
     # console command  (parser built in fool_cli/subcommands/console.py)

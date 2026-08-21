@@ -124,3 +124,26 @@ def test_sohbet_rehberi_bilmiyorum_demeyi_soyluyor() -> None:
 def test_sohbet_rehberi_kisa_kaliyor() -> None:
     """Sistem promptu bedava değil."""
     assert len(guidance.COMPANION_GUIDANCE) < 1_600
+
+
+def test_sohbet_rehberi_SESLI_oldugunu_KESIN_soyluyor() -> None:
+    """Yumuşak ifade küçük modelde TERS sonuç verdi.
+
+    "much of this is spoken aloud" ile ``gemma-4-e4b`` kendi kendine şu
+    sonuca vardı ve kullanıcıya söyledi:
+
+        "my audio output capability is outside of my current textual
+         communication medium (the chat interface)"
+
+    Yani konuşamadığını söylüyordu -- söylerken sözleri sesle çalınıyorken.
+    Bir dil modeli için "çoğu" ile "hepsi" arasındaki fark burada belirleyici.
+    """
+    from fool import guidance
+
+    flat = guidance.COMPANION_GUIDANCE.replace("\n", " ")
+
+    # Kosulsuz ifade: "cogu" degil "her kelime".
+    assert "Every word you write is turned into speech" in flat
+    # Ve inkari ACIKCA yasakliyor.
+    assert "never say you cannot speak" in flat
+    assert "never call yourself text-only" in flat

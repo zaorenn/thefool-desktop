@@ -70,12 +70,21 @@ const DROP_KEYFRAMES = `
 export function Orb({
   dropping = false,
   level,
-  phase
+  phase,
+  size = 256
 }: {
   /** Açılış damlaması oynasın mı? */
   dropping?: boolean
   level: number
   phase: OrbPhase
+  /**
+   * Kenar uzunluğu (px).
+   *
+   * Çentik 184 px yüksekliğinde ve oraya 256'lık bir küre sığmıyor. Ölçü
+   * PARAMETRE çünkü çentikteki ile tam sayfadaki aynı alet: iki ayrı bileşen
+   * yazmak, birinde düzeltilen fiziğin diğerinde eski kalması demek.
+   */
+  size?: number
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const levelRef = useRef(level)
@@ -123,17 +132,19 @@ export function Orb({
 
   return (
     <div
-      className="relative grid size-64 place-items-center [--orb-hearing:0] [--orb-level:0] [--orb-scale:1]"
+      className="relative grid shrink-0 place-items-center [--orb-hearing:0] [--orb-level:0] [--orb-scale:1]"
       ref={rootRef}
       style={
         dropping
           ? {
+              height: size,
+              width: size,
               animation: 'fool-orb-drop 760ms cubic-bezier(.55,0,.85,.35) both',
               // Ezilme ALTTAN olmali: bir damla merkezinden degil, degdigi
               // yerden yayiliyor.
               transformOrigin: '50% 100%'
             }
-          : undefined
+          : { height: size, width: size }
       }
     >
       <style>{DROP_KEYFRAMES}</style>

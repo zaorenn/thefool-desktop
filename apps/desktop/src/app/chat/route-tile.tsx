@@ -16,7 +16,6 @@ import { $routeTiles, closeRouteTile, type RouteTile } from '@/store/route-tiles
 import {
   ARTIFACTS_ROUTE,
   contributedRoutes,
-  FRIEND_ROUTE,
   MESSAGING_ROUTE,
   ROUTES_AREA,
   SKILLS_ROUTE
@@ -27,16 +26,11 @@ import { paneMirror } from './pane-mirror'
 const SkillsView = lazy(async () => ({ default: (await import('../skills')).SkillsView }))
 const MessagingView = lazy(async () => ({ default: (await import('../messaging')).MessagingView }))
 const ArtifactsView = lazy(async () => ({ default: (await import('../artifacts')).ArtifactsView }))
-// FOOL-SEAM: friend-window
-// Tembel yukleniyor: sayfa mikrofon ve animasyon donguleri aciyor ve o
-// maliyeti hic acmayan kullaniciya odetmek yanlis.
-const FriendView = lazy(async () => ({ default: (await import('@/fool/friend/friend-view')).FriendView }))
 
 // Built-in page views + their pane titles, keyed by route.
 const BUILTIN_PAGES: Record<string, { render: () => ReactNode; title: string }> = {
   [ARTIFACTS_ROUTE]: { render: () => <ArtifactsView />, title: 'Artifacts' },
   [MESSAGING_ROUTE]: { render: () => <MessagingView />, title: 'Messaging' },
-  [FRIEND_ROUTE]: { render: () => <FriendView />, title: 'Friend' },
   [SKILLS_ROUTE]: { render: () => <SkillsView />, title: 'Capabilities' }
 }
 

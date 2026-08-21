@@ -33,10 +33,8 @@ import {
   startSpeechStream,
   stopVoicePlayback
 } from '@/lib/voice-playback'
-import { $currentModel, $messages } from '@/store/session'
+import { $activeSessionId, $messages } from '@/store/session'
 
-import { friendSessionStoreFor } from '../friend/friend-session'
-import { $voiceMode, voiceModeInfo } from '../voice-mode'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
 import {
@@ -48,10 +46,6 @@ import {
   releaseBarge,
   shouldMonitorBargeIn
 } from './barge-in'
-import {
-  createCompanionSessionState,
-  ensureCompanionSession
-} from './companion-session'
 import {
   type BeginActivation,
   listenOptionsFor,
@@ -143,8 +137,6 @@ export function useNotchVoice(): NotchVoice {
   // oturumu kullaniliyordu ve o oturum ``desktop`` kapsaminda kuruluyor:
   // olculdu, 21 takim / 73 arac / 8 tanesi makineye dokunuyor. Yani "hava
   // nasil?" diyen arkadas ``terminal_run`` ve ``computer_use``a sahipti.
-  const companionRef = useRef(createCompanionSessionState())
-  const prewarmRef = useRef<() => void>(() => undefined)
   // ``onSilence`` geri çağrımı ``commit``ten ÖNCE kuruluyor; ref olmadan
   // tanımlanmamış bir değere kapanır.
   const commitRef = useRef<() => void>(() => undefined)
@@ -169,7 +161,7 @@ export function useNotchVoice(): NotchVoice {
     // kesiyordu. Yorum ile kod ayrismisti.
     //
     // Durduracak bir sey yoksa dogru davranis hicbir sey yapmamak.
-    const sessionId = companionRef.current.id
+    const sessionId = $activeSessionId.get()
 
     if (!sessionId) {
       return
@@ -194,7 +186,6 @@ export function useNotchVoice(): NotchVoice {
     // Oturumu SIMDIDEN ac: kullanici konusurken cozulsun, sonra degil.
     // REF uzerinden: ``prewarmSession`` asagida tanimli ve ``begin``i ona
     // bagimli kilmak her oturum degisiminde geri cagriyi yeniden kurardi.
-    prewarmRef.current()
     // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
     // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
     // seslendirilmeye devam eder.
@@ -250,77 +241,21 @@ export function useNotchVoice(): NotchVoice {
     setStatus('idle')
   }, [mic])
 
-  // Arkadas oturumunu getir. ACILAMAZSA KONUSMA -- eskiden sahibinin CALISAN
-  // oturumuna dusuyordu ve bu iki sey birden yapiyordu:
-  //
-  //   1. Sesli arkadasi ``desktop`` kapsamina sokuyordu: 21 takim, 73 arac,
-  //      icinde ``terminal``, ``computer_use``, ``execute_code``,
-  //      ``delegate_task``. Yani bu modulun ve ``fool/session_scope.py``nin
-  //      var olma sebebini sessizce geri aliyordu.
-  //   2. Sesli turu kullanicinin uzerinde CALISTIGI oturumun gecmisine
-  //      karistiriyordu.
-  //
-  // Ikisi de gorunmez oluyordu: hata yok, yalnizca sesli arkadasin birden
-  // terminali var. Friend penceresi zaten hata gosteriyordu; iki yuzeyin ayni
-  // durumda farkli davranmasi da ayri bir hataydi.
-  //
-  // Oturumun KALICI olmasi (bkz. ``friend/friend-session.ts``) bu geri
-  // dususu zaten nadir kildi: ag gecidi ayaktaysa oturum aciliyor, degilse
-  // zaten hicbir sey gonderilemez.
-  const resolveSessionId = useCallback(async () => {
-    // Kapsami SESLI KIP belirliyor: arkadas kisitli, Jarvis sahibinin tam
-    // yuzeyi. Kip degistiyse ``ensureCompanionSession`` yeni bir oturum aciyor
-    // -- arac kumesi ajan kurulurken donuyor ve eskisini kullanmaya devam
-    // etmek kullanicinin sectigi kipi sessizce yok saymakti.
-    const own = await ensureCompanionSession(companionRef.current, {
-      create: params =>
-        requestGateway('session.create', params) as Promise<{ session_id?: string }>,
-      // Notch ve Friend penceresi AYNI kalici depoyu kullaniyor: ikisi de
-      // ayni kapsamin sohbetini surduruyor ve ayri tutmak kullaniciya iki
-      // ayri hafiza sunmak olurdu.
-      resume: async (sessionId: string) => {
-        try {
-          await requestGateway('session.resume', {
-            defer_history: true,
-            omit_messages: true,
-            session_id: sessionId
-          })
-
-          return true
-        } catch {
-          return false
-        }
-      },
-      source: voiceModeInfo($voiceMode.get()).source,
-      // Model kayda giriyor: baska bir modele sabitlenmis bir oturumu
-      // surdurmek, LM Studio'ya IKINCI bir model yukletiyordu.
-      store: friendSessionStoreFor($currentModel.get())
-    })
-
-    return own
-  }, [requestGateway])
-
   /**
-   * Oturumu ŞİMDİDEN aç -- kullanıcı daha konuşurken.
+   * Sesin gittiği oturum: KULLANICININ AÇIK SOHBETİ.
    *
-   * Ölçülen hata: oturum çözümü ``submitAudio`` içinde, transkripsiyon
-   * BİTTİKTEN sonra bekleniyordu. Yani kullanıcı konuşmayı bitiriyor, metni
-   * ekranda görüyor, sonra ``session.resume``/``session.create`` turu
-   * (sunucuda ajan + MCP kurulumu) için saniyelerce bekliyordu. Kullanıcı
-   * bunu "sesim algılandıktan sonra birkaç saniye boş geçiyor" diye bildirdi.
+   * Arada hiçbir şey yok. Önce sesin kendi ``companion``/``friend`` kapsamı
+   * vardı ve ayrı bir oturum açıyordu; Friend/Jarvis kipleri kaldırıldığı
+   * için o ayrım da kalktı. Kullanıcının isteği birebir: "direkt olarak
+   * chatten konuşabilelim, hiçbir aracı olmadan sesimiz direkt modele
+   * gitsin."
    *
-   * Konuşma zaten saniyeler sürüyor; oturum o sürenin içinde açılıyor ve
-   * kritik yoldan tamamen çıkıyor. ``ensureCompanionSession`` aynı anda gelen
-   * iki çağrıyı zaten tek oturuma indiriyor, yani bu çağrı bedava.
-   *
-   * Hata YUTULUYOR: burada bir bildirim göstermek erken olurdu -- gerçek
-   * gönderim yine deneyecek ve hatayı orada bildirecek.
+   * Sonucu açıkça yazılmalı: ses artık sohbet panelinin kapsamında koşuyor
+   * (``desktop`` -- terminal, dosya, kod dahil). Bunu ayıran mekanizma
+   * kiplerdi ve kipler kullanıcının kararıyla kaldırıldı.
    */
-  const prewarmSession = useCallback(() => {
-    void resolveSessionId().catch(() => undefined)
-  }, [resolveSessionId])
+  const resolveSessionId = useCallback(async () => $activeSessionId.get(), [])
 
-  prewarmRef.current = prewarmSession
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
   // araya girerken yakalanan cümle. Ayrı yazmak, ikisinden birinin canlı

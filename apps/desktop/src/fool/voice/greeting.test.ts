@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  greetingFor,
+  greeting,
   hasFailed,
   isWarm,
   needsWaking,
@@ -25,19 +25,18 @@ const warm = { status: 'warm' }
 const cold = { status: 'cold' }
 const failed = { status: 'failed' }
 
-describe('greetingFor', () => {
-  it('Jarvis bir GOREV soruyor', () => {
-    expect(greetingFor('jarvis')).toBe('What can I do for you, sir?')
-  })
-
-  it('arkadas kisa selamliyor -- soru sormak sohbeti gorevlestirirdi', () => {
-    expect(greetingFor('friend')).toBe('Hello.')
+describe('greeting', () => {
+  /** Bir sohbeti soruyla açmak onu görevleştiriyor. */
+  it('SORU sormuyor', () => {
+    expect(greeting().includes('?')).toBe(false)
   })
 
   it('kullaniciya gorunen metin INGILIZCE', () => {
-    for (const mode of ['friend', 'jarvis'] as const) {
-      expect(ASCII_ONLY.test(greetingFor(mode)), mode).toBe(true)
-    }
+    expect(ASCII_ONLY.test(greeting())).toBe(true)
+  })
+
+  it('bos degil', () => {
+    expect(greeting().trim().length).toBeGreaterThan(0)
   })
 })
 

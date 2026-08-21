@@ -25,7 +25,6 @@ import { onGatewayEvent } from '@/contrib/events'
 import { Mic } from '@/lib/icons'
 
 import { voiceApi } from '../voice-api'
-import { $voiceMode } from '../voice-mode'
 
 import {
   MAX_IDLE_ROUNDS,
@@ -273,10 +272,12 @@ export function NotchShell() {
   // ortamda kullanıcı kaydın sınırını kendi çizmek isteyebilir.
   const [idleRounds, setIdleRounds] = useState(0)
 
+
   // Dinleme kipi Friend penceresiyle ORTAK depo (bkz. ``listen-mode.ts``):
   // iki yuzey ayni mikrofonu kullaniyor ve ayri tutmak kullaniciya iki ayri
   // hakikat sunardi.
   const rearmListenMode = useStore($listenMode)
+
 
   // Kullanıcı konuştuysa sayaç sıfırlanır; birikmiş sayaç onu bir sonraki
   // sessizlikte erken susturmamalı.
@@ -394,12 +395,18 @@ export function NotchShell() {
     // Dogru model: kisayol oturumu ACAR, oturum boyunca sag Ctrl calisir,
     // ayni kisayol oturumu KAPATIR.
     const handleListenRequest = (request?: null | { mode?: string }) => {
+
       // Kisayol yalnizca centigi acmiyor, ARKADAS turunu de basliyor.
       // Kip oturum ACILIRKEN yaziliyor: arac kumesi ajan kurulurken donuyor,
-      // tur icinde degistirilemez (bkz. fool/voice-mode.ts).
-      if (request?.mode === 'friend') {
-        $voiceMode.set('companion')
-      }
+      // Kisayol SALT BAS-KONUS aciyor.
+      //
+      // Kullanicinin istegi birebir: "ctrl alt v sadece notchu aktif etsin
+      // ve aktif olduktan sonra sadece sag ctrlye basili tutarken sesimizi
+      // algilasin." Eller serbest kendiliginden dinlemeye gecerdi.
+      //
+      // Efekt DEGIL burada: niyet geldigi anda uygulaniyor. Efekt bir render
+      // geriden gelir ve o karede eller serbest mikrofonu zaten acmis olur.
+      $listenMode.set('push-to-talk')
 
       setSessionActive(previous => {
         if (previous) {

@@ -49,8 +49,9 @@ SIDECAR_NAME = "chatterbox"
 #: dakikalar sürüyordu. Model burada BİR KEZ yükleniyor ve süreç açık
 #: kaldığı sürece bellekte kalıyor.
 _SETUP = """
+import inspect
+
 import torch
-from chatterbox.tts import ChatterboxTTS
 import torchaudio
 
 _device = DEVICE
@@ -59,22 +60,49 @@ if _device == "auto":
 if _device == "cuda" and not torch.cuda.is_available():
     _device = "cpu"
 
-_model = ChatterboxTTS.from_pretrained(device=_device)
+# TURBO tercih ediliyor -- olculdu (RTX 4070 Ti SUPER, ayni referanssiz metin):
+#
+#   chatterbox.tts        1,89 sn / cumle
+#   chatterbox.tts_turbo  1,60 sn sentez -> 6,40 sn ses = gercek zamanin 4 KATI
+#
+# Turbo 350M ve token->mel cozucusu 10 adimi 1'e indiriyor; klonlama kalitesi
+# ayni API ile geliyor (``audio_prompt_path``).
+#
+# Geri dusus ONEMLI: eski bir kurulumda ``chatterbox.tts_turbo`` yok ve
+# oradaki kullaniciyi sessizce sessizlige dusurmek kabul edilemez.
+try:
+    from chatterbox.tts_turbo import ChatterboxTurboTTS as _Engine
+
+    _variant = "turbo"
+except Exception:
+    from chatterbox.tts import ChatterboxTTS as _Engine
+
+    _variant = "classic"
+
+_model = _Engine.from_pretrained(device=_device)
+
+# Turbo'nun imzasi klasikten DAR: ``exaggeration``/``cfg_weight`` orada
+# olmayabiliyor ve bilinmeyen bir anahtar argumani TypeError ile dusuyor --
+# yani kullanici hicbir ses duymuyor. Imza bir kez okunuyor.
+try:
+    _accepts = set(inspect.signature(_model.generate).parameters)
+except (TypeError, ValueError):
+    _accepts = set()
 
 
 def handle(req):
     kwargs = {}
     if req.get("sample"):
         kwargs["audio_prompt_path"] = req["sample"]
-    if req.get("exaggeration"):
+    if req.get("exaggeration") and "exaggeration" in _accepts:
         kwargs["exaggeration"] = float(req["exaggeration"])
-    if req.get("cfg_weight"):
+    if req.get("cfg_weight") and "cfg_weight" in _accepts:
         kwargs["cfg_weight"] = float(req["cfg_weight"])
 
     wav = _model.generate(req["text"], **kwargs)
     torchaudio.save(req["out"], wav, _model.sr)
 
-    return {"path": req["out"], "device": _device}
+    return {"path": req["out"], "device": _device, "variant": _variant}
 """
 
 

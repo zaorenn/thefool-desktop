@@ -273,6 +273,11 @@ export function NotchShell() {
   // ortamda kullanıcı kaydın sınırını kendi çizmek isteyebilir.
   const [idleRounds, setIdleRounds] = useState(0)
 
+  // Dinleme kipi Friend penceresiyle ORTAK depo (bkz. ``listen-mode.ts``):
+  // iki yuzey ayni mikrofonu kullaniyor ve ayri tutmak kullaniciya iki ayri
+  // hakikat sunardi.
+  const rearmListenMode = useStore($listenMode)
+
   // Kullanıcı konuştuysa sayaç sıfırlanır; birikmiş sayaç onu bir sonraki
   // sessizlikte erken susturmamalı.
   useEffect(() => {
@@ -289,10 +294,20 @@ export function NotchShell() {
     }
   }, [sessionActive])
 
+  // Kullanicinin SECTIGI kip.
+  //
+  // Burada ``'hands-free'`` SABIT yaziliydi, yani ``$listenMode`` hic
+  // okunmuyordu: bas-konus secili olsa bile notch her turdan sonra mikrofonu
+  // kendiliginden aciyordu. Kullanicinin "ctrl alt v modu sadece push to
+  // talkta calissin" demesinin sebebi buydu -- secim vardi ama hicbir sey
+  // yapmiyordu.
+  //
+  // Bas-konusta ``shouldRearmListening`` ``false`` donuyor ve mikrofonu
+  // yalnizca TUS aciyor.
   const rearm = shouldRearmListening({
     capturing: voice.capturing,
     idleRounds,
-    mode: 'hands-free',
+    mode: rearmListenMode,
     sessionActive,
     status: voice.status
   })

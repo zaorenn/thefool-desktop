@@ -135,7 +135,6 @@ import {
   type AppView,
   ARTIFACTS_ROUTE,
   CRON_ROUTE,
-  FRIEND_ROUTE,
   MESSAGING_ROUTE,
   SIDEBAR_NAV_AREA,
   type SidebarNavContribution,
@@ -199,15 +198,6 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="symbol-misc" {...props} />,
     route: SKILLS_ROUTE,
     keybindActionId: 'nav.skills'
-  },
-  // FOOL-SEAM: friend-window
-  // Sohbet icin ayri bir sayfa. Notch kucuk ve gecici -- yaninda calisirken
-  // bir sey sormak icin. Bu ise oturup konusmak icin: buyuk, sakin, arac yok.
-  {
-    id: 'friend',
-    label: '',
-    icon: props => <Codicon name="heart" {...props} />,
-    route: FRIEND_ROUTE
   },
   {
     id: 'messaging',

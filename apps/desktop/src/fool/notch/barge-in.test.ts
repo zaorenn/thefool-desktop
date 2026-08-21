@@ -93,52 +93,6 @@ describe('izleyici penceresi', () => {
  * sessizce ölmesi. Bu testler kaynağı okuyor -- mantığı kopyalayan bir dosya
  * eklenirse kırılır.
  */
-describe('araya girme kapisi TEK yerde', () => {
-  const HERE = import.meta.dirname
-
-  const SURFACES = [
-    ['notch', 'use-notch-voice.ts'],
-    ['friend', '../friend/use-friend-voice.ts']
-  ] as const
-
-  it('hicbir yuzey evre kosulunu KOPYALAMIYOR', async () => {
-    const { readFileSync } = await import('node:fs')
-    const { join } = await import('node:path')
-
-    for (const [label, relative] of SURFACES) {
-      const source = readFileSync(join(HERE, relative), 'utf8')
-
-      expect(
-        /===\s*'thinking'\s*\|\|.*===\s*'speaking'/.test(source),
-        `${label} evre kosulunu satir ici kopyaliyor -- shouldMonitorBargeIn kullanmali`
-      ).toBe(false)
-    }
-  })
-
-  it('her yuzey ORTAK kapiyi cagiriyor', async () => {
-    const { readFileSync } = await import('node:fs')
-    const { join } = await import('node:path')
-
-    for (const [label, relative] of SURFACES) {
-      const source = readFileSync(join(HERE, relative), 'utf8')
-
-      expect(source.includes('shouldMonitorBargeIn'), `${label} kapiyi cagirmiyor`).toBe(true)
-      expect(source.includes('isPlayingPhase'), `${label} oynatma evresini kendi cikariyor`).toBe(true)
-    }
-  })
-})
-
-/**
- * Ölçüm saati SES İŞ PARÇACIĞINDA olmalı.
- *
- * ``requestAnimationFrame`` sayfa görünürlüğüne bağlı: Chromium blurlanmış,
- * örtülmüş ya da küçültülmüş bir pencerede onu saniyede bire kadar kısıyor.
- * Tespit son 300 ms içindeki örneklerin %80'ini istiyor; saniyede tek örnekle
- * bu koşul hiçbir zaman sağlanmıyor.
- *
- * Bu tam olarak notch'un var olma durumu -- kullanıcı başka bir şeye bakıyor.
- * Yani araya girme en çok gerektiği anda ölüydü.
- */
 describe('araya girme olcum saati', () => {
   it('kare saatine BAGLI DEGIL', async () => {
     const { readFileSync } = await import('node:fs')

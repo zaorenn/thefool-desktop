@@ -25,8 +25,6 @@
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
-import type { FriendModeId } from './friend-mode'
-
 /** Bir ısınma yüzeyinin durumu (sunucunun ``/api/fool/voice/warm`` cevabı). */
 export interface WarmStatus {
   error?: string
@@ -41,12 +39,11 @@ export interface WarmReply {
 /**
  * Açılış selamı.
  *
- * Jarvis'inki bilerek bir GÖREV sorusu: o kip iş yapmak için ve kullanıcıyı
- * doğrudan oraya çağırıyor. Arkadaşınki kısa -- bir sohbeti soruyla açmak
- * onu görevleştiriyor.
+ * Tek cümle ve soru DEĞİL: bir sohbeti soruyla açmak onu görevleştiriyor.
+ * Friend/Jarvis kipleri kaldırıldığı için kipe göre ayrı selam da yok.
  */
-export function greetingFor(mode: FriendModeId): string {
-  return mode === 'jarvis' ? 'What can I do for you, sir?' : 'Hello.'
+export function greeting(): string {
+  return 'Ready when you are.'
 }
 
 /** Uyanma cümlesi: motor SOĞUKKEN söylenen ilk şey. */

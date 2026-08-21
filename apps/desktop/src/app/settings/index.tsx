@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router'
 
 import { codiconIcon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
+import { PersonaSettings } from '@/fool/persona-settings'
+import { VoiceSettings } from '@/fool/voice-settings'
 import { getHermesConfigDefaults, getHermesConfigRecord, saveHermesConfig } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
@@ -44,9 +46,6 @@ import { NotificationsSettings } from './notifications-settings'
 import { PluginsSettings } from './plugins-settings'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
 import { SessionsSettings } from './sessions-settings'
-import { VoiceModeSettings } from '@/fool/voice-mode-settings'
-import { VoiceSettings } from '@/fool/voice-settings'
-
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 
 const SETTINGS_VIEWS: readonly SettingsViewId[] = [
@@ -334,13 +333,12 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
                   Model indirme paneli AYRI bir menu ogesi degil, MEVCUT Voice
                   bolumunun devami. Ayri giris iki tane "Voice" satiri
                   uretiyordu ve kullanici hangisinin ne oldugunu bilemiyordu. */}
-              {/* FOOL-SEAM: voice-modes
-                  Iki sesli kip (Friend / Jarvis) AYRI bolumler ama AYNI Voice
-                  gorunumunde: ayri menu ogesi acmak yukaridaki ile ayni hatayi
-                  uretirdi -- kullanici hangi "Voice" satirinin ne oldugunu
-                  bilemiyordu. Kipler once geliyor cunku hangi kipte oldugun,
-                  hangi motoru kurdugundan once gelen bir karar. */}
-              {activeView === 'config:voice' && <VoiceModeSettings />}
+              {/* FOOL-SEAM: voice-persona
+                  Friend/Jarvis kiplerinin yerini persona aldi. Kipler ARAC
+                  KUMESINI ayiriyordu; ses artik dogrudan acik sohbete
+                  konustugu icin ayrilacak bir kapsam kalmadi. Secilmeye deger
+                  olan sey kaldi: KIM konusuyor. */}
+              {activeView === 'config:voice' && <PersonaSettings />}
               {activeView === 'config:voice' && <VoiceSettings />}
             </>
           ) : activeView === 'providers' ? (

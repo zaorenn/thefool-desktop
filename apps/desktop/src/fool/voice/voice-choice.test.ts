@@ -132,35 +132,3 @@ describe('selectedVoiceId', () => {
  * Chatterbox'ın ses bankası yok çünkü sesi KULLANICI veriyor. Bunu bir
  * kısıt gibi göstermek, motorun asıl özelliğini eksiklik gibi okutuyordu.
  */
-describe('ses bankasi ile klonlama AYRI seyler', () => {
-  const source = () =>
-    import('node:fs').then(fs =>
-      import('node:path').then(path =>
-        fs.readFileSync(path.join(import.meta.dirname, 'friend-view.tsx'), 'utf8')
-      )
-    )
-
-  it('klonlayan motorda "tek sesi var" DEMIYOR', async () => {
-    const text = await source()
-
-    // Klonlanabilir dal, "has one voice" dalindan ONCE geliyor.
-    const cloneBranch = text.indexOf('selected?.clone_capable')
-    const oneVoice = text.indexOf('has one voice')
-
-    expect(cloneBranch).toBeGreaterThan(-1)
-    expect(oneVoice).toBeGreaterThan(-1)
-    expect(cloneBranch).toBeLessThan(oneVoice)
-  })
-
-  it('secili klonu ADIYLA gosteriyor', async () => {
-    const text = await source()
-
-    expect(text.includes('Cloned voice:')).toBe(true)
-  })
-
-  it('klon YOKKEN nereden yuklenecegini soyluyor', async () => {
-    const text = await source()
-
-    expect(text.includes('Voice comes from a clip you upload')).toBe(true)
-  })
-})

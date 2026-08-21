@@ -58,6 +58,7 @@ describe('notch secilen dinleme kipine uyuyor', () => {
     const { join } = await import('node:path')
 
     const source = readFileSync(join(import.meta.dirname, 'notch-shell.tsx'), 'utf8')
+
     const code = source
       .split('\n')
       .filter(line => !line.trimStart().startsWith('//'))

@@ -37,14 +37,6 @@ describe('pencereler arasi paylasilan atom', () => {
     expect($pttCode.get()).toBe('KeyQ')
   })
 
-  it('kip secimi diger pencereden geliyor', async () => {
-    // En pahali olan bu: notch oturumun KAYNAGINI bu degerden seciyor.
-    const { $voiceMode } = await import('./voice-mode')
-
-    writeFromAnotherWindow('fool.desktop.voice.mode', 'jarvis')
-
-    expect($voiceMode.get()).toBe('jarvis')
-  })
 
   it('dinleme kipi diger pencereden geliyor', async () => {
     const { $listenMode } = await import('./notch/listen-mode')
@@ -54,16 +46,6 @@ describe('pencereler arasi paylasilan atom', () => {
     expect($listenMode.get()).toBe('push-to-talk')
   })
 
-  it('BOZUK yazi Jarvis yetkisini BIRAKMIYOR, arkadasa dusuyor', async () => {
-    // Yon onemli: bozuk bir yazi makineye dokunabilen kipte birakirsa,
-    // kullanicinin hic secmedigi bir yetki acik kalir.
-    const { $voiceMode } = await import('./voice-mode')
-
-    $voiceMode.set('jarvis')
-    writeFromAnotherWindow('fool.desktop.voice.mode', 'bu-bir-kip-degil')
-
-    expect($voiceMode.get()).toBe('companion')
-  })
 
   it('anahtar SILINDIYSE varsayilana donuyor', async () => {
     const { $pttCode } = await import('./notch/ptt-store')

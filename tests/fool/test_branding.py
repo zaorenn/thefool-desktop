@@ -211,6 +211,7 @@ EXPECTED_SEAMS = {
     "engine-vram-eviction",
     "one-voice",
     "os-text-encoding",
+    "engine-namespaced-config",
     "resmi-rapor",
 }
 

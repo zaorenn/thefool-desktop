@@ -151,6 +151,35 @@ MAX_RESIDENT_ENGINES = 2
 #: konusma tanima esigiyle ayni buyukluk.
 IDLE_UNLOAD_SECONDS = 300.0
 
+#: SECILI motor icin bosta suresi -- yarim saat.
+#:
+#: Bes dakika secili motor icin cok kisa: sesli bir arkadasa arada bir
+#: konusuluyor ve her arada soguk yukleme odeniyordu. Olculdu (urun yolu,
+#: Chatterbox Turbo): sicak 0,78 sn/cumle, soguk 13,08 sn. Yani kahve molasi
+#: kadar bir ara, bir sonraki cumleyi 13 saniye geciktiriyordu.
+#:
+#: Secili OLMAYAN motorlar 5 dakikada birakilmaya devam ediyor: onlar
+#: kullanilmiyor ve kartta yer tutmalarinin sebebi yok.
+#:
+#: Sonsuza kadar tutmuyor: kullanici gercekten baska ise gectiyse yarim saat
+#: sonra kart birakiliyor. Basinc altinda ``_evict_for`` zaten devrede --
+#: baska bir motor istenirse secili olan da tahliye edilebilir.
+SELECTED_IDLE_UNLOAD_SECONDS = 1800.0
+
+
+def _selected_engine() -> str:
+    """Yapilandirmada secili seslendirme motorunun adi ("" = bilinmiyor).
+
+    Hata YUTULUYOR: yapilandirma okunamiyorsa herkes ayni esige tabi olur --
+    eski davranis, yani guvenli taraf.
+    """
+    try:
+        from fool_cli.config import load_config
+
+        return str(((load_config() or {}).get("tts") or {}).get("provider") or "").strip()
+    except Exception:
+        return ""
+
 
 def _hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
@@ -236,11 +265,16 @@ def _idle_sweep() -> list[str]:
     """
     now = time.monotonic()
 
+    # Secili motor daha uzun yasiyor: bir sonraki cumleyi o soyleyecek.
+    selected = _selected_engine()
+
     with _ENGINES_LOCK:
         stale = [
             name
             for name, engine in _ENGINES.items()
-            if not engine.lock.locked() and now - engine.last_used >= IDLE_UNLOAD_SECONDS
+            if not engine.lock.locked()
+            and now - engine.last_used
+            >= (SELECTED_IDLE_UNLOAD_SECONDS if name == selected else IDLE_UNLOAD_SECONDS)
         ]
 
     for name in stale:
@@ -248,8 +282,7 @@ def _idle_sweep() -> list[str]:
 
     if stale:
         logger.info(
-            "[The Fool] %.0f sn bosta kalan motor(lar) bosaltildi: %s",
-            IDLE_UNLOAD_SECONDS, ", ".join(stale),
+            "[The Fool] bosta kalan motor(lar) bosaltildi: %s", ", ".join(stale)
         )
     return stale
 

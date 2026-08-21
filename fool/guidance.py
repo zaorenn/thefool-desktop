@@ -54,6 +54,24 @@ interaction the user asked for — extracting data, filling a form, clicking
 through a flow. Not for simply opening or playing a link."""
 
 
+VOICE_CONTROL_GUIDANCE: Final[str] = """CHANGING THE VOICE YOU SPEAK IN
+When the user asks for a different voice -- "switch to a male voice", "erkek
+sesine geç", "use a clearer voice", "sesini değiştir" -- do it immediately,
+mid-conversation, with one shell command:
+
+    fool voice list          # the engine in use and every voice it offers
+    fool voice set <id>      # switch voice (e.g. am_michael)
+    fool voice engine <id>   # switch engine (kokoro, piper, chatterbox, ...)
+
+List FIRST when you do not already know the ids; they differ per engine.
+Kokoro encodes gender in the id -- af_/bf_ female, am_/bm_ male. It takes
+effect on your very next sentence, with no restart. Say which voice you
+switched to in one short line, then carry on with what you were saying.
+
+If the engine has a single voice (Chatterbox, Piper), say so plainly instead
+of pretending to switch."""
+
+
 ACCENT_COLOR_GUIDANCE: Final[str] = """CHANGING THE APP'S ACCENT COLOUR
 When the user asks for a different accent/highlight colour — "make it greener",
 "daha yeşil olsun", "I want a warmer accent", "change the theme colour to
@@ -161,6 +179,11 @@ def blocks() -> tuple[str, ...]:
     return (
         OPEN_IN_DEFAULT_BROWSER_GUIDANCE,
         ACCENT_COLOR_GUIDANCE,
+        # Kullanici konusurken "erkek sesine gec" diyor ve ajanin elinde
+        # yalnizca ham ``fool config set`` vardi -- motor adini, ayar
+        # anahtarini ve ses kimligini birlikte dogru bilmesi gerekiyordu.
+        # Uydurmaya calisiyor ve tur bosa gidiyordu.
+        VOICE_CONTROL_GUIDANCE,
         # Ajan olmayan komutlari uyduruyordu (olculdu: ``fool telegram``,
         # ``fool gateway logs``, ``fool voice`` -- ucu de yok). Kullanici
         # "telegram'i kur" diyor, kabuk hata veriyor, ajan baska bir varyant

@@ -992,16 +992,7 @@ export function ChatBar({
         level: conversation.level,
         muted: conversation.muted,
         onEnd: endConversation,
-        // FOOL-SEAM: voice-in-notch
-        //
-        // Bu dugme artik NOTCH'i aciyor, composer'in kendi sesli turunu
-        // DEGIL. Sesli sohbetin tek yuzeyi notch: kullanicinin karari
-        // ("friend ve jarvis modunu kaldirabilirsin ... onun yerine
-        // notch'ta ... hem sohbet edebilelim").
-        //
-        // Ayni sey Ctrl+Alt+V ile de oluyor, yani dugme ve kisayol AYNI
-        // yere gidiyor -- iki ayri sesli yuzey tam olarak kaldirilan seydi.
-        onStart: () => void window.hermesDesktop?.notch?.toggle?.(),
+        onStart: startConversation,
         onStopTurn: conversation.stopTurn,
         onToggleMute: conversation.toggleMute,
         status: conversation.status

@@ -27,6 +27,24 @@ export const PUSH_TO_TALK_CODE = 'ControlRight'
 /** Bu süreden kısa basışlar yanlışlıkla dokunma sayılır ve gönderilmez. */
 export const MIN_HOLD_MS = 180
 
+/**
+ * Bu süreden uzun süren bir "basılı" kaydı BAYAT sayılıyor.
+ *
+ * Ölçülen hata: ``heldSince`` yalnızca ``keyup`` ile temizleniyordu. Notch
+ * odağı kaybettiğinde ``keyup`` ARTIK BİZE GELMİYOR -- o olay odağı alan
+ * uygulamaya gidiyor. Bayrak takılı kalıyor ve sonraki HER ``keydown``
+ * ``null`` dönüyor: kullanıcının gördüğü "sağ ctrl bir kez çalışıyor,
+ * sonrasında işe yaramaz hale geliyor".
+ *
+ * ``blur`` dinleyicisi bu durumu yakalamak için vardı ama her yolu
+ * kapatmıyor: pencere hiç odak almamışsa ya da odak Electron'un ``blur``
+ * olayını tetiklemeden gittiyse bayrak orada kalıyor.
+ *
+ * Kimse tuşu 30 saniye basılı tutmuyor. O süreyi geçmiş bir kayıt kaybolmuş
+ * bir ``keyup``tır; yeni basış TAZE sayılır.
+ */
+export const STALE_HOLD_MS = 30_000
+
 export type PushToTalkEvent =
   | { type: 'start' }
   /** Tuş yeterince uzun tutuldu — kaydı gönder. */
@@ -64,8 +82,14 @@ export function onKeyDown(
   }
 
   if (state.heldSince !== null) {
-    // Zaten basılı. İkinci bir 'start' kaydı sıfırlar ve ilk heceyi yer.
-    return null
+    if (now - state.heldSince < STALE_HOLD_MS) {
+      // Gerçekten basılı. İkinci bir 'start' kaydı sıfırlar ve ilk heceyi yer.
+      return null
+    }
+
+    // Bayat: ``keyup`` kaybolmuş. Yeni basış taze sayılıyor -- aksi hâlde
+    // bas-konuş bir daha hiç açılmaz.
+    state.heldSince = null
   }
 
   state.heldSince = now

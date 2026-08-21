@@ -25,8 +25,6 @@ import { onGatewayEvent } from '@/contrib/events'
 import { Mic } from '@/lib/icons'
 
 import { voiceApi } from '../voice-api'
-import { Orb } from '../voice/orb'
-import type { OrbPhase } from '../voice/orb-motion'
 
 import {
   MAX_IDLE_ROUNDS,
@@ -45,33 +43,11 @@ import {
 } from './push-to-talk'
 import { type NotchStatus, useNotchVoice } from './use-notch-voice'
 
-/** Notch durumundan orb evresine. İkisi ayrı ad uzayı; eşlemek gerekiyor. */
-const ORB_PHASE: Record<string, OrbPhase> = {
-  idle: 'idle',
-  listening: 'listening',
-  speaking: 'speaking',
-  thinking: 'thinking',
-  transcribing: 'thinking'
-}
-
 const COLLAPSED_WIDTH = 104
 const COLLAPSED_HEIGHT = 22
 const EXPANDED_WIDTH = 300
 const EXPANDED_HEIGHT = 92
 
-/**
- * SOHBET boyu: bir tur akarken çentik büyüyor.
- *
- * Çentik penceresi 220 px (``NOTCH_WINDOW_HEIGHT``); 184 seçildi, altta pet
- * ve gölge için yer kalsın diye. Genişlik 420: iki satır cevap metni
- * okunabilir olsun ama çentik ekranın tepesini ele geçirmesin.
- *
- * Neden ayrı bir boy: konuşma bittiğinde çentik küçülüyor ve ekranın üstünde
- * duran kalıcı bir kutu bırakmıyor. Kullanıcı ne dediğini ve ne dendiğini
- * GÖRÜYOR -- gürültülü bir odada yalnızca duymak yetmiyor.
- */
-const CONVERSATION_WIDTH = 420
-const CONVERSATION_HEIGHT = 184
 
 /** Tur bittikten sonra yazının ekranda kalma süresi. */
 const LINGER_MS = 6000
@@ -268,14 +244,6 @@ export function NotchShell() {
 
   const expanded = voice.status !== 'idle' || lingering
 
-  /**
-   * Gösterilecek bir SÖZ var mı?
-   *
-   * Yalnızca durum değil İÇERİK: kullanıcı bir şey söylediyse ya da ajan bir
-   * şey dediyse çentik onu göstermeli. Yalnızca ``status``a bakmak, cevap
-   * ekranda dururken çentiği küçültürdü.
-   */
-  const conversing = sessionActive && Boolean(voice.transcript || voice.reply)
 
   // Oturum açılınca konuşma tanımayı ISIT.
   //
@@ -494,20 +462,12 @@ export function NotchShell() {
     <div className="flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>
       <motion.div
         animate={{
-          height: conversing
-            ? CONVERSATION_HEIGHT
-            : expanded
-              ? EXPANDED_HEIGHT
-              : COLLAPSED_HEIGHT,
+          height: expanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
           // Genişlik pencereye göre KIRPILMAZ: kullanıcının yakınlaştırma
           // ayarı 110% iken pencere 460 fiziksel piksel ama yalnızca 418 CSS
           // pikseli; sabit 420 px istemek çentiği kenardan kesiyordu.
-          opacity: hovered ? 0 : expanded || conversing ? 1 : 0.72,
-          width: conversing
-            ? CONVERSATION_WIDTH
-            : expanded
-              ? EXPANDED_WIDTH
-              : COLLAPSED_WIDTH
+          opacity: hovered ? 0 : expanded ? 1 : 0.72,
+          width: expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH
         }}
         // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
         //
@@ -534,54 +494,7 @@ export function NotchShell() {
         transition={hovered ? { duration: 0.18 } : SPRING}
       >
         <AnimatePresence initial={false} mode="wait">
-          {conversing ? (
-            <motion.div
-              animate={{ opacity: 1 }}
-              className="flex h-full flex-col gap-2 px-5 py-3"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              key="conversation"
-              transition={{ duration: 0.14 }}
-            >
-              <div className="flex items-center gap-3">
-                <Orb level={voice.level} phase={ORB_PHASE[voice.status]} size={56} />
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-[0.55rem] tracking-[0.16em] text-(--ui-text-tertiary) uppercase">
-                    {voice.status === 'idle' && paused
-                      ? pausedLabel(formatPttCode(pttCode))
-                      : LABEL[voice.status]}
-                  </div>
-
-                  {/* Yaziya dokulen metin: kullanici ne ANLASILDIGINI
-                      gormeli. Gormezse yanlis anlasilmayi ancak cevaptan
-                      fark eder. */}
-                  <div className="line-clamp-2 text-[0.8rem] leading-snug text-(--ui-text-primary)">
-                    {voice.transcript || '…'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cevap AKARKEN yaziliyor. Ilk cumle seslendirilmeye
-                  baslarken metin de gorunuyor, yani uzun bir cevapta
-                  kullanici bosluga bakmiyor. */}
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <motion.p
-                  animate={{ opacity: 1, y: 0 }}
-                  className="line-clamp-4 text-[0.74rem] leading-relaxed text-(--ui-text-secondary)"
-                  initial={{ opacity: 0, y: 4 }}
-                  key={voice.reply.length > 0 ? 'reply' : 'empty'}
-                  transition={{ duration: 0.18 }}
-                >
-                  {voice.reply}
-                </motion.p>
-              </div>
-
-              {voice.error && (
-                <div className="line-clamp-1 text-[0.68rem] text-(--theme-warm)">{voice.error}</div>
-              )}
-            </motion.div>
-          ) : expanded ? (
+          {expanded ? (
             <motion.div
               animate={{ opacity: 1 }}
               className="flex h-full flex-col items-center justify-center gap-1 px-5"
@@ -657,9 +570,7 @@ export function NotchShell() {
       {/* Masaustundeki pet: cubuktan asagi damliyor ve orada duruyor.
           Centik penceresi 220 px, cubuk 22-92 px -- altta kalan alan saydam
           ve fare olaylarini geciriyor, yani masaustunu hic isgal etmiyor. */}
-      {sessionActive && !conversing && (
-        <NotchPet level={voice.level} status={voice.status} />
-      )}
+      {sessionActive && <NotchPet level={voice.level} status={voice.status} />}
     </div>
   )
 }

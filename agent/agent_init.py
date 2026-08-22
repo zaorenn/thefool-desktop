@@ -2677,15 +2677,35 @@ def init_agent(
         and not isinstance(agent._config_context_length, bool)
         and agent._config_context_length > 0
     )
-    if _ctx and _ctx < MINIMUM_CONTEXT_LENGTH and not _allow_lmstudio_explicit_below_floor:
+    # FOOL-SEAM: context-floor
+    #
+    # Taban YAPILANDIRILABILIR. Upstream 64K'yi sabit yazmis ve altindaki her
+    # modeli REDDEDIYOR -- yani 32K'lik bir yerel model uygulamayi hic
+    # actiramiyor. Kullanicinin istegi acikti: "32k context ile bile calismali
+    # ve iyi calismali."
+    #
+    # Varsayilan DEGISMIYOR (64K): kucuk bir pencere arac cagirma
+    # is akislarini gercekten zorluyor ve bunu herkes icin sessizce dusurmek
+    # yanlis olurdu. Karar kullanicinin: ``agent.minimum_context_length``.
+    _floor = MINIMUM_CONTEXT_LENGTH
+    try:
+        _configured = (agent.config.get("agent") or {}).get("minimum_context_length")
+        if isinstance(_configured, int) and not isinstance(_configured, bool) and _configured > 0:
+            _floor = _configured
+    except Exception:
+        # Yapilandirma okunamadi: upstream tabani gecerli. Bir ayar ugruna
+        # acilisi dusurmek oransiz olurdu.
+        pass
+
+    if _ctx and _ctx < _floor and not _allow_lmstudio_explicit_below_floor:
         raise ValueError(
             f"Model {agent.model} has a context window of {_ctx:,} tokens, "
-            f"which is below the minimum {MINIMUM_CONTEXT_LENGTH:,} required "
+            f"which is below the minimum {_floor:,} required "
             f"by Fool Agent.  Choose a model with at least "  # FOOL-SEAM: agent-identity
-            f"{MINIMUM_CONTEXT_LENGTH // 1000}K context.  If your server "
+            f"{_floor // 1000}K context.  If your server "
             f"reports a window smaller than the model's true window, set "
             f"model.context_length in config.yaml to the real value "
-            f"(this must be at least {MINIMUM_CONTEXT_LENGTH // 1000}K)."
+            f"(this must be at least {_floor // 1000}K)."
         )
 
     # Nous Hermes 3/4 are chat models, not tool-call-tuned. The interactive

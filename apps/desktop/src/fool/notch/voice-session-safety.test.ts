@@ -74,3 +74,29 @@ describe('ses ACIK SOHBETE gidiyor', () => {
     expect(/setError\(/.test(code(SOURCE))).toBe(true)
   })
 })
+
+/**
+ * Köprüyü YALNIZCA ana pencere kurmalı.
+ *
+ * Çentik AYNI bundle'ı yüklüyor (``?win=notch``), yani köprü modülü orada da
+ * koşuyor. Guard olmadan çentik kendi BOŞ ``$activeSessionId``ini paylaşılan
+ * atoma yazıyor ve ana pencerenin değerini eziyor -- köprü kendi kendini
+ * bozuyor. Kullanıcının gördüğü: ses yine yanlış oturuma gidiyor ve cevap
+ * bot panelinde çıkıyor.
+ */
+describe('kopru yalnizca ANA pencerede', () => {
+  it('centikte yayin YAPILMIYOR', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const bridge = readFileSync(join(import.meta.dirname, '../../store/active-work.ts'), 'utf8')
+
+    // Ortak yardimci: ``whenMainWindow`` centikte govdeyi HIC calistirmiyor
+    // (bkz. ``store/main-window-only.ts``).
+    expect(bridge.includes('whenMainWindow(')).toBe(true)
+    // Guard, abonelikten ONCE gelmeli.
+    expect(bridge.indexOf('whenMainWindow(')).toBeLessThan(
+      bridge.indexOf('$activeSessionId.subscribe')
+    )
+  })
+})

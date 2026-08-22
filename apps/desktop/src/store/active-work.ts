@@ -15,6 +15,8 @@ import type { HermesActiveWork } from '@/global'
 import { $sessions } from '@/store/session'
 import { $workingSessionIds } from '@/store/session-states'
 
+import { whenMainWindow } from './main-window-only'
+
 const $activeWork = computed([$workingSessionIds, $sessions], (workingIds, sessions): HermesActiveWork => {
   const titleById = new Map(sessions.map(session => [session.id, session.title?.trim() ?? '']))
 
@@ -33,26 +35,50 @@ const $activeWork = computed([$workingSessionIds, $sessions], (workingIds, sessi
 // Bu modul zaten ana pencerede yan etki olarak yukleniyor (``main.tsx``), yani
 // koprunun dogal yeri burasi.
 if (typeof window !== 'undefined') {
-  void import('@/store/session').then(({ $activeSessionId }) =>
-    import('@/fool/notch/active-session').then(({ $voiceSessionId }) =>
-      $activeSessionId.subscribe(id => $voiceSessionId.set(id ?? ''))
+  whenMainWindow(() => {
+    // YALNIZCA ana pencere yayinliyor.
+    //
+    // Centik AYNI bundle'i yukluyor (``?win=notch``), yani bu modul orada da
+    // kosuyor. Guard olmadan centik kendi BOS ``$activeSessionId``ini
+    // paylasilan atoma yaziyor ve ana pencerenin degerini EZIYOR -- kopru
+    // kendi kendini bozuyordu. Sonucu kullanicinin gordugu sey: ses yine
+    // yanlis oturuma gidiyor ve cevap bot panelinde cikiyor.
+    void import('@/store/session').then(({ $activeSessionId }) =>
+      import('@/fool/notch/active-session').then(({ $voiceSessionId }) =>
+        $activeSessionId.subscribe(id => $voiceSessionId.set(id ?? ''))
+      )
     )
-  )
+  })
 }
 
 if (typeof window !== 'undefined') {
+  // FOOL-SEAM: main-window-only-publisher
+  //
+  // YALNIZCA ana pencere yayinliyor.
+  //
+  // Centik AYNI bundle'i yukluyor (``?win=notch``) ve bu modul orada da
+  // kosuyor. Centikte ``$sessions`` bos, yani o da ``count: 0`` yayinliyor ve
+  // ana pencerenin ozetini EZIYOR -- son yazan kazaniyor. Bedeli iki yerde:
+  // cikis muhafizi suren bir turu gormuyor, ve ``electron/stream-throttle.ts``
+  // pencereleri akis ortasinda yeniden kisiyor.
+  //
+  // Ayni tuzak oturum koprusunde de yasandi (bkz. ``$voiceSessionId``): ses
+  // yanlis oturuma gidip cevap bot panelinde cikiyordu.
   // `$sessions` republishes on unrelated churn (previews, heartbeats), so only
   // send when the summary itself moved — this crosses a process boundary.
   let lastSent = ''
 
-  $activeWork.subscribe(work => {
-    const next = JSON.stringify(work)
+  whenMainWindow(() =>
+    $activeWork.subscribe(work => {
 
-    if (next === lastSent) {
-      return
-    }
+      const next = JSON.stringify(work)
 
-    lastSent = next
-    window.hermesDesktop?.setActiveWork?.(work)
-  })
+      if (next === lastSent) {
+        return
+      }
+
+      lastSent = next
+      window.hermesDesktop?.setActiveWork?.(work)
+    })
+  )
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { claimBarge, createBargeGate, releaseBarge } from '@/fool/notch/barge-in'
+import { claimBarge, createBargeGate, forceClaimBarge, releaseBarge } from '@/fool/notch/barge-in'
 import { HANDS_FREE_VAD } from '@/fool/notch/hands-free'
 import { canSpeak } from '@/fool/voice-owner'
 import { useI18n } from '@/i18n'
@@ -769,5 +769,50 @@ export function useVoiceConversation({
     wasEnabledRef.current = enabled
   }, [enabled, end, start])
 
-  return { end, level, muted, start, status, stopTurn, toggleMute }
+  /**
+   * Sağ Ctrl BASILDI — bas-konuş.
+   *
+   * Sesli tur zaten sesle araya girmeyi destekliyordu; eksik olan TUŞLA
+   * araya girmekti. Kullanıcının isteği: "sağ ctrl ile konuşabilelim, hem
+   * direkt cevap versin hem konuşursak direkt interrupt olsun."
+   *
+   * Model konuşuyor ya da düşünüyorsa ÖNCE kesiliyor -- yoksa yakalanan
+   * cümle eski cevabın arkasına kuyruklanır ve kullanıcı yeni sorusunun
+   * cevabını beklerken eskisini dinler.
+   *
+   * Kapı ORTAK (``fool/notch/barge-in.ts``): insan refleksi konuşmaya
+   * başlarken tuşa da basmak ve kapısız bırakmak aynı cümleyi modele iki kez
+   * gönderiyordu.
+   */
+  const pttDown = useCallback(() => {
+    if (!enabledRef.current || mutedRef.current) {
+      return
+    }
+
+    // Tusla araya girmek ACIK bir niyet: sesle baslamis bir yakalama varsa
+    // devral. Kapiyi ilk gelene birakmak tusu sessizce yutardi.
+    forceClaimBarge(bargeGateRef.current, 'key')
+
+    if (statusRef.current === 'speaking' || busyRef.current) {
+      bargedRef.current = true
+      markVoicePlaybackInterrupted()
+      stopVoicePlayback()
+      void onInterruptRef.current?.()
+    }
+
+    if (statusRef.current === 'idle') {
+      void startListening()
+    }
+  }, [startListening])
+
+  /** Sağ Ctrl BIRAKILDI -- kaydı kapat ve gönder. */
+  const pttUp = useCallback(() => {
+    releaseBarge(bargeGateRef.current)
+
+    if (statusRef.current === 'listening') {
+      void handleTurn(true)
+    }
+  }, [handleTurn])
+
+  return { end, level, muted, pttDown, pttUp, start, status, stopTurn, toggleMute }
 }

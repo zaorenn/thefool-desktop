@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { $pttCode } from '@/fool/notch/ptt-store'
 import { useI18n } from '@/i18n'
 import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { triggerHaptic } from '@/lib/haptics'
@@ -282,6 +283,60 @@ export function useComposerVoice({
     pendingReply: pendingResponse,
     sessionId
   })
+
+  /**
+   * Sesli tur açıkken SAĞ CTRL bas-konuş.
+   *
+   * Kullanıcının isteği: "start conversation butonunu da isteğe bağlı
+   * bas-konuşa alalım, sağ ctrl ile konuşabilelim, hem direkt cevap versin
+   * hem konuşursak direkt interrupt olsun."
+   *
+   * Tuş kodu çentikle ORTAK depodan (``$pttCode``): iki yüzeyin farklı tuş
+   * beklemesi, kullanıcının ayarı bir yerde değiştirip diğerinde çalışmadığını
+   * görmesi olurdu.
+   *
+   * Sesle araya girme KAPANMIYOR -- ikisi aynı kapıyı paylaşıyor
+   * (``fool/notch/barge-in.ts``), yani konuşmak da tuşa basmak da işe yarıyor
+   * ve aynı cümle iki kez gönderilmiyor.
+   */
+  const pttCode = useStore($pttCode)
+
+  useEffect(() => {
+    if (!voiceConversationActive) {
+      return
+    }
+
+    const onDown = (event: KeyboardEvent) => {
+      if (event.code !== pttCode || event.repeat) {
+        return
+      }
+
+      event.preventDefault()
+      conversation.pttDown()
+    }
+
+    const onUp = (event: KeyboardEvent) => {
+      if (event.code !== pttCode) {
+        return
+      }
+
+      conversation.pttUp()
+    }
+
+    // Odak kaybi birakma sayiliyor: tus hala basili olsa bile ``keyup`` artik
+    // bize gelmeyecek ve mikrofon sonsuza kadar acik kalirdi.
+    const onBlur = () => conversation.pttUp()
+
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    window.addEventListener('blur', onBlur)
+
+    return () => {
+      window.removeEventListener('keydown', onDown)
+      window.removeEventListener('keyup', onUp)
+      window.removeEventListener('blur', onBlur)
+    }
+  }, [conversation, pttCode, voiceConversationActive])
 
   return {
     conversation,

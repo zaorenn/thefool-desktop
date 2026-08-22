@@ -109,12 +109,72 @@ export function brandText(input: string): string {
  * Fonksiyonlar çağrı anında string ürettiği için, fonksiyonun kendisini değil
  * DÖNÜŞ DEĞERİNİ markalamamız gerekir — bu yüzden sarmalıyoruz.
  */
+/**
+ * ``input``u markalar ama ``args``tan gelen dizeleri OLDUĞU GİBİ bırakır.
+ *
+ * Yer tutucu, metinde kendiliğinden bulunamayacak bir işaret: markalama
+ * kuralları onu göremez, sonra yerine aslı konur. Uzun argüman ÖNCE
+ * korunuyor -- kısa olan uzunun içinde geçiyorsa önce kısayı değiştirmek
+ * uzunu parçalardı.
+ */
+function brandTextPreserving(input: string, args: readonly unknown[]): string {
+  const literals = args
+    .filter((a): a is string => typeof a === 'string' && a.length > 0)
+    .sort((a, b) => b.length - a.length)
+
+  if (literals.length === 0) {
+    return brandText(input)
+  }
+
+  // Isaret KACISLA degil kod noktasindan kuruluyor: kaynaga ham NUL
+  // yazmak dosyayi ikili yapar ve grep/diff korlesir.
+  const mark = String.fromCharCode(0)
+  const kept: string[] = []
+  let out = input
+
+  for (const literal of literals) {
+    if (!out.includes(literal)) {
+      continue
+    }
+
+    const token = `${mark}fool${kept.length}${mark}`
+
+    kept.push(literal)
+    out = out.split(literal).join(token)
+  }
+
+  out = brandText(out)
+
+  for (let i = kept.length - 1; i >= 0; i -= 1) {
+    out = out.split(`${mark}fool${i}${mark}`).join(kept[i])
+  }
+
+  return out
+}
+
 function brandValue(value: unknown): unknown {
   if (typeof value === 'string') return brandText(value)
 
   if (typeof value === 'function') {
     const fn = value as (...args: unknown[]) => unknown
-    return (...args: unknown[]) => brandValue(fn(...args))
+
+    return (...args: unknown[]) => {
+      const out = fn(...args)
+
+      // Sablonun KENDI sozcukleri markalanir, ICINE konan VERI markalanmaz.
+      //
+      // Once dogrudan ``brandValue(fn(...args))`` yaziliydi ve sonuc butun
+      // haliyle donusumden geciyordu -- yani sablona interpolate edilen
+      // calisma zamani verisi de. Olculen zarar:
+      //
+      //   hostnameOf(url)  "hermes-agent.nousresearch.com" ->
+      //                    "fool-agent.nousresearch.com"   (var olmayan alan)
+      //
+      // Ayni sey dosya yollari, oturum baslıklari ve arama sorgulari icin de
+      // gecerli: bu depoda calisan biri icin yollar surekli ``hermes-agent``
+      // tasiyor, yani kullaniciya yanlis metin gosteriliyordu.
+      return typeof out === 'string' ? brandTextPreserving(out, args) : brandValue(out)
+    }
   }
 
   if (Array.isArray(value)) return value.map(brandValue)

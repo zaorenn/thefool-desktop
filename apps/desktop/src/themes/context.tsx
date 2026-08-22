@@ -13,12 +13,12 @@ import { useStore } from '@nanostores/react'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 import { $registryVersion } from '@/contrib/registry'
+import { accentFromSkin, applyAccentOverride } from '@/fool/themes/accent-override'
 import { matchesQuery, useMediaQuery } from '@/hooks/use-media-query'
 import { persistString, persistStringRecord, storedString, storedStringRecord } from '@/lib/storage'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 
 import { $backendAccent, $backendThemes, $pendingSkinApply } from './backend-sync'
-import { accentFromSkin, applyAccentOverride } from '@/fool/themes/accent-override'
 import { hexToRgb, mix, readableOn } from './color'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme } from './presets'
 import type { DesktopTheme, DesktopThemeColors } from './types'

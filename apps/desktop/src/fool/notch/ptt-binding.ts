@@ -78,7 +78,8 @@ export function formatPttCode(code: string): string {
   }
 
   // ``KeyQ`` -> ``Q``, ``Digit7`` -> ``7``, ``F13`` -> ``F13``.
-  const stripped = /^Key(?<letter>[A-Z])$/.exec(code)?.groups?.letter ?? /^Digit(?<digit>[0-9])$/.exec(code)?.groups?.digit
+  const stripped =
+    /^Key(?<letter>[A-Z])$/.exec(code)?.groups?.letter ?? /^Digit(?<digit>[0-9])$/.exec(code)?.groups?.digit
 
   return stripped ?? code
 }

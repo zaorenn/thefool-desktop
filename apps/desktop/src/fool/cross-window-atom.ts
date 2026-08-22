@@ -37,12 +37,7 @@ import { type Codec, persistentAtom } from '@/lib/persisted'
  * Yankı yok: gelen değer atomdakiyle aynı kodlanıyorsa hiç yazılmıyor.
  * Yazsaydık, iki pencere birbirinin yazısını sonsuza kadar geri yollardı.
  */
-export function adoptExternalWrites<T>(
-  $value: WritableAtom<T>,
-  key: string,
-  fallback: T,
-  codec: Codec<T>
-): void {
+export function adoptExternalWrites<T>($value: WritableAtom<T>, key: string, fallback: T, codec: Codec<T>): void {
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
     return
   }

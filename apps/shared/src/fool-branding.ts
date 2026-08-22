@@ -92,12 +92,15 @@ const ARTICLE_FIX: ReadonlyArray<readonly [RegExp, string]> = [
 /** Tek bir metni markala. Dışarıdan da kullanılabilir (ör. sabit stringler). */
 export function brandText(input: string): string {
   let out = input
+
   for (const [pattern, replacement] of RULES) {
     out = out.replace(pattern, replacement)
   }
+
   for (const [pattern, replacement] of ARTICLE_FIX) {
     out = out.replace(pattern, replacement)
   }
+
   return out
 }
 
@@ -110,20 +113,23 @@ export function brandText(input: string): string {
  * DÖNÜŞ DEĞERİNİ markalamamız gerekir — bu yüzden sarmalıyoruz.
  */
 function brandValue(value: unknown): unknown {
-  if (typeof value === 'string') return brandText(value)
+  if (typeof value === 'string') {return brandText(value)}
 
   if (typeof value === 'function') {
     const fn = value as (...args: unknown[]) => unknown
+
     return (...args: unknown[]) => brandValue(fn(...args))
   }
 
-  if (Array.isArray(value)) return value.map(brandValue)
+  if (Array.isArray(value)) {return value.map(brandValue)}
 
   if (value !== null && typeof value === 'object') {
     const out: Record<string, unknown> = {}
+
     for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
       out[key] = brandValue(val)
     }
+
     return out
   }
 

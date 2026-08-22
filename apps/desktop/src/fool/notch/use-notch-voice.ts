@@ -27,12 +27,7 @@ import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
-import {
-  playSpeechText,
-  type SpeechStreamSession,
-  startSpeechStream,
-  stopVoicePlayback
-} from '@/lib/voice-playback'
+import { playSpeechText, type SpeechStreamSession, startSpeechStream, stopVoicePlayback } from '@/lib/voice-playback'
 import { $messages } from '@/store/session'
 
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
@@ -47,19 +42,9 @@ import {
   releaseBarge,
   shouldMonitorBargeIn
 } from './barge-in'
-import {
-  type BeginActivation,
-  listenOptionsFor,
-  modeForActivation
-} from './hands-free'
+import { type BeginActivation, listenOptionsFor, modeForActivation } from './hands-free'
 import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
-import {
-  createFillerState,
-  FILL_AFTER_MS,
-  resetTurn,
-  shouldFill,
-  takeFiller
-} from './thinking-filler'
+import { createFillerState, FILL_AFTER_MS, resetTurn, shouldFill, takeFiller } from './thinking-filler'
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
 
@@ -176,56 +161,59 @@ export function useNotchVoice(): NotchVoice {
     await requestGateway('session.interrupt', { session_id: sessionId })
   }, [requestGateway])
 
-  const begin = useCallback((activation: BeginActivation = 'key') => {
-    setError(null)
-    discardRef.current = false
-    // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.
-    // Kapıyı ilk gelene bırakmak tuşu sessizce yutardı — mikrofon açılmaz,
-    // kullanıcı boşluğa konuşurdu.
-    forceClaimBarge(bargeRef.current, 'key')
-    // Kullanici notch'ta konusmaya basladi: sesin sahibi o (Friend
-    // penceresi acik degilse).
-    claimVoice('notch')
-    setCapturing(false)
-    setHeardSpeech(false)
-    setStatus('listening')
-    // Oturumu SIMDIDEN ac: kullanici konusurken cozulsun, sonra degil.
-    // REF uzerinden: ``prewarmSession`` asagida tanimli ve ``begin``i ona
-    // bagimli kilmak her oturum degisiminde geri cagriyi yeniden kurardi.
-    // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
-    // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
-    // seslendirilmeye devam eder.
-    streamRef.current?.session?.finish()
-    streamRef.current = null
-    stopVoicePlayback()
-    // Tuşla araya girmek de araya girmektir: süren tur durmalı, yoksa eski
-    // cevabın kalanı yeni turdan sonra konuşulur.
-    void haltTurn().catch(() => undefined)
+  const begin = useCallback(
+    (activation: BeginActivation = 'key') => {
+      setError(null)
+      discardRef.current = false
+      // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.
+      // Kapıyı ilk gelene bırakmak tuşu sessizce yutardı — mikrofon açılmaz,
+      // kullanıcı boşluğa konuşurdu.
+      forceClaimBarge(bargeRef.current, 'key')
+      // Kullanici notch'ta konusmaya basladi: sesin sahibi o (Friend
+      // penceresi acik degilse).
+      claimVoice('notch')
+      setCapturing(false)
+      setHeardSpeech(false)
+      setStatus('listening')
+      // Oturumu SIMDIDEN ac: kullanici konusurken cozulsun, sonra degil.
+      // REF uzerinden: ``prewarmSession`` asagida tanimli ve ``begin``i ona
+      // bagimli kilmak her oturum degisiminde geri cagriyi yeniden kurardi.
+      // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
+      // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
+      // seslendirilmeye devam eder.
+      streamRef.current?.session?.finish()
+      streamRef.current = null
+      stopVoicePlayback()
+      // Tuşla araya girmek de araya girmektir: süren tur durmalı, yoksa eski
+      // cevabın kalanı yeni turdan sonra konuşulur.
+      void haltTurn().catch(() => undefined)
 
-    // Eller serbest kipte kaydın sınırını sessizlik çiziyor; bas-konuşta
-    // KULLANICI çiziyor. İkisine aynı ayarı vermek, tuş hâlâ basılıyken
-    // kaydın kapanması demekti — cümlenin ortasında kesilen bir kayıt.
-    const options = listenOptionsFor(modeForActivation(activation))
+      // Eller serbest kipte kaydın sınırını sessizlik çiziyor; bas-konuşta
+      // KULLANICI çiziyor. İkisine aynı ayarı vermek, tuş hâlâ basılıyken
+      // kaydın kapanması demekti — cümlenin ortasında kesilen bir kayıt.
+      const options = listenOptionsFor(modeForActivation(activation))
 
-    void mic
-      .start(
-        options
-          ? {
-              ...options,
-              onSilence: () => {
-                // Sessizlik turu bitirdi: konuşma duyulmuştu, yoksa
-                // ``onSilence`` değil boşta zaman aşımı çalışırdı.
-                setHeardSpeech(true)
-                commitRef.current()
+      void mic
+        .start(
+          options
+            ? {
+                ...options,
+                onSilence: () => {
+                  // Sessizlik turu bitirdi: konuşma duyulmuştu, yoksa
+                  // ``onSilence`` değil boşta zaman aşımı çalışırdı.
+                  setHeardSpeech(true)
+                  commitRef.current()
+                }
               }
-            }
-          : undefined
-      )
-      .catch((cause: unknown) => {
-        setStatus('idle')
-        setError(cause instanceof Error ? cause.message : String(cause))
-      })
-  }, [haltTurn, mic])
+            : undefined
+        )
+        .catch((cause: unknown) => {
+          setStatus('idle')
+          setError(cause instanceof Error ? cause.message : String(cause))
+        })
+    },
+    [haltTurn, mic]
+  )
 
   /**
    * Notch kapandı — mikrofonu bırak ama SOHBETİ BİTİRME.
@@ -261,7 +249,6 @@ export function useNotchVoice(): NotchVoice {
    * kiplerdi ve kipler kullanıcının kararıyla kaldırıldı.
    */
   const resolveSessionId = useCallback(async () => $voiceSessionId.get(), [])
-
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
   // araya girerken yakalanan cümle. Ayrı yazmak, ikisinden birinin canlı
@@ -353,7 +340,7 @@ export function useNotchVoice(): NotchVoice {
   // ``append`` yalnızca YENİ eklenen kısmı alıyor: her seferinde tüm metni
   // göndermek aynı cümleleri defalarca okuturdu.
   //
-   
+
   // ``streamRef`` reaktif bir değerin AYNASI değil: açık bir WebSocket
   // oturumu ve o oturuma kaç karakter gönderildiği. State'e taşımak her
   // token'da yeniden render tetiklerdi.
@@ -535,7 +522,7 @@ export function useNotchVoice(): NotchVoice {
   // Kural dar -- yalnizca esigi gecen bosluk, tur basina bir kez, arka
   // arkaya ayni sozcuk olmadan (bkz. thinking-filler.ts).
   //
-   
+
   // tutamac (doldurma durumu, akis oturumu), reaktif deger aynasi degil
   useEffect(() => {
     if (status !== 'thinking') {

@@ -26,11 +26,7 @@ import { Mic } from '@/lib/icons'
 
 import { voiceApi } from '../voice-api'
 
-import {
-  MAX_IDLE_ROUNDS,
-  nextIdleRounds,
-  shouldRearmListening
-} from './hands-free'
+import { MAX_IDLE_ROUNDS, nextIdleRounds, shouldRearmListening } from './hands-free'
 import { $listenMode, listenModeHint, toggleListenMode } from './listen-mode'
 import { NotchPet } from './notch-pet'
 import { formatPttCode } from './ptt-binding'
@@ -47,7 +43,6 @@ const COLLAPSED_WIDTH = 104
 const COLLAPSED_HEIGHT = 22
 const EXPANDED_WIDTH = 300
 const EXPANDED_HEIGHT = 92
-
 
 /** Tur bittikten sonra yazının ekranda kalma süresi. */
 const LINGER_MS = 6000
@@ -170,9 +165,7 @@ export function NotchShell() {
       const pad = 8
 
       const inside =
-        event.clientX >= box.left - pad &&
-        event.clientX <= box.right + pad &&
-        event.clientY <= box.bottom + pad
+        event.clientX >= box.left - pad && event.clientX <= box.right + pad && event.clientY <= box.bottom + pad
 
       setHovered(inside)
     }
@@ -244,7 +237,6 @@ export function NotchShell() {
 
   const expanded = voice.status !== 'idle' || lingering
 
-
   // Oturum açılınca konuşma tanımayı ISIT.
   //
   // Ölçüldü (12,18 sn gerçek konuşma, Whisper large-v3-turbo float16):
@@ -274,12 +266,10 @@ export function NotchShell() {
   // ortamda kullanıcı kaydın sınırını kendi çizmek isteyebilir.
   const [idleRounds, setIdleRounds] = useState(0)
 
-
   // Dinleme kipi Friend penceresiyle ORTAK depo (bkz. ``listen-mode.ts``):
   // iki yuzey ayni mikrofonu kullaniyor ve ayri tutmak kullaniciya iki ayri
   // hakikat sunardi.
   const rearmListenMode = useStore($listenMode)
-
 
   // Kullanıcı konuştuysa sayaç sıfırlanır; birikmiş sayaç onu bir sonraki
   // sessizlikte erken susturmamalı.
@@ -397,7 +387,6 @@ export function NotchShell() {
     // Dogru model: kisayol oturumu ACAR, oturum boyunca sag Ctrl calisir,
     // ayni kisayol oturumu KAPATIR.
     const handleListenRequest = (request?: null | { mode?: string }) => {
-
       // Kisayol yalnizca centigi acmiyor, ARKADAS turunu de basliyor.
       // Kip oturum ACILIRKEN yaziliyor: arac kumesi ajan kurulurken donuyor,
       // Kisayol SALT BAS-KONUS aciyor.
@@ -521,9 +510,7 @@ export function NotchShell() {
 
               <div className="flex items-center gap-2">
                 <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
-                  {voice.status === 'idle' && paused
-                    ? pausedLabel(formatPttCode(pttCode))
-                    : LABEL[voice.status]}
+                  {voice.status === 'idle' && paused ? pausedLabel(formatPttCode(pttCode)) : LABEL[voice.status]}
                 </div>
 
                 {/* Bas-konus anahtari. Ayarlara gitmeden buradan
@@ -557,9 +544,7 @@ export function NotchShell() {
                 </div>
               )}
 
-              {voice.error && (
-                <div className="line-clamp-1 text-[0.7rem] text-(--theme-warm)">{voice.error}</div>
-              )}
+              {voice.error && <div className="line-clamp-1 text-[0.7rem] text-(--theme-warm)">{voice.error}</div>}
             </motion.div>
           ) : (
             <motion.div

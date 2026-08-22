@@ -64,8 +64,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     close: () => ipcRenderer.invoke('fool:notch:close'),
     toggle: () => ipcRenderer.invoke('fool:notch:toggle'),
     shortcut: () => ipcRenderer.invoke('fool:notch:shortcut'),
-    setShortcut: (accelerator: string) =>
-      ipcRenderer.invoke('fool:notch:set-shortcut', accelerator),
+    setShortcut: (accelerator: string) => ipcRenderer.invoke('fool:notch:set-shortcut', accelerator),
     // Istek KIPI de tasiniyor: kisayol yalnizca centigi acmiyor, arkadas
     // turunu de basliyor ve notch oturumu o kapsamla aciyor.
     // Montajda BEKLEYEN niyeti al (ve tuket). Yeni acilan pencerede
@@ -74,8 +73,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     // Bas-konus tusu BASKA penceremizden iletildi: centik odakta olmasa da
     // calissin (bkz. ``installPushToTalkForwarding``).
     onPushToTalk: (callback: (event: { repeat: boolean; type: 'down' | 'up' }) => void) => {
-      const listener = (_e: unknown, payload: { repeat: boolean; type: 'down' | 'up' }) =>
-        callback(payload)
+      const listener = (_e: unknown, payload: { repeat: boolean; type: 'down' | 'up' }) => callback(payload)
 
       ipcRenderer.on('fool:notch:ptt', listener)
 

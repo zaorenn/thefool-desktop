@@ -29,7 +29,7 @@ const PRELOAD = readFileSync(join(import.meta.dirname, '../../../electron/preloa
 /** ``fireNotchShortcut`` gövdesi. */
 const FIRE = MAIN.slice(
   MAIN.indexOf('function fireNotchShortcut()'),
-  MAIN.indexOf('ipcMain.handle(\'fool:notch:take-intent\'')
+  MAIN.indexOf("ipcMain.handle('fool:notch:take-intent'")
 )
 
 describe('kisayol niyeti', () => {

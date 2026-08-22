@@ -16,7 +16,7 @@ describe('sahiplik', () => {
     expect(claimVoice('friend')).toBe(true)
   })
 
-  it('FRIEND composer\'i devraliyor', () => {
+  it("FRIEND composer'i devraliyor", () => {
     // Kullanici Friend'i ACARAK konusmayi secti ve ekranda ona bakiyor.
     claimVoice('composer')
 
@@ -24,7 +24,7 @@ describe('sahiplik', () => {
     expect($voiceOwner.get()).toBe('friend')
   })
 
-  it('composer FRIEND\'i devralmiyor', () => {
+  it("composer FRIEND'i devralmiyor", () => {
     // Iki yuzey birden konusursa her biri digerini iptal ediyor ve HIC ses
     // cikmiyor -- olculen hata tam bu.
     claimVoice('friend')
@@ -178,7 +178,6 @@ describe('bir cevap bir ses', () => {
 
     expect(source.includes('forgetSpokenMessage(messageId)')).toBe(true)
   })
-
 })
 
 /**

@@ -7674,9 +7674,7 @@ async function discoverCloudAgents(org?: string) {
       // A 401 means the portal session lapsed (and silent renewal could not
       // recover it) — surface it as a re-login, not a generic failure.
       if (error && error.statusCode === 401) {
-        const err = new Error(
-          'Your Fool Cloud session has expired. Open Settings → Gateway and sign in again.'
-        ) as any
+        const err = new Error('Your Fool Cloud session has expired. Open Settings → Gateway and sign in again.') as any
 
         err.needsCloudLogin = true
         err.cause = error
@@ -11913,10 +11911,7 @@ ipcMain.handle('fool:window:openInTerminal', async (_event, sessionId, opts) => 
     const scriptDir = path.join(app.getPath('userData'), 'open-in-terminal')
     fs.mkdirSync(scriptDir, { recursive: true })
 
-    const scriptPath = path.join(
-      scriptDir,
-      `fool-${crypto.randomBytes(6).toString('hex')}${terminalScriptExtension()}`
-    )
+    const scriptPath = path.join(scriptDir, `fool-${crypto.randomBytes(6).toString('hex')}${terminalScriptExtension()}`)
 
     fs.writeFileSync(
       scriptPath,
@@ -12405,11 +12400,7 @@ function storedNotchShortcut() {
 function writeNotchShortcut(accelerator) {
   try {
     fs.mkdirSync(path.dirname(NOTCH_SHORTCUT_CONFIG_PATH), { recursive: true })
-    fs.writeFileSync(
-      NOTCH_SHORTCUT_CONFIG_PATH,
-      JSON.stringify({ accelerator }, null, 2),
-      'utf8'
-    )
+    fs.writeFileSync(NOTCH_SHORTCUT_CONFIG_PATH, JSON.stringify({ accelerator }, null, 2), 'utf8')
   } catch (error) {
     rememberLog(`[notch] shortcut write failed: ${error.message}`)
   }

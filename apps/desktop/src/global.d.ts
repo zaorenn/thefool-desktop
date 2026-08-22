@@ -103,9 +103,7 @@ declare global {
           shortcut: null | string
         }>
         /** Kisayolu degistir. ``taken`` = istenen tus baska bir uygulamada. */
-        setShortcut: (
-          accelerator: string
-        ) => Promise<{ ok: boolean; shortcut: null | string; taken: boolean }>
+        setShortcut: (accelerator: string) => Promise<{ ok: boolean; shortcut: null | string; taken: boolean }>
         /** Ana surec global kisayoldan dinlemeyi istedi. */
         onListenRequest: (callback: (request?: { mode?: string }) => void) => () => void
         takeListenRequest: () => Promise<null | { mode?: string }>

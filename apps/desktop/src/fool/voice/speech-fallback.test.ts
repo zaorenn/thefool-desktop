@@ -14,10 +14,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-const NOTCH = readFileSync(
-  join(import.meta.dirname, '..', 'notch', 'use-notch-voice.ts'),
-  'utf8'
-)
+const NOTCH = readFileSync(join(import.meta.dirname, '..', 'notch', 'use-notch-voice.ts'), 'utf8')
 
 describe('seslendirme geri dusus sozlesmesi', () => {
   it('akis KURULAMAZSA metni yine seslendiriyor', () => {

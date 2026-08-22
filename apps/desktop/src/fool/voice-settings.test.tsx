@@ -116,9 +116,7 @@ describe('VoiceSettings', () => {
   it('CUDA dugmesi kart YOKKEN cikmaz', async () => {
     // Sunmak, sessizce CPU'ya dusen bir kurulum demekti ve kullanici neden
     // yavas oldugunu anlamiyordu.
-    catalog.mockResolvedValue(
-      reply([item({ cuda_available: false, devices: ['cpu', 'cuda'], installed: false })])
-    )
+    catalog.mockResolvedValue(reply([item({ cuda_available: false, devices: ['cpu', 'cuda'], installed: false })]))
 
     render(<VoiceSettings />)
 
@@ -127,9 +125,7 @@ describe('VoiceSettings', () => {
   })
 
   it('CUDA dugmesi kart VARKEN cikar', async () => {
-    catalog.mockResolvedValue(
-      reply([item({ cuda_available: true, devices: ['cpu', 'cuda'], installed: false })], true)
-    )
+    catalog.mockResolvedValue(reply([item({ cuda_available: true, devices: ['cpu', 'cuda'], installed: false })], true))
 
     render(<VoiceSettings />)
 
@@ -197,9 +193,7 @@ describe('VoiceSettings', () => {
   })
 
   it('TTS ve STT ayri bolumlerde listelenir', async () => {
-    catalog.mockResolvedValue(
-      reply([item(), item({ id: 'faster-whisper', kind: 'stt', label: 'Faster-Whisper' })])
-    )
+    catalog.mockResolvedValue(reply([item(), item({ id: 'faster-whisper', kind: 'stt', label: 'Faster-Whisper' })]))
 
     render(<VoiceSettings />)
 
@@ -240,9 +234,7 @@ describe('VoiceSettings', () => {
 
       render(<VoiceSettings />)
 
-      expect(
-        await screen.findByText('Needs a shared FFmpeg build. Use StyleTTS 2 instead.')
-      ).toBeTruthy()
+      expect(await screen.findByText('Needs a shared FFmpeg build. Use StyleTTS 2 instead.')).toBeTruthy()
     })
 
     it('dinleme dugmesi YOK -- basmak yalnizca hata verirdi', async () => {

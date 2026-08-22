@@ -123,6 +123,14 @@ class VoiceEntry:
     #: torch yuklemek demek (olculdu, motor basina 4-5 sn), oysa torchcodec
     #: DLL asamasinda 0,9 sn'de dusuyor. Sonuc zaten onbellekleniyor
     #: (``fool/engine_health.py``).
+    #: Motorun ILK KULLANIMDA indirdigi HuggingFace deposu.
+    #:
+    #: Paketin kurulu olmasi ile motorun CALISABILIR olmasi ayri seyler.
+    #: Katalog yalnizca pakete bakiyordu, yani agirliklar hic inmemisken de
+    #: "installed" diyordu -- ve panel indirme dugmesini GOSTERMIYORDU.
+    #: Kullanicinin arkadasinin makinesinde tam olarak bu oldu: modeller
+    #: yuklu degil ama yukluymus gibi gorunuyor ve indirtme yolu yok.
+    weights_repo: str = ""
     runtime_imports: tuple[str, ...] = ()
     #: Panelde GOSTERILMIYOR.
     #:
@@ -199,6 +207,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="kokoro",
+        weights_repo="hexgrad/Kokoro-82M",
         label="Kokoro",
         kind="tts",
         summary=(
@@ -292,6 +301,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="f5-tts",
+        weights_repo="SWivid/F5-TTS",
         # Bu makinede hic calismiyor (torchcodec/paylasilan FFmpeg) ve yavas.
         hidden=True,
         label="F5-TTS",
@@ -327,6 +337,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="chatterbox",
+        weights_repo="ResembleAI/chatterbox",
         label="Chatterbox",
         kind="tts",
         summary=(
@@ -348,6 +359,7 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="qwen3-tts",
+        weights_repo="Qwen/Qwen3-TTS",
         # Olculdu: 9,42 sn/cumle. Sesli sohbet icin kullanilamaz.
         hidden=True,
         label="Qwen3-TTS",
@@ -473,6 +485,12 @@ def status(entry_id: str) -> dict[str, Any]:
     # kullanici sadece "cok yavas" gorur -- panelin tam kacinmasi gereken sey.
     if e.warmup and e.model_id and not _weights_present(e.model_id):
         engine_ok = False
+    elif e.weights_repo and not _weights_present(e.weights_repo):
+        # Paket kurulu olabilir ama AGIRLIKLAR inmemis. Bunu "kurulu" saymak,
+        # kullaniciya indirme dugmesini hic gostermemek demek -- ve motor ilk
+        # cumlede gigabaytlarca indirmeye baslar, kullanici yalnizca "cok
+        # yavas" gorur.
+        engine_ok = False
     elif e.sidecar_specs:
         # Sidecar'li motor ANA ortamda asla gorunmez; orada aramak her zaman
         # "kurulu degil" derdi.
@@ -525,7 +543,13 @@ def _weights_present(model_id: str) -> bool:
     from pathlib import Path as _Path
 
     root = _Path.home() / ".cache" / "huggingface" / "hub"
-    for pattern in (f"models--Systran--faster-whisper-{model_id}", f"models--*{model_id}*"):
+    # ``owner/repo`` verildiyse HF'in onbellek adina cevir; ciplak bir ad
+    # verildiyse eski desenler gecerli (faster-whisper boyle cagriliyor).
+    if "/" in model_id:
+        patterns = ("models--" + model_id.replace("/", "--") + "*",)
+    else:
+        patterns = (f"models--Systran--faster-whisper-{model_id}", f"models--*{model_id}*")
+    for pattern in patterns:
         for candidate in root.glob(pattern):
             if any(f.is_file() and f.stat().st_size > 1_000_000 for f in candidate.rglob("*")):
                 return True
@@ -1249,6 +1273,27 @@ _PIP_STAGES: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
 )
 
 
+def _weights_warmup(e: VoiceEntry) -> str:
+    """``weights_repo`` icin indirme parcasi ("" = gerek yok).
+
+    ``huggingface_hub`` ANA ortamda (1.27.0) ve onbellek paylasilan, yani
+    sidecar da ayni dosyalari goruyor. Motorun kendi kutuphanesini ithal
+    etmeye gerek yok -- o sidecar'da ve bu kod ana yorumlayicida kosuyor.
+
+    Neden gerekli: kurulum yalnizca ``warmup`` tanimliysa agirlik indiriyordu
+    ve hicbir TTS motorunun ``warmup``i yok. Yani paket kuruluyor, agirliklar
+    inmiyor; panel "kurulu degil" demeye devam ediyor ve kullanici ayni
+    dugmeye tekrar tekrar basiyor.
+    """
+    if e.warmup or not e.weights_repo:
+        return e.warmup
+
+    return (
+        "from huggingface_hub import snapshot_download\n"
+        f"snapshot_download({e.weights_repo!r})\n"
+    )
+
+
 def _run_warmup(e: VoiceEntry) -> None:
     """Model agirliklarini indir (ana yorumlayicida, alt surec olarak).
 
@@ -1259,7 +1304,7 @@ def _run_warmup(e: VoiceEntry) -> None:
     import sys
 
     completed = subprocess.run(
-        [sys.executable, "-c", e.warmup],
+        [sys.executable, "-c", _weights_warmup(e)],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -1373,10 +1418,10 @@ def _run(job: Job, e: VoiceEntry) -> None:
     try:
         # Ağırlık dağılımı işin gerçek maliyetini yansıtıyor: motor paketleri
         # model dosyalarından belirgin biçimde büyük.
-        engine_span = 70.0 if e.assets else 100.0
+        engine_span = 70.0 if (e.assets or e.weights_repo) else 100.0
         _install_engine(e, job.device, job, 0.0, engine_span)
 
-        if e.warmup:
+        if e.warmup or e.weights_repo:
             job.stage = "downloading model weights"
             job.detail = e.model_id
             _run_warmup(e)

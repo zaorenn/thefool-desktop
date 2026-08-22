@@ -1153,6 +1153,44 @@ def get_missing_env_vars(required_only: bool = False) -> List[Dict[str, Any]]:
     return missing
 
 
+#: FOOL-SEAM: dotted-name-containers
+#:
+#: Alt anahtarları KULLANICI/MODEL adı olan kaplar. Bu adlar rutin olarak
+#: nokta içeriyor ve noktadan bölmek onları PARÇALIYOR:
+#:
+#:     fool config set agent.reasoning_overrides.qwen/qwen3.5-9b none
+#:     -> agent.reasoning_overrides."qwen/qwen3" = {"5-9b": "none"}
+#:
+#: Sonuç sessiz: komut "✓ Set" diyor, yazdığı yapı yanlış ve ayar hiçbir
+#: zaman okunmuyor. Model kimlikleri nokta taşımanın kuralı, istisnası değil
+#: (``qwen3.5``, ``gpt-4.1``, ``claude-4.6``).
+#:
+#: Bu kapların ALTINDAKİ her şey TEK anahtar sayılıyor.
+#:
+#: Liste DAR ve öyle kalmalı: yalnızca değeri SKALER olan, adla anahtarlanmış
+#: kaplar. ``mcp_servers.<ad>.<alan>`` buraya GİREMEZ -- orada ad tek segment
+#: ve altında alanlar var, yani "gerisi tek anahtar" kuralı
+#: ``mcp_servers.my.server.command``i ``my.server.command`` diye tek bir ada
+#: çevirirdi. Ayırıcı olmadan o belirsizlik çözülemiyor; çözülebilen tek yer
+#: değerin skaler olduğu yer.
+_DOTTED_NAME_CONTAINERS = ("agent.reasoning_overrides",)
+
+
+def _split_config_key(dotted_key: str) -> list:
+    """Anahtarı segmentlere ayır; ad kaplarının altını BÖLMEDEN.
+
+    ``agent.reasoning_overrides.qwen/qwen3.5-9b`` ->
+    ``["agent", "reasoning_overrides", "qwen/qwen3.5-9b"]``
+    """
+    for prefix in _DOTTED_NAME_CONTAINERS:
+        head = prefix + "."
+        if dotted_key.startswith(head):
+            leaf = dotted_key[len(head):]
+            if leaf:
+                return prefix.split(".") + [leaf]
+    return dotted_key.split(".")
+
+
 def _set_nested(config, dotted_key: str, value):
     """Set a value at an arbitrarily nested dotted key path.
 
@@ -1175,7 +1213,7 @@ def _set_nested(config, dotted_key: str, value):
     destroying list-typed config like ``custom_providers`` whenever a
     caller used an indexed path.
     """
-    parts = dotted_key.split(".")
+    parts = _split_config_key(dotted_key)
     current = config
     for part in parts[:-1]:
         if isinstance(current, list):
@@ -5355,6 +5393,13 @@ def _validate_config_key(key: str) -> tuple[bool, Optional[str]]:
     # anahtarlar semada duruyor ve bir yazim hatasi hala yakalaniyor.
     if top in ("tts", "stt") and len(segments) >= 3:
         return True, None
+
+    # Ad tasiyan kaplarin altindaki anahtar KULLANICI/MODEL adi -- semada
+    # olamaz. Ayni sinif: yazan komut "kaydedildi ama okunmayabilir" diyordu,
+    # oysa ``agent/agent_init.py`` bu haritayi gercekten okuyor.
+    for container in _DOTTED_NAME_CONTAINERS:
+        if key.startswith(container + "."):
+            return True, None
 
     node: Any = DEFAULT_CONFIG.get(top)
     consumed = [top]

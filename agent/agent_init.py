@@ -2689,13 +2689,26 @@ def init_agent(
     # yanlis olurdu. Karar kullanicinin: ``agent.minimum_context_length``.
     _floor = MINIMUM_CONTEXT_LENGTH
     try:
-        _configured = (agent.config.get("agent") or {}).get("minimum_context_length")
+        # ``agent.config`` diye bir oznitelik YOK. Ilk yazdigimda oyle
+        # okumustum: AttributeError firliyor, asagidaki ``except`` onu yutuyor
+        # ve taban sessizce 64K kaliyordu. Ayar dosyada duruyor, kimse
+        # okumuyor, hicbir uyari cikmiyor -- kullanicinin gordugu: 32K model
+        # hala reddediliyor. Bu dosyanin kendi deyimi ``load_config_readonly``.
+        from fool_cli.config import load_config_readonly as _load_floor_cfg
+
+        _configured = (_load_floor_cfg().get("agent") or {}).get("minimum_context_length")
         if isinstance(_configured, int) and not isinstance(_configured, bool) and _configured > 0:
             _floor = _configured
-    except Exception:
+    except Exception as _floor_err:
         # Yapilandirma okunamadi: upstream tabani gecerli. Bir ayar ugruna
-        # acilisi dusurmek oransiz olurdu.
-        pass
+        # acilisi dusurmek oransiz olurdu. Ama SESSIZ kalmiyoruz -- sessiz
+        # yutma bu ozelligi zaten bir kere olduruyordu.
+        _ra().logger.warning(
+            "agent.minimum_context_length okunamadi, upstream tabani (%s) "
+            "kullaniliyor: %s",
+            MINIMUM_CONTEXT_LENGTH,
+            _floor_err,
+        )
 
     if _ctx and _ctx < _floor and not _allow_lmstudio_explicit_below_floor:
         raise ValueError(

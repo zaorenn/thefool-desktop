@@ -523,3 +523,74 @@ class TestSesKlonlama:
 
         rows = [r for r in vm.catalog_status() if r["id"] == "kokoro"]
         assert rows[0]["clone_help"] == ""
+
+
+# ---------------------------------------------------------------------------
+# Paket KURULU ile motor HAZIR ayrı şeyler
+# ---------------------------------------------------------------------------
+
+class TestAgirlikDogrulamasi:
+    """Kullanıcının arkadaşının makinesinde: ses modelleri yüklü değil ama
+    YÜKLÜYMÜŞ gibi görünüyor ve indirme düğmesi hiç çıkmıyor.
+
+    Sebebi: ``status()`` yalnızca PAKETE bakıyordu. Paket kurulu olabilir ama
+    ağırlıklar inmemiş -- motor ilk cümlede gigabaytlarca indirmeye başlar ve
+    kullanıcı yalnızca "çok yavaş" görür.
+    """
+
+    def test_agirliklari_olan_motorlar_BEYAN_ediyor(self) -> None:
+        from fool import voice_models as vm
+
+        for entry_id in ("kokoro", "chatterbox"):
+            entry = vm.entry(entry_id)
+
+            assert entry is not None
+            assert entry.weights_repo, f"{entry_id} agirlik deposunu beyan etmiyor"
+            assert "/" in entry.weights_repo, "HuggingFace ``sahip/depo`` bekleniyor"
+
+    def test_AGIRLIK_YOKSA_kurulu_sayilmiyor(self, monkeypatch, tmp_path) -> None:
+        """Panelin indirme düğmesini göstermesi buna bağlı."""
+        import pathlib
+
+        from fool import voice_models as vm
+
+        monkeypatch.setattr(pathlib.Path, "home", staticmethod(lambda: tmp_path))
+
+        for entry_id in ("kokoro", "chatterbox"):
+            assert vm.status(entry_id)["installed"] is False, entry_id
+
+    def test_GERCEK_dosya_varliklari_etkilenmiyor(self, monkeypatch, tmp_path) -> None:
+        """Piper ağırlıklarını HF'ten değil beyan edilen dosyalardan alıyor;
+        boş bir HF önbelleği onu etkilememeli."""
+        import pathlib
+
+        from fool import voice_models as vm
+
+        entry = vm.entry("piper")
+
+        assert entry is not None
+        assert not entry.weights_repo
+        assert entry.assets, "piper dosya varliklarini beyan etmeli"
+
+    def test_KURULUM_agirliklari_da_indiriyor(self) -> None:
+        """Kritik takip: ``status`` ağırlık istiyorsa kurulum onu getirmeli.
+
+        Getirmezse kullanıcı Install'a basar, paket kurulur, panel yine
+        "kurulu değil" der ve aynı düğmeye tekrar tekrar basılır -- eski
+        hâlden kötü.
+        """
+        from fool import voice_models as vm
+
+        entry = vm.entry("kokoro")
+        snippet = vm._weights_warmup(entry)
+
+        assert "snapshot_download" in snippet
+        assert entry.weights_repo in snippet
+
+    def test_acik_warmup_EZILMIYOR(self) -> None:
+        """Kendi indirme parçasını yazmış bir öğe (faster-whisper) korunuyor."""
+        from fool import voice_models as vm
+
+        for entry in vm.CATALOG:
+            if entry.warmup:
+                assert vm._weights_warmup(entry) == entry.warmup

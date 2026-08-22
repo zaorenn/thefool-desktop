@@ -1,3 +1,5 @@
+import { atom } from 'nanostores'
+
 /**
  * Window translucency (see-through window).
  *
@@ -9,10 +11,9 @@
  *
  * The renderer owns the value and mirrors it to the main process over IPC.
  */
-
-import { atom } from 'nanostores'
-
 import { persistString, storedString } from '@/lib/storage'
+
+import { whenMainWindow } from './main-window-only'
 
 const KEY = 'fool.desktop.translucency.v1'
 
@@ -33,6 +34,6 @@ export function setTranslucency(intensity: number): void {
 if (typeof window !== 'undefined') {
   $translucency.subscribe(intensity => {
     persistString(KEY, String(intensity))
-    window.hermesDesktop?.setTranslucency?.({ intensity })
+    whenMainWindow(() => window.hermesDesktop?.setTranslucency?.({ intensity }))
   })
 }

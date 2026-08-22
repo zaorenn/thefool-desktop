@@ -13,6 +13,8 @@ import { atom } from 'nanostores'
 
 import { persistBoolean, storedBoolean } from '@/lib/storage'
 
+import { whenMainWindow } from './main-window-only'
+
 const KEY = 'fool.desktop.keepAwake.v1'
 
 export const $keepAwake = atom<boolean>(typeof window === 'undefined' ? false : storedBoolean(KEY, false))
@@ -21,9 +23,15 @@ export function setKeepAwake(on: boolean): void {
   $keepAwake.set(on)
 }
 
+// Kalicilik HER pencerede: deger pencereye ozel degil ama yazmasi zararsiz.
+// ANA SURECE yayin YALNIZCA ana pencereden -- centik ayni paketi yukluyor ve
+// iki pencereden ayni cagriyi yapmak, son yazanin kazandigi bir yaris
+// (bkz. ``store/main-window-only.ts``).
 if (typeof window !== 'undefined') {
-  $keepAwake.subscribe(on => {
-    persistBoolean(KEY, on)
-    window.hermesDesktop?.setKeepAwake?.(on)
+  $keepAwake.subscribe(on => persistBoolean(KEY, on))
+
+  whenMainWindow(() => {
+    window.hermesDesktop?.setKeepAwake?.($keepAwake.get())
+    $keepAwake.subscribe(on => window.hermesDesktop?.setKeepAwake?.(on))
   })
 }

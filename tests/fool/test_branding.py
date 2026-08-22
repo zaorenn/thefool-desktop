@@ -210,6 +210,8 @@ EXPECTED_SEAMS = {
     "one-voice",
     "voice-persona",
     "voice-session-bridge",
+    "context-floor",
+    "main-window-only-publisher",
     "os-text-encoding",
     "engine-namespaced-config",
     "plugin-tts-config",

@@ -252,3 +252,38 @@ def test_VRAM_baskisinda_ONCE_dil_modeli_birakiliyor() -> None:
     engine_evict = source.index("while others and free is not None")
 
     assert llm_free < engine_evict, "dil modeli birakmasi ses tahliyesinden SONRA"
+
+
+# ---------------------------------------------------------------------------
+# Bağlam tabanı YAPILANDIRILABİLİR
+# ---------------------------------------------------------------------------
+
+def test_baglam_tabani_SABIT_yazili_degil() -> None:
+    """Upstream 64K'yi sabit yazmış ve altındaki her modeli REDDEDİYOR.
+
+    Yani 32K'lik bir yerel model uygulamayı hiç açtıramıyor. Kullanıcının
+    isteği: "32k context ile bile çalışmalı ve iyi çalışmalı."
+
+    Varsayılan DEĞİŞMİYOR (64K) -- küçük bir pencere araç çağırmayı gerçekten
+    zorluyor ve bunu herkes için sessizce düşürmek yanlış olurdu. Karar
+    kullanıcının: ``agent.minimum_context_length``.
+    """
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[2] / "agent" / "agent_init.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "FOOL-SEAM: context-floor" in source
+    assert "minimum_context_length" in source
+    # Karsilastirma YAPILANDIRILAN taban ile.
+    assert "_ctx < _floor" in source
+    # Ham sabitle karsilastirma GERI GELMEMELI.
+    assert "_ctx < MINIMUM_CONTEXT_LENGTH" not in source
+
+
+def test_varsayilan_taban_DEGISMEDI() -> None:
+    """Ayar yazılmamışsa upstream davranışı aynen sürüyor."""
+    from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
+
+    assert MINIMUM_CONTEXT_LENGTH == 64_000

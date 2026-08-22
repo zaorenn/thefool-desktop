@@ -2,6 +2,7 @@ import { type ToolCallMessagePartProps } from '@assistant-ui/react'
 import { type FC, useEffect, useState } from 'react'
 
 import { AGENT_MESSAGE_RE, agentAvatarCache, resolveAgentAvatar } from '@/components/assistant-ui/thread/user-message'
+import { BRAND } from '@/fool/branding'
 
 // Sender-side inter-agent delivery: `fool -p <agent> chat … -q "Message
 // from 🤖 <sender>…"` run through the terminal tool IS the messaging
@@ -10,8 +11,19 @@ import { AGENT_MESSAGE_RE, agentAvatarCache, resolveAgentAvatar } from '@/compon
 // like ops tooling; the user-facing truth is "Messaged X" and, when the
 // quiet run returns the recipient's reply, "Message from X" — the same
 // compact event notices the receiving chat shows.
-const DELIVERY_COMMAND_RE =
-  /(?:^|[;&|]\s*|\bhermes\s+)-p\s+("?)([a-z0-9][a-z0-9_-]{0,63})\1\s+chat\b[\s\S]*?-q\s+["']Message from/iu
+// FOOL-SEAM: delivery-command-name
+// Komut adi markalasma sirasinda ATLANMIS: kalip yalnizca ``hermes``
+// kabul ediyordu, oysa gonderilen komut ``fool -p <ajan> chat ...``.
+// Eslesme tutmayinca teslim bildirimi hic cizilmiyor ve kullanici
+// "Messaged X" yerine ham terminal dokumu goruyor -- sessiz sinif:
+// hata yok, yalnizca dogru yuz hic gorunmuyor.
+//
+// ``hermes`` KORUNUYOR: eski oturumlarin dokumleri hala o adi tasiyor
+// ve gecmis sohbetlerin gorunumu bozulmamali.
+const DELIVERY_COMMAND_RE = new RegExp(
+  String.raw`(?:^|[;&|]\s*|\b(?:${BRAND.cli}|hermes)\s+)-p\s+("?)([a-z0-9][a-z0-9_-]{0,63})\1\s+chat\b[\s\S]*?-q\s+["']Message from`,
+  'iu'
+)
 
 export function deliveryTargetFromCommand(command: string): null | string {
   const match = DELIVERY_COMMAND_RE.exec(command)

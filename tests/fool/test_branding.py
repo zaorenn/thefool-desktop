@@ -237,6 +237,7 @@ EXPECTED_SEAMS = {
     "voice-owner",
     "voice-routes",
     "whatsapp-toolset",
+    "delivery-command-name",
 }
 
 

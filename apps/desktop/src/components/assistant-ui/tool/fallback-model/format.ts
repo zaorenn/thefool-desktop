@@ -55,7 +55,11 @@ export function clampForDisplay(value: string, max = MAX_TOOL_RENDER_CHARS): str
 
   const omitted = value.length - max
 
-  return `${value.slice(0, max)}\n\n… ${omitted.toLocaleString()} more characters truncated — use Copy for the full output.`
+  // Sayi bicimi CUMLENIN dilini izler, isletim sisteminkini degil.
+  // Ciplak ``toLocaleString()`` OS yereline dusuyordu: Turkce Windows'ta
+  // sabit Ingilizce cumlenin icinde "5.000" yaziyordu -- Ingilizcede bu
+  // bes. Ayni makine, iki farkli sayi dili.
+  return `${value.slice(0, max)}\n\n… ${omitted.toLocaleString('en-US')} more characters truncated — use Copy for the full output.`
 }
 
 export function prettyJson(value: unknown): string {

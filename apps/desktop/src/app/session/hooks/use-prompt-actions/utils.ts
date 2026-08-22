@@ -538,7 +538,11 @@ export function renderRpcResult(response: unknown, name: string): string {
     const total = Number(r.total ?? 0)
 
     const lines: string[] = [
-      `Usage: ${calls.toLocaleString()} calls · ${input.toLocaleString()} in / ${output.toLocaleString()} out · ${total.toLocaleString()} total`
+      // Sayi bicimi CUMLENIN dilini izler, isletim sisteminkini degil.
+      // Ciplak ``toLocaleString()`` OS yereline dusuyordu: Turkce Windows'ta
+      // sabit Ingilizce cumlenin icinde "5.000" yaziyordu -- Ingilizcede bu
+      // bes. Ayni makine, iki farkli sayi dili.
+      `Usage: ${calls.toLocaleString('en-US')} calls · ${input.toLocaleString('en-US')} in / ${output.toLocaleString('en-US')} out · ${total.toLocaleString('en-US')} total`
     ]
 
     if (Array.isArray(r.credits_lines)) {

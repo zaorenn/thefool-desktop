@@ -124,3 +124,96 @@ def test_yapilandirmadan_okunuyor() -> None:
 def test_bozuk_yapilandirmada_acik_kaliyor() -> None:
     for bad in (None, [], "x", {"tts": 7}):
         assert prosody.pauses_enabled(bad) is True
+
+
+# ---------------------------------------------------------------------------
+# İlk cümle GECİKMESİ ve sınırsız uzun cümle
+# ---------------------------------------------------------------------------
+
+def _stream(reply: str, step: int = 7):
+    """Token token besle; her parçanın KAÇ karakterde çıktığını döndür."""
+    from tools.tts_streaming import SentenceChunker
+
+    chunker = SentenceChunker()
+    seen = 0
+    out = []
+    for index in range(0, len(reply), step):
+        delta = reply[index : index + step]
+        seen += len(delta)
+        for piece in chunker.feed(delta):
+            out.append((seen, piece.strip()))
+    for piece in chunker.flush():
+        out.append((seen, piece.strip()))
+    return out
+
+
+def test_ILK_cumle_hemen_cikiyor() -> None:
+    """Ölçüldü: kısa açılışlı bir cevapta ilk parça 204 karakterin 77'sinde
+    çıkıyordu, çünkü "Sure." 20 karakterlik alt sınırın altında ve SONRAKİ
+    cümleyle birleştiriliyordu. Konuşma, ilk cümle çoktan bitmişken hâlâ
+    başlamamış oluyordu.
+
+    Birleştirme kuralı kötü değil ama YALNIZCA ilk parçada pahalı: orada
+    beklenen şey sessizlik.
+    """
+    reply = (
+        "Sure. The first thing to know is that the system loads the model once. "
+        "After that every sentence is fast, usually under a second."
+    )
+
+    pieces = _stream(reply)
+
+    assert pieces, "hic cumle cikmadi"
+    at, text = pieces[0]
+    assert text == "Sure."
+    # Cevabin ONDA BIRINDEN once konusmaya baslamali.
+    assert at < len(reply) // 10, f"ilk parca {at}/{len(reply)} karakterde cikti"
+
+
+def test_cok_kisa_acilis_HALA_birlesiyor() -> None:
+    """"Ha!" tek başına bir klip olarak konuşulunca saçma duruyor."""
+    pieces = _stream("Ha! That is interesting to hear about.")
+
+    assert len(pieces) == 1
+    assert pieces[0][1].startswith("Ha! That is")
+
+
+def test_SINIRSIZ_uzun_cumle_sessiz_KALMIYOR() -> None:
+    """Nokta/soru işareti olmayan uzun bir cümle tampona birikip hiç
+    konuşulmuyordu -- kullanıcının bildirdiği "uzun cümlelerde speak aloud
+    düzgün çalışmıyor". Sınır aşılınca cümlecik sınırından kesiliyor.
+    """
+    reply = (
+        "Well the way this works is that the model streams tokens and the chunker "
+        "watches for a boundary and when it finds one it hands the text to the "
+        "engine which turns it into audio and the player queues it so playback "
+        "overlaps generation which is the whole point of the design here"
+    )
+
+    pieces = _stream(reply)
+
+    assert len(pieces) >= 2, "uzun cumle hic kesilmedi"
+    first_at = pieces[0][0]
+    assert first_at < len(reply), "ilk parca ancak sonda cikti"
+
+
+def test_kesme_METNI_kaybetmiyor() -> None:
+    """Kesmek bölmek olmalı, yutmak değil."""
+    reply = "a" * 100 + ", " + "b" * 100 + ", " + "c" * 100
+
+    pieces = _stream(reply)
+
+    joined = "".join(text for _, text in pieces)
+    assert joined.replace(" ", "") == reply.replace(" ", "")
+
+
+def test_flush_SONRASI_yeni_tur_yine_hizli() -> None:
+    """Bayrak tur başına sıfırlanmalı, yoksa ikinci turun ilk cümlesi yine
+    gecikirdi."""
+    from tools.tts_streaming import SentenceChunker
+
+    chunker = SentenceChunker()
+    chunker.feed("Sure. Something longer follows here to pass the limit.")
+    chunker.flush()
+
+    assert chunker.feed("Yes. And more text after it that is long enough.")[0].strip() == "Yes."

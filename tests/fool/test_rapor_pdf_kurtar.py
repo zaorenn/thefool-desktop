@@ -12,6 +12,8 @@ Bağlamların hepsi 'i' çıktı: "Ülkem[?]zde", "Mehmet Ak[?]f", "Koord[?]nat�
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from fool.rapor import pdf_kurtar
@@ -112,10 +114,21 @@ def test_aciklama_NE_YAPILDIGINI_soyluyor(monkeypatch) -> None:
 # Gerçek belge -- pdfminer kuruluysa
 # ---------------------------------------------------------------------------
 
-REHBER = r"C:\Users\sarhen\Downloads\DSİ Disipilin Soruşturma Rehberi.pdf"
+#: Gerçek belgeyle koşan sınav için YOL DIŞARIDAN veriliyor.
+#:
+#: Burada kullanıcının kendi yolu SABİT yazılıydı -- kullanıcı adı ve özel
+#: bir belgenin başlığı dahil. Depo herkese açık; kişisel bir yolu koda
+#: gömmek onu yayınlamak demek.
+#:
+#: Ayarlanmamışsa sınav atlanıyor: makineye özel bir dosyayı gerektirmek,
+#: başka herkeste kırmızı bir sınav bırakırdı.
+REHBER = os.environ.get("FOOL_TEST_PDF", "")
 
 
-@pytest.mark.skipif(not pdf_kurtar.kullanilabilir(), reason="pdfminer.six yok")
+@pytest.mark.skipif(
+    not REHBER or not pdf_kurtar.kullanilabilir(),
+    reason="FOOL_TEST_PDF ayarlanmamis ya da pdfminer.six yok",
+)
 def test_GERCEK_rehber_kurtariliyor() -> None:
     """Kullanıcının belgesi: kurtarma öncesi okunamıyor, sonrası okunuyor."""
     import pathlib

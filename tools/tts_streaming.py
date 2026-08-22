@@ -96,9 +96,55 @@ class SentenceChunker:
     sentence after it instead of stalling as a tiny clip.
     """
 
+    #: FOOL-SEAM: first-sentence-latency
+    #:
+    #: ILK parca icin alt sinir DAHA DUSUK.
+    #:
+    #: Olculdu: "Sure. The first thing to know is that the system loads the
+    #: model once. ..." cumlesinde ilk parca 204 karakterin 77'sinde cikiyordu
+    #: -- cunku "Sure." 20 karakterlik sinirin altinda ve SONRAKI cumleyle
+    #: birlestiriliyor. Yani konusma, ilk cumle coktan bitmisken hala
+    #: baslamamis oluyor.
+    #:
+    #: Birlestirme kurali kotu degil: "Ha!" tek basina bir klip olarak
+    #: konusulunca sacma duruyor. Ama bu YALNIZCA ilk parcada pahali, cunku
+    #: orada bekleyen sey sessizlik. Sonraki parcalarda zaten ses akiyor.
+    #: Olculdu: 6 yetmiyordu -- "Sure." kirpilinca 5 karakter ve hala
+    #: birlestiriliyordu. 4: "Sure." (5) geciyor, "Ha!" (3) hala sonraki
+    #: cumleye biniyor.
+    FIRST_MIN_LEN = 4
+
+    #: Sinir GELMEDEN once en fazla bu kadar birikir.
+    #:
+    #: Nokta/soru isareti olmayan uzun bir cumle (liste, kod, uzun bir
+    #: aciklama) tampona birikip HIC konusulmuyordu -- kullanicinin bildirdigi
+    #: "uzun cumlelerde speak aloud duzgun calismiyor". Sinir asilinca en son
+    #: virgul/noktali virgulden kesiliyor; o da yoksa son bosluktan.
+    MAX_BUFFER = 240
+
     def __init__(self, min_len: int = 20):
         self.min_len = min_len
         self.buf = ""
+        #: Ilk parca cikti mi? Alt sinir ona gore secliyor.
+        self.spoke = False
+
+    def _limit(self) -> int:
+        return self.min_len if self.spoke else self.FIRST_MIN_LEN
+
+    def _clause_cut(self) -> int:
+        """Sınır gelmeden kesilecek yer (``0`` = uygun yer yok).
+
+        Virgül/noktalı virgül tercih ediliyor: cümle ortasından kesmek
+        prosodiyi bozuyor ama tamamen sessiz kalmak daha kötü. Kesme noktası
+        tamponun ikinci yarısında aranıyor -- baştan kesmek, elde zaten olan
+        metni gereksiz parçalamak olurdu.
+        """
+        half = len(self.buf) // 2
+        for mark in (", ", "; ", ": ", " -- ", " "):
+            at = self.buf.rfind(mark, half)
+            if at > 0:
+                return at + len(mark)
+        return 0
 
     def feed(self, delta: str) -> List[str]:
         """Absorb *delta*; return every complete sentence now ready to speak."""
@@ -109,18 +155,30 @@ class SentenceChunker:
         start = 0  # skip boundaries that would leave the head too short
         while m := SENTENCE_BOUNDARY_RE.search(self.buf, start):
             head = self.buf[: m.end()]
-            if len(head.strip()) < self.min_len:
+            if len(head.strip()) < self._limit():
                 start = m.end()
                 continue
             out.append(head)
+            self.spoke = True
             self.buf = self.buf[m.end():]
             start = 0
+
+        # Sinir HIC gelmediyse: uzun bir cumle sessizce birikmesin.
+        while len(self.buf) >= self.MAX_BUFFER:
+            cut = self._clause_cut()
+            if not cut:
+                break
+            out.append(self.buf[:cut])
+            self.spoke = True
+            self.buf = self.buf[cut:]
+
         return out
 
     def flush(self) -> List[str]:
         """Drain the tail (end-of-text or long-idle flush)."""
         tail = _THINK_BLOCK_RE.sub("", self.buf).strip()
         self.buf = ""
+        self.spoke = False
         return [tail] if tail else []
 
 

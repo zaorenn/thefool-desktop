@@ -216,6 +216,27 @@ EXPECTED_SEAMS = {
     "engine-namespaced-config",
     "plugin-tts-config",
     "resmi-rapor",
+    "accent-override",
+    "api-title",
+    "cuda-dlls",
+    "dotted-name-containers",
+    "first-sentence-latency",
+    "fool-guidance",
+    "notch-ipc",
+    "notch-no-chrome",
+    "notch-quit",
+    "notch-route",
+    "notch-shortcut",
+    "notch-window",
+    "npm-bin-path",
+    "packaged-exe-name",
+    "release-repo-url",
+    "shared-voice-policy",
+    "skill-body-brand",
+    "voice-models",
+    "voice-owner",
+    "voice-routes",
+    "whatsapp-toolset",
 }
 
 
@@ -227,6 +248,24 @@ def _grep_seams() -> set[str]:
         text=True,
     )
     return {line.split(": ", 1)[1].strip() for line in proc.stdout.splitlines() if ": " in line}
+
+
+def test_every_seam_in_the_tree_is_declared() -> None:
+    """Ve kayıt bir dikişi ATLADIYSA da burada yakalanır.
+
+    Muhafız uzun süre TEK YÖNLÜYDÜ: yalnızca ``EXPECTED_SEAMS - found``
+    bakılıyordu, yani kayıttan düşen dikiş yakalanıyordu ama koda YENİ eklenen
+    dikiş görülmüyordu. 83 dikişin 21'i böyle kayıt dışı kalmıştı.
+
+    Kaçırdığı şey tam olarak var oluş sebebiydi: kayıt dışı bir dikişi upstream
+    merge yutarsa hiçbir şey ötmez. Muhafız yeşil yanarken korumuyordu.
+    """
+    undeclared = _grep_seams() - EXPECTED_SEAMS
+    assert not undeclared, (
+        f"Kayıt dışı dikiş(ler): {sorted(undeclared)}. "
+        "Her upstream düzenlemesi EXPECTED_SEAMS'e girmeli; yoksa bir merge "
+        "onu sessizce geri alabilir. Riskliyse docs/fool/SEAMS.md'ye de yaz."
+    )
 
 
 def test_every_declared_seam_is_still_in_the_tree() -> None:

@@ -109,6 +109,7 @@ declare global {
         /** Ana surec global kisayoldan dinlemeyi istedi. */
         onListenRequest: (callback: (request?: { mode?: string }) => void) => () => void
         takeListenRequest: () => Promise<null | { mode?: string }>
+        onPushToTalk: (callback: (event: { repeat: boolean; type: 'down' | 'up' }) => void) => () => void
       }
       hud?: {
         open: (request?: { sessionId?: null | string; profile?: null | string }) => Promise<{ ok: boolean }>

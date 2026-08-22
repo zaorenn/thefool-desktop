@@ -137,6 +137,7 @@ import {
   stopFind
 } from './find-in-page'
 import { createFirstRunSetupGate } from './first-run-setup-gate'
+import { buildNotchWindowUrl, notchBounds } from './fool-notch'
 import { readDirForIpc } from './fs-read-dir'
 import {
   filenameFromContentDisposition,
@@ -196,7 +197,6 @@ import {
 import { cursorPointInWindow } from './hud-cursor'
 import { snapHudBounds } from './hud-snap'
 import { createHudSnapShortcut } from './hud-snap-shortcut'
-import { buildNotchWindowUrl, notchBounds } from './fool-notch'
 import { buildHudWindowUrl } from './hud-url'
 import { imageContextMenuItems } from './image-context-menu'
 import { createLinkTitleWindow, guardLinkTitleSession, readLinkTitleWindowTitle } from './link-title-window'
@@ -218,6 +218,7 @@ import {
 } from './native-oauth'
 import { runNativeLogin } from './native-oauth-login'
 import { loadNativeTokenSet, type NativeTokenStoreIo, persistNativeTokenSet } from './native-token-store'
+import { NOTCH_SHORTCUT_CANDIDATES, shortcutOrder } from './notch-shortcut'
 import { serializeJsonBody, setJsonRequestHeaders } from './oauth-net-request'
 import {
   createParentStartMarkerResolver,
@@ -249,7 +250,6 @@ import {
   fetchRemoteProfileSessions,
   mergeProfileSessionWindow
 } from './profile-session-routing'
-import { NOTCH_SHORTCUT_CANDIDATES, shortcutOrder } from './notch-shortcut'
 import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
 import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
 import * as remoteLifecycle from './remote-lifecycle'
@@ -10501,9 +10501,47 @@ async function startHermes() {
 // sprite in unzoomed CSS px (overlayWindowSize -> setBounds) and has its own
 // Alt+wheel scale, so inheriting the global UI zoom would render the mascot
 // larger than its window and crop it. Chat windows keep zoom on.
+/**
+ * Bas-konus tusunu HANGI penceremiz odaktaysa oradan centige ilet.
+ *
+ * Olculen kiriklik: notch bir kez calisiyor, sonra sag Ctrl hicbir ise
+ * yaramiyor. Sebep, tus dinleyicisinin centigin RENDERER'inda olmasi --
+ * odaklanmamis bir pencere hicbir tus olayi almiyor. Ilk tur bittiginde cevap
+ * ANA pencerede ciziliyor ve odagi oraya aliyor.
+ *
+ * Centigi 150 ms sonra yeniden odaklayan bir etki vardi ama o bir YARIS:
+ * cevap cizilmeye devam ederken ana pencere odagi geri aliyor. Yarisa
+ * guvenmek yerine tus, odak nerede olursa olsun ana surecten centige
+ * iletiliyor -- ikisi de bizim penceremiz.
+ *
+ * ``before-input-event`` renderer'dan ONCE calisiyor ve olayi YUTMUYOR:
+ * ``preventDefault`` cagrilmiyor, yani centik odaktayken kendi dinleyicisi de
+ * calismaya devam ediyor. Cift islem sorun degil -- ``push-to-talk.ts``
+ * ayni basisi ikinci kez 'start' saymiyor.
+ */
+function installPushToTalkForwarding(win) {
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.code !== 'ControlRight') {
+      return
+    }
+
+    const target = notchWindow
+
+    if (!target || target.isDestroyed() || target === win) {
+      return
+    }
+
+    target.webContents.send('fool:notch:ptt', {
+      repeat: Boolean(input.isAutoRepeat),
+      type: input.type === 'keyUp' ? 'up' : 'down'
+    })
+  })
+}
+
 function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {}) {
   installPreviewShortcut(win)
   installDevToolsShortcut(win)
+  installPushToTalkForwarding(win)
 
   // Claim Ctrl/Cmd+F in the main process — on Pop!_OS / GNOME-based Linux
   // distros the Ctrl+F keydown does not reach the renderer's `view.findInPage`

@@ -33,8 +33,33 @@ function code(source: string): string {
 }
 
 describe('ses ACIK SOHBETE gidiyor', () => {
-  it('aktif oturum kimligini kullaniyor', () => {
-    expect(code(SOURCE).includes('$activeSessionId.get()')).toBe(true)
+  /**
+   * Çentik AYRI bir ``BrowserWindow``: kendi ``$activeSessionId``i hiç
+   * dolmuyor, ``null`` kalıyor. Ses ``session_id: null`` ile gidiyor ve ağ
+   * geçidi onu kendi seçtiği bir oturuma düşürüyor -- kullanıcının gördüğü
+   * "mesajlar önce bots kısmında çıkıyor, ana session'a hemen düşmüyor".
+   *
+   * Aynı tuzağa bas-konuş bağlaması ve dinleme kipi de düşmüştü.
+   */
+  it('PAYLASILAN oturum kimligini kullaniyor', () => {
+    const body = code(SOURCE)
+
+    expect(body.includes('$voiceSessionId.get()')).toBe(true)
+    // Centikte HIC dolmayan atom kullanilmamali.
+    expect(body.includes('$activeSessionId')).toBe(false)
+  })
+
+  it('koprii ANA pencerede kuruluyor', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const bridge = readFileSync(
+      join(import.meta.dirname, '../../store/active-work.ts'),
+      'utf8'
+    )
+
+    expect(bridge.includes('$voiceSessionId')).toBe(true)
+    expect(bridge.includes('FOOL-SEAM: voice-session-bridge')).toBe(true)
   })
 
   it('ARACI oturum makinesi KALMADI', () => {

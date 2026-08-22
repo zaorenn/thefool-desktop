@@ -443,11 +443,25 @@ export function NotchShell() {
       }
     })
 
+    // BASKA penceremizden iletilen tus. Centik odakta olmasa da bas-konus
+    // calisiyor -- odaklanmamis bir pencere hicbir tus olayi almiyor ve
+    // "bir kez calisip oluyor" hatasi tam olarak buydu.
+    const stopForwarded = window.hermesDesktop?.notch?.onPushToTalk?.(event => {
+      const key = { code: pttCode, repeat: event.repeat } as KeyboardEvent
+
+      if (event.type === 'down') {
+        onDown(key)
+      } else {
+        onUp(key)
+      }
+    })
+
     window.addEventListener('keydown', onDown)
     window.addEventListener('keyup', onUp)
     window.addEventListener('blur', onWindowBlur)
 
     return () => {
+      stopForwarded?.()
       stopListenRequest?.()
       window.removeEventListener('keydown', onDown)
       window.removeEventListener('keyup', onUp)

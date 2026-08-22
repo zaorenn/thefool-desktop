@@ -24,6 +24,22 @@ const $activeWork = computed([$workingSessionIds, $sessions], (workingIds, sessi
   }
 })
 
+// FOOL-SEAM: voice-session-bridge
+//
+// Centik AYRI bir pencere ve kendi ``$activeSessionId``i hic dolmuyor. Ses
+// oraya ``null`` gonderiyordu ve ag gecidi mesaji kendi sectigi bir oturuma
+// dusuruyordu -- kullanicinin gordugu "mesajlar once bots kisminda cikiyor".
+//
+// Bu modul zaten ana pencerede yan etki olarak yukleniyor (``main.tsx``), yani
+// koprunun dogal yeri burasi.
+if (typeof window !== 'undefined') {
+  void import('@/store/session').then(({ $activeSessionId }) =>
+    import('@/fool/notch/active-session').then(({ $voiceSessionId }) =>
+      $activeSessionId.subscribe(id => $voiceSessionId.set(id ?? ''))
+    )
+  )
+}
+
 if (typeof window !== 'undefined') {
   // `$sessions` republishes on unrelated churn (previews, heartbeats), so only
   // send when the summary itself moved — this crosses a process boundary.

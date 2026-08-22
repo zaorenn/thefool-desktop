@@ -180,3 +180,63 @@ describe('bir cevap bir ses', () => {
   })
 
 })
+
+/**
+ * Sesli turda SAĞ CTRL bas-konuş ve TUŞLA araya girme.
+ *
+ * Composer'ın sesli turu sesle araya girmeyi zaten destekliyordu; eksik olan
+ * tuşla araya girmekti. Kullanıcının isteği: "sağ ctrl ile konuşabilelim, hem
+ * direkt cevap versin hem konuşursak direkt interrupt olsun."
+ */
+describe('composer sesli turunda bas-konus', () => {
+  const source = async (name: string) => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    return readFileSync(join(import.meta.dirname, '../app/chat/composer/hooks', name), 'utf8')
+  }
+
+  it('bas-konus giris/cikis noktalari var', async () => {
+    const text = await source('use-voice-conversation.ts')
+
+    expect(text.includes('const pttDown')).toBe(true)
+    expect(text.includes('const pttUp')).toBe(true)
+  })
+
+  /** Yoksa yakalanan cümle eski cevabın arkasına kuyruklanır. */
+  it('tusa basmak KONUSAN modeli kesiyor', async () => {
+    const text = await source('use-voice-conversation.ts')
+    const body = text.slice(text.indexOf('const pttDown'), text.indexOf('const pttUp'))
+
+    expect(body.includes('stopVoicePlayback()')).toBe(true)
+    expect(body.includes('onInterruptRef.current?.()')).toBe(true)
+  })
+
+  /** Açık kullanıcı eylemi sesle başlamış bir yakalamayı devralmalı. */
+  it('tus kapiyi ZORLA aliyor', async () => {
+    const text = await source('use-voice-conversation.ts')
+
+    expect(text.includes("forceClaimBarge(bargeGateRef.current, 'key')")).toBe(true)
+  })
+
+  it('tus kodu centikle ORTAK depodan', async () => {
+    const text = await source('use-composer-voice.ts')
+
+    expect(text.includes('$pttCode')).toBe(true)
+  })
+
+  /** Tuş hâlâ basılıyken odak giderse mikrofon sonsuza kadar açık kalırdı. */
+  it('odak kaybi birakma sayiliyor', async () => {
+    const text = await source('use-composer-voice.ts')
+
+    expect(text.includes("window.addEventListener('blur'")).toBe(true)
+  })
+
+  it('SESLE araya girme kapanmadi', async () => {
+    const text = await source('use-voice-conversation.ts')
+
+    // Iki yol da ayni kapiyi paylasiyor.
+    expect(text.includes('monitorSpeechDuringPlayback')).toBe(true)
+    expect(text.includes("claimBarge(bargeGateRef.current, 'voice')")).toBe(true)
+  })
+})

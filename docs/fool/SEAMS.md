@@ -1,7 +1,17 @@
 # Dikiş Kayıt Defteri (SEAMS)
 
 Bu dosya, The Fool'un upstream (`NousResearch/hermes-agent`) dosyalarına
-dokunduğu **her yeri** listeler. Başka hiçbir yerde upstream kodu değişmez.
+dokunduğu yerleri listeler. Başka hiçbir yerde upstream kodu değişmez.
+
+**Tam envanter bu dosya değil**, `tests/fool/test_branding.py::EXPECTED_SEAMS`.
+Kayıt orada çünkü orası kırılabiliyor: iki yönlü bir muhafız her dikişin hem
+ağaçta hem kayıtta olmasını zorluyor, yani liste bayatlayamıyor. Aşağıdaki
+tablolar riskli olanları **nesir olarak** açıklar -- kaybolursa ne olduğunu bir
+merge'in ortasında okuyabilesin diye. Tümünü görmek için:
+
+```bash
+git grep -h -o "FOOL-SEAM: [a-z0-9-]\+" | sort -u
+```
 
 Amaç: `git merge upstream/main` sonrasında neyin risk altında olduğunu tahmin
 etmek zorunda kalmamak.
@@ -48,6 +58,41 @@ eklediğinde onlar da otomatik markalanır; bakım maliyeti sıfır.
 | `theme-preset` | `apps/desktop/src/themes/presets.ts` | Crimson tema kaybolur, varsayılan `nous`a döner |
 | `default-mode` | `apps/desktop/src/themes/context.tsx` | Uygulama açık modda açılır, crimson kimlik zayıflar |
 | `brand-mark` | `apps/desktop/src/components/brand-mark.tsx` | Hakkında/güncelleme rozeti `nous-girl.jpg`'e döner (işaret: `public/fool-mark.svg`) |
+
+### Ses ve çentik
+
+Kullanıcının en çok kullandığı yol. Bunlar kaybolursa uygulama açılır ama
+konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
+
+| id | Dosya | Kaybolursa |
+|----|-------|------------|
+| `plugin-tts-config` | `tools/tts_tool.py` | Motora `config` hiç gitmez: klon sesi, cihaz ve ses seçimi sessizce yok sayılır, herkes varsayılan kadın sesiyle konuşur |
+| `engine-namespaced-config` | `tools/tts_tool.py` | Motora özel ses (`tts.<motor>.voice`) genel ayara ezdirilir |
+| `first-sentence-latency` | `tools/tts_streaming.py` | Ses ilk cümlede değil, tüm cevap bitince başlar; uzun cevaplarda dakikalarca sessizlik |
+| `local-sentence-streaming` | `tools/tts_streaming.py` | Cümle cümle akış kapanır |
+| `speech-pauses` | `tools/tts_streaming.py` | Duraklamalar kaybolur, konuşma robotlaşır |
+| `voice-persona` | `fool/voice_models.py` | Persona ile ses/vurgu rengi birlikte değişmez |
+| `one-voice` | `fool/voice_models.py` | Aynı anda birden çok motor yüklü kalır |
+| `voice-routes` | `fool/voice_routes.py`, `fool_cli/web_server.py` | Arayüz ses modellerini listeleyemez/indiremez |
+| `voice-models` | `apps/desktop/src/app/settings/index.tsx` | Ayarlarda ses modeli bölümü kaybolur |
+| `voice-owner` | `apps/desktop/src/app/chat/composer/hooks/use-auto-speak-replies.ts` | Aynı cevabı iki yüzey birden okur |
+| `shared-voice-policy` | `apps/desktop/src/app/chat/composer/hooks/use-voice-conversation.ts` | Çentik ve besteci ayrı kurallarla çalışır |
+| `voice-session-bridge` | `apps/desktop/src/store/active-work.ts` | Ses `session_id: null` gider, cevap bot panelinde çıkar |
+| `main-window-only-publisher` | `apps/desktop/src/store/*` | Çentiğin boş kopyası ana pencerenin değerini ezer |
+| `accent-override` | `apps/desktop/src/themes/*` | Persona vurgu rengi uygulanmaz |
+| `notch-window` / `notch-route` / `notch-ipc` / `notch-shortcut` / `notch-quit` / `notch-no-chrome` | `apps/desktop/electron/main.ts`, `preload.ts`, `app/contrib/*` | Çentik açılmaz ya da Ctrl+Alt+V ölür |
+| `slow-voice-engine` | `fool/voice_models.py` | Gerçek zamandan yavaş motorlar listeye geri döner |
+| `engine-vram-eviction` | `fool/engine_host.py` | LLM + TTS birlikte VRAM'i doldurur, iki iş aynı anda koşunca makine donar |
+| `shared-gpu-budget` | `fool/engine_host.py` | Aynı sınıf, bütçe tarafı |
+
+### Yapılandırma ve dayanıklılık
+
+| id | Dosya | Kaybolursa |
+|----|-------|------------|
+| `dotted-name-containers` | `fool_cli/config.py` | Noktalı model kimlikleri (`qwen3.5`, `gpt-4.1`) anahtar bölünürken parçalanır; `fool config set` "✓ Set" der, ayar hiç okunmaz |
+| `os-text-encoding` | `agent/system_prompt.py` | Türkçe Windows'ta sistem istemi kurulamaz, ajan hiç cevap vermez |
+| `context-floor` | `agent/agent_init.py` | 32K bağlamda çalışmayı reddeder |
+| `release-repo-url` | `scripts/release.py` | Release upstream depoya gitmeye çalışır |
 
 ### Ajanın kendini tanıması
 

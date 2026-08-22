@@ -2371,8 +2371,42 @@ def get_pr_number(subject: str) -> str | None:
     return None
 
 
-def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/NousResearch/hermes-agent",
+def _origin_repo_url() -> str:
+    """FOOL-SEAM: release-repo-url
+
+    Degisiklik gunlugu KENDI depomuza baglanmali.
+
+    Varsayilan upstream'in adresiydi ve bu YAYINLANAN bir metin: her commit
+    baglantisi NousResearch/hermes-agent'a gidiyordu, yani okuyucu bu depoda
+    var olmayan -- ya da baska bir seyi anlatan -- bir commit'e tikliyordu.
+    Depo herkese acik, yani yanlis baglanti herkesin gordugu bir hata.
+
+    ``git remote`` okunamazsa upstream varsayilani kaliyor: bir baglanti
+    ugruna surumu dusurmek oransiz olurdu.
+    """
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True, text=True, stdin=subprocess.DEVNULL,
+            timeout=15, check=False,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return "https://github.com/NousResearch/hermes-agent"
+
+    if not out:
+        return "https://github.com/NousResearch/hermes-agent"
+
+    # ``git@github.com:owner/repo.git`` ve ``https://.../repo.git`` -> web adresi
+    if out.startswith("git@"):
+        out = "https://" + out[4:].replace(":", "/", 1)
+    return out[:-4] if out.endswith(".git") else out
+
+
+def generate_changelog(commits, tag_name, semver, repo_url=None,
                        prev_tag=None, first_release=False):
+    repo_url = repo_url or _origin_repo_url()
     """Generate markdown changelog from categorized commits."""
     lines = []
 

@@ -71,6 +71,16 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     // Montajda BEKLEYEN niyeti al (ve tuket). Yeni acilan pencerede
     // ``send`` renderer dinleyiciyi kurmadan geliyor ve mesaj dusuyor.
     takeListenRequest: () => ipcRenderer.invoke('fool:notch:take-intent'),
+    // Bas-konus tusu BASKA penceremizden iletildi: centik odakta olmasa da
+    // calissin (bkz. ``installPushToTalkForwarding``).
+    onPushToTalk: (callback: (event: { repeat: boolean; type: 'down' | 'up' }) => void) => {
+      const listener = (_e: unknown, payload: { repeat: boolean; type: 'down' | 'up' }) =>
+        callback(payload)
+
+      ipcRenderer.on('fool:notch:ptt', listener)
+
+      return () => ipcRenderer.removeListener('fool:notch:ptt', listener)
+    },
     onListenRequest: (callback: (request?: { mode?: string }) => void) => {
       const listener = (_event: unknown, request?: { mode?: string }) => callback(request)
 

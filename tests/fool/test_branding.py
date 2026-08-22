@@ -209,6 +209,7 @@ EXPECTED_SEAMS = {
     "engine-vram-eviction",
     "one-voice",
     "voice-persona",
+    "voice-session-bridge",
     "os-text-encoding",
     "engine-namespaced-config",
     "plugin-tts-config",

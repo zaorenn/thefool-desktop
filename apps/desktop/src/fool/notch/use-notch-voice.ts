@@ -33,10 +33,11 @@ import {
   startSpeechStream,
   stopVoicePlayback
 } from '@/lib/voice-playback'
-import { $activeSessionId, $messages } from '@/store/session'
+import { $messages } from '@/store/session'
 
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
+import { $voiceSessionId } from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -160,13 +161,13 @@ export function useNotchVoice(): NotchVoice {
 
     // Durdurma YALNIZCA arkadas oturumuna gidiyor.
     //
-    // Burada ``?? $activeSessionId.get()`` vardi ve hemen ustundeki yorumun
+    // Burada ``?? $voiceSessionId.get()`` vardi ve hemen ustundeki yorumun
     // yasaklad|g| seyi yap|yordu: arkadas oturumu henuz acilmamisken
     // bas-konusa basmak, kullanicinin SOHBET PANELINDE suren isini
     // kesiyordu. Yorum ile kod ayrismisti.
     //
     // Durduracak bir sey yoksa dogru davranis hicbir sey yapmamak.
-    const sessionId = $activeSessionId.get()
+    const sessionId = $voiceSessionId.get()
 
     if (!sessionId) {
       return
@@ -259,7 +260,7 @@ export function useNotchVoice(): NotchVoice {
    * (``desktop`` -- terminal, dosya, kod dahil). Bunu ayıran mekanizma
    * kiplerdi ve kipler kullanıcının kararıyla kaldırıldı.
    */
-  const resolveSessionId = useCallback(async () => $activeSessionId.get(), [])
+  const resolveSessionId = useCallback(async () => $voiceSessionId.get(), [])
 
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve

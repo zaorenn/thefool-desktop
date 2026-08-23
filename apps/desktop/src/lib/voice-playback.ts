@@ -15,6 +15,17 @@ import { sanitizeTextForSpeech } from './speech-text'
 // fails to start or stalls mid-stream for this long (rearmed on each progress
 // tick, so legitimately long speech is never cut off).
 const PLAYBACK_STALL_MS = 15_000
+// İlk ses karesi için üst sınır. ``PLAYBACK_STALL_MS`` bunu KAPSAMIYORDU:
+// o, ``timeupdate`` olayına kuruluyor, yani ancak ses BAŞLADIKTAN sonra
+// işliyor. Sentezin kendisi asılırsa hiçbir olay gelmiyor -- ne ``end``, ne
+// ``close``, ne ``error`` -- ve ekran sonsuza kadar "Preparing audio"da
+// kalıyor. Kullanıcının bildirdiği hâl tam buydu.
+//
+// Değer ÖLÇÜME dayanıyor: soğuk bir motor (sidecar süreci + model yükleme)
+// kokoro'da 29,4 sn sürüyor. Bunun altına koymak meşru bir soğuk başlangıcı
+// kesip gereksiz yere yedek yola düşürürdü. 45 sn, o en kötü hâlin üstünde
+// ama asılmayı sonsuzdan çıkarıyor.
+const FIRST_AUDIO_MS = 45_000
 
 /**
  * BİR cevap, BİR ses.
@@ -212,6 +223,7 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
   let finished = false
   const pendingSends: string[] = []
 
+  let firstAudioTimer: null | number = null
   let settle: (value: 'done' | 'fallback') => void = () => undefined
 
   const done = new Promise<'done' | 'fallback'>(resolve => {
@@ -222,6 +234,11 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
 
       settled = true
       currentStop = null
+
+      if (firstAudioTimer !== null) {
+        window.clearTimeout(firstAudioTimer)
+        firstAudioTimer = null
+      }
 
       try {
         ws.close()
@@ -367,6 +384,21 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
     // the only safe granularity when constructs span delta boundaries.
     append: text => {
       if (text && !finished && !settled) {
+        // Bekçi İLK metinle kuruluyor, oturum açılırken değil: metin
+        // gelmeden sentez başlamaz, o yüzden beklemenin sayacı burada başlar.
+        if (firstAudioTimer === null && !started) {
+          firstAudioTimer = window.setTimeout(() => {
+            firstAudioTimer = null
+
+            if (!started) {
+              // ``fallback``: çağıran tek seferlik POST yoluna düşüyor. Sessiz
+              // kalmaktansa geç konuşmak iyidir -- ve ``settle`` yalnızca bir
+              // kez işlediği için çift sentez riski yok.
+              settle('fallback')
+            }
+          }, FIRST_AUDIO_MS)
+        }
+
         send({ text })
       }
     },

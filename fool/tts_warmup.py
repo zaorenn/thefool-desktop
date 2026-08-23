@@ -97,6 +97,35 @@ def _run(provider: str) -> None:
             _thread = None
 
 
+def _still_resident(provider: str) -> bool:
+    """Motor GERÇEKTEN ayakta mı?
+
+    ``_state["status"] == "warm"`` bir kez yazılıyor ve bir daha hiç
+    düşmüyordu. Oysa motor boşta 300 sn sonra boşaltılıyor
+    (``fool/engine_host.py::SELECTED_IDLE_UNLOAD_SECONDS``). Yani ilk başarılı
+    ısıtmadan sonra ``warm()`` kalıcı olarak hiçbir şey yapmıyor: durum
+    "warm" diyor, süreç ölü, ve bir sonraki cümle soğuk yükleme bedelini
+    yeniden ödüyor.
+
+    Ölçüldü: kokoro soğuk 29,43 sn / sıcak 1,07 sn. Kullanıcının "ses
+    dakikalar sonra geldi" dediği şey her uzun aradan sonra geri geliyordu.
+
+    Hata YUTULUYOR ve "yerleşik değil" varsayılıyor: yanlış tarafa düşmenin
+    bedeli fazladan bir ısıtma çağrısı (ucuz ve zaten korumalı), diğer tarafta
+    ise sessizce ölü kalan bir ısıtma yolu var.
+    """
+    try:
+        from fool import engine_host, voice_preview
+
+        entry_id = voice_preview.entry_for_provider(provider)
+        if not entry_id:
+            return False
+
+        return engine_host.is_running(entry_id)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def warm(provider: str = "") -> dict[str, Any]:
     """Isıtmayı arka planda başlat ve HEMEN dön.
 
@@ -116,7 +145,11 @@ def warm(provider: str = "") -> dict[str, Any]:
         if _thread is not None and _state.get("provider") == target:
             return status()
 
-        if _state.get("status") == "warm" and _state.get("provider") == target:
+        if (
+            _state.get("status") == "warm"
+            and _state.get("provider") == target
+            and _still_resident(target)
+        ):
             return status()
 
         _state.update(status="warming", error="", provider=target)

@@ -4,48 +4,39 @@ import { $voiceOwner, canSpeak, claimVoice, releaseVoice } from './voice-owner'
 
 beforeEach(() => $voiceOwner.set(null))
 
-describe('sahiplik', () => {
+describe('sahiplik -- AYNI pencere icinde', () => {
   it('bos alani ilk talep eden aliyor', () => {
     expect(claimVoice('composer')).toBe(true)
     expect($voiceOwner.get()).toBe('composer')
   })
 
   it('ayni yuzey tekrar talep edebiliyor', () => {
-    claimVoice('friend')
+    claimVoice('notch')
 
-    expect(claimVoice('friend')).toBe(true)
+    expect(claimVoice('notch')).toBe(true)
   })
 
-  it('FRIEND composer\'i devraliyor', () => {
-    // Kullanici Friend'i ACARAK konusmayi secti ve ekranda ona bakiyor.
+  it(`NOTCH composer'i devraliyor`, () => {
+    // Centik akis yolunu kullaniyor (ilk cumlede ses); besteci ancak cevap
+    // tamamlaninca okuyor.
     claimVoice('composer')
 
-    expect(claimVoice('friend')).toBe(true)
-    expect($voiceOwner.get()).toBe('friend')
+    expect(claimVoice('notch')).toBe(true)
+    expect($voiceOwner.get()).toBe('notch')
   })
 
-  it('composer FRIEND\'i devralmiyor', () => {
-    // Iki yuzey birden konusursa her biri digerini iptal ediyor ve HIC ses
-    // cikmiyor -- olculen hata tam bu.
-    claimVoice('friend')
+  it(`composer NOTCH'u devralmiyor`, () => {
+    claimVoice('notch')
 
     expect(claimVoice('composer')).toBe(false)
-    expect($voiceOwner.get()).toBe('friend')
-  })
-
-  it('notch composer ile friend arasinda', () => {
-    claimVoice('composer')
-    expect(claimVoice('notch')).toBe(true)
-
-    expect(claimVoice('friend')).toBe(true)
-    expect(claimVoice('notch')).toBe(false)
+    expect($voiceOwner.get()).toBe('notch')
   })
 })
 
 describe('birakma', () => {
   it('sahip birakinca alan bosaliyor', () => {
-    claimVoice('friend')
-    releaseVoice('friend')
+    claimVoice('notch')
+    releaseVoice('notch')
 
     expect($voiceOwner.get()).toBeNull()
   })
@@ -53,15 +44,15 @@ describe('birakma', () => {
   it('sahip OLMAYAN birakamiyor', () => {
     // Yoksa kapanan bir panel, konusan baska bir yuzeyin sahipligini
     // silerdi.
-    claimVoice('friend')
+    claimVoice('notch')
     releaseVoice('composer')
 
-    expect($voiceOwner.get()).toBe('friend')
+    expect($voiceOwner.get()).toBe('notch')
   })
 
   it('biraktiktan sonra dusuk oncelikli de alabiliyor', () => {
-    claimVoice('friend')
-    releaseVoice('friend')
+    claimVoice('notch')
+    releaseVoice('notch')
 
     expect(claimVoice('composer')).toBe(true)
   })
@@ -71,22 +62,21 @@ describe('konusabilir mi', () => {
   it('sahip yoksa herkes konusabiliyor', () => {
     // Sahiplik seslendirmeyi engellemek icin degil, CAKISMAYI engellemek
     // icin var.
-    for (const surface of ['composer', 'friend', 'notch'] as const) {
+    for (const surface of ['composer', 'notch'] as const) {
       expect(canSpeak(surface)).toBe(true)
     }
   })
 
   it('sahip olan konusabiliyor', () => {
-    claimVoice('friend')
+    claimVoice('notch')
 
-    expect(canSpeak('friend')).toBe(true)
+    expect(canSpeak('notch')).toBe(true)
   })
 
   it('sahip olmayan SESSIZ kaliyor', () => {
-    claimVoice('friend')
+    claimVoice('notch')
 
     expect(canSpeak('composer')).toBe(false)
-    expect(canSpeak('notch')).toBe(false)
   })
 })
 

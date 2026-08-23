@@ -1,40 +1,56 @@
 /**
- * Aynı anda TEK yüzey konuşur.
+ * Aynı PENCERE içinde tek yüzey konuşur.
  *
- * Ölçülen hata
- * ------------
- * Oynatma tek bir küresel kanal (``lib/voice-playback.ts``) ve hem
- * ``playSpeechText`` hem ``startSpeechStream`` işe başlarken
- * ``stopVoicePlayback()`` çağırıyor. Uygulamada AYNI cevabı iki yüzey
- * seslendirmeye çalışıyordu -- sohbet panelinin ses döngüsü ve Friend
- * penceresi, ikisi de aynı ``$messages`` deposunu okuyor.
+ * Kapsam SINIRI, en başta yazılmalı
+ * ---------------------------------
+ * Burası ``atom`` -- yani değer PENCEREYE ÖZEL. Çentik ayrı bir
+ * ``BrowserWindow`` ve aynı paketi yüklüyor, dolayısıyla kendi kopyasını
+ * tutuyor. ``claimVoice('notch')`` çentikte çalışınca ana penceredeki
+ * ``$voiceOwner`` ``null`` kalıyor ve oradaki ``canSpeak('composer')``
+ * her zaman ``true`` dönüyor.
  *
- * Sonuç: her biri diğerini iptal ediyor. Ekranda "Preparing audio" sonsuza
- * kadar duruyor, hiç ses çıkmıyor ve iki sentez işi birden makineyi
- * kastırıyor. Kullanıcının "ses gelmedi, bilgisayar deli gibi kastı" dediği
- * şey buydu.
+ * Bu dosya uzun süre bunun TERSİNİ iddia etti: başlığı "aynı anda tek yüzey
+ * konuşur" diyordu, gerekçesi çentik ile sohbet panelini örnek veriyordu --
+ * yani tam olarak taşıyamadığı durumu. Kullanıcının duyduğu sonuç: aynı cümle
+ * iki kez okunuyordu.
  *
- * Çözüm bir kilit değil SAHİPLİK: hangi yüzey konuşmaya yetkili olduğu
- * açıkça yazılıyor. Kilit olsaydı ikinci yüzey bekleyip sonra AYNI cevabı
- * tekrar okurdu -- kullanıcı her şeyi iki kez duyardı.
+ * Pencereler arası güvence BURADA DEĞİL
+ * -------------------------------------
+ * O iş ``store/ambient.ts::ownsAmbientCue`` ile yapılıyor: talep ANA SÜREÇTE
+ * çözülüyor (``electron/event-dedupe.ts``), yarışsız, kalıcılık yok. Cevap
+ * başına tek sahip. Hem besteci hem çentik oraya katılıyor.
+ *
+ * ``sharedAtom`` neden kullanılmadı: o ``localStorage`` tabanlı ve sahiplik
+ * GEÇİCİ bir durum. Kalıcılaştırmak, uygulama çentik konuşurken kapanınca
+ * "sahip: notch" yazısını diske bırakırdı; bir sonraki açılışta çentik kapalı
+ * olur, besteci sonsuza kadar susardı. Sessiz sınıf, yeni biçimde.
+ *
+ * Geriye kalan iş
+ * ---------------
+ * Aynı pencerede iki yüzey birden (besteci sesli turu + otomatik sesli okuma)
+ * uyanabiliyor; bu ikisini ayıran hâlâ burası.
  *
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
 import { atom } from 'nanostores'
 
-export type VoiceSurface = 'composer' | 'friend' | 'notch'
+/**
+ * ``friend`` KALDIRILDI: Friend penceresi kullanıcının kararıyla silindi ve
+ * geride yalnızca çentikten YÜKSEK öncelikli, hiç talep edilmeyen bir katman
+ * bıraktı. Ölü bir öncelik katmanı okurken "bir şey bunu ezebilir" izlenimi
+ * veriyordu.
+ */
+export type VoiceSurface = 'composer' | 'notch'
 
 /**
  * Öncelik: büyük olan kazanır.
  *
- * Friend penceresi en yüksek çünkü kullanıcı onu AÇARAK konuşmayı seçti ve
- * ekranda ona bakıyor. Notch ikinci: görünür ama geçici. Composer en düşük:
- * orada ses bir yan özellik, ana iş yazışmak.
+ * Çentik önde çünkü kullanıcı onu AÇARAK konuşmayı seçti ve akış yolunu
+ * kullanıyor (ilk cümlede ses). Besteci geride: orada ses bir yan özellik.
  */
 const PRIORITY: Record<VoiceSurface, number> = {
   composer: 1,
-  friend: 3,
   notch: 2
 }
 

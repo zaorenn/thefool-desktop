@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { claimBarge, createBargeGate, forceClaimBarge, releaseBarge } from '@/fool/notch/barge-in'
 import { HANDS_FREE_VAD } from '@/fool/notch/hands-free'
+import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { useI18n } from '@/i18n'
 import { startThinkingSound, stopThinkingSound } from '@/lib/thinking-sound'
@@ -239,6 +240,16 @@ export function useVoiceConversation({
     }
 
     try {
+      // Motoru KULLANICI KONUŞURKEN ısıt.
+      //
+      // Isıtma yalnızca ÇENTİK oturumu açılırken çağrılıyordu; çentiği hiç
+      // açmadan buradan sesli tur başlatan kullanıcı soğuk bedelin tamamını
+      // ödüyordu. Ölçüldü: kokoro soğuk 29,43 sn / sıcak 1,07 sn.
+      //
+      // Doğru an mikrofonun açıldığı an: yükleme, kullanıcının konuşmakla
+      // geçirdiği saniyelerin arkasına gizleniyor.
+      void voiceApi.warmVoice().catch(() => undefined)
+
       // FOOL-SEAM: shared-voice-policy
       //
       // VAD tuning mirrors `tools.voice_mode` defaults so the browser loop

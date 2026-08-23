@@ -33,8 +33,10 @@ import {
   startSpeechStream,
   stopVoicePlayback
 } from '@/lib/voice-playback'
+import { ownsAmbientCue } from '@/store/ambient'
 import { $messages } from '@/store/session'
 
+import { voiceApi } from '../voice-api'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
 import { $voiceSessionId } from './active-session'
@@ -126,6 +128,10 @@ export function useNotchVoice(): NotchVoice {
   // Turu kimin kestigi. Tus ve ses ayni anda gelebiliyor; kapisiz birakmak
   // ayni cumleyi modele iki kez gonderiyordu.
   const bargeRef = useRef<BargeGate>(createBargeGate())
+  // Baska bir yuzeyin ustlendigi cevaplar. Bu olmadan efekt her token'da
+  // yeniden talep ederdi: talep reddedilince ``streamRef`` bosaliyor ve bir
+  // sonraki tik ayni yolu bastan denerdi -- saniyede onlarca bosuna IPC.
+  const declinedRef = useRef<Set<string>>(new Set())
   // Araya girme yakalamasi SURUYOR mu? Izleyici, durum 'listening'e dondugu
   // an sokulup atilirsa yakaladigi cumleyi teslim edemeden olur -- yani
   // kullanicinin araya girerken soyledigi sey kaybolur. Bu bayrak izleyiciyi
@@ -189,6 +195,22 @@ export function useNotchVoice(): NotchVoice {
     setCapturing(false)
     setHeardSpeech(false)
     setStatus('listening')
+
+    // Motoru KULLANICI KONUŞURKEN ısıt.
+    //
+    // Isıtma bugüne kadar yalnızca çentik oturumu AÇILIRKEN çağrılıyordu.
+    // Motor boşta 300 sn sonra boşaltıldığı için (kullanıcının kendi isteği)
+    // her uzun aradan sonra soğuk bedel geri geliyordu: ölçüldü, kokoro
+    // soğuk 29,43 sn / sıcak 1,07 sn.
+    //
+    // Zamanlayıcıyla sıcak tutmak YANLIŞ cevap olurdu -- kullanıcı motorun
+    // 5 dakika sonra kapanmasını açıkça istedi. Doğru an bu: mikrofon
+    // açılıyor, kullanıcı konuşmaya başlıyor ve yükleme o saniyelerin
+    // arkasına gizleniyor. Cevap akmaya başladığında motor ayakta oluyor.
+    //
+    // Çağrı UCUZ ve korumalı: uç nokta hemen dönüyor ve ``tts_warmup.warm``
+    // zaten ısınıyorsa yeni iş başlatmıyor.
+    void voiceApi.warmVoice().catch(() => undefined)
     // Oturumu SIMDIDEN ac: kullanici konusurken cozulsun, sonra degil.
     // REF uzerinden: ``prewarmSession`` asagida tanimli ve ``begin``i ona
     // bagimli kilmak her oturum degisiminde geri cagriyi yeniden kurardi.
@@ -381,10 +403,43 @@ export function useNotchVoice(): NotchVoice {
     }
 
     // Akış oturumu tur başına BİR kez açılıyor.
-    if (!streamRef.current) {
+    if (!streamRef.current && !declinedRef.current.has(pending.id)) {
       streamRef.current = { sent: 0, session: null }
 
-      void startSpeechStream({ source: 'voice-conversation' })
+      // Bu cevabı seslendirme hakkı ANA SÜREÇTEN alınıyor.
+      //
+      // ``canSpeak`` bu yarışı hiç taşımıyordu: ``$voiceOwner`` düz bir atom
+      // ve çentik AYRI bir ``BrowserWindow``. ``claimVoice('notch')`` yalnızca
+      // çentiğin kendi kopyasına yazıyor, ana penceredeki
+      // ``canSpeak('composer')`` her zaman ``true`` dönüyordu. Yani sahiplik
+      // hakemi tam da var olma sebebi olan durumda -- iki PENCERE arasında --
+      // hiçbir şey yapmıyordu ve kullanıcı aynı cümleyi iki kez duyuyordu.
+      //
+      // ``ownsAmbientCue`` ana süreçte çözülüyor (``electron/event-dedupe.ts``)
+      // ve yarışsız. Besteci zaten onu kullanıyordu; eksik olan çentiğin
+      // katılmasıydı.
+      //
+      // Öncelik bedavaya geliyor: çentik AKARKEN talep ediyor (ilk token'da),
+      // besteci ise ancak cevap TAMAMLANINCA. Yani çentik açıkken her zaman
+      // önce o talep ediyor ve kazanıyor.
+      const claimId = pending.id
+
+      void ownsAmbientCue(`speak:${claimId}`)
+        .then(owns => {
+          if (!owns) {
+            // Başka bir yüzey bu cevabı üstlendi. Akışı hiç açma: açmak
+            // "iptal edildi" durumuna düşüp iki sentezi birden başlatırdı.
+            declinedRef.current.add(claimId)
+            streamRef.current = null
+
+            return null
+          }
+
+          // ``messageId`` VERİLİYOR: ``claimSpeech`` onsuz ``undefined`` alıp
+          // her zaman ``true`` dönüyordu, yani pencere İÇİ tekilleştirme de
+          // baypas ediliyordu.
+          return startSpeechStream({ messageId: claimId, source: 'voice-conversation' })
+        })
         .then(session => {
           if (streamRef.current) {
             streamRef.current.session = session

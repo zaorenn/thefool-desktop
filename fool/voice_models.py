@@ -138,8 +138,22 @@ class VoiceEntry:
     #: diskindeki gigabaytlari gorunmez yapardi ve secili olan oysa sesi
     #: sessizce keserdi. Gizlemek geri alinabilir; silmek degil.
     #:
-    #: Olculen gerekce (cumle basina, sicak): gercek zamanin cok altinda
-    #: kalan motorlar sesli sohbette kullanilamiyor.
+    #: KURAL (yalnizca "yavas" DEGIL -- iki kosul):
+    #:
+    #:   1. Cumle basina olculen sure ``SLOW_ENGINE_MS``i asiyorsa gizlenir.
+    #:      Olculen degerler (sicak, cumle basina):
+    #:        piper 120 / kokoro 200 / styletts2 556 / chatterbox 1894 /
+    #:        kyutai 2517 / qwen3-tts 9423
+    #:
+    #:   2. AMA motor tek klonlama yoluysa gizlenMEZ. Chatterbox 1894 ms ile
+    #:      esigin altinda kaliyor; kyutai 2517 ile ustunde. Aradaki fark 0,6
+    #:      saniye ve yalnizca hiza bakan biri "tutarsiz" deyip chatterbox'i da
+    #:      gizlerdi -- bu, kullanicinin klonladigi sesi (Ultron) seciciden
+    #:      sessizce silmek olurdu.
+    #:
+    #: Kural BURAYA yazildi cunku daha once yalnizca "yavas olan gizlenir"
+    #: yaziyordu ve gercek kural o degildi. ``tests/fool/test_voice_visibility``
+    #: ikisini birden sabitliyor.
     hidden: bool = False
     #: ``runtime_imports`` dustugunde KULLANICIYA gosterilecek cumle.
     #:
@@ -956,6 +970,11 @@ def clone_dir() -> Path:
 #: f5-tts'in kendi eklentileri ``reference`` kwarg'ini zaten okuyordu, panel
 #: hic yol vermiyordu. Kullanici bunu "her ses modeli icin klonlamayi
 #: arayuzden yapalim" diye istedi.
+#: Cumle basina bu surenin ustundeki motor panelde GIZLENIR (bkz.
+#: ``VoiceEntry.hidden``). Esik olculmus degerlerin arasina konuldu:
+#: styletts2 556 ms ile rahat altinda, kyutai 2517 ms ile ustunde.
+SLOW_ENGINE_MS: Final[int] = 2_000
+
 CLONE_CAPABLE: Final[frozenset[str]] = frozenset({"chatterbox", "styletts2", "f5tts"})
 
 #: Her motorun REFERANS DOSYASINI okudugu yapilandirma anahtari -- AYNI degil.

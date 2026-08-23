@@ -189,3 +189,45 @@ export function persistAccent(id: string): void {
     // varsayılana dönüyor. Bunun için kullanıcıya hata göstermek oransız.
   }
 }
+
+/**
+ * KONUŞAN motorun ve sesin tek satırlık özeti.
+ *
+ * Kullanıcının bildirdiği hâl: "şuan uygulamada duyduğum ses kadın." Sebebi
+ * yapılandırmada açıkça duruyordu -- ``provider: kokoro``, ``voice: bf_emma``
+ * (İngiliz kadın sesi) -- ama arayüzde HİÇBİR YERDE yazmıyordu. Persona
+ * seçicisi renkleri gösteriyor, hangi sesin konuştuğunu söylemiyordu.
+ */
+export function speakingSummary(engine: null | VoiceItem): string {
+  if (!engine) {
+    return ''
+  }
+
+  if (engine.clone) {
+    return `${engine.label} — cloned voice "${engine.clone}"`
+  }
+
+  const voice = engine.voices.find(entry => entry.id === engine.voice)
+
+  return voice ? `${engine.label} — ${voice.label}` : engine.label
+}
+
+/**
+ * Klon BAŞKA bir motorda duruyorsa onu döndür (``null`` = yok).
+ *
+ * Ölçülen hata: kullanıcı Ultron sesini chatterbox'a klonladı ama konuşan
+ * motor kokoro'ydu. Klon diskte, yapılandırmada, panelde -- ama hiç
+ * duyulmuyor. Persona seçicisi yalnızca AKTİF motorun ses listesinde arama
+ * yapıyor ve motor değiştirmiyor, yani o klona ulaşmanın seçiciden hiçbir
+ * yolu yoktu.
+ *
+ * Sessizce motor değiştirmek yanlış cevap olurdu: kullanıcı hızlı bir motor
+ * seçmiş olabilir (ölçüldü, kokoro 200 ms / chatterbox 1894 ms). Doğru cevap
+ * durumu SÖYLEMEK ve geçişi bir tıka indirmek.
+ */
+export function idleClone(items: VoiceItem[]): null | VoiceItem {
+  return (
+    items.find(item => item.kind === 'tts' && item.installed && !item.active && Boolean(item.clone)) ??
+    null
+  )
+}

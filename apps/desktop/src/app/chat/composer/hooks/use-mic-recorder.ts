@@ -71,7 +71,7 @@ export function useMicRecorder(copy: MicRecorderErrorCopy): {
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const audioContextRef = useRef<AudioContext | null>(null)
-  const animationRef = useRef<number | null>(null)
+  const meterRef = useRef<ScriptProcessorNode | null>(null)
   const startedAtRef = useRef(0)
   const heardSpeechRef = useRef(false)
   const silenceTriggeredRef = useRef(false)
@@ -79,9 +79,10 @@ export function useMicRecorder(copy: MicRecorderErrorCopy): {
   const stopResolverRef = useRef<((recording: MicRecording | null) => void) | null>(null)
 
   const cleanup = () => {
-    if (animationRef.current) {
-      window.cancelAnimationFrame(animationRef.current)
-      animationRef.current = null
+    if (meterRef.current) {
+      meterRef.current.onaudioprocess = null
+      meterRef.current.disconnect()
+      meterRef.current = null
     }
 
     void audioContextRef.current?.close()
@@ -115,7 +116,37 @@ export function useMicRecorder(copy: MicRecorderErrorCopy): {
       source.connect(analyser)
       audioContextRef.current = audioContext
 
+      // Ölçüm SES İŞ PARÇACIĞINDA koşuyor, ``requestAnimationFrame``da değil.
+      //
+      // Sessizlik saptayıcısı (``onSilence``) yalnızca bu tikte
+      // değerlendiriliyor, yani turun NEREDE biteceğine karar veren şey bu.
+      // rAF pencere gizlendiğinde/örtüldüğünde kısılıyor ya da tümden
+      // duruyor: ana pencere küçültülmüşken eller serbest bir tur başlatan
+      // kullanıcının kaydı hiç bitmiyordu -- mikrofon açık kalıyor, cümle
+      // gönderilmiyor.
+      //
+      // ``ScriptProcessorNode`` sayfa görünürlüğünden etkilenmiyor. Aynı
+      // gerekçe ve aynı düğüm ``lib/voice-barge-in.ts``de de kullanılıyor;
+      // ``AudioWorklet`` ayrı bir modül dosyası indirmeyi gerektiriyor ve
+      // Electron'un CSP'si altında ek bir kırılganlık olurdu.
+      const meter = audioContext.createScriptProcessor(2048, 1, 1)
+
+      // ``onaudioprocess`` yalnızca düğüm bir hedefe BAĞLIYSA çalışıyor.
+      // Hedef doğrudan hoparlör olamaz: mikrofonu geri çalmak, yani anında
+      // geri besleme olurdu. Kazancı sıfır bir düğümden geçiriliyor.
+      const sink = audioContext.createGain()
+
+      sink.gain.value = 0
+      source.connect(meter)
+      meter.connect(sink)
+      sink.connect(audioContext.destination)
+      meterRef.current = meter
+
       const tick = () => {
+        if (!meterRef.current) {
+          return
+        }
+
         analyser.getByteTimeDomainData(data)
 
         let sum = 0
@@ -157,10 +188,9 @@ export function useMicRecorder(copy: MicRecorderErrorCopy): {
           }
         }
 
-        animationRef.current = window.requestAnimationFrame(tick)
       }
 
-      tick()
+      meter.onaudioprocess = tick
     } catch {
       setLevel(0)
     }

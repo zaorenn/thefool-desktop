@@ -39,7 +39,7 @@ import { $messages } from '@/store/session'
 import { voiceApi } from '../voice-api'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
-import { $voiceSessionId } from './active-session'
+import { $voiceSessionId, waitForVoiceSession } from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -282,7 +282,7 @@ export function useNotchVoice(): NotchVoice {
    * (``desktop`` -- terminal, dosya, kod dahil). Bunu ayıran mekanizma
    * kiplerdi ve kipler kullanıcının kararıyla kaldırıldı.
    */
-  const resolveSessionId = useCallback(async () => $voiceSessionId.get(), [])
+  const resolveSessionId = useCallback(async () => waitForVoiceSession(), [])
 
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
@@ -324,7 +324,12 @@ export function useNotchVoice(): NotchVoice {
         // Sessizce yutmak, kullanicinin konusup hicbir sey olmadigini
         // gormesi olurdu -- ve deposunda tam olarak bu vardi: sifir mesajli
         // oturumlar.
-        setError('Could not open a voice session')
+        //
+        // Mesaj NE YAPILACAGINI soyluyor. Onceki hali ("Could not open a
+        // voice session") sebebi de caresi de vermiyordu: oturumu ana pencere
+        // aciyor, centik yalnizca onu okuyor. Kullanici centige bakip
+        // bekleyebilirdi.
+        setError('No chat is open yet — open one in the main window, then talk')
         setStatus('idle')
 
         return

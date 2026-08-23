@@ -18,16 +18,19 @@ import { voiceApi, type VoiceCatalog } from './voice-api'
 import {
   applyAccent,
   canChangeVoice,
+  idleClone,
   persistAccent,
   persona,
   PERSONAS,
   readAccent,
+  speakingSummary,
   voiceForPersona
 } from './voice/persona'
 
 export function PersonaSettings() {
   const [active, setActive] = useState(() => readAccent())
   const [catalog, setCatalog] = useState<null | VoiceCatalog>(null)
+  const [reload, setReload] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -44,9 +47,24 @@ export function PersonaSettings() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reload])
 
   const engine = (catalog?.items ?? []).find(item => item.kind === 'tts' && item.active) ?? null
+  // Klon BASKA bir motorda duruyorsa kullanici bunu gormeli: aksi halde
+  // klonladigi sesi hic duymaz ve sebebini hicbir yerde bulamaz.
+  const stranded = idleClone(catalog?.items ?? [])
+
+  const switchTo = async (entryId: string) => {
+    try {
+      await voiceApi.select(entryId)
+      // Katalogu yeniden cek: "Speaking now" satiri eski motoru gosterirse
+      // panel bir sey soyleyip baska bir ses duyulur -- bu kod tabaninda
+      // yasanmis bir hata.
+      setReload(token => token + 1)
+    } catch (error) {
+      notifyError(error, 'Could not switch the voice engine')
+    }
+  }
 
   const choose = async (id: string) => {
     const entry = persona(id)
@@ -105,6 +123,29 @@ export function PersonaSettings() {
             </button>
           ))}
         </div>
+
+        {engine && (
+          <ListRow
+            description={speakingSummary(engine)}
+            title="Speaking now"
+          />
+        )}
+
+        {stranded && (
+          <ListRow
+            action={
+              <button
+                className="rounded-md border border-(--stroke-nous)/70 px-2 py-1 text-xs hover:bg-(--surface-hover)"
+                onClick={() => void switchTo(stranded.id)}
+                type="button"
+              >
+                Use it
+              </button>
+            }
+            description={`"${stranded.clone}" is cloned onto ${stranded.label}, which is not the engine speaking right now — so you never hear it.`}
+            title="A cloned voice is sitting idle"
+          />
+        )}
 
         {engine && !canChangeVoice(engine) && (
           <ListRow

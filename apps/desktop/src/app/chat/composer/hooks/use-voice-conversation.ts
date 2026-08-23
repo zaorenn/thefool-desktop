@@ -18,6 +18,8 @@ import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 import { notify, notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 
+import { useComposerScope } from '../scope'
+
 import { useMicRecorder } from './use-mic-recorder'
 
 export type ConversationStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
@@ -69,6 +71,10 @@ export function useVoiceConversation({
   const turnTimeoutRef = useRef<number | null>(null)
   const pendingStartRef = useRef(false)
   const turnClosingRef = useRef(false)
+  // Konusmayi ACMAK icin reaktif uyandirici. Besteci kapsamindaki mesaj
+  // deposu -- ``useStore`` DEGIL abonelik: her token'da yeniden render
+  // etmeden yalnizca oturumu aciyoruz.
+  const { $messages: $messagesForSpeech } = useComposerScope()
   const awaitingSpokenResponseRef = useRef(false)
   const responseIdRef = useRef<string | null>(null)
   const spokenSourceLengthRef = useRef(0)
@@ -721,6 +727,49 @@ export function useVoiceConversation({
     return undefined
   }, [enabled, muted, status])
 
+  // Canli konusmayi ILK metin gelince ac -- tur bitince degil.
+  //
+  // Olculen hata (kullanicinin agent.log'u, 18:27):
+  //
+  //   18:27:26.6  istem kabul edildi
+  //   18:27:29.0  model akisi basladi
+  //   18:27:41.3  ILK sentez basladi        <- 12,3 sn sonra
+  //   18:27:41.7  ilk ses hazir             <- sentez yalnizca 0,37 sn
+  //
+  // Yani beklenen sey ses degil, metnin GONDERILMESIYDI. Asagidaki ana dongu
+  // ``[busy, ..., status]`` ile uyaniyor ve bu kancanin mesajlara HIC reaktif
+  // aboneligi yok. ``busy`` ancak tur BITINCE dusuyor, yani ``openLiveSpeech``
+  // o ana kadar hic cagrilmiyordu: "canli" akis hicbir zaman canli degildi,
+  // tur sonunda acilip her seyi birden yutuyordu.
+  //
+  // ``useStore`` KULLANILMIYOR: her token'da bestecinin tamamini yeniden
+  // render ederdi. Abonelik yalnizca oturumu ACAR; acildiktan sonra besleme
+  // zaten kendi 150 ms'lik zamanlayicisiyla suruyor.
+  useEffect(() => {
+    if (!enabled || muted) {
+      return undefined
+    }
+
+    const open = () => {
+      if (!awaitingSpokenResponseRef.current) {
+        return
+      }
+
+      const response = pendingResponse()
+
+      // Zaten bu cevap icin acildiysa dokunma.
+      if (!response || responseIdRef.current === response.id) {
+        return
+      }
+
+      openLiveSpeech(response.id)
+    }
+
+    open()
+
+    return $messagesForSpeech.subscribe(open)
+  }, [$messagesForSpeech, enabled, muted, openLiveSpeech, pendingResponse])
+
   // Drive the loop: when a voice-submitted reply appears, open a live speech
   // session (which feeds itself from then on). Otherwise start listening when
   // idle between turns.
@@ -741,7 +790,19 @@ export function useVoiceConversation({
       const response = pendingResponse()
 
       if (response) {
-        openLiveSpeech(response.id)
+        // Bu cevap icin oturum ZATEN acildiysa dokunma.
+        //
+        // Artik iki yol aciyor: yukaridaki ``$messages`` aboneligi (ilk metin
+        // gelir gelmez) ve burasi. ``openLiveSpeech`` ``setStatus('speaking')``
+        // cagiriyor ama React durumu ayni tikte guncellemiyor, yani buradaki
+        // ``status !== 'speaking'`` muhafizi o yarisi tasimiyordu: ikinci
+        // acilis ``speechSessionRef``i eziyor, ilk oturum oksuz kaliyor ve
+        // konusma bitisi HIC oturmuyordu -- mikrofon bir daha kurulmuyor.
+        // ``responseIdRef`` ise ``openLiveSpeech``in ilk satirinda SENKRON
+        // yaziliyor, o yuzden dogru muhafiz bu.
+        if (responseIdRef.current !== response.id) {
+          openLiveSpeech(response.id)
+        }
 
         return
       }

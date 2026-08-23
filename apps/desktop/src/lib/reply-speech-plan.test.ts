@@ -150,3 +150,56 @@ describe('kanca saf planlayiciyi kullaniyor', () => {
     expect(hook.includes('if (!reply || reply.pending)')).toBe(false)
   })
 })
+
+/**
+ * Oynatma kapısı YALNIZCA açılışta geçerli.
+ *
+ * Akışa geçerken ``$voicePlayback.get().status !== 'idle'`` kontrolü
+ * ``speakLatest``in EN BAŞINDA bırakılmıştı. Sonuç, akışın kendi kendini
+ * öldürmesiydi: ilk parça gidiyor, ses çalmaya başlıyor, durum 'speaking'
+ * oluyor ve sonraki her ``$messages`` tiki en baştan geri dönüyordu. Kalan
+ * metin ancak oynatma boşa düşünce gidiyor -- konuşma parça parça ilerliyor.
+ *
+ * Kullanıcının bildirdiği: "ilk cümle biter bitmez okumaya başlaması lazım,
+ * öbür türlü çok gecikme hissediliyor."
+ */
+describe('oynatma kapisi yalnizca ACILISTA', () => {
+  it('ses CALARKEN bile metin gonderilmeye devam ediyor', () => {
+    // Hatanin ta kendisi: burada eskiden hicbir sey olmuyordu.
+    const action = planReplySpeech({
+      declined: false,
+      live: { id: 'a1', sent: 3 },
+      playbackIdle: false,
+      reply: streaming
+    })
+
+    expect(action.kind).toBe('append')
+  })
+
+  it('ses CALARKEN bile oturum kapanabiliyor', () => {
+    // Kapanma oynatmaya bagli olsaydi son cumle asili kalirdi.
+    expect(
+      planReplySpeech({
+        declined: false,
+        live: { id: 'a1', sent: done.text.length },
+        playbackIdle: false,
+        reply: done
+      })
+    ).toEqual({ kind: 'finish' })
+  })
+
+  it('kanca ust seviyede oynatma kapisi TUTMUYOR', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    const hook = readFileSync(
+      join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'),
+      'utf8'
+    )
+
+    // Eski satir: her tiki en bastan kesiyordu.
+    expect(hook.includes("conversationActive || $voicePlayback.get().status !== 'idle'")).toBe(false)
+    // Karar planlayiciya GECIYOR.
+    expect(hook.includes("playbackIdle: $voicePlayback.get().status === 'idle'")).toBe(true)
+  })
+})

@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 
+import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { planReplySpeech } from '@/lib/reply-speech-plan'
 import { type SpeechStreamSession, startSpeechStream } from '@/lib/voice-playback'
@@ -79,12 +80,37 @@ export function useAutoSpeakReplies({
     // on (or a chat opens) — consume it so only later replies are spoken.
     latest.current.markSpoken()
 
-    const speakLatest = () => {
-      const { conversationActive, failureLabel, markSpoken, pendingReply } = latest.current
+    // Motoru SIMDIDEN isit.
+    //
+    // Isitma daha once yalnizca MIKROFON acilinca tetikleniyordu -- ama burasi
+    // klavyeden yazilan sohbet, mikrofon hic acilmiyor. Otomatik okuma acikken
+    // motor bos durup 300 sn sonra bosaltiliyor ve ilk cumle soguk yuklemeyi
+    // bekliyor: olculdu, kokoro soguk 26,1 sn / sicak 0,55 sn.
+    //
+    // Otomatik okumanin ACIK olmasi zaten "her cevabi sesli istiyorum"
+    // demek, yani isitma bosa gitmiyor. Cagri ucuz ve korumali: uc nokta
+    // hemen donuyor ve motor zaten ayaktaysa yeni is baslatilmiyor.
+    void voiceApi.warmVoice().catch(() => undefined)
 
-      if (conversationActive || $voicePlayback.get().status !== 'idle') {
+    const speakLatest = () => {
+      const { conversationActive, markSpoken, pendingReply } = latest.current
+
+      if (conversationActive) {
         return
       }
+
+      // ``$voicePlayback`` kontrolu BURADA DEGIL, planlayicida.
+      //
+      // Akisa gecerken bu satiri oldugu yerde biraktim ve akisi kendi elimle
+      // oldurdum: ilk parca gonderiliyor, ses calmaya basliyor, durum
+      // 'speaking' oluyor ve ondan SONRAKI her ``$messages`` tiki buradan
+      // geri donuyordu. Kalan metin ancak oynatma bosa dustugunde gidiyor --
+      // yani konusma parca parca ilerliyor ve kullanicinin bildirdigi
+      // gecikme hissi ortaya cikiyor.
+      //
+      // Kuralin kendisi DOGRU ama yalnizca YENI bir oturum acarken gecerli:
+      // onceki cevap konusurken yenisine baslamak ikisini ust uste bindirirdi.
+      // ``planReplySpeech`` onu tam o noktada uyguluyor (``playbackIdle``).
 
       // FOOL-SEAM: voice-owner
       //
@@ -104,6 +130,11 @@ export function useAutoSpeakReplies({
       // ONCEDEN yazili (bkz. ``fool/voice-owner.ts``, ki basligi tam olarak
       // bu hatayi anlatiyor).
       if (!canSpeak('composer')) {
+        // Ayni pencerede baska bir yuzey devraldi. Acik oturumu KAPATIYORUZ:
+        // sessizce donmek onu yarim birakir ve hicbir sey bitirmezdi.
+        streamRef.current?.session?.finish()
+        streamRef.current = null
+
         return
       }
 

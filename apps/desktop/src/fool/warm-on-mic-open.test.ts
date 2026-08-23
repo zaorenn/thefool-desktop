@@ -56,3 +56,17 @@ describe('mikrofon acilinca isitiliyor', () => {
     expect(shell.includes('warmVoice()')).toBe(true)
   })
 })
+
+describe('yazili sohbet de isitiyor', () => {
+  it('otomatik okuma acilinca motor isitiliyor', () => {
+    // Klavyeden yazan kullanicida mikrofon HIC acilmiyor: mikrofona bagli
+    // isitma bu yolu kapsamiyordu ve ilk cumle soguk yuklemeyi bekliyordu
+    // (olculdu: kokoro soguk 26,1 sn / sicak 0,55 sn).
+    const hook = readFileSync(
+      join(import.meta.dirname, '../app/chat/composer/hooks/use-auto-speak-replies.ts'),
+      'utf8'
+    )
+
+    expect(hook.includes('warmVoice()')).toBe(true)
+  })
+})

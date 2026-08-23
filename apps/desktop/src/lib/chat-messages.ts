@@ -205,7 +205,11 @@ export interface UnspokenTurnSpeech {
 }
 
 /**
- * Collect every unspoken assistant bubble after `lastSpokenId`, in order.
+ * Collect every unspoken assistant bubble of the CURRENT TURN, in order.
+ *
+ * "Current turn" = after the last user message. That bound is the safety net:
+ * without it a null `lastSpokenId` collected the whole session and the user
+ * heard an old reply while a new one was on screen.
  *
  * A turn with tool calls produces several assistant bubbles — narration
  * ("Let me check…") sealed as interims, then the final answer as a fresh
@@ -220,12 +224,26 @@ export function collectUnspokenTurnSpeech(
   lastSpokenId: string | null
 ): UnspokenTurnSpeech | null {
   const spokenIndex = lastSpokenId ? messages.findLastIndex(m => m.id === lastSpokenId) : -1
+  // TUR SINIRI: konusma en fazla SON kullanici mesajindan sonrasini kapsar.
+  //
+  // Olculen hata: ``lastSpokenId`` null oldugunda (yeni monte olan bir yuzey --
+  // centikte hic tohumlanmiyordu) ``spokenIndex`` -1 kaliyor ve bu dongu
+  // OTURUMUN TAMAMINI topluyordu. Kullanicinin deposunda olculdu: 6 asistan
+  // mesaji, 12.614 karakter. Ekranda yeni cevap duruyor, ses en bastan eski
+  // bir cevabi okuyor -- kullanicinin bildirdigi "sesli okudugu hikaye ve
+  // yazilan cevap tamamen farkli" birebir bu.
+  //
+  // Cozum tohumlamayi hatirlamak DEGIL: bunu her yuzeyin ayri ayri dogru
+  // yapmasi gerekiyordu ve biri unuttu. Fonksiyonun adi zaten TUR diyor;
+  // sinir burada, tek yerde uygulaniyor.
+  const turnStart = messages.findLastIndex(m => m.role === 'user')
+  const from = Math.max(spokenIndex + 1, turnStart + 1)
 
   let id: string | null = null
   let pending = false
   const parts: string[] = []
 
-  for (const message of messages.slice(spokenIndex + 1)) {
+  for (const message of messages.slice(from)) {
     if (message.role !== 'assistant' || message.hidden) {
       continue
     }

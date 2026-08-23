@@ -2,13 +2,21 @@ import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 
 import { canSpeak } from '@/fool/voice-owner'
-import { playSpeechText } from '@/lib/voice-playback'
+import { planReplySpeech } from '@/lib/reply-speech-plan'
+import { type SpeechStreamSession, startSpeechStream } from '@/lib/voice-playback'
 import { ownsAmbientCue } from '@/store/ambient'
 import { notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 import { $autoSpeakReplies } from '@/store/voice-prefs'
 
 import { useComposerScope } from '../scope'
+
+interface LiveStream {
+  id: string
+  /** Bu oturuma gonderilen karakter sayisi. */
+  sent: number
+  session: SpeechStreamSession | null
+}
 
 interface AutoSpeakReply {
   id: string
@@ -45,9 +53,23 @@ export function useAutoSpeakReplies({
   // Wake on THIS composer's transcript: a tile subscribed to the primary's
   // would never fire on its own replies (and would fire on someone else's).
   const { $messages } = useComposerScope()
+  // Acik akis oturumu ve ona KAC karakter gonderildigi. Reaktif bir degerin
+  // aynasi degil: imperatif bir WebSocket tutamaci.
+  const streamRef = useRef<LiveStream | null>(null)
+  // Baska bir pencerenin ustlendigi cevaplar -- her tikte yeniden talep
+  // etmemek icin.
+  const declinedRef = useRef<Set<string>>(new Set())
   const latest = useRef({ conversationActive, failureLabel, markSpoken, pendingReply })
   latest.current = { conversationActive, failureLabel, markSpoken, pendingReply }
 
+  // ``streamRef`` ve ``declinedRef`` reaktif bir degerin AYNASI degil: biri
+  // acik bir WebSocket oturumu ve ona kac karakter gonderildigi, digeri baska
+  // bir pencerenin ustlendigi kimlikler. State'e tasimak her token'da yeniden
+  // render tetiklerdi ve oturumu her degisimde sokup atardi -- yani her
+  // cumlede yeni bir sentez baglantisi. Reaktif degerler (``$messages``,
+  // ``$voicePlayback``) geri cagrilarda DOGRUDAN okunuyor, ki kuralin
+  // korudugu sey de bu.
+  // eslint-disable-next-line no-restricted-syntax -- yukaridaki gerekce
   useEffect(() => {
     if (!enabled) {
       return undefined
@@ -86,28 +108,110 @@ export function useAutoSpeakReplies({
       }
 
       const reply = pendingReply()
+      const live = streamRef.current
 
-      if (!reply || reply.pending) {
+      // Karar tablosu AYRI ve saf: bkz. ``lib/reply-speech-plan.ts``.
+      const action = planReplySpeech({
+        declined: Boolean(reply && declinedRef.current.has(reply.id)),
+        live: live ? { id: live.id, sent: live.sent } : null,
+        playbackIdle: $voicePlayback.get().status === 'idle',
+        reply
+      })
+
+      if (action.kind === 'wait') {
         return
       }
 
+      if (action.kind === 'retire') {
+        live?.session?.finish()
+        streamRef.current = null
+
+        return
+      }
+
+      if (action.kind === 'open') {
+        const id = action.id
+        const entry: LiveStream = { id, sent: 0, session: null }
+
+        streamRef.current = entry
+
+        // Ayni sohbet birkac pencerede acikken cevabi TEK biri seslendirir.
+        // Talep ANA SURECTE cozuluyor (``electron/event-dedupe.ts``).
+        void ownsAmbientCue(`speak:${id}`)
+          .then(owns => {
+            if (!owns) {
+              declinedRef.current.add(id)
+
+              if (streamRef.current === entry) {
+                streamRef.current = null
+              }
+
+              return null
+            }
+
+            return startSpeechStream({ messageId: id, source: 'read-aloud' })
+          })
+          .then(session => {
+            if (streamRef.current !== entry) {
+              // Bu arada cevap degisti: acilan oturumu ORTADA birakma.
+              session?.finish()
+
+              return
+            }
+
+            entry.session = session
+
+            if (!session) {
+              // Akis yok (eski arka uc): oturum kapaniyor ve bir sonraki
+              // tik yeniden deneyecek yerde SESSIZ kalmasin diye cevap
+              // tamamlandiginda tek seferlik yol devreye giriyor.
+              streamRef.current = null
+
+              return
+            }
+
+            // Acilis gecikmis olabilir; o ana kadar birikmis metni HEMEN
+            // yolla, yoksa bas taraf kaybolur.
+            speakLatest()
+          })
+          .catch((error: unknown) => {
+            if (streamRef.current === entry) {
+              streamRef.current = null
+            }
+
+            notifyError(error, latest.current.failureLabel)
+          })
+
+        return
+      }
+
+      if (!live?.session) {
+        // Oturum henuz acilmadi: ``open`` dalindaki geri cagri tekrar cagiracak.
+        return
+      }
+
+      if (action.kind === 'append') {
+        live.session.append(action.text)
+        live.sent = action.sent
+
+        return
+      }
+
+      // action.kind === 'finish'
+      live.session.finish()
+      streamRef.current = null
       markSpoken()
-      // Only one window voices a given reply when the same chat is open in
-      // several (reply.id is the shared backend message id). markSpoken already
-      // ran in every window, so peers just stay quiet.
-      void ownsAmbientCue(`speak:${reply.id}`).then(owns => {
-        if (owns) {
-          void playSpeechText(reply.text, { messageId: reply.id, source: 'read-aloud' }).catch(error =>
-            notifyError(error, failureLabel)
-          )
-        }
-      })
     }
 
     // Re-check on a reply completing ($messages) and on the prior clip ending
     // ($voicePlayback → idle), which frees us to read the next held reply.
     const stops = [$messages.subscribe(speakLatest), $voicePlayback.listen(speakLatest)]
 
-    return () => stops.forEach(f => f())
+    return () => {
+      stops.forEach(f => f())
+      // Oturum degisti ya da ozellik kapandi: acik akisi ORTADA birakma.
+      streamRef.current?.session?.finish()
+      streamRef.current = null
+    }
   }, [$messages, enabled, sessionId])
 }

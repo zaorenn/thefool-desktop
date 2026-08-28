@@ -4,13 +4,37 @@ import { useEffect, useRef } from 'react'
 import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { planReplySpeech } from '@/lib/reply-speech-plan'
-import { type SpeechStreamSession, startSpeechStream } from '@/lib/voice-playback'
+import { playSpeechText, type SpeechStreamSession, startSpeechStream } from '@/lib/voice-playback'
 import { ownsAmbientCue } from '@/store/ambient'
 import { notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 import { $autoSpeakReplies } from '@/store/voice-prefs'
 
 import { useComposerScope } from '../scope'
+
+/**
+ * Baska bir yuzeyin ustlendigi cevap kimlikleri icin ust sinir.
+ *
+ * Kayit yalnizca "bu cevabi bir daha talep etme" demek ve bir cevap ancak
+ * geldigi anda talep ediliyor -- saatler sonra degil. Sinirsiz birakmak, uzun
+ * bir oturumda her cevabin kimligini sonsuza kadar tutmakti.
+ */
+const DECLINED_CAP = 200
+
+/** Kaydi ekle ve seti sinirda tut (en eskiler dusuyor). */
+function rememberDeclined(declined: Set<string>, id: string): void {
+  declined.add(id)
+
+  while (declined.size > DECLINED_CAP) {
+    const oldest = declined.values().next().value
+
+    if (oldest === undefined) {
+      return
+    }
+
+    declined.delete(oldest)
+  }
+}
 
 interface LiveStream {
   id: string
@@ -60,6 +84,10 @@ export function useAutoSpeakReplies({
   // Baska bir pencerenin ustlendigi cevaplar -- her tikte yeniden talep
   // etmemek icin.
   const declinedRef = useRef<Set<string>>(new Set())
+  // Akis bu cevap icin HIC ses uretmedi: kimlik burada bekliyor ve cevap
+  // tamamlaninca tek seferlik yoldan okunuyor. Yeni bir zamanlayici YOK --
+  // kanca zaten ``$messages`` ve ``$voicePlayback`` tiklerinde uyaniyor.
+  const fallbackRef = useRef<null | string>(null)
   const latest = useRef({ conversationActive, failureLabel, markSpoken, pendingReply })
   latest.current = { conversationActive, failureLabel, markSpoken, pendingReply }
 
@@ -139,6 +167,37 @@ export function useAutoSpeakReplies({
       }
 
       const reply = pendingReply()
+
+      // YEDEK YOL: akis bu cevap icin hic ses uretmedi.
+      //
+      // Buranin planlayicidan ONCE gelmesi sart: ``planReplySpeech`` acik
+      // oturum gormeyince ``open`` doner ve ayni akisi bastan acardi -- yani
+      // ses uretmeyen yol sonsuza kadar kendini tekrar ederdi.
+      if (fallbackRef.current) {
+        if (!reply || reply.id !== fallbackRef.current) {
+          // Cevap degisti: bekleyen yedek artik gecersiz.
+          fallbackRef.current = null
+        } else {
+          // Metin hala akiyorsa bekle: yarim cevabi okumak, kalanini hic
+          // okumamak olurdu.
+          if (reply.pending || $voicePlayback.get().status !== 'idle') {
+            return
+          }
+
+          fallbackRef.current = null
+          markSpoken()
+
+          // ``messageId`` VERILIYOR: pencere ici tekillestirme burada da
+          // gecerli. Kayit ``startSpeechStream`` tarafindan zaten birakildi
+          // (ses uretilmedi), o yuzden bu cagri gecebiliyor.
+          void playSpeechText(reply.text, { messageId: reply.id, source: 'read-aloud' }).catch((error: unknown) =>
+            notifyError(error, latest.current.failureLabel)
+          )
+
+          return
+        }
+      }
+
       const live = streamRef.current
 
       // Karar tablosu AYRI ve saf: bkz. ``lib/reply-speech-plan.ts``.
@@ -171,7 +230,7 @@ export function useAutoSpeakReplies({
         void ownsAmbientCue(`speak:${id}`)
           .then(owns => {
             if (!owns) {
-              declinedRef.current.add(id)
+              rememberDeclined(declinedRef.current, id)
 
               if (streamRef.current === entry) {
                 streamRef.current = null
@@ -193,13 +252,33 @@ export function useAutoSpeakReplies({
             entry.session = session
 
             if (!session) {
-              // Akis yok (eski arka uc): oturum kapaniyor ve bir sonraki
-              // tik yeniden deneyecek yerde SESSIZ kalmasin diye cevap
-              // tamamlandiginda tek seferlik yol devreye giriyor.
+              // Akis yok (eski arka uc / saglayici parcali API sunmuyor).
+              // Cevap tamamlaninca tek seferlik yoldan okunuyor: bu satir bir
+              // yorum olarak VARDI ama karsiligi hic yazilmamisti, yani
+              // ozellik acikken hicbir ses cikmiyordu.
               streamRef.current = null
+              fallbackRef.current = id
+              speakLatest()
 
               return
             }
+
+            // Akis ACILDI ama ses uretmeyebilir (sentez dustu, motor soguk
+            // kaldi). ``done`` -> 'fallback' tam olarak bunu bildiriyor ve
+            // ``startSpeechStream`` o durumda seslendirme kaydini birakiyor,
+            // yani asagidaki tek seferlik cagri gecebiliyor.
+            void session.done.then(outcome => {
+              if (outcome !== 'fallback') {
+                return
+              }
+
+              if (streamRef.current === entry) {
+                streamRef.current = null
+              }
+
+              fallbackRef.current = id
+              speakLatest()
+            })
 
             // Acilis gecikmis olabilir; o ana kadar birikmis metni HEMEN
             // yolla, yoksa bas taraf kaybolur.
@@ -243,6 +322,7 @@ export function useAutoSpeakReplies({
       // Oturum degisti ya da ozellik kapandi: acik akisi ORTADA birakma.
       streamRef.current?.session?.finish()
       streamRef.current = null
+      fallbackRef.current = null
     }
   }, [$messages, enabled, sessionId])
 }

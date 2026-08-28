@@ -63,6 +63,30 @@ import {
   takeFiller
 } from './thinking-filler'
 
+/**
+ * Baska bir yuzeyin ustlendigi cevap kimlikleri icin ust sinir.
+ *
+ * Kayit yalnizca "bu cevabi bir daha talep etme" demek ve bir cevap ancak
+ * geldigi anda talep ediliyor -- saatler sonra degil. Sinirsiz birakmak, uzun
+ * bir oturumda her cevabin kimligini sonsuza kadar tutmakti.
+ */
+const DECLINED_CAP = 200
+
+/** Kaydi ekle ve seti sinirda tut (en eskiler dusuyor). */
+function rememberDeclined(declined: Set<string>, id: string): void {
+  declined.add(id)
+
+  while (declined.size > DECLINED_CAP) {
+    const oldest = declined.values().next().value
+
+    if (oldest === undefined) {
+      return
+    }
+
+    declined.delete(oldest)
+  }
+}
+
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
 
 export interface NotchVoice {
@@ -132,6 +156,21 @@ export function useNotchVoice(): NotchVoice {
   // yeniden talep ederdi: talep reddedilince ``streamRef`` bosaliyor ve bir
   // sonraki tik ayni yolu bastan denerdi -- saniyede onlarca bosuna IPC.
   const declinedRef = useRef<Set<string>>(new Set())
+  // Bu turun EN GUNCEL konusma metni.
+  //
+  // Yedek yol bunu okuyor, akisin acilisinda yakalanan ``pending`` nesnesini
+  // DEGIL: o nesne oturum acilirken donduruluyor ve cevap o anda daha yeni
+  // baslamis oluyor. Kapanista onu okumak, uzun bir cevabin yalnizca ilk
+  // cumlesini seslendirmek demekti. Ustelik cevap tamamlaninca
+  // ``lastSpokenId`` yaziliyor ve ``collectUnspokenTurnSpeech`` artik ``null``
+  // donuyor -- yani metni geri okumanin baska yolu kalmiyor.
+  const turnSpeechRef = useRef<null | { id: string; pending: boolean; text: string }>(null)
+  // Akis bu cevap icin HIC ses uretmedi: kimlik burada bekliyor ve cevap
+  // TAMAMLANINCA tek seferlik yoldan okunuyor.
+  const fallbackRef = useRef<null | string>(null)
+  // Yedek yol metin AKARKEN kurulduysa efektin bir kez daha kosmasi gerekiyor:
+  // cevap zaten tamamlanmissa yeni bir ``messages`` tiki gelmeyebilir.
+  const [fallbackTick, setFallbackTick] = useState(0)
   // Araya girme yakalamasi SURUYOR mu? Izleyici, durum 'listening'e dondugu
   // an sokulup atilirsa yakaladigi cumleyi teslim edemeden olur -- yani
   // kullanicinin araya girerken soyledigi sey kaybolur. Bu bayrak izleyiciyi
@@ -370,6 +409,33 @@ export function useNotchVoice(): NotchVoice {
     })()
   }, [mic, submitAudio])
 
+  /**
+   * Akış hiç ses üretmedi — metni TEK SEFERLİK yoldan oku.
+   *
+   * Metin ``turnSpeechRef``ten okunuyor: akışın açıldığı andaki kopya bayat
+   * olur. Cevap hâlâ akıyorsa yalnızca işaretleniyor ve efekt tamamlanınca
+   * okuyor.
+   */
+  const armFallback = useCallback((id: string) => {
+    const snapshot = turnSpeechRef.current
+
+    if (!snapshot || snapshot.id !== id) {
+      return
+    }
+
+    if (snapshot.pending) {
+      fallbackRef.current = id
+      setFallbackTick(tick => tick + 1)
+
+      return
+    }
+
+    void playSpeechText(snapshot.text, {
+      messageId: id,
+      source: 'voice-conversation'
+    }).catch(() => undefined)
+  }, [])
+
   // Cevabı AKARKEN seslendir.
   //
   // Neden akış: baloncuğun bitmesini beklemek, uzun bir cevapta kullanıcıyı
@@ -397,7 +463,7 @@ export function useNotchVoice(): NotchVoice {
       return
     }
 
-    const pending = collectUnspokenTurnSpeech([...messages], lastSpokenId)
+    const pending = collectUnspokenTurnSpeech(messages, lastSpokenId)
 
     if (pending?.text) {
       setReply(pending.text)
@@ -405,6 +471,35 @@ export function useNotchVoice(): NotchVoice {
 
     if (!pending || !pending.text.trim()) {
       return
+    }
+
+    turnSpeechRef.current = { id: pending.id, pending: pending.pending, text: pending.text }
+
+    // YEDEK YOL: akis bu cevap icin hic ses uretmedi ve metin o sirada hala
+    // akiyordu. Cevap tamamlanana kadar bekleniyor -- yarim cevabi okuyup
+    // kalanini hic okumamak, sessiz kalmanin bir baskasi olurdu.
+    if (fallbackRef.current) {
+      if (fallbackRef.current !== pending.id) {
+        fallbackRef.current = null
+      } else {
+        if (pending.pending) {
+          return
+        }
+
+        fallbackRef.current = null
+        setLastSpokenId(pending.id)
+
+        void playSpeechText(pending.text, {
+          messageId: pending.id,
+          source: 'voice-conversation'
+        }).catch(() => undefined)
+
+        if (statusRef.current !== 'listening') {
+          setStatus('idle')
+        }
+
+        return
+      }
     }
 
     // Akış oturumu tur başına BİR kez açılıyor.
@@ -434,7 +529,7 @@ export function useNotchVoice(): NotchVoice {
           if (!owns) {
             // Başka bir yüzey bu cevabı üstlendi. Akışı hiç açma: açmak
             // "iptal edildi" durumuna düşüp iki sentezi birden başlatırdı.
-            declinedRef.current.add(claimId)
+            rememberDeclined(declinedRef.current, claimId)
             streamRef.current = null
 
             return null
@@ -451,17 +546,18 @@ export function useNotchVoice(): NotchVoice {
           }
 
           // Akış yoksa (ağ geçidi desteklemiyorsa) tek seferlik oynatmaya
-          // düşülüyor — ses hiç çıkmamasındansa geç çıkması iyidir.
+          // düşülüyor — ses hiç çıkmamasındansa geç çıkması iyidir. Bu satir
+          // bir YORUM olarak vardi ama karsiligi yazilmamisti: akis ucu
+          // olmayan bir arka uctan hicbir ses cikmiyordu.
           if (!session) {
+            armFallback(claimId)
+
             return
           }
 
           void session.done.then(outcome => {
             if (outcome === 'fallback') {
-              void playSpeechText(pending.text, {
-                messageId: pending.id,
-                source: 'voice-conversation'
-              }).catch(() => undefined)
+              armFallback(claimId)
             }
           })
         })
@@ -489,7 +585,7 @@ export function useNotchVoice(): NotchVoice {
         setStatus('idle')
       }
     }
-  }, [lastSpokenId, messages, status])
+  }, [armFallback, fallbackTick, lastSpokenId, messages, status])
 
   // Araya girme: kullanıcı TUŞA BASMADAN konuşmaya başlayınca da sus.
   //

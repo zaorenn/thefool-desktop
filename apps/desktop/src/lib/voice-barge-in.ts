@@ -31,6 +31,10 @@ const TRIGGER_CEILING_LEVEL = 0.37
 const PLAYBACK_GRACE_MS = 500
 const PLAYBACK_GAP_FOR_GRACE_MS = 1_000
 const FLOOR_SAMPLE_CAP = 200 // ~3s of quiet-phase levels at rAF cadence
+// Gurultu tabani ortancasi kac ornekte bir yeniden hesaplaniyor. 8 ornek
+// ~350 ms: ortam gurultusunun degisme hizinin cok altinda, ama her tikteki
+// kopyala+sirala isini 8'de bire indiriyor.
+const FLOOR_MEDIAN_EVERY = 8
 const PRE_ROLL_RESTART_MS = 5_000 // cap pre-roll: restart the recorder while quiet
 const UTTERANCE_SILENCE_MS = 1_250 // matches the voice loop's silenceMs
 const UTTERANCE_MAX_MS = 30_000
@@ -220,6 +224,20 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
       let trippedAt = 0
       let quietSince: number | null = null
 
+      // Ortanca her ORNEKTE degil, her ``FLOOR_MEDIAN_EVERY`` orneginde bir
+      // hesaplaniyor.
+      //
+      // Eski hali her tikte 200 elemanlik bir dizi KOPYALAYIP siraliyordu ve
+      // bu tik ses is parcaciginda, saniyede ~23 kez kosuyor -- yani sesli
+      // turun her saniyesinde 23 tahsis + 23 siralama, sirf yavas suruklenen
+      // bir gurultu tabani icin. Taban ortamin gurultusu: saniyeler
+      // olceginde degisiyor, milisaniyeler olceginde degil.
+      let sinceMedian = 0
+
+      const recomputeFloor = () => {
+        quietFloor = [...floorSamples].sort((a, b) => a - b)[floorSamples.length >> 1] ?? 0
+      }
+
       const pushFloorSample = (level: number) => {
         floorSamples.push(level)
 
@@ -227,7 +245,14 @@ export function monitorSpeechDuringPlayback(callbacks: BargeMonitorCallbacks): (
           floorSamples.shift()
         }
 
-        quietFloor = [...floorSamples].sort((a, b) => a - b)[floorSamples.length >> 1] ?? 0
+        sinceMedian += 1
+
+        // Kalibrasyon penceresi kisa (400 ms): orada HER ornekte guncelleniyor,
+        // yoksa ilk tetik yanlis bir tabanla karar verirdi.
+        if (!floorLocked || sinceMedian >= FLOOR_MEDIAN_EVERY) {
+          sinceMedian = 0
+          recomputeFloor()
+        }
       }
 
       const tick = (level: number) => {

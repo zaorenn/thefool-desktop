@@ -109,7 +109,10 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   const desktop = window.hermesDesktop
 
   if (!desktop?.api) {
-    throw new Error('Masaüstü köprüsü yok')
+    // Metin KULLANICIYA gorunuyor: ``voice-settings.tsx`` yakaladigi hatanin
+    // mesajini oldugu gibi gosteriyor. Kaynak yorumlari Turkce (bilerek), ama
+    // urunun icindeki metin uygulamanin diliyle olmali.
+    throw new Error('Desktop bridge unavailable — voice settings need the desktop app')
   }
 
   return desktop.api<T>({

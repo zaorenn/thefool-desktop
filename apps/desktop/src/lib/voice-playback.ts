@@ -226,6 +226,9 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
   let firstAudioTimer: null | number = null
   let settle: (value: 'done' | 'fallback') => void = () => undefined
 
+  /** BU oturumun durdurma tutamaci -- kimligi ile karsilastirilabilsin diye. */
+  const ownStop = () => settle('done')
+
   const done = new Promise<'done' | 'fallback'>(resolve => {
     settle = value => {
       if (settled) {
@@ -233,7 +236,18 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
       }
 
       settled = true
-      currentStop = null
+
+      // Yalnizca KENDI tutamacini birak.
+      //
+      // ``currentStop`` kuresel: o an konusan tek oturumu gosteriyor. Kosulsuz
+      // ``null`` yazmak, gec kapanan ESKI bir oturumun YENI oturumun durdurma
+      // tutamacini silmesi demekti -- ondan sonra ``stopVoicePlayback()``
+      // sirayi ilerletip durumu 'idle' yaziyor ama soket ve ses baglami ayakta
+      // kaliyor: kullanici Durdur'a basiyor, ekran susuyor, ses konusmaya
+      // devam ediyor.
+      if (currentStop === ownStop) {
+        currentStop = null
+      }
 
       if (firstAudioTimer !== null) {
         window.clearTimeout(firstAudioTimer)
@@ -264,7 +278,7 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
 
   // stopVoicePlayback() → immediate barge-in: kill the socket (the server
   // aborts synthesis on disconnect) and the audio context (cuts sound now).
-  currentStop = () => settle('done')
+  currentStop = ownStop
 
   const finishWhenDrained = () => {
     const remainingMs = context ? Math.max(0, nextStartAt - context.currentTime) * 1_000 : 0
@@ -427,6 +441,10 @@ export async function startSpeechStream(options: VoicePlaybackOptions): Promise<
   const wsUrl = await resolveSpeakStreamUrl()
 
   if (!wsUrl) {
+    // Kayit BIRAKILIYOR: hicbir ses uretilmedi. Bkz. asagidaki gerekce --
+    // burada tutmak, cagiranin yedek yolunu kendi kaydiyla oldururdu.
+    forgetSpokenMessage(options.messageId)
+
     return null
   }
 
@@ -438,7 +456,24 @@ export async function startSpeechStream(options: VoicePlaybackOptions): Promise<
   void session.done.then(outcome => {
     if (outcome === 'done') {
       setVoicePlaybackState(currentState('idle'))
+
+      return
     }
+
+    // ``fallback`` = HIC ses uretilmedi.
+    //
+    // Kayit "bu mesaj SESLENDIRILDI" demek; oturumun acilmis olmasi demek
+    // degil. Ayrimi kaybetmek sessiz sinifin ders kitabi haliydi: cagiran
+    // "ses cikmazsa metni yine oku" diye yedek yol yaziyor, o yol ayni
+    // kimlikle ``playSpeechText`` cagiriyor ve KENDI kaydina takilip
+    // ``false`` aliyordu. Yani yedek yol tam da devreye girmesi gereken anda
+    // oluydu -- centigin yedegi (``fool/notch/use-notch-voice.ts``) birebir
+    // boyleydi ve kullanici hicbir ses duymuyordu.
+    //
+    // Duzeltme cagri yerlerinde DEGIL burada: kural tek ve her cagiran icin
+    // ayni. Her yuzeyin ayri ayri ``forgetSpokenMessage`` cagirmasi
+    // gerekseydi, siradaki yuzey yine unuturdu.
+    forgetSpokenMessage(options.messageId)
   })
 
   return session
@@ -471,6 +506,12 @@ async function playSpeechDataUrl(
   await new Promise<void>((resolve, reject) => {
     let stall: number | null = null
 
+    /** BU oynatmanin durdurma tutamaci. */
+    const ownStop = () => {
+      cleanup()
+      resolve()
+    }
+
     const cleanup = () => {
       if (stall !== null) {
         window.clearTimeout(stall)
@@ -480,7 +521,11 @@ async function playSpeechDataUrl(
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('error', onError)
       audio.removeEventListener('timeupdate', armStall)
-      currentStop = null
+
+      // Yalnizca KENDI tutamacini birak -- akis yolundaki ile ayni kural.
+      if (currentStop === ownStop) {
+        currentStop = null
+      }
     }
 
     const armStall = () => {
@@ -504,10 +549,7 @@ async function playSpeechDataUrl(
       reject(new Error('Playback failed'))
     }
 
-    currentStop = () => {
-      cleanup()
-      resolve()
-    }
+    currentStop = ownStop
 
     audio.addEventListener('ended', onEnded, { once: true })
     audio.addEventListener('error', onError, { once: true })

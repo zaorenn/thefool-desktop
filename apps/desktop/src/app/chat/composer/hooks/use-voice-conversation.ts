@@ -159,7 +159,13 @@ export function useVoiceConversation({
       setStatus('transcribing')
 
       try {
-        const result = await handle.stop()
+        // Kayit kapatma KORUMALI.
+        //
+        // ``use-mic-recorder`` artik her zaman cozuyor, ama bu tur donguyu
+        // ayakta tutan yer: buradan sizan tek bir soz durumu
+        // ``transcribing``de birakiyor ve mikrofon bir daha hic acilmiyor.
+        // Iki katmanin da tutmasi gereken bir sozlesme.
+        const result = await handle.stop().catch(() => null)
 
         if (!result || (!result.heardSpeech && !forceTranscribe) || !onTranscribeAudio) {
           if (enabledRef.current && !mutedRef.current && !busyRef.current && statusRef.current !== 'speaking') {

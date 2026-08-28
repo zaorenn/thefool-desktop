@@ -567,6 +567,29 @@ class RecallStore:
     def last_farewell(self) -> float | None:
         return self._get_float("last_farewell")
 
+    # -- ilişki durumu ------------------------------------------------------
+
+    def load_relationship(self) -> dict | None:
+        """Kayıtlı ilişki durumu (``None`` = hiç yok)."""
+        import json
+
+        raw = self._get_meta("relationship")
+
+        if not raw:
+            return None
+
+        try:
+            payload = json.loads(raw)
+        except ValueError:
+            return None
+
+        return payload if isinstance(payload, dict) else None
+
+    def save_relationship(self, payload: dict) -> None:
+        import json
+
+        self._set_meta("relationship", json.dumps(payload, ensure_ascii=False))
+
     def _get_float(self, key: str) -> float | None:
         raw = self._get_meta(key)
 

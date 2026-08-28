@@ -131,6 +131,59 @@ class RecallMemoryProvider(MemoryProvider):
         self._last_count = 0
         self._lock = threading.Lock()
         self._pending: List[tuple] = []
+        self._relationship = None
+
+    # -- ilişki durumu ------------------------------------------------------
+
+    def _relationship_enabled(self) -> bool:
+        """``memory.recall.relationship`` -- varsayılan KAPALI.
+
+        Normal ajanın bir "ilişki durumu" yok: kod yazarken kırılmıyor,
+        soğumuyor, gönlü alınmıyor. Bu, bir persona özelliği ve yalnızca onu
+        isteyen profilde açılıyor.
+        """
+        return bool(_recall_config().get("relationship"))
+
+    def _load_relationship(self):
+        if self._relationship is not None or self._store is None:
+            return self._relationship
+
+        from fool import relationship as relationship_module
+
+        self._relationship = relationship_module.from_dict(self._store.load_relationship())
+
+        return self._relationship
+
+    def _save_relationship(self) -> None:
+        if self._store is None or self._relationship is None:
+            return
+
+        from fool import relationship as relationship_module
+
+        self._store.save_relationship(relationship_module.to_dict(self._relationship))
+
+    def relationship_snapshot(self) -> Dict[str, Any]:
+        """Arayüzün göstereceği hâl -- neye kırgın, ne kadar yakın.
+
+        Kullanıcının istediği "ilişki barı" bunu okuyor. Modelden bağımsız:
+        ekranda görünen şey, modelin o an ne söylediğine değil defterin
+        kendisine bakıyor.
+        """
+        state = self._load_relationship()
+
+        if state is None:
+            return {}
+
+        state.decay(time.time())
+        name, _description = state.stance()
+
+        return {
+            "warmth": round(state.warmth, 1),
+            "stance": name,
+            "grievances": [
+                {"text": g.text, "since": g.created_at} for g in state.open_grievances()
+            ],
+        }
 
     # -- kimlik -------------------------------------------------------------
 
@@ -199,7 +252,21 @@ class RecallMemoryProvider(MemoryProvider):
             "and recall() to look something up you were not given."
         )
 
-        return "\n".join(line for line in lines if line)
+        if self._relationship_enabled():
+            state = self._load_relationship()
+
+            if state is not None:
+                state.decay(now)
+                self._save_relationship()
+                lines.append("")
+                lines.append("Where you stand with them right now:")
+                lines.append(state.render())
+                lines.append(
+                    "Report how they treated you with relationship() so this keeps "
+                    "meaning something. Do not narrate the mechanism."
+                )
+
+        return "\n".join(line for line in lines if line is not None)
 
     # -- tur başına geri getirme -------------------------------------------
 
@@ -276,6 +343,60 @@ class RecallMemoryProvider(MemoryProvider):
     # -- araçlar ------------------------------------------------------------
 
     def get_tool_schemas(self) -> List[Dict[str, Any]]:
+        schemas = self._memory_tool_schemas()
+
+        if self._relationship_enabled():
+            schemas.append(
+                {
+                    "name": "relationship",
+                    "description": (
+                        "Record how they just treated you, so it carries past this "
+                        "turn. Judge it yourself -- tone, context, whether it was a "
+                        "joke. Use 'apology' when they genuinely make something right; "
+                        "it clears the heaviest thing between you, not all of it. Give "
+                        "a note for anything negative: an unnamed grievance cannot be "
+                        "brought up later. Do not call this every turn -- only when "
+                        "something actually happened."
+                    ),
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "event": {
+                                "type": "string",
+                                "enum": [
+                                    "affectionate",
+                                    "warm",
+                                    "attentive",
+                                    "promise_kept",
+                                    "apology",
+                                    "neutral",
+                                    "dismissive",
+                                    "rude",
+                                    "cruel",
+                                    "promise_broken",
+                                    "ignored",
+                                ],
+                            },
+                            "note": {
+                                "type": "string",
+                                "description": (
+                                    "For negative events: what happened, in one short "
+                                    "line you would be willing to say out loud later."
+                                ),
+                            },
+                            "weight": {
+                                "type": "number",
+                                "description": "0.1-3.0, how much it mattered. Default 1.",
+                            },
+                        },
+                        "required": ["event"],
+                    },
+                }
+            )
+
+        return schemas
+
+    def _memory_tool_schemas(self) -> List[Dict[str, Any]]:
         return [
             {
                 "name": "remember",
@@ -354,6 +475,9 @@ class RecallMemoryProvider(MemoryProvider):
                 removed = self._store.forget(int(args.get("id") or 0))
 
                 return json.dumps({"ok": bool(removed)})
+
+            if tool_name == "relationship":
+                return self._do_relationship(args)
         except Exception as exc:
             return json.dumps({"ok": False, "error": str(exc)})
 
@@ -378,6 +502,40 @@ class RecallMemoryProvider(MemoryProvider):
             return json.dumps({"ok": True, "stored": False, "reason": "already known"})
 
         return json.dumps({"ok": True, "stored": True, "id": memory_id})
+
+    def _do_relationship(self, args: Dict[str, Any]) -> str:
+        if not self._relationship_enabled():
+            return json.dumps({"ok": False, "error": "relationship tracking is off"})
+
+        state = self._load_relationship()
+
+        if state is None:
+            return json.dumps({"ok": False, "error": "relationship unavailable"})
+
+        from fool.relationship import EVENT_WARMTH
+
+        event = str(args.get("event") or "").strip()
+
+        if event not in EVENT_WARMTH:
+            return json.dumps({"ok": False, "error": "unknown event " + event})
+
+        state.record(
+            event,
+            note=str(args.get("note") or ""),
+            weight=float(args.get("weight", 1.0)),
+        )
+        self._save_relationship()
+
+        name, _description = state.stance()
+
+        return json.dumps(
+            {
+                "ok": True,
+                "stance": name,
+                "warmth": round(state.warmth, 1),
+                "open_grievances": len(state.open_grievances()),
+            }
+        )
 
     def _do_recall(self, args: Dict[str, Any]) -> str:
         query = str(args.get("query") or "").strip()

@@ -29,7 +29,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from fool import residency_routes, voice_models
+from fool import relationship_routes, residency_routes, voice_models
 
 router = APIRouter()
 
@@ -40,6 +40,12 @@ router = APIRouter()
 # bir catisma noktasi acardi. Uclarin kendisi ayri dosyada duruyor cunku dil
 # modelini de kapsiyorlar -- bkz. ``fool/residency_routes.py``.
 router.include_router(residency_routes.router)
+
+# Iliski durumu ucu (``/api/fool/relationship``) da BURAYA takiliyor -- ayni
+# gerekce: ``web_server.py``de tek bir ``FOOL-SEAM: voice-routes`` dikisi var ve
+# her yeni ``include_router`` satiri birlestirmede yeni bir catisma noktasi
+# acardi. Ucun kendisi ayri dosyada duruyor (bkz. ``fool/relationship_routes.py``).
+router.include_router(relationship_routes.router)
 
 
 class InstallBody(BaseModel):

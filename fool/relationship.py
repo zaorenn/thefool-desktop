@@ -112,6 +112,23 @@ STANCES = (
 )
 
 
+#: Duruş -> (kullanıcıya görünen ad, kullanıcıya görünen tek satır).
+#:
+#: ``STANCES``teki tarif MODELE yazılmış -- ikinci tekil, emir kipi ("You are
+#: cool with them. Short answers."). Onu ekrana koymak, kullanıcıya kendi
+#: hakkındaki talimatı okutmak olurdu. Bar aynı durumu ÜÇÜNCÜ tekilden,
+#: gözlemlenebilir davranış olarak söylüyor.
+#:
+#: Metin İngilizce çünkü ürün metni İngilizce (kaynak yorumları Türkçe).
+STANCE_LABELS: dict[str, tuple[str, str]] = {
+    "close": ("Close", "She is glad you are here and brings things up unprompted."),
+    "fond": ("Fond", "Friendly and open, and comfortable teasing you."),
+    "neutral": ("Neutral", "Civil, but not going out of her way."),
+    "cool": ("Cool", "Short answers. She may turn down things that feel like being used."),
+    "cold": ("Cold", "Closed off, and not pretending otherwise. Winning her back takes acknowledging what happened."),
+}
+
+
 @dataclass
 class Grievance:
     """Açık bir dert."""

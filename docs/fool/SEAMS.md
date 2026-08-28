@@ -79,6 +79,7 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `shared-voice-policy` | `apps/desktop/src/app/chat/composer/hooks/use-voice-conversation.ts` | Çentik ve besteci ayrı kurallarla çalışır |
 | `voice-session-bridge` | `apps/desktop/src/store/active-work.ts` | Ses `session_id: null` gider, cevap bot panelinde çıkar |
 | `main-window-only-publisher` | `apps/desktop/src/store/*` | Çentiğin boş kopyası ana pencerenin değerini ezer |
+| `relationship-bar` | `apps/desktop/src/app/chat/sidebar/index.tsx` | Persona ile aranda ne olduğu (neye kırgın, ne kadar yakın) hiçbir yerde görünmez |
 | `accent-override` | `apps/desktop/src/themes/*` | Persona vurgu rengi uygulanmaz |
 | `notch-window` / `notch-route` / `notch-ipc` / `notch-shortcut` / `notch-quit` / `notch-no-chrome` | `apps/desktop/electron/main.ts`, `preload.ts`, `app/contrib/*` | Çentik açılmaz ya da Ctrl+Alt+V ölür |
 | `slow-voice-engine` | `fool/voice_models.py` | Gerçek zamandan yavaş motorlar listeye geri döner |

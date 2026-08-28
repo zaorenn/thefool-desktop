@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
+import { RelationshipBar } from '@/fool/relationship-bar'
 import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { comboTokens } from '@/lib/keybinds/combo'
@@ -1865,6 +1866,11 @@ export function ChatSidebar({
         {!showSessionSections && <SidebarBlankState onNewProject={openProjectCreate} />}
 
         <div className="shrink-0 px-0.5 pb-1 pt-0.5">
+          {/* FOOL-SEAM: relationship-bar
+              Persona profilinde onunla aranda ne olduğunu gösteriyor; sıradan
+              ajanda kendini hiç çizmiyor. Profil kimliğinin YANINDA duruyor
+              çünkü anlattığı şey o profile ait. */}
+          <RelationshipBar />
           <ProfileRail />
         </div>
       </SidebarContent>

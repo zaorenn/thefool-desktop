@@ -14,6 +14,7 @@
 import { expect, test } from './test'
 
 import {
+  EXPECTED_WINDOW_TITLE,
   type MockBackendFixture,
   setupMockBackend,
   waitForAppReady,
@@ -32,9 +33,9 @@ test.afterAll(async () => {
 })
 
 test.describe('dev-mode boot with mock backend', () => {
-  test('window opens with Hermes title', async () => {
+  test('window opens with the product title', async () => {
     const title = await fixture!.page.title()
-    expect(title).toContain('Hermes')
+    expect(title).toContain(EXPECTED_WINDOW_TITLE)
   })
 
   test('renderer mounts and shows DOM content', async () => {

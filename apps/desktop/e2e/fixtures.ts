@@ -23,9 +23,12 @@
 import { spawnSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
+import { createRequire } from 'node:module'
 import * as path from 'node:path'
 
 import { _electron, type ElectronApplication, type Page } from '@playwright/test'
+
+import PACKAGE_JSON from '../package.json' with { type: 'json' }
 
 import { startMockServer, type MockServerOptions } from './mock-server'
 import { installErrorBannerGuard } from './test'
@@ -287,19 +290,59 @@ export function findElectron(): string {
   // In dev mode, we use the `electron` binary directly (not the packaged app).
   // The dev:electron script in package.json does exactly this: `electron .`
   // after building. We replicate that here.
-  const localElectron = path.join(REPO_ROOT, 'node_modules', 'electron', 'dist', 'electron')
+  //
+  // Çözüm ELECTRON'UN KENDİ kaydından geliyor.
+  //
+  // Eski hali iki varsayım yapıyordu ve ikisi de Windows'ta yanlıştı:
+  //
+  //   1. Dosya adının uzantısız ``electron`` olduğu -- Windows'ta
+  //      ``electron.exe``.
+  //   2. Paketin ``REPO_ROOT/node_modules`` altında durduğu -- npm workspace
+  //      yükseltmesi onu ``apps/desktop/node_modules`` altına koyabiliyor.
+  //
+  // İkisi de tutmayınca ``which electron`` yedeğine düşüyor; ``which`` bir
+  // Windows komutu değil, ve Git Bash altında çalıştığında Windows'un
+  // açamayacağı bir POSIX yolu (``/c/...``) döndürüyor. Sonuç: masaüstü E2E
+  // paketi Windows'ta HİÇ çalışamıyordu -- yani uygulamanın birincil
+  // platformunda sıfır uçtan uca kapsam.
+  //
+  // ``path.txt`` electron npm paketinin kendi sözleşmesi: ``dist/`` içindeki
+  // ikilinin göreli yolunu tutuyor ve her işletim sisteminde doğru cevabı
+  // veriyor.
+  const require = createRequire(import.meta.url)
 
-  if (fs.existsSync(localElectron)) {
-    return localElectron
+  try {
+    const packageDir = path.dirname(require.resolve('electron/package.json'))
+    const relative = fs.readFileSync(path.join(packageDir, 'path.txt'), 'utf8').trim()
+    const binary = path.join(packageDir, 'dist', relative)
+
+    if (relative && fs.existsSync(binary)) {
+      return binary
+    }
+  } catch {
+    // Paket çözülemedi -- aşağıdaki adaylar denenecek.
   }
 
-  // Fall back to PATH
-  const result = spawnSync('which', ['electron'], {
+  const executable = process.platform === 'win32' ? 'electron.exe' : 'electron'
+  const candidates = [
+    path.join(DESKTOP_ROOT, 'node_modules', 'electron', 'dist', executable),
+    path.join(REPO_ROOT, 'node_modules', 'electron', 'dist', executable),
+  ]
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  // Fall back to PATH (``where`` on Windows, ``which`` elsewhere).
+  const result = spawnSync(process.platform === 'win32' ? 'where' : 'which', ['electron'], {
     encoding: 'utf8',
   })
 
   if (result.status === 0 && result.stdout.trim()) {
-    return result.stdout.trim()
+    // ``where`` birden fazla satır dönebiliyor -- ilki.
+    return result.stdout.trim().split('\n')[0].trim()
   }
 
   throw new Error(
@@ -508,18 +551,49 @@ providers:
  * electron-builder's output layout under release/.
  */
 function resolvePackagedBinaryPath(): string {
+  // FOOL-SEAM: packaged-exe-name
+  //
+  // Adlar package.json'DAN turetiliyor. Sabit `Hermes.exe` / `Hermes.app` /
+  // `hermes` adlarinin hicbiri artik uretilmiyor: electron-builder
+  // `build.executableName` ("TheFool") ve `build.productName` ("The Fool")
+  // alanlarini kullaniyor. Sonuc, paketlenmis uygulamayi calistiran her E2E
+  // sinavinin ikiliyi hic bulamamasiydi.
+  const productName = String(PACKAGE_JSON.build?.productName || PACKAGE_JSON.productName || 'The Fool')
+  const executableName = String(PACKAGE_JSON.build?.executableName || productName)
+
   if (process.platform === 'win32') {
-    return path.join(RELEASE_ROOT, 'win-unpacked', 'Hermes.exe')
+    return path.join(RELEASE_ROOT, 'win-unpacked', `${executableName}.exe`)
   }
 
   if (process.platform === 'darwin') {
     const arch = process.arch === 'arm64' ? 'arm64' : 'x64'
 
-    return path.join(RELEASE_ROOT, `mac-${arch}`, 'Hermes.app', 'Contents', 'MacOS', 'Hermes')
+    return path.join(RELEASE_ROOT, `mac-${arch}`, `${productName}.app`, 'Contents', 'MacOS', executableName)
   }
 
-  return path.join(RELEASE_ROOT, 'linux-unpacked', 'hermes')
+  return path.join(RELEASE_ROOT, 'linux-unpacked', executableName)
 }
+
+/**
+ * Pencerenin BEKLENEN başlığı — ürün adından türetiliyor, elle yazılmıyor.
+ *
+ * Ölçülen hata: ``boot.spec.ts`` ve ``launch-packaged-app.spec.ts``
+ * ``expect(title).toContain('Hermes')`` diyordu. Marka dönüşümünden sonra
+ * başlık ``index.html``de ``The Fool`` -- yani iki sınav da her koşuda
+ * düşüyordu ve ``boot.spec`` fikstürü paylaşan bütün spec'ler onunla birlikte
+ * kırmızıya dönüyordu.
+ *
+ * CI bunu 2 Ağustos'ta devre dışı bırakırken sebebi "mock arka uçlu Electron
+ * penceresi hiç başlık almıyor" diye yazmış ve npm/engines değişikliklerine
+ * bağlamıştı. Pencere başlığı ALIYOR; yalnızca beklenen ad eskimişti.
+ * Yanlış teşhis, bütün masaüstü E2E paketini haftalarca kapalı tuttu.
+ *
+ * Ad ``package.json``dan geliyor, böylece bir sonraki yeniden adlandırmada
+ * sınav sessizce eskimiyor.
+ */
+export const EXPECTED_WINDOW_TITLE = String(
+  PACKAGE_JSON.build?.productName || PACKAGE_JSON.productName || 'The Fool'
+)
 
 export const PACKAGED_BINARY_PATH = resolvePackagedBinaryPath()
 

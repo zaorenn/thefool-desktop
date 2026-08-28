@@ -214,18 +214,43 @@ pub async fn launch_hermes_desktop(
 /// <os>-unpacked/<exe>).
 pub(crate) fn resolve_hermes_desktop_exe(install_root: &std::path::Path) -> Option<PathBuf> {
     let release_dir = install_root.join("apps").join("desktop").join("release");
+    // FOOL-SEAM: packaged-exe-name
+    //
+    // Bu liste `Hermes` adlarini ariyordu ve o adlarin HICBIRI artik
+    // uretilmiyor. electron-builder `executableName: "TheFool"` alanindan
+    // uretiyor (apps/desktop/package.json): Windows'ta `TheFool.exe`,
+    // macOS'ta `The Fool.app/Contents/MacOS/TheFool` (CFBundleExecutable),
+    // Linux'ta `TheFool`.
+    //
+    // Yani imzali kurulumun "Baslat" ve yeniden baslatma yollari sessizce
+    // oluydu: `resolve_hermes_desktop_exe` her zaman `None` donuyordu.
+    // Kendi sinav fikstürü de (asagida) ayni yanlis agaci kurdugu icin bunu
+    // hicbir sey yakalamiyordu.
+    //
+    // Eski adlar listede KALIYOR: eski bir kurulumun uzerine gelen bir
+    // yukseltme hala calisabilsin.
     let candidates: &[(&str, &str)] = if cfg!(target_os = "windows") {
         &[
+            ("win-unpacked", "TheFool.exe"),
+            ("win-arm64-unpacked", "TheFool.exe"),
+            ("win-ia32-unpacked", "TheFool.exe"),
             ("win-unpacked", "Hermes.exe"),
             ("win-arm64-unpacked", "Hermes.exe"),
         ]
     } else if cfg!(target_os = "macos") {
         &[
+            ("mac/The Fool.app/Contents/MacOS", "TheFool"),
+            ("mac-arm64/The Fool.app/Contents/MacOS", "TheFool"),
+            ("mac-universal/The Fool.app/Contents/MacOS", "TheFool"),
             ("mac/Hermes.app/Contents/MacOS", "Hermes"),
             ("mac-arm64/Hermes.app/Contents/MacOS", "Hermes"),
         ]
     } else {
-        &[("linux-unpacked", "hermes")]
+        &[
+            ("linux-unpacked", "TheFool"),
+            ("linux-arm64-unpacked", "TheFool"),
+            ("linux-unpacked", "hermes"),
+        ]
     };
     for (subdir, exe) in candidates {
         let p = release_dir.join(subdir).join(exe);
@@ -240,7 +265,7 @@ pub(crate) fn resolve_hermes_desktop_app(install_root: &std::path::Path) -> Opti
     let exe = resolve_hermes_desktop_exe(install_root)?;
     #[cfg(target_os = "macos")]
     {
-        // .../Hermes.app/Contents/MacOS/Hermes -> .../Hermes.app
+        // .../The Fool.app/Contents/MacOS/TheFool -> .../The Fool.app
         let app = exe.parent()?.parent()?.parent()?.to_path_buf();
         if app.extension().and_then(|e| e.to_str()) == Some("app") && app.is_dir() {
             return Some(app);
@@ -1019,27 +1044,30 @@ mod tests {
 
     // Build a fake built-desktop release tree at the platform's expected path
     // and return (install_root, expected_app_bundle_or_exe).
+    // Fikstur GERCEK yapinin urettigi adlari kuruyor: eskiden burada
+    // `Hermes.exe` / `Hermes.app` / `hermes` vardi, yani sinav cozucuyle AYNI
+    // yanlis varsayimi paylasiyor ve ikisi birlikte yesil kaliyordu.
     fn make_release_tree(install_root: &Path) -> PathBuf {
         let release = install_root.join("apps").join("desktop").join("release");
         if cfg!(target_os = "macos") {
             let macos_dir = release
                 .join("mac-arm64")
-                .join("Hermes.app")
+                .join("The Fool.app")
                 .join("Contents")
                 .join("MacOS");
             std::fs::create_dir_all(&macos_dir).unwrap();
-            std::fs::write(macos_dir.join("Hermes"), b"#!/bin/sh\n").unwrap();
-            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../Hermes.app
+            std::fs::write(macos_dir.join("TheFool"), b"#!/bin/sh\n").unwrap();
+            macos_dir.parent().unwrap().parent().unwrap().to_path_buf() // .../The Fool.app
         } else if cfg!(target_os = "windows") {
             let dir = release.join("win-unpacked");
             std::fs::create_dir_all(&dir).unwrap();
-            let exe = dir.join("Hermes.exe");
+            let exe = dir.join("TheFool.exe");
             std::fs::write(&exe, b"stub").unwrap();
             exe
         } else {
             let dir = release.join("linux-unpacked");
             std::fs::create_dir_all(&dir).unwrap();
-            let exe = dir.join("hermes");
+            let exe = dir.join("TheFool");
             std::fs::write(&exe, b"stub").unwrap();
             exe
         }
@@ -1047,7 +1075,7 @@ mod tests {
 
     // The relaunch / install target is derived from the rebuilt desktop app.
     // On macOS this MUST resolve to the .app bundle (what `open` relaunches and
-    // what the updater ditto's over /Applications/Hermes.app). A regression in
+    // what the updater ditto's over /Applications/The Fool.app). A regression in
     // this derivation breaks the post-update auto-relaunch, so guard it.
     #[test]
     fn resolve_hermes_desktop_app_finds_built_bundle() {

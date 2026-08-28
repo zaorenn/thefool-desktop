@@ -64,13 +64,43 @@ if [ -z "$REPO" ]; then
   REPO="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$script_dir")"
 fi
 
+# Hem CalVer hem SemVer etiketleri kabul ediliyor.
+#
+# Olculen hata: desen yalnizca DORT HANELI yil ile basliyordu
+# (^v[0-9]{4}\.…), yani yalnizca fork ONCESI upstream CalVer etiketlerini
+# (v2026.8.16) esliyordu. Fork SemVer'e gecti (v0.17.0 … v0.20.4) ve
+# `.github/workflows/install-e2e.yml` tam olarak o SemVer etiketlerinde
+# tetikleniyor.
+#
+# Sonuc sessiz ve tam terstii: bir Fool surumu etiketlemek is akisini
+# baslatiyor, is akisi buraya geliyor ve YALNIZCA fork oncesi upstream
+# kodunu ornekliyor. Yani "guncelleme yolu" sinavi, artik var olmayan bir
+# koddan guncellemeyi sinuyordu.
+#
 # sort -V orders v2026.4.8 before v2026.4.13 (numeric), which a plain
-# lexicographic sort gets wrong.
-mapfile -t tags < <(
+# lexicographic sort gets wrong. Ayni siralama SemVer icin de dogru.
+# Fork'un KENDI etiketleri once. Iki sema karisik duruyor (fork oncesi
+# upstream CalVer v2026.8.16, fork sonrasi SemVer v0.20.4) ve `sort -V`
+# icin 2026 > 0, yani "en yeni" her zaman fork ONCESI bir etiket olurdu --
+# guncelleme sinavi artik var olmayan bir koddan guncellemeyi sinardi.
+#
+# SemVer etiketi VARSA yalnizca onlar kullaniliyor; hic yoksa (yalnizca
+# upstream etiketleri olan bir klon) eski davranis aynen suruyor.
+mapfile -t semver_tags < <(
   git -C "$REPO" tag --list 'v*' \
-    | grep -E '^v[0-9]{4}\.[0-9]+\.[0-9]+(\.[0-9]+)?$' \
+    | grep -E '^v[0-9]{1,3}\.[0-9]+\.[0-9]+$' \
     | sort -V
 )
+
+if [ "${#semver_tags[@]}" -gt 0 ]; then
+  tags=("${semver_tags[@]}")
+else
+  mapfile -t tags < <(
+    git -C "$REPO" tag --list 'v*' \
+      | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' \
+      | sort -V
+  )
+fi
 
 total="${#tags[@]}"
 if [ "$total" -eq 0 ]; then

@@ -4059,9 +4059,24 @@ function Install-Desktop {
 
     # 3. Sanity-check the produced binary. Probe both arches so this works
     # on x64 and arm64 build machines.
+    # FOOL-SEAM: packaged-exe-name
+    # electron-builder ``executableName`` alanindan BOSLUKSUZ ad uretiyor:
+    # ``TheFool.exe`` (bkz. apps/desktop/package.json -> build.executableName).
+    # Bu liste yalnizca bosluklu ``The Fool.exe``i ariyordu -- yani gercekte
+    # hic olusmayan bir dosyayi. Sonuc: derleme 1-3 dakika kosup BASARIYLA
+    # bitiyor, hemen ardindan asagidaki ``throw`` atesleniyor ve belgelenen
+    # tek satirlik Windows kurulumu HER SEFERINDE dusuyordu.
+    #
+    # ``fool_cli/main.py`` ayni tuzagi gorup duzeltmisti (ayni FOOL-SEAM adi);
+    # install.ps1 geride kalmisti. Iki ad da deneniyor -- upstream adi
+    # degistirirse yine tutar.
     $exeCandidates = @(
+        "$desktopDir\release\win-unpacked\TheFool.exe",
+        "$desktopDir\release\win-arm64-unpacked\TheFool.exe",
+        "$desktopDir\release\win-ia32-unpacked\TheFool.exe",
         "$desktopDir\release\win-unpacked\The Fool.exe",
-        "$desktopDir\release\win-arm64-unpacked\The Fool.exe"
+        "$desktopDir\release\win-arm64-unpacked\The Fool.exe",
+        "$desktopDir\release\win-ia32-unpacked\The Fool.exe"
     )
     $found = $false
     $desktopExe = $null
@@ -4074,7 +4089,7 @@ function Install-Desktop {
         }
     }
     if (-not $found) {
-        throw "Desktop build completed but no The Fool.exe was found under $desktopDir\release\*-unpacked\"
+        throw "Desktop build completed but no TheFool.exe was found under $desktopDir\release\*-unpacked\"
     }
 
     # 3b. The The Fool icon + identity are stamped onto The Fool.exe by the

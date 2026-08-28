@@ -1,13 +1,12 @@
-# Hermes Desktop ☤
+# The Fool Desktop
 
 <p align="center">
-  <a href="https://github.com/NousResearch/hermes-agent/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
-  <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/zaorenn/thefool-desktop/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
+  <a href="../../README.md"><img src="https://img.shields.io/badge/Docs-README-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://github.com/zaorenn/thefool-desktop/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
 </p>
 
-**The native desktop app for [Hermes Agent](../../README.md) — the self-improving AI agent from [Nous Research](https://nousresearch.com).** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
+**The native desktop app for [Fool Agent](../../README.md) — a fork of [Hermes Agent](https://github.com/NousResearch/hermes-agent) by Nous Research.** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
 
 <table>
 <tr><td><b>Chat with the full agent</b></td><td>Streaming responses, live tool activity, structured tool summaries, and the same conversation history as every other Hermes surface.</td></tr>
@@ -27,14 +26,14 @@
 Already have the Hermes CLI? Just run:
 
 ```bash
-hermes desktop
+fool desktop
 ```
 
 It builds and launches the GUI against your existing install — same config, keys, sessions, and skills. If Desktop cannot find a usable runtime or saved remote connection, first launch lets you connect to an existing Hermes gateway or install Hermes locally. Local onboarding then walks you through choosing a provider and model.
 
 ### Prebuilt installers
 
-Prebuilt installers are built and distributed via [the Hermes Desktop website.](https://hermes-agent.nousresearch.com/).
+Prebuilt installers are not published yet. Build one locally with `npm run dist` in `apps/desktop` (see [Packaging](#packaging)), or use the `fool desktop` path above.
 
 ---
 
@@ -89,7 +88,7 @@ Installers are built and uploaded to GitHub Releases manually. macOS/Windows sig
 
 The packaged app ships the Electron shell and a native React chat surface. On
 first launch it can install the Hermes Agent runtime into `FOOL_HOME`
-(`~/.hermes`, or `%LOCALAPPDATA%\hermes` on Windows), using the same layout as a
+(`~/.fool`, or `%LOCALAPPDATA%\fool` on Windows), using the same layout as a
 CLI install.
 
 The app has three boundaries:
@@ -107,7 +106,7 @@ Backend resolution is an ordered ladder:
 1. `FOOL_DESKTOP_HERMES_ROOT`
 2. the current source checkout during development
 3. a completed managed install
-4. `FOOL_DESKTOP_HERMES`, or `hermes` on `PATH`
+4. `FOOL_DESKTOP_HERMES`, or `fool` on `PATH`
 5. a system Python that can import the Hermes runtime
 6. the first-launch bootstrap installer
 
@@ -127,6 +126,27 @@ Before changing the app, read:
   transport, performance, and testing rules.
 - [`DESIGN.md`](./DESIGN.md): visual system, information architecture, motion,
   direct manipulation, and keyboard behavior.
+
+### System tray and loaded models
+
+Closing the window puts the app in the system tray instead of ending it. The
+process stays warm, so the next launch is a window show rather than a backend
+boot followed by a cold model load (measured on a shared 16 GB card: 6.9 s for
+the first transcription, 24 s for a cold Kokoro sentence).
+
+A hidden app can still be holding the GPU, so the tray menu is the other half
+of that trade: it lists what is resident right now — one speech-recognition
+model, one voice engine, one language model — and unloads any of them on
+demand. Quitting from the tray unloads all three first. Whisper and the voice
+engines die with the backend process, but LM Studio is a separate application
+and never releases its model on its own.
+
+One model per category stays loaded. Picking another voice or speech model
+drops the previous one immediately, and switching the chat model releases what
+LM Studio was holding.
+
+Where the platform has no tray (a Linux desktop without a StatusNotifier host)
+the close button quits the app, as before.
 
 ### Connections, projects, and switching
 
@@ -207,31 +227,30 @@ Boot logs land in `FOOL_HOME/logs/desktop.log` (includes backend output and rece
 
 ```bash
 # Force a clean first-launch setup
-rm "$HOME/.hermes/hermes-agent/.hermes-bootstrap-complete"
+rm "$HOME/.fool/hermes-agent/.fool-bootstrap-complete"
 # Rebuild a broken Python venv
-rm -rf "$HOME/.hermes/hermes-agent/venv"
+rm -rf "$HOME/.fool/hermes-agent/venv"
 # Reset a stuck macOS microphone prompt (macOS only)
-tccutil reset Microphone com.nousresearch.hermes
+tccutil reset Microphone com.fool.desktop
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
 # Force a clean first-launch setup
-Remove-Item "$env:LOCALAPPDATA\hermes\hermes-agent\.hermes-bootstrap-complete"
+Remove-Item "$env:LOCALAPPDATA\fool\hermes-agent\.fool-bootstrap-complete"
 # Rebuild a broken Python venv
-Remove-Item -Recurse -Force "$env:LOCALAPPDATA\hermes\hermes-agent\venv"
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\fool\hermes-agent\venv"
 ```
 
-> The default Hermes home on Windows is `%LOCALAPPDATA%\hermes`. Set the `FOOL_HOME` env var if you've relocated it.
+> The default The Fool home on Windows is `%LOCALAPPDATA%\fool`. Set the `FOOL_HOME` env var if you've relocated it.
 
 ---
 
 ## Community
 
-- 💬 [Discord](https://discord.gg/NousResearch)
-- 📖 [Documentation](https://hermes-agent.nousresearch.com/docs/)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 📖 [Documentation](../../README.md)
+- 🐛 [Issues](https://github.com/zaorenn/thefool-desktop/issues)
 
 ---
 
@@ -239,4 +258,4 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\hermes\hermes-agent\venv"
 
 MIT — see [LICENSE](../../LICENSE).
 
-Built by [Nous Research](https://nousresearch.com).
+Built by Fool Labs. Forked from [Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) — see [LICENSE](../../LICENSE) for attribution; not affiliated with or endorsed by Nous Research.

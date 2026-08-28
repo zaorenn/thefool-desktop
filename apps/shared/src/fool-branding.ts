@@ -89,15 +89,55 @@ const ARTICLE_FIX: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bThe\s+The\s+Fool\b/g, 'The Fool']
 ]
 
+/**
+ * URL'ler ve alan adları markalamadan MUAF.
+ *
+ * Ölçülen hata: son kural (``\bhermes\b`` -> ``fool``) ``-`` sınırında da
+ * eşleşiyor, yani kataloğun içindeki
+ *
+ *     curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh
+ *
+ * kullanıcıya
+ *
+ *     curl -fsSL https://fool-agent.nousresearch.com/install.sh | sh
+ *
+ * olarak gösteriliyordu -- var olmayan bir alan adı, dört dilde birden, hem de
+ * kullanıcının kopyalayıp çalıştırması beklenen bir komutun içinde.
+ *
+ * Argümanlar için bu koruma ZATEN vardı (``brandTextPreserving``, hemen
+ * aşağıda -- ve gerekçesi aynı alan adını örnek veriyor); eksik olan şablonun
+ * KENDİ metnindeki URL'lerdi. Bir alan adı marka değil ADRESTİR: yanlış olması,
+ * metnin garip görünmesi değil komutun çalışmaması demek.
+ *
+ * İşaret kod noktasından kuruluyor (``brandTextPreserving`` ile aynı gerekçe):
+ * kaynağa ham NUL yazmak dosyayı ikili yapar ve grep/diff körleşir.
+ */
+const URL_LIKE_RE = /\b(?:[a-z][a-z0-9+.-]*:\/\/|www\.)[^\s<>"'`]+|\b[a-z0-9](?:[a-z0-9-]*\.)+[a-z]{2,}(?:\/[^\s<>"'`]*)?/gi
+
 /** Tek bir metni markala. Dışarıdan da kullanılabilir (ör. sabit stringler). */
 export function brandText(input: string): string {
-  let out = input
+  // URL'ler ÖNCE saklanıyor: markalama kuralları onları göremesin.
+  const mark = String.fromCharCode(0)
+  const urls: string[] = []
+
+  let out = input.replace(URL_LIKE_RE, match => {
+    urls.push(match)
+
+    return `${mark}url${urls.length - 1}${mark}`
+  })
+
   for (const [pattern, replacement] of RULES) {
     out = out.replace(pattern, replacement)
   }
+
   for (const [pattern, replacement] of ARTICLE_FIX) {
     out = out.replace(pattern, replacement)
   }
+
+  for (let i = urls.length - 1; i >= 0; i -= 1) {
+    out = out.split(`${mark}url${i}${mark}`).join(urls[i])
+  }
+
   return out
 }
 

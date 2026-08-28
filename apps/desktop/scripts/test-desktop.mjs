@@ -17,12 +17,26 @@ const PLATFORM = process.platform
 // app shell plus extraResources (install-stamp.json + native-deps/) -- it
 // no longer bundles the Hermes Agent Python payload (that's fetched at first
 // launch via install.ps1 / install.sh, per the Phase 1 thin-installer flow).
+// FOOL-SEAM: packaged-exe-name
+//
+// Adlar package.json'DAN turetiliyor, elle yazilmiyor. Eskiden burada
+// `Hermes.app` / `Hermes.exe` / `Hermes` sabitleri vardi ve o adlarin hicbiri
+// artik uretilmiyor: electron-builder `build.executableName` ("TheFool") ve
+// `build.productName` ("The Fool") alanlarini kullaniyor.
+//
+// Sonucu gorunmez degildi ama gorulmemisti: `test:desktop:all` CI'in
+// kesfettigi `check:*` ailesinde ve `validateBundle()` ilk is olarak
+// `exists(APP.binary)` bakip `die()` ediyor -- yani bu betik HER on yuz
+// PR'inda dusuyordu.
+const PRODUCT_NAME = PACKAGE_JSON.build?.productName || PACKAGE_JSON.productName || 'The Fool'
+const EXECUTABLE_NAME = PACKAGE_JSON.build?.executableName || PRODUCT_NAME
+
 const APP = (() => {
   if (PLATFORM === 'darwin') {
-    const appPath = path.join(RELEASE_ROOT, `mac-${ARCH}`, 'Hermes.app')
+    const appPath = path.join(RELEASE_ROOT, `mac-${ARCH}`, `${PRODUCT_NAME}.app`)
     return {
       appPath,
-      binary: path.join(appPath, 'Contents', 'MacOS', 'Hermes'),
+      binary: path.join(appPath, 'Contents', 'MacOS', EXECUTABLE_NAME),
       resourcesPath: path.join(appPath, 'Contents', 'Resources'),
       asarPath: path.join(appPath, 'Contents', 'Resources', 'app.asar'),
       unpackedDistIndex: path.join(appPath, 'Contents', 'Resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -32,7 +46,7 @@ const APP = (() => {
     const unpacked = path.join(RELEASE_ROOT, 'win-unpacked')
     return {
       appPath: unpacked,
-      binary: path.join(unpacked, 'Hermes.exe'),
+      binary: path.join(unpacked, `${EXECUTABLE_NAME}.exe`),
       resourcesPath: path.join(unpacked, 'resources'),
       asarPath: path.join(unpacked, 'resources', 'app.asar'),
       unpackedDistIndex: path.join(unpacked, 'resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -42,7 +56,7 @@ const APP = (() => {
   const unpacked = path.join(RELEASE_ROOT, 'linux-unpacked')
   return {
     appPath: unpacked,
-    binary: path.join(unpacked, 'Hermes'),
+    binary: path.join(unpacked, EXECUTABLE_NAME),
     resourcesPath: path.join(unpacked, 'resources'),
     asarPath: path.join(unpacked, 'resources', 'app.asar'),
     unpackedDistIndex: path.join(unpacked, 'resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -122,12 +136,17 @@ function ensurePackagedApp() {
   run('npm', ['run', 'pack'])
 }
 
+// Yapit adinin govdesi `build.artifactName` sablonundan geliyor
+// ("TheFool-${version}-${os}-${arch}.${ext}"), elle yazilmiyor: buradaki
+// "Hermes-" oneki hicbir zaman olusmayan bir dosyayi ariyordu.
+const ARTIFACT_PREFIX = String(PACKAGE_JSON.build?.artifactName || '').split('-')[0] || EXECUTABLE_NAME
+
 function resolveDmgPath() {
   if (!exists(RELEASE_ROOT)) {
-    return path.join(RELEASE_ROOT, `Hermes-${PACKAGE_JSON.version}-${ARCH}.dmg`)
+    return path.join(RELEASE_ROOT, `${ARTIFACT_PREFIX}-${PACKAGE_JSON.version}-${ARCH}.dmg`)
   }
 
-  const prefix = `Hermes-${PACKAGE_JSON.version}`
+  const prefix = `${ARTIFACT_PREFIX}-${PACKAGE_JSON.version}`
   const candidates = fs
     .readdirSync(RELEASE_ROOT)
     .filter(name => name.endsWith('.dmg'))
@@ -141,11 +160,11 @@ function resolveDmgPath() {
 
   return candidates.length > 0
     ? path.join(RELEASE_ROOT, candidates[0])
-    : path.join(RELEASE_ROOT, `Hermes-${PACKAGE_JSON.version}-${ARCH}.dmg`)
+    : path.join(RELEASE_ROOT, `${ARTIFACT_PREFIX}-${PACKAGE_JSON.version}-${ARCH}.dmg`)
 }
 
 function resolveNsisPath() {
-  // electron-builder NSIS artifactName template is 'Hermes-${version}-${os}-${arch}.${ext}'
+  // electron-builder NSIS artifactName sablonu: build.artifactName
   if (!exists(RELEASE_ROOT)) return null
   const candidates = fs
     .readdirSync(RELEASE_ROOT)

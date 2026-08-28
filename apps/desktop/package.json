@@ -5,10 +5,15 @@
   "version": "0.20.4",
   "description": "Native desktop shell for The Fool.",
   "author": "Fool Labs",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zaorenn/thefool-desktop.git"
   },
+  "bugs": {
+    "url": "https://github.com/zaorenn/thefool-desktop/issues"
+  },
+  "homepage": "https://github.com/zaorenn/thefool-desktop#readme",
   "type": "module",
   "main": "dist/electron-main.mjs",
   "engines": {

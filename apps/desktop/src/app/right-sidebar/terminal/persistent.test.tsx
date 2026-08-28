@@ -353,12 +353,18 @@ describe('PersistentTerminal rect tracking', () => {
     expect(raf.pending()).toBe(1)
   })
 
-  it('hides the overlay but keeps its workspace mounted when the terminal tab becomes inactive', () => {
+  it('hides the overlay but keeps its workspace mounted when the terminal tab becomes inactive', async () => {
     const raf = installRaf()
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect(10, 20, 200, 100))
     $terminalTakeover.set(true)
 
     render(<HiddenPaneHarness hidden={false} />)
+
+    // xterm calisma alani TEMBEL yukleniyor (bkz. ``persistent.tsx`` --
+    // ``@xterm/xterm`` ve bes eklentisi acilis parcasina gomuluyordu).
+    // Modul cozulmesini burada bosaltiyoruz; sinavin sordugu sey MONTAJIN
+    // KALICILIGI, yukleme zamanlamasi degil.
+    await act(async () => undefined)
 
     const overlay = container!.lastElementChild as HTMLElement
     const workspace = container!.querySelector('[data-testid="terminal-workspace"]')

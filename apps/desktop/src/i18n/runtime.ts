@@ -1,4 +1,4 @@
-import { TRANSLATIONS } from './catalog'
+import { catalogFor, ensureLocaleCatalog } from './catalog'
 import { DEFAULT_LOCALE } from './languages'
 import type { Locale } from './types'
 
@@ -53,6 +53,10 @@ export function translateFrom(
 
 export function setRuntimeI18nLocale(locale: Locale) {
   runtimeLocale = locale
+  // Katalog istendiginde yukleniyor: modul duzeyi cevirmenler de bir React
+  // saglayicisi olmadan dogru dile ulassin. Gelene kadar Ingilizce donuyor --
+  // eksik anahtar davranisinin aynisi.
+  void ensureLocaleCatalog(locale)
 }
 
 /** The locale module-level translators resolve against (the app's active
@@ -62,5 +66,5 @@ export function getRuntimeI18nLocale(): Locale {
 }
 
 export function translateNow(key: string, ...args: unknown[]): string {
-  return translateFrom(locale => TRANSLATIONS[locale], runtimeLocale, key, args)
+  return translateFrom(locale => catalogFor(locale), runtimeLocale, key, args)
 }

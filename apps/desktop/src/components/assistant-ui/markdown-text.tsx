@@ -17,7 +17,7 @@ import { ZoomableImage } from '@/components/chat/zoomable-image'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { detectArtifact } from '@/lib/artifact-detect'
 import { normalizeExternalUrl, openExternalLink, PrettyLink } from '@/lib/external-link'
-import { createMemoizedMathPlugin } from '@/lib/katex-memo'
+import type { createMemoizedMathPlugin } from '@/lib/katex-memo'
 import { parseMarkdownIntoBlocksCached } from '@/lib/markdown-blocks'
 import { preprocessMarkdown } from '@/lib/markdown-preprocess'
 import {
@@ -51,7 +51,42 @@ import { detectEmbed, extractAlert, MarkdownAlert, RichCodeBlock, UrlEmbed } fro
 //
 // `singleDollarTextMath: true` enables `$x^2$` for inline math (de-facto
 // LLM convention). The default false-setting only accepts `$$...$$`.
-const mathPlugin = createMemoizedMathPlugin({ singleDollarTextMath: true })
+//
+// AÇILIŞ grafiğinde DEĞİL. `katex` yalnızca `lib/katex-memo` tarafından
+// içe aktarılıyor ve o statik bir `import` olduğu için 253 KB'lık katex
+// parçası giriş grafiğine çivileniyordu -- hiç matematik içermeyen her
+// oturumda da. Aynı dosya bunu shiki için ZATEN doğru yapıyor
+// (`useCodePlugin`, hemen aşağıda); matematik yalnızca o kuralın dışında
+// kalmıştı. Eklenti ilk markdown montajında geliyor ve indiği anda tabloya
+// takılıyor.
+type MathPlugin = ReturnType<typeof createMemoizedMathPlugin>
+let mathPluginCache: MathPlugin | null = null
+
+function useMathPlugin(): MathPlugin | null {
+  const [plugin, setPlugin] = useState(mathPluginCache)
+
+  useEffect(() => {
+    if (plugin) {
+      return
+    }
+
+    let cancelled = false
+
+    void import('@/lib/katex-memo').then(({ createMemoizedMathPlugin }) => {
+      mathPluginCache ??= createMemoizedMathPlugin({ singleDollarTextMath: true })
+
+      if (!cancelled) {
+        setPlugin(mathPluginCache)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [plugin])
+
+  return plugin
+}
 
 // `@streamdown/code` statically imports ALL of shiki (every grammar + theme —
 // the single largest chunk in the renderer), so it must never sit on the
@@ -476,7 +511,21 @@ function MarkdownTextSurface({
   // `SyntaxHighlighter` below when `isStreaming` is true, and the code plugin
   // itself arrives async (useCodePlugin) so shiki never blocks cold start.
   const code = useCodePlugin()
-  const plugins = useMemo(() => (code ? { math: mathPlugin, code } : { math: mathPlugin }), [code])
+  const math = useMathPlugin()
+
+  const plugins = useMemo(() => {
+    const next: { code?: CodePlugin; math?: MathPlugin } = {}
+
+    if (code) {
+      next.code = code
+    }
+
+    if (math) {
+      next.math = math
+    }
+
+    return next
+  }, [code, math])
 
   const components = useMemo(
     () =>

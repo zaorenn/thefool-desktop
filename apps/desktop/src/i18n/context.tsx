@@ -2,7 +2,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import { getHermesConfigRecord, type HermesConfigRecord, saveHermesConfig } from '@/hermes'
 
-import { TRANSLATIONS } from './catalog'
+import { catalogFor, ensureLocaleCatalog, isLocaleCatalogLoaded } from './catalog'
 import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
 import { setRuntimeI18nLocale } from './runtime'
 import type { Locale, Translations } from './types'
@@ -83,7 +83,7 @@ const I18nContext = createContext<I18nContextValue>({
   locale: DEFAULT_LOCALE,
   saveError: null,
   setLocale: async () => {},
-  t: TRANSLATIONS[DEFAULT_LOCALE]
+  t: catalogFor(DEFAULT_LOCALE)
 })
 
 export interface I18nProviderProps {
@@ -99,6 +99,27 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
   const [configLoadError, setConfigLoadError] = useState<Error | null>(null)
   const [saveError, setSaveError] = useState<Error | null>(null)
   const localeRef = useRef(locale)
+  // Katalog istendiginde geliyor (bkz. ``./catalog``). Indigi anda yeniden
+  // render gerekiyor -- ``catalogFor`` o ana kadar Ingilizce donuyor.
+  const [catalogVersion, setCatalogVersion] = useState(0)
+
+  useEffect(() => {
+    if (isLocaleCatalogLoaded(locale)) {
+      return
+    }
+
+    let cancelled = false
+
+    void ensureLocaleCatalog(locale).then(() => {
+      if (!cancelled) {
+        setCatalogVersion(version => version + 1)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [locale])
 
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -183,9 +204,12 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
       locale,
       saveError,
       setLocale,
-      t: TRANSLATIONS[locale]
+      t: catalogFor(locale)
     }),
-    [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale]
+    // ``catalogVersion``: katalog indiginde ``catalogFor`` baska bir nesne
+    // donuyor ama ``locale`` degismiyor -- bagimlilik olmadan arayuz
+    // Ingilizce'de takili kalirdi.
+    [catalogVersion, configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale]
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>

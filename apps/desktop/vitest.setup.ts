@@ -38,3 +38,30 @@ if (typeof (globalThis as any).localStorage === 'undefined') {
 // CPU contention in CI. Success still resolves the instant the node appears;
 // the wider deadline only absorbs a starved runner, killing timing flakes.
 configure({ asyncUtilTimeout: 5000 })
+
+// Çeviri katalogları sınavlarda ÖNCEDEN yüklü.
+//
+// Uygulamada İngilizce dışındaki kataloglar istendiğinde yükleniyor (bkz.
+// `src/i18n/catalog.ts` — beşini birden açılışa bağlamak, gerçek yapıda
+// ölçülen 599,8 KB'lık bir parçayı hiç okunmayacak dört dil için de
+// ayrıştırmak demekti).
+//
+// Sınavların büyük çoğunluğu ÇEVİRİ İÇERİĞİNİ soruyor, yükleme ZAMANLAMASINI
+// değil: `initialLocale="ja"` ile render edip Japonca metni arıyorlar. Her
+// birine ayrı ayrı bekleme eklemek, sınavları asıl sordukları şeyden
+// uzaklaştırırdı. Yükleme zamanlaması sözleşmesinin kendi sınavı var
+// (`src/i18n/context.test.tsx`), ve o bilerek bekliyor.
+//
+// İçe aktarım STATİK: dinamik `import()` her sınav dosyasında yeniden
+// çözülürdü (529 dosya x 4 katalog). Bu dosya yalnızca sınavlarda çalışıyor,
+// yani üretim paketine hiçbir şey eklemiyor.
+import { registerLocaleCatalog } from './src/i18n/catalog'
+import { ar } from './src/i18n/ar'
+import { ja } from './src/i18n/ja'
+import { zh } from './src/i18n/zh'
+import { zhHant } from './src/i18n/zh-hant'
+
+registerLocaleCatalog('ar', ar)
+registerLocaleCatalog('ja', ja)
+registerLocaleCatalog('zh', zh)
+registerLocaleCatalog('zh-hant', zhHant)

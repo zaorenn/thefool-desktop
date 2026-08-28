@@ -36,7 +36,42 @@ import { parseMarkdownIntoBlocks } from '@assistant-ui/react-streamdown'
  */
 
 const EXACT_CACHE_MAX = 256
+/**
+ * Önbelleğin KARAKTER bütçesi.
+ *
+ * Sınır yalnızca GİRİŞ SAYISIYDI ve anahtar mesajın TAM METNİ. Akan bir
+ * cevapta her boşaltma, büyümekte olan metnin neredeyse tam bir kopyasını
+ * anahtar yapıyor -- yani 256 giriş, aynı cevabın 256 anlık görüntüsü
+ * demek. Eviction politikası simüle edildi:
+ *
+ *     20 KB cevap  ->  52 anlik goruntu  ->   1,1 MB
+ *     60 KB cevap  -> 154 anlik goruntu  ->   9,1 MB
+ *    150 KB cevap  -> 256 (tavan)        ->  50,1 MB
+ *
+ * Ve bu bir ALT sınır: önbellekteki blok dizileri V8'de dilimlenmiş
+ * dizeler, yani ana dizeyi de canlı tutuyorlar. Dolduktan sonra hiç
+ * küçülmüyor.
+ *
+ * Akan hâli ZATEN ``appendCache`` karşılıyor (4 girişlik halka). Bu önbellek
+ * yalnızca OTURMUŞ metnin render kimliğini korumak için, ki onun için bir
+ * avuç giriş yeter -- bütçe o yüzden karakter cinsinden.
+ */
+const EXACT_CACHE_MAX_CHARS = 2_000_000
 const exactCache = new Map<string, string[]>()
+let exactCacheChars = 0
+
+function dropOldestExact(): boolean {
+  const oldest = exactCache.keys().next().value as string | undefined
+
+  if (oldest === undefined) {
+    return false
+  }
+
+  exactCache.delete(oldest)
+  exactCacheChars -= oldest.length
+
+  return true
+}
 
 // Streaming messages grow monotonically, and only a handful stream at once
 // (main reply + reasoning part, maybe a tile). A tiny ring is enough; each
@@ -118,7 +153,8 @@ export function parseMarkdownIntoBlocksCached(markdown: string): string[] {
   const hit = exactCache.get(markdown)
 
   if (hit) {
-    // Refresh recency (Map iteration order is insertion order).
+    // Refresh recency (Map iteration order is insertion order). Bütçe net
+    // sıfır: aynı anahtar çıkıp aynı anahtar giriyor.
     exactCache.delete(markdown)
     exactCache.set(markdown, hit)
 
@@ -129,9 +165,12 @@ export function parseMarkdownIntoBlocksCached(markdown: string): string[] {
 
   rememberAppend(markdown, blocks)
   exactCache.set(markdown, blocks)
+  exactCacheChars += markdown.length
 
-  if (exactCache.size > EXACT_CACHE_MAX) {
-    exactCache.delete(exactCache.keys().next().value as string)
+  while ((exactCache.size > EXACT_CACHE_MAX || exactCacheChars > EXACT_CACHE_MAX_CHARS) && exactCache.size > 1) {
+    if (!dropOldestExact()) {
+      break
+    }
   }
 
   return blocks

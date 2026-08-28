@@ -422,6 +422,13 @@ export const host = {
 
 // -- react bridge -------------------------------------------------------------
 
+// Capabilities yuzeyi TEMBEL bir kapidan geciyor (``./capabilities-surface``).
+// Buradan dogrudan disa vermek, tek bir satir ugruna 426 KB'i ACILISA
+// civiliyordu -- gerekcesi ve olcumu o dosyada.
+export { McpTab, SkillsView } from './capabilities-surface'
+
+// -- ui: the design language --------------------------------------------------
+
 // Every contribution surface, plugin-reachable: register keybinds, palette
 // commands, routes, themes, panes, composer extensions, and bar items with
 // the same area ids + payload types core uses.
@@ -432,9 +439,6 @@ export {
   type ComposerAttachmentProvider,
   type ComposerMiddleware
 } from '@/app/chat/composer/contrib'
-
-// -- ui: the design language --------------------------------------------------
-
 export { PALETTE_AREA, type PaletteContribution } from '@/app/command-palette/contrib'
 export { type RouteContribution, ROUTES_AREA, SIDEBAR_NAV_AREA, type SidebarNavContribution } from '@/app/routes'
 /** THE full per-toolset config panel core Settings renders — provider picker,
@@ -454,21 +458,9 @@ export {
   ModelMenuCloseContext,
   type ModelMenuController
 } from '@/app/shell/model-catalog-menu'
-export type { StatusbarItem } from '@/app/shell/statusbar-controls'
 
+export type { StatusbarItem } from '@/app/shell/statusbar-controls'
 export type { TitlebarTool } from '@/app/shell/titlebar-controls'
-/** THE whole Capabilities surface (Skills / Tools / MCP tabs, installed
- *  lists, full-skill detail pane, embedded hub picker with one-click
- *  installs). For plugin dialogs pass `embedded` (tab state stays local —
- *  never touches the page router) and `fixedProfile` to pin every tab to one
- *  bot's backend; the internal profile selector hides itself. Bot Mode's
- *  Advanced section is the reference consumer. */
-export { SkillsView } from '@/app/skills'
-/** THE full MCP tab core Settings renders — per-server enable + OAuth sign-in
- *  + API-key setup + live probes, not a checkbox list. Route-decoupled so it
- *  renders anywhere (a plugin dialog); pass a live `gateway` (see
- *  `host.getGateway()`) and an optional `profile` to scope it to one bot. */
-export { McpTab } from '@/app/skills/mcp-tab'
 /** Pane placement roles. `'floating'` is the one NON-tiling value: the pane is
  *  excluded from the layout tree and rendered as a fixed, draggable card above
  *  it — it takes no width from any zone, has no tab, and can't be docked.

@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { atom } from 'nanostores'
-import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { type CSSProperties, lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { isElementInHiddenPane, PANE_HIDDEN_ATTR } from '@/components/pane-shell/pane-visibility'
 import { $layoutTree } from '@/components/pane-shell/tree/store'
@@ -11,7 +11,24 @@ import { $paneStates } from '@/store/panes'
 import { $terminalTakeover } from '../store'
 
 import { ensureTerminal } from './terminals'
-import { TerminalWorkspace } from './workspace'
+
+/**
+ * xterm AÇILIŞTAN çıkarıldı.
+ *
+ * ``TerminalWorkspace`` -> ``instance`` -> ``use-terminal-session`` zinciri
+ * ``@xterm/xterm`` ve beş eklentisini çekiyor. Statik ``import`` olduğu için
+ * hepsi giriş parçasının içine gömülüyordu: diskte 804 KB, zaten
+ * küçültülmüş -- ve terminali HİÇ açmayan kullanıcı da açılışta bunun
+ * ayrıştırma bedelini ödüyordu.
+ *
+ * Ayırma noktası zaten vardı: aşağıdaki ``mounted`` bayrağı, pane açılıp
+ * yuvanın gerçek ölçüleri gelene kadar bu ağacı monte etmiyor (Windows'ta
+ * 0x0'da kabuk başlatmamak için). Yani modül de o ana kadar gerekmiyor.
+ *
+ * ``Suspense`` gecikmesi görünmez: ``mounted`` ancak kullanıcı terminal
+ * panelini açtığında true oluyor ve o an zaten bir kabuk başlatılıyor.
+ */
+const TerminalWorkspace = lazy(async () => ({ default: (await import('./workspace')).TerminalWorkspace }))
 
 /**
  * One xterm Terminal mounted at the layout root and CSS-overlayed onto
@@ -257,7 +274,11 @@ export function PersistentTerminal({ onAddSelectionToChat }: PersistentTerminalP
   // conhost on Windows. After that `mounted` latches: shells persist while hidden.
   return (
     <div aria-hidden={!visible} data-persistent-terminal="" style={style}>
-      {mounted && <TerminalWorkspace onAddSelectionToChat={onAddSelectionToChat} />}
+      {mounted && (
+        <Suspense fallback={null}>
+          <TerminalWorkspace onAddSelectionToChat={onAddSelectionToChat} />
+        </Suspense>
+      )}
     </div>
   )
 }

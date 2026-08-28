@@ -22,7 +22,7 @@ import { useStore } from '@nanostores/react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
-import { CodeEditor } from '@/components/chat/code-editor'
+import { CodeEditor } from '@/components/chat/code-editor-lazy'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ColorSwatches } from '@/components/ui/color-swatches'

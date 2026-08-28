@@ -1,6 +1,5 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, indentOnInput, LanguageDescription } from '@codemirror/language'
-import { languages } from '@codemirror/language-data'
 import { Compartment, EditorState } from '@codemirror/state'
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { type RefObject, useEffect, useRef } from 'react'
@@ -325,20 +324,36 @@ export function CodeEditor({
   }, [])
 
   // Load + apply syntax highlighting for the file's language (lazy per language).
+  //
+  // ``@codemirror/language-data`` DINAMIK.
+  //
+  // O paket dil tanimlarinin ve unicode tablolarinin tamami: gercek yapida
+  // olculdu, 271 KB -- ve statik ``import`` oldugu icin ACILIS grafigindeydi.
+  // Oysa buradaki tek kullanimi zaten ASENKRON bir efektin icinde ve hemen
+  // ardindan ``description.load()`` ile ikinci bir dinamik yukleme yapiyor.
+  // Yani es zamanli olmasi gereken hicbir sey yoktu; yalnizca import bicimi
+  // yanlisti.
   useEffect(() => {
     let cancelled = false
-    const description = LanguageDescription.matchFilename(languages, baseName(filePath))
 
-    if (!description) {
-      viewRef.current?.dispatch({ effects: languageConf.current.reconfigure([]) })
-
-      return
-    }
-
-    void description.load().then(support => {
-      if (!cancelled && viewRef.current) {
-        viewRef.current.dispatch({ effects: languageConf.current.reconfigure(support) })
+    void import('@codemirror/language-data').then(({ languages }) => {
+      if (cancelled || !viewRef.current) {
+        return
       }
+
+      const description = LanguageDescription.matchFilename(languages, baseName(filePath))
+
+      if (!description) {
+        viewRef.current.dispatch({ effects: languageConf.current.reconfigure([]) })
+
+        return
+      }
+
+      void description.load().then(support => {
+        if (!cancelled && viewRef.current) {
+          viewRef.current.dispatch({ effects: languageConf.current.reconfigure(support) })
+        }
+      })
     })
 
     return () => {

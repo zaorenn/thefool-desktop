@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { ArrowUpRight } from '@/lib/icons'
 
-import { resolveBrandIcon } from './brand-icon'
+import type { resolveBrandIcon } from './brand-icon'
 import { cn } from './utils'
 
 const titleCache = new Map<string, string>()
@@ -219,8 +219,52 @@ export function ExternalLinkIcon({ className }: { className?: string }) {
 // `title=""` is load-bearing: Simple Icons always renders a <title> defaulting
 // to the brand name, which lands in the anchor's textContent and accessible
 // name — a PR link would read "GitHub#123".
+// Marka ikonu tablosu AÇILIŞ grafiğinde DEĞİL.
+//
+// ``lib/brand-icon.ts`` 167 ``Si*`` bileşenini statik olarak içe aktarıyor ve
+// zincir ``markdown-text`` -> ``external-link`` -> ``brand-icon`` üzerinden
+// açılışa bağlanıyordu: ölçüldü, gerçek yapıda 229 KB -- tamamı süsleme
+// amaçlı SVG yol verisi.
+//
+// Tablo ilk bağlantı çizildiğinde geliyor. O ana kadar bağlantı markasız
+// çiziliyor; ikon indiğinde yerine oturuyor. Yer kaplamıyor, yani düzen
+// kaymıyor -- ikon satır içi ve ``0.85em``.
+let brandResolver: null | typeof resolveBrandIcon = null
+let brandLoading: null | Promise<void> = null
+const brandWaiters = new Set<() => void>()
+
+function ensureBrandIcons(): void {
+  brandLoading ??= import('./brand-icon')
+    .then(({ resolveBrandIcon: resolve }) => {
+      brandResolver = resolve
+      brandWaiters.forEach(notify => notify())
+      brandWaiters.clear()
+    })
+    .catch(() => {
+      // Ikon bir susleme: gelmezse baglanti markasiz kaliyor.
+      brandLoading = null
+    })
+}
+
 export function LinkBrandIcon({ className, href }: { className?: string; href: string }) {
-  const Icon = resolveBrandIcon(shortHostLabel(href))
+  const [, bump] = useState(0)
+
+  useEffect(() => {
+    if (brandResolver) {
+      return
+    }
+
+    const notify = () => bump(value => value + 1)
+
+    brandWaiters.add(notify)
+    ensureBrandIcons()
+
+    return () => {
+      brandWaiters.delete(notify)
+    }
+  }, [])
+
+  const Icon = brandResolver?.(shortHostLabel(href)) ?? null
 
   return Icon ? (
     <Icon aria-hidden className={cn('mr-1 inline size-[0.85em] align-[-0.12em] opacity-80', className)} title="" />

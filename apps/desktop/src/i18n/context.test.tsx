@@ -49,7 +49,11 @@ describe('I18nProvider', () => {
     )
 
     expect(screen.getByTestId('locale').textContent).toBe('zh')
-    expect(screen.getByTestId('label').textContent).toBe('语言')
+    // Metin BEKLENIYOR: Ingilizce disindaki kataloglar artik istendiginde
+    // yukleniyor (bkz. ``./catalog`` -- besini birden acilisa baglamak,
+    // olculen 599,8 KB'lik bir parcayi hic okunmayacak dort dil icin de
+    // ayristirmakti). Dil ANINDA gecerli; cevirisi bir tik sonra oturuyor.
+    await waitFor(() => expect(screen.getByTestId('label').textContent).toBe('语言'))
 
     fireEvent.click(screen.getByRole('button', { name: 'switch' }))
 
@@ -72,7 +76,11 @@ describe('I18nProvider', () => {
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
 
     expect(screen.getByTestId('locale').textContent).toBe('zh')
-    expect(screen.getByTestId('label').textContent).toBe('语言')
+    // Metin BEKLENIYOR: Ingilizce disindaki kataloglar artik istendiginde
+    // yukleniyor (bkz. ``./catalog`` -- besini birden acilisa baglamak,
+    // olculen 599,8 KB'lik bir parcayi hic okunmayacak dort dil icin de
+    // ayristirmakti). Dil ANINDA gecerli; cevirisi bir tik sonra oturuyor.
+    await waitFor(() => expect(screen.getByTestId('label').textContent).toBe('语言'))
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 
@@ -110,7 +118,7 @@ describe('I18nProvider', () => {
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
 
     expect(screen.getByTestId('locale').textContent).toBe('zh-hant')
-    expect(screen.getByTestId('save').textContent).toBe('儲存')
+    await waitFor(() => expect(screen.getByTestId('save').textContent).toBe('儲存'))
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 
@@ -129,7 +137,7 @@ describe('I18nProvider', () => {
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
 
     expect(screen.getByTestId('locale').textContent).toBe('ja')
-    expect(screen.getByTestId('save').textContent).toBe('保存')
+    await waitFor(() => expect(screen.getByTestId('save').textContent).toBe('保存'))
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 

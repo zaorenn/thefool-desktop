@@ -37,6 +37,7 @@ vi.mock('@/lib/voice-barge-in', () => ({
 }))
 
 vi.mock('@/lib/voice-playback', () => ({
+  interruptVoicePlayback: vi.fn(),
   markVoicePlaybackInterrupted: vi.fn(),
   playSpeechText: vi.fn(async () => true),
   startSpeechStream: vi.fn(async () => null),

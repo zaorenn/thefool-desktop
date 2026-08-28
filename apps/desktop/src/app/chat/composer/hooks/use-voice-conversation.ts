@@ -8,7 +8,7 @@ import { useI18n } from '@/i18n'
 import { startThinkingSound, stopThinkingSound } from '@/lib/thinking-sound'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
 import {
-  markVoicePlaybackInterrupted,
+  interruptVoicePlayback,
   playSpeechText,
   type SpeechStreamSession,
   startSpeechStream,
@@ -432,8 +432,7 @@ export function useVoiceConversation({
 
         bargeCapturePendingRef.current = true
         bargedRef.current = true
-        markVoicePlaybackInterrupted()
-        stopVoicePlayback()
+        interruptVoicePlayback()
 
         if (busyRef.current) {
           // Mid-generation: stop the in-flight turn so the captured utterance
@@ -873,8 +872,7 @@ export function useVoiceConversation({
 
     if (statusRef.current === 'speaking' || busyRef.current) {
       bargedRef.current = true
-      markVoicePlaybackInterrupted()
-      stopVoicePlayback()
+      interruptVoicePlayback()
       void onInterruptRef.current?.()
     }
 

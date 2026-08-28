@@ -138,10 +138,23 @@ export function NotchShell() {
     }
   }, [])
 
-  const voice = useNotchVoice()
   const [hovered, setHovered] = useState(false)
   // Oturum acik mi? Sag Ctrl yalnizca acikken dinliyor.
   const [sessionActive, setSessionActive] = useState(false)
+
+  // Kullanici "dur" dedi.
+  //
+  // Sohbet kipiyle AYNI kanca secenegi ve ayni anlam: sozcuk bir tur olarak
+  // gonderilmiyor, konusma bitiyor. Burada oturumu kapatmak sart -- eller
+  // serbest kipte oturum acik kaldigi surece mikrofon her turdan sonra
+  // kendini yeniden aciyor, yani "dur" demek hicbir seyi durdurmazdi.
+  const voice = useNotchVoice({
+    onStopWord: () => {
+      setSessionActive(false)
+      window.hermesDesktop?.notch?.close?.()
+    }
+  })
+
   // Hangi kisayolun kayitli oldugu makineye gore degisiyor (aday
   // merdiveni), o yuzden SABIT yazmak yerine ana surece soruluyor.
   const [shortcut, setShortcut] = useState<null | string>(null)

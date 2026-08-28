@@ -28,11 +28,13 @@ import { useI18n } from '@/i18n'
 import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
 import {
+  interruptVoicePlayback,
   playSpeechText,
   type SpeechStreamSession,
   startSpeechStream,
-  stopVoicePlayback
+  takeVoicePlaybackInterrupted
 } from '@/lib/voice-playback'
+import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 import { ownsAmbientCue } from '@/store/ambient'
 import { $messages } from '@/store/session'
 import { $voicePlayback } from '@/store/voice-playback'
@@ -127,7 +129,20 @@ export interface NotchVoice {
   endSession: () => void
 }
 
-export function useNotchVoice(): NotchVoice {
+interface NotchVoiceOptions {
+  /**
+   * Kullanıcı "dur" dedi (ya da "boşver", "hoşça kal"...).
+   *
+   * ``useVoiceConversation`` ile AYNI ad ve AYNI anlam. Sohbet kipi bu
+   * sözcükleri bir tur olarak GÖNDERMİYOR, konuşmayı bitiriyor; notch
+   * göndermeye devam ediyordu, yani "dur" demek modele "dur" yazmaktı ve
+   * konuşma hiç bitmiyordu. Kullanıcının istediği "notch bu conversation
+   * modun birebir aynısı olmalı" tam olarak bu tür farklar.
+   */
+  onStopWord?: () => void
+}
+
+export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoice {
   const { t } = useI18n()
   // Akan mesajlar: abonelik efekt icine gomulmuyor -- kod tabaninin kurali
   // reaktif degeri dogrudan okumak (ref'e aynalamak bir render geç kalir).
@@ -148,6 +163,12 @@ export function useNotchVoice(): NotchVoice {
   // GORMELI, yalnizca duymak gurultulu bir odada yetmiyor.
   const [reply, setReply] = useState('')
   const [error, setError] = useState<null | string>(null)
+  // Geri cagirim ref'te: ``submitAudio`` bagimliligina koymak, cagiran her
+  // yeni fonksiyon verdiginde onu yeniden kurardi ve suren bir yakalamayi
+  // koparirdi. (Reaktif deger DEGIL -- bir prop.)
+  const onStopWordRef = useRef(onStopWord)
+
+  onStopWordRef.current = onStopWord
 
   // Hangi baloncuğa kadar seslendirdiğimiz. Bu olmadan her cevap baştan
   // okunurdu.
@@ -304,7 +325,10 @@ export function useNotchVoice(): NotchVoice {
       // konuşulur.
       streamRef.current?.session?.finish()
       streamRef.current = null
-      stopVoicePlayback()
+      // Susturmak ve MODELE SOYLEMEK tek is: bkz. ``interruptVoicePlayback``.
+      // Burada yalnizca susturuluyordu, yani centikte sozunu kestiginizde
+      // model bunu hic ogrenmiyor ve cumlesini bitirmis gibi devam ediyordu.
+      interruptVoicePlayback()
       void haltTurn().catch(() => undefined)
     }
 
@@ -383,6 +407,26 @@ export function useNotchVoice(): NotchVoice {
         return
       }
 
+      // "Dur" bir TUR DEGIL.
+      //
+      // Sohbet kipi bunu zaten boyle ele aliyordu; notch metni oldugu gibi
+      // gonderiyordu, yani konusmayi bitirmenin sesli yolu yoktu ve model
+      // "dur" diye bir mesaj aliyordu. Esleme YALNIZCA butun cumle bir
+      // durdurma ifadesiyken tutuyor, o yuzden "stop the container" gercek
+      // bir istek olarak gecmeye devam ediyor.
+      if (isVoiceStopCommand(text)) {
+        streamRef.current?.session?.finish()
+        streamRef.current = null
+        interruptVoicePlayback()
+        void haltTurn().catch(() => undefined)
+        releaseBarge(bargeRef.current)
+        setCapturing(false)
+        setStatus('idle')
+        onStopWordRef.current?.()
+
+        return
+      }
+
       setTranscript(text)
       setReply('')
       // Yeni tur: doldurma hakki yenileniyor, sessizlik sayaci sifirlaniyor.
@@ -415,8 +459,18 @@ export function useNotchVoice(): NotchVoice {
         return
       }
 
+      // Sozunu KESTIYSE model bunu ogrenmeli.
+      //
+      // Mandal araya girme yollarinda kuruluyor ve besteci gonderimi onu
+      // zaten tuketiyor (``use-prompt-actions/submit.ts``). Notch ag gecidine
+      // DOGRUDAN gidiyor, yani o yoldan gecmiyor: tuketilmezse bayrak orada
+      // asili kalir ve KULLANICININ YAZDIGI bir sonraki mesaj, hicbir seyin
+      // kesilmedigi bir anda "sozunu kestim" diye isaretlenirdi.
+      const interrupted = takeVoicePlaybackInterrupted()
+
       await requestGateway('prompt.submit', {
         session_id: sessionId,
+        ...(interrupted ? { interrupted } : {}),
         // Notch'tan konuşuldu: kullanıcı başka bir uygulamaya bakıyor.
         // HUD ile aynı ipucu, ağ geçidi bunu tur başına bağlam olarak
         // kullanıyor.
@@ -424,7 +478,7 @@ export function useNotchVoice(): NotchVoice {
         text
       })
     },
-    [requestGateway, resolveSessionId]
+    [haltTurn, requestGateway, resolveSessionId]
   )
 
   const commit = useCallback(() => {
@@ -735,7 +789,7 @@ export function useNotchVoice(): NotchVoice {
         // seslendirilmeye devam eder.
         streamRef.current?.session?.finish()
         streamRef.current = null
-        stopVoicePlayback()
+        interruptVoicePlayback()
         // Durdurma HEMEN gidiyor, yakalamanın bitmesi beklenmiyor: kullanıcı
         // konuşurken model saniyelerce üretmeye devam ederdi ve o metin
         // bağlama girerdi.

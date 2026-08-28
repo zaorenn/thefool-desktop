@@ -198,7 +198,9 @@ describe('composer sesli turunda bas-konus', () => {
     const text = await source('use-voice-conversation.ts')
     const body = text.slice(text.indexOf('const pttDown'), text.indexOf('const pttUp'))
 
-    expect(body.includes('stopVoicePlayback()')).toBe(true)
+    // Susturmak ve modele "sozunu kestim" demek TEK is; ikisi ortak
+    // yardimcida esli duruyor (bkz. ``interruptVoicePlayback``).
+    expect(body.includes('interruptVoicePlayback()')).toBe(true)
     expect(body.includes('onInterruptRef.current?.()')).toBe(true)
   })
 

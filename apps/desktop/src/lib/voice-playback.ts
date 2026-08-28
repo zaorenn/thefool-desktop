@@ -664,3 +664,21 @@ export function takeVoicePlaybackInterrupted(): boolean {
 
   return at !== null && Date.now() - at < INTERRUPT_TTL_MS
 }
+
+/**
+ * Cut a spoken reply off because the user started talking (or typing) over it.
+ *
+ * Silencing and latching are one act, not two, and keeping them as two let one
+ * surface do half of it. The composer's voice loop paired them at both of its
+ * barge sites; the notch called `stopVoicePlayback()` alone at both of its own,
+ * so interrupting the notch made the voice stop and told the model nothing —
+ * it would carry on as though it had finished its sentence, which for a
+ * character is the whole difference between being cut off and not.
+ *
+ * Every barge path goes through here now, so the two surfaces cannot drift
+ * apart on it again.
+ */
+export function interruptVoicePlayback() {
+  markVoicePlaybackInterrupted()
+  stopVoicePlayback()
+}

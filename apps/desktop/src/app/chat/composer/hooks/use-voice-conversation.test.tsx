@@ -24,11 +24,14 @@ vi.mock('@/lib/voice-barge-in', () => ({
   }
 }))
 
-const markVoicePlaybackInterrupted = vi.fn()
+// Susturmak ve modele soylemek TEK is: ikisini ayri cagirmak, bir yuzeyin
+// yarisini yapmasina izin veriyordu (bkz. ``interruptVoicePlayback``).
+const interruptVoicePlayback = vi.fn()
 const stopVoicePlayback = vi.fn()
 
 vi.mock('@/lib/voice-playback', () => ({
-  markVoicePlaybackInterrupted: () => markVoicePlaybackInterrupted(),
+  interruptVoicePlayback: () => interruptVoicePlayback(),
+  markVoicePlaybackInterrupted: vi.fn(),
   playSpeechText: vi.fn(async () => true),
   startSpeechStream: vi.fn(async () => null),
   stopVoicePlayback: () => stopVoicePlayback()
@@ -171,8 +174,7 @@ describe('useVoiceConversation full-duplex barge-in', () => {
     })
 
     expect(onInterrupt).toHaveBeenCalledTimes(1)
-    expect(markVoicePlaybackInterrupted).toHaveBeenCalled()
-    expect(stopVoicePlayback).toHaveBeenCalled()
+    expect(interruptVoicePlayback).toHaveBeenCalled()
   })
 
   it('submits the captured interruption once the interrupt settles (busy clears)', async () => {
@@ -217,7 +219,8 @@ describe('useVoiceConversation full-duplex barge-in', () => {
     })
 
     expect(onInterrupt).not.toHaveBeenCalled()
-    expect(stopVoicePlayback).toHaveBeenCalled()
+    // Tur bitmis, ama konusma KESILDI: ses susmali ve model bunu ogrenmeli.
+    expect(interruptVoicePlayback).toHaveBeenCalled()
   })
 
   it('a spoken stop command in the barge capture ends the conversation instead of submitting', async () => {

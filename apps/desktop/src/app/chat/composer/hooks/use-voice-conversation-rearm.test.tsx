@@ -94,6 +94,7 @@ vi.mock('@/lib/voice-barge-in', () => ({
 }))
 
 vi.mock('@/lib/voice-playback', () => ({
+  interruptVoicePlayback: vi.fn(),
   markVoicePlaybackInterrupted: vi.fn(),
   playSpeechText: mocks.playSpeechText,
   startSpeechStream: mocks.startSpeechStream,

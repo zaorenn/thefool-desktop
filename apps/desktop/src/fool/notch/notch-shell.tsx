@@ -339,6 +339,24 @@ export function NotchShell() {
   // dururken hiçbir şeyin çalışmadığı izlenimi veriyordu.
   const paused = sessionActive && voice.status === 'idle' && idleRounds >= MAX_IDLE_ROUNDS
 
+  // Ses tutamağı bir REF'te.
+  //
+  // Ölçülen hata: aşağıdaki tuş etkisi ``voice``a bağımlıydı ve ``voice`` her
+  // render'da YENİ bir nesne (``useNotchVoice`` düz bir nesne döndürüyor).
+  // Yani etki her render'da sökülüp yeniden kuruluyordu -- ve cevap akarken
+  // ``setReply`` her token'da render tetikliyor, saniyede onlarca kez.
+  //
+  // Sökülen yalnızca yerel dinleyiciler değil: ``onPushToTalk`` da iptal edilip
+  // yeniden abone oluyor. O boşluğa denk gelen bir tuş olayı KAYBOLUYOR --
+  // yani sağ Ctrl ile araya girmenin en çok gerektiği anda, model konuşurken,
+  // en kırılgan olduğu an.
+  //
+  // Ref render sırasında yazılıyor: geri çağrılar her zaman güncel tutamağı
+  // görüyor ama etkinin kimliği sabit kalıyor.
+  const voiceRef = useRef(voice)
+
+  voiceRef.current = voice
+
   // Bas-konuş durumu bir ref'te: klavye olayları render döngüsünün dışında
   // geliyor ve state kullanmak her tuş olayında bir render daha demek olurdu.
   const ptt = useRef(createPushToTalkState())
@@ -358,7 +376,7 @@ export function NotchShell() {
         // Tuşun varsayılan davranışını yutuyoruz ki basılı tutuş başka bir
         // kısayolu tetiklemesin.
         event.preventDefault()
-        voice.begin()
+        voiceRef.current.begin()
       }
     }
 
@@ -366,9 +384,9 @@ export function NotchShell() {
       const action = ptOnKeyUp(ptt.current, event, Date.now(), pttCode)
 
       if (action?.type === 'commit') {
-        voice.commit()
+        voiceRef.current.commit()
       } else if (action?.type === 'cancel') {
-        voice.cancel()
+        voiceRef.current.cancel()
       }
     }
 
@@ -380,7 +398,7 @@ export function NotchShell() {
     // bakiyor olabilir. Oturum yalnizca kisayolla kapanir.
     const onWindowBlur = () => {
       if (ptOnBlur(ptt.current)) {
-        voice.cancel()
+        voiceRef.current.cancel()
       }
     }
 
@@ -414,8 +432,8 @@ export function NotchShell() {
         if (previous) {
           // Kapatiliyor: suren bir kayit varsa atilir ve ARKADAS OTURUMU
           // unutulur -- bir sonraki acilis temiz bir oturum alsin.
-          voice.cancel()
-          voice.endSession()
+          voiceRef.current.cancel()
+          voiceRef.current.endSession()
           window.hermesDesktop?.notch?.close?.()
 
           return false
@@ -470,7 +488,10 @@ export function NotchShell() {
     // ``pttCode`` bagimliliga giriyor: kullanici tusu yeniden bagladiginda
     // dinleyiciler ESKI koda bakmaya devam ederdi -- yani ayar kaydediliyor
     // ama hicbir sey degismiyor gibi gorunurdu.
-  }, [pttCode, sessionActive, voice])
+    //
+    // ``voice`` bagimlilikta DEGIL: her render'da yeni bir nesne ve etkiyi
+    // surekli sokup takardi (gerekce ``voiceRef``in yaninda).
+  }, [pttCode, sessionActive])
 
   return (
     <div className="flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>

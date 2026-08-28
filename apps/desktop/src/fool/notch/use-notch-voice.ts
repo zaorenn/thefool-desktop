@@ -35,6 +35,7 @@ import {
 } from '@/lib/voice-playback'
 import { ownsAmbientCue } from '@/store/ambient'
 import { $messages } from '@/store/session'
+import { $voicePlayback } from '@/store/voice-playback'
 
 import { voiceApi } from '../voice-api'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
@@ -55,6 +56,7 @@ import {
   modeForActivation
 } from './hands-free'
 import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
+import { createPttSpeechState, observeLevel } from './ptt-speech'
 import {
   createFillerState,
   FILL_AFTER_MS,
@@ -62,6 +64,7 @@ import {
   shouldFill,
   takeFiller
 } from './thinking-filler'
+import { turnEndAction } from './turn-end'
 
 /**
  * Baska bir yuzeyin ustlendigi cevap kimlikleri icin ust sinir.
@@ -88,6 +91,14 @@ function rememberDeclined(declined: Set<string>, id: string): void {
 }
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
+
+/**
+ * Ses için beklenecek en uzun süre.
+ *
+ * Oynatma katmanının kendi bekçileri var (ilk-ses ve duraklama sınırları); bu
+ * yalnızca takılı bir oynatmanın çentiği sonsuza kadar açık bırakmaması için.
+ */
+const TURN_AUDIO_CAP_MS = 120_000
 
 export interface NotchVoice {
   /** Son hata — notch'ta kısa bir satır olarak gösteriliyor. */
@@ -184,6 +195,10 @@ export function useNotchVoice(): NotchVoice {
   const fillerRef = useRef(createFillerState())
   // Bu turda cevaptan metin geldi mi? Geldiyse sessizlik bitti.
   const speechStartedRef = useRef(false)
+  // Metin bitti ama SES sürüyor: tur, oynatma boşa düşene kadar ayakta.
+  const awaitingPlaybackRef = useRef(false)
+  // Bu basışta konuşma duyuldu mu? Araya girme kararını bu taşıyor.
+  const speechGateRef = useRef(createPttSpeechState())
   // Sesli arkadasin KENDI oturumu. Bugune kadar masaustu sohbet panelinin
   // oturumu kullaniliyordu ve o oturum ``desktop`` kapsaminda kuruluyor:
   // olculdu, 21 takim / 73 arac / 8 tanesi makineye dokunuyor. Yani "hava
@@ -250,29 +265,55 @@ export function useNotchVoice(): NotchVoice {
     // Çağrı UCUZ ve korumalı: uç nokta hemen dönüyor ve ``tts_warmup.warm``
     // zaten ısınıyorsa yeni iş başlatmıyor.
     void voiceApi.warmVoice().catch(() => undefined)
-    // Oturumu SIMDIDEN ac: kullanici konusurken cozulsun, sonra degil.
-    // REF uzerinden: ``prewarmSession`` asagida tanimli ve ``begin``i ona
-    // bagimli kilmak her oturum degisiminde geri cagriyi yeniden kurardi.
-    // Ajan konuşuyorsa sustur: kullanıcı araya giriyor demektir.
-    // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
-    // seslendirilmeye devam eder.
-    streamRef.current?.session?.finish()
-    streamRef.current = null
-    stopVoicePlayback()
-    // Tuşla araya girmek de araya girmektir: süren tur durmalı, yoksa eski
-    // cevabın kalanı yeni turdan sonra konuşulur.
-    void haltTurn().catch(() => undefined)
+    // Bekleyen "sesi bekle" bayrağı düşüyor: kullanıcı yeni bir tur açtı.
+    awaitingPlaybackRef.current = false
+
+    // ARAYA GİRME BURADA DEĞİL.
+    //
+    // Eskiden ``stopVoicePlayback()`` ve ``haltTurn()`` tam burada, tuşa
+    // BASILDIĞI anda çağrılıyordu. Yani sağ Ctrl'ye yanlışlıkla dokunmak --
+    // ya da ne söyleyeceğine karar vermeden basmak -- modelin cevabını
+    // öldürüyordu, üstelik geri dönüşü olmadan.
+    //
+    // Kullanıcının istediği kural: tuşa basılması yetmez, o tuş basılıyken
+    // GERÇEKTEN konuşulduğu anlaşıldığında kesilsin. Karar aşağıdaki
+    // ``onLevel`` geri çağrısında, eşik ve süre kuralı ``./ptt-speech.ts``de.
+    speechGateRef.current = createPttSpeechState()
 
     // Eller serbest kipte kaydın sınırını sessizlik çiziyor; bas-konuşta
     // KULLANICI çiziyor. İkisine aynı ayarı vermek, tuş hâlâ basılıyken
     // kaydın kapanması demekti — cümlenin ortasında kesilen bir kayıt.
     const options = listenOptionsFor(modeForActivation(activation))
 
+    const onLevel = (level: number) => {
+      const speaking = observeLevel(speechGateRef.current, {
+        level,
+        now: Date.now(),
+        // Eşik oynatma sırasında yükseliyor: hoparlör sızıntısı tek başına
+        // araya girme sayılmamalı.
+        playing: $voicePlayback.get().status !== 'idle'
+      })
+
+      if (!speaking) {
+        return
+      }
+
+      setHeardSpeech(true)
+      // ŞİMDİ araya giriliyor: akış oturumu kapanıyor, ses kesiliyor ve süren
+      // tur durduruluyor -- yoksa eski cevabın kalanı yeni turdan sonra
+      // konuşulur.
+      streamRef.current?.session?.finish()
+      streamRef.current = null
+      stopVoicePlayback()
+      void haltTurn().catch(() => undefined)
+    }
+
     void mic
-      .start(
-        options
+      .start({
+        ...(options ?? {}),
+        onLevel,
+        ...(options
           ? {
-              ...options,
               onSilence: () => {
                 // Sessizlik turu bitirdi: konuşma duyulmuştu, yoksa
                 // ``onSilence`` değil boşta zaman aşımı çalışırdı.
@@ -280,8 +321,8 @@ export function useNotchVoice(): NotchVoice {
                 commitRef.current()
               }
             }
-          : undefined
-      )
+          : {})
+      })
       .catch((cause: unknown) => {
         setStatus('idle')
         setError(cause instanceof Error ? cause.message : String(cause))
@@ -575,17 +616,80 @@ export function useNotchVoice(): NotchVoice {
       setStatus('speaking')
     }
 
-    // Baloncuk tamamlandı: akışı kapat ve turu bitmiş say.
+    // Baloncuk tamamlandı: akışı kapat. Turu bitirmek AYRI bir karar --
+    // metin sesin saniyelerce önünde gidiyor (bkz. ``./turn-end.ts``).
     if (!pending.pending) {
       session?.finish()
       streamRef.current = null
       setLastSpokenId(pending.id)
 
-      if (statusRef.current !== 'listening') {
+      const action = turnEndAction({
+        playbackIdle: $voicePlayback.get().status === 'idle',
+        replyComplete: true,
+        status: statusRef.current
+      })
+
+      if (action === 'end') {
         setStatus('idle')
+      } else if (action === 'hold-for-audio') {
+        // Ses sürüyor: tur AYAKTA. Aşağıdaki etki, oynatma boşa düştüğü anda
+        // bitiriyor.
+        awaitingPlaybackRef.current = true
+        setStatus('speaking')
       }
     }
   }, [armFallback, fallbackTick, lastSpokenId, messages, status])
+
+  // Metin bitti, ses sürüyor: turu SESİN sonunda bitir.
+  //
+  // Bu bekleyiş olmadan çentik model konuşurken kapanıyor, araya girme
+  // izleyicisi sökülüyor ve ne sesle ne tuşla araya girilebiliyordu --
+  // gerekçenin tamamı ``./turn-end.ts``de.
+  //
+  // ``awaitingPlaybackRef`` reaktif bir değerin AYNASI değil: "bu tur sesi
+  // bekliyor" diyen imperatif bir bayrak, ve tek yazarı bir üstteki efekt.
+  // Reaktif olan değer (``$voicePlayback``) geri çağrının içinde DOĞRUDAN
+  // okunuyor, ki kuralın koruduğu şey de bu.
+  // eslint-disable-next-line no-restricted-syntax -- yukarıdaki gerekçe
+  useEffect(() => {
+    if (!awaitingPlaybackRef.current) {
+      return undefined
+    }
+
+    const finish = () => {
+      if (!awaitingPlaybackRef.current) {
+        return
+      }
+
+      awaitingPlaybackRef.current = false
+
+      if (statusRef.current === 'speaking') {
+        setStatus('idle')
+      }
+    }
+
+    // Oynatma zaten boşsa (ses bu arada bitti) hemen kapat.
+    if ($voicePlayback.get().status === 'idle') {
+      finish()
+
+      return undefined
+    }
+
+    const stop = $voicePlayback.listen(state => {
+      if (state.status === 'idle') {
+        finish()
+      }
+    })
+
+    // Emniyet kemeri: oynatma katmanının kendi bekçileri var ama takılı bir
+    // oynatma çentiği sonsuza kadar açık bırakmasın.
+    const cap = setTimeout(finish, TURN_AUDIO_CAP_MS)
+
+    return () => {
+      stop()
+      clearTimeout(cap)
+    }
+  }, [status])
 
   // Araya girme: kullanıcı TUŞA BASMADAN konuşmaya başlayınca da sus.
   //

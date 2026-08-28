@@ -65,3 +65,14 @@ registerLocaleCatalog('ar', ar)
 registerLocaleCatalog('ja', ja)
 registerLocaleCatalog('zh', zh)
 registerLocaleCatalog('zh-hant', zhHant)
+
+// Marka ikonu tablosu da ÖNCEDEN çözülü.
+//
+// `lib/external-link.tsx` onu dinamik `import()` ile çekiyor (167 `Si*`
+// bileşeni açılış grafiğinde 229 KB tutuyordu). Sınavlarda o dinamik çözüm,
+// paralel koşan 530 dosyanın yükü altında `waitFor` penceresini aşabiliyor ve
+// ikonu bekleyen sınav zaman zaman düşüyordu -- ürün doğru, sınav kırılgan.
+//
+// Statik içe aktarım modülü işçinin grafiğine sokuyor; dinamik `import()`
+// sonra onu önbellekten anında alıyor. Ürün yolu değişmiyor.
+import './src/lib/brand-icon'

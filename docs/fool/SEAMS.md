@@ -84,6 +84,8 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `slow-voice-engine` | `fool/voice_models.py` | Gerçek zamandan yavaş motorlar listeye geri döner |
 | `engine-vram-eviction` | `fool/engine_host.py` | LLM + TTS birlikte VRAM'i doldurur, iki iş aynı anda koşunca makine donar |
 | `shared-gpu-budget` | `fool/engine_host.py` | Aynı sınıf, bütçe tarafı |
+| `single-model-residency` | `apps/desktop/src/app/session/hooks/use-model-controls.ts` | Model değiştirilince eskisi LM Studio'da yüklü kalır; iki model kartı doldurur ve ses motorları CPU'ya düşer |
+| `system-tray` | `apps/desktop/electron/main.ts` | Kapatma düğmesi uygulamayı bitirir (tepsiye inmez) ve çıkışta LM Studio'daki model VRAM'de kalır — uygulama kapalıyken kart dolu |
 
 ### Yapılandırma ve dayanıklılık
 

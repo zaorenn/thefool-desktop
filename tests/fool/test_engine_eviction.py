@@ -73,39 +73,55 @@ def _clean():
 # Tek motor
 # ---------------------------------------------------------------------------
 
-def test_sinir_IKI_motor() -> None:
-    """Bir DEGIL iki -- ve sebebi olculdu.
+def test_sinir_TEK_motor() -> None:
+    """Bir -- ve iki oldugu donemin sebebi ARTIK YOK.
 
-    Once 1 yapmistim: uygulamada AYNI ANDA iki yuzey konusuyor (sohbet
-    paneli genel ``tts.provider`` ile, Friend kendi sectigiyle). Ikisi
-    farkli motor secince her tur yukle-bosalt-yukle donguse giriyordu --
-    qwen3 40 sn + styletts2 37 sn. Makine surekli model yukluyor, hicbir
-    cumle zamaninda seslendirilmiyor.
+    Bir sure 2 idi. Sebebi olculmustu: o gun uygulamada AYNI ANDA iki yuzey
+    konusuyordu (sohbet paneli genel ``tts.provider`` ile, Friend KENDI
+    sectigiyle). Ikisi farkli motor secince her tur yukle-bosalt-yukle
+    dongusune giriyordu -- qwen3 40 sn + styletts2 37 sn. Makine surekli
+    model yukluyor, hicbir cumle zamaninda seslendirilmiyor.
 
-    Iki motor hem cakismayi bitiriyor hem VRAM'i sinir altinda tutuyor
-    (olculdu: iki motor ayaktayken en dusuk bos VRAM 6688 MB, tahliye
-    oncesi 724 MB).
+    O sebep kalkti: kip basina ses uclari kaldirildi, seslendirme motoru her
+    yuzeyde TEK yerden seciliyor (``tts.provider``). Iki yuzey artik ayni
+    motoru istiyor, yani ikinci yuva yalnizca ONCEKI secimi bellekte
+    tutuyordu -- kullanicinin kurali ise "kategoride yeni bir sey secilince
+    oncekisi TAMAMEN birakilsin" (bkz. ``fool/residency.py``).
     """
-    assert eh.MAX_RESIDENT_ENGINES == 2
+    assert eh.MAX_RESIDENT_ENGINES == 1
 
 
-def test_sinir_asilinca_eskisi_bosaltiliyor() -> None:
+def test_yeni_motor_ONCEKINI_bosaltiyor() -> None:
+    """Tek yuva: yeni motor istenince ayakta duran gidiyor."""
+    eh._ENGINES["onceki"] = _engine(last_used=1.0)
+
+    eh._evict_for("yeni")
+
+    assert "onceki" not in eh._ENGINES
+
+
+def test_sinir_asilinca_HEPSI_bosaltiliyor() -> None:
+    """Tek yuvaya iki motor sigmaz: ikisi de gidiyor, en eskisi once."""
     eh._ENGINES["eski"] = _engine(last_used=1.0)
     eh._ENGINES["orta"] = _engine(last_used=5.0)
 
     eh._evict_for("yeni")
 
-    assert "eski" not in eh._ENGINES
-    assert "orta" in eh._ENGINES, "sinir icinde kalan motor korunmali"
+    assert eh._ENGINES == {}
 
 
-def test_sinir_altinda_hic_tahliye_YOK() -> None:
-    """Iki yuzey ayni anda konusabilmeli -- gereksiz tahliye thrash demek."""
-    eh._ENGINES["tek"] = _engine(last_used=1.0)
+def test_ISTENEN_motor_kendisi_tahliye_edilmiyor() -> None:
+    """Ayakta olan motor YENIDEN istenince durdurulmamali.
 
-    eh._evict_for("yeni")
+    Tek yuvada bu kolayca ters gidebilirdi: sayi siniri ``(1 + 1) - 1 = 1``
+    okuyup tam da konusmakta olan motoru bosaltirdi. ``_evict_for`` istenen
+    adi aday listesinden cikariyor -- bu test o inceligi tutuyor.
+    """
+    eh._ENGINES["kokoro"] = _engine(last_used=1.0)
 
-    assert "tek" in eh._ENGINES
+    eh._evict_for("kokoro")
+
+    assert "kokoro" in eh._ENGINES
 
 
 def test_EN_ESKI_kullanilan_once_gidiyor(monkeypatch) -> None:

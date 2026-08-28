@@ -2,6 +2,7 @@ import { type QueryClient } from '@tanstack/react-query'
 import { useCallback, useRef } from 'react'
 
 import type { ModelSelection } from '@/app/shell/model-menu-panel'
+import { dropUnselectedModels } from '@/fool/runtime-api'
 import { getGlobalModelInfo } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { isBusySessionModelSwitch } from '@/lib/gateway-rpc'
@@ -248,6 +249,20 @@ export function useModelControls({ queryClient, requestGateway }: ModelControlsO
         // re-syncs every surface.
         if (!result?.deferred) {
           void queryClient.invalidateQueries({ queryKey: modelOptionsQueryKey(liveGatewayProfile, liveSessionId) })
+
+          // FOOL-SEAM: single-model-residency
+          // Eski model LM Studio'da yuklu kaliyor: ayri bir uygulama ve
+          // yukledigini kendiliginden birakmiyor. Olculdu (16 GB kart):
+          // gemma 6,33 GB + qwen 6,55 GB = 12,88 GB, geriye ~3 GB -- ve
+          // seslendirme motorlari AYNI kartta.
+          //
+          // YALNIZCA kalici (global) secimde: oturuma ozel bir secim
+          // ``model.default``i yazmiyor, yani orada temizlik tam da yeni
+          // secilen modeli bosaltirdi. ``deferred`` de disarida: tur ortasinda
+          // kuyruga alinan secim henuz uygulanmadi.
+          if (persistsAsDefault) {
+            dropUnselectedModels()
+          }
         }
 
         return true

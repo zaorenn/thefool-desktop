@@ -238,6 +238,8 @@ EXPECTED_SEAMS = {
     "voice-routes",
     "whatsapp-toolset",
     "delivery-command-name",
+    "system-tray",
+    "single-model-residency",
 }
 
 

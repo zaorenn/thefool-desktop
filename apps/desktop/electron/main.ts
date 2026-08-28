@@ -6,7 +6,7 @@ import https from 'node:https'
 import os from 'node:os'
 import path from 'node:path'
 import tls from 'node:tls'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import {
   app,
@@ -17,6 +17,7 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  nativeImage,
   nativeTheme,
   Notification,
   powerMonitor,
@@ -26,7 +27,9 @@ import {
   screen,
   session,
   shell,
-  systemPreferences
+  systemPreferences,
+  Tray,
+  webContents
 } from 'electron'
 import nodePty from 'node-pty'
 
@@ -282,6 +285,7 @@ import {
 } from './ssh-connection'
 import { createStreamThrottle } from './stream-throttle'
 import { nativeOverlayWidth as computeNativeOverlayWidth, macTitleBarOverlayHeight } from './titlebar-overlay-width'
+import { createTrayRuntime, type ResidencyKind, shouldHideOnClose } from './tray-runtime'
 import {
   compareApiUrl,
   parseCompareBehindCount,
@@ -472,7 +476,28 @@ let windowsSandboxFallbackSticky = false
 let windowsSandboxFallbackReason: SandboxFallbackReason = 'boot-loop'
 let windowsNoSandboxRelaunchAttempted = false
 
-if (IS_WINDOWS) {
+// Single-instance lock: deep links on a running app (Win/Linux) arrive as a
+// second-instance argv. Without the lock a second `fool://` launch spawns a
+// whole new app instead of routing into the running one.
+//
+// Kilit BURADA aliniyor -- asagidaki Windows kum havuzu blogundan ONCE.
+//
+// Olculen hata: o blok modul kapsaminda ve kilitten ~14.600 satir ONCE
+// kosuyordu, yani kilidi KAYBEDECEK bir ornek bile isaretciyi okuyor, ACL
+// onarimini deneyebiliyor ve kosulsuz olarak ``{state:'booting'}`` yaziyordu.
+// ``app.exit(0)`` ``before-quit``i atladigi icin ``markerAfterSuccessfulBoot``
+// hicbir zaman kosmuyor ve isaretci yarim kaliyor.
+//
+// Tetik siradan: uygulama acikken bir ``fool://`` baglantisina tiklamak, exe'ye
+// cift tiklamak ya da Baslat menusu kisayolunu kullanmak -- kodun kendi
+// yorumuna gore Windows'ta derin baglantinin NORMAL yolu. Ucuncu bos acilista
+// ``bootAborts`` esigi asiliyor ve KALICI bir ``--no-sandbox`` yedegi diske
+// yaziliyor. Ustelik yarim kalan her isaretci, bir sonraki gercek acilista
+// hazir-oncesi ana is parcaciginda senkron bir ``icacls /T`` (30 sn zaman
+// asimi) tetikliyor.
+const isPrimaryInstance = app.requestSingleInstanceLock()
+
+if (IS_WINDOWS && isPrimaryInstance) {
   const windowsUserData = app.getPath('userData')
   const priorMarker = readSandboxMarker(windowsUserData)
 
@@ -2549,12 +2574,62 @@ function readZoomState() {
   }
 }
 
-function writeZoomState(zoomLevel) {
+function writeZoomStateNow(zoomLevel) {
   try {
     fs.mkdirSync(path.dirname(DESKTOP_ZOOM_STATE_PATH), { recursive: true })
     writeFileAtomic(DESKTOP_ZOOM_STATE_PATH, JSON.stringify({ zoomLevel }, null, 2))
   } catch (error) {
     rememberLog(`[zoom] json persist failed: ${error?.message || error}`)
+  }
+}
+
+/**
+ * Yakınlaştırma durumu GECİKTİRİLEREK yazılıyor.
+ *
+ * ``writeZoomState`` senkron ``writeFileSync`` + ``renameSync`` çifti ve
+ * ``zoom-changed`` olayına bağlı. Chromium o olayı her tekerlek çentiğinde
+ * ateşliyor: Ctrl/Cmd + kaydırma ya da bir trackpad kıstırması, saniyede
+ * onlarca kez ANA İŞ PARÇACIĞINDA iki senkron dosya sistemi çağrısı demek --
+ * ve her biri ayrıca renderer'a bir ``executeJavaScript`` gidiş dönüşü.
+ *
+ * Pencere konumu/boyutu için aynı sınıf olay ZATEN 250 ms geciktiriliyor
+ * (``persistWindowState``); yakınlaştırma tek istisnaydı.
+ *
+ * Son değer kazanıyor ve kapanışta boşaltılıyor: hiçbir ayar kaybolmuyor.
+ */
+const ZOOM_PERSIST_DEBOUNCE_MS = 250
+let zoomPersistTimer: NodeJS.Timeout | null = null
+let zoomPersistPending: null | number = null
+
+function writeZoomState(zoomLevel) {
+  zoomPersistPending = zoomLevel
+
+  if (zoomPersistTimer) {
+    return
+  }
+
+  zoomPersistTimer = setTimeout(() => {
+    zoomPersistTimer = null
+
+    if (zoomPersistPending !== null) {
+      writeZoomStateNow(zoomPersistPending)
+      zoomPersistPending = null
+    }
+  }, ZOOM_PERSIST_DEBOUNCE_MS)
+
+  zoomPersistTimer.unref?.()
+}
+
+/** Bekleyen yakınlaştırma yazımını HEMEN boşalt (kapanış yolu). */
+function flushZoomState() {
+  if (zoomPersistTimer) {
+    clearTimeout(zoomPersistTimer)
+    zoomPersistTimer = null
+  }
+
+  if (zoomPersistPending !== null) {
+    writeZoomStateNow(zoomPersistPending)
+    zoomPersistPending = null
   }
 }
 
@@ -5085,6 +5160,16 @@ function fetchHtmlTitleWithCurl(rawUrl: string): Promise<string> {
       '--header',
       'Accept-Encoding: identity',
       '--raw',
+      // ``--`` SEÇENEK SONU.
+      //
+      // URL argv'nin son elemanıydı ve sonlandırıcı yoktu: ``-`` ile başlayan
+      // her değeri curl bir URL değil SEÇENEK olarak okuyor. ``-K<dosya>``
+      // (``--config``) curl'e saldırganın seçtiği bir yapılandırmayı
+      // okutuyor -- keyfi ``--output``, keyfi başlık, keyfi URL.
+      //
+      // Çağıran taraf artık ``http(s)`` şeması dayatıyor; bu, o kapının
+      // düşmesi hâlinde ikinci kilit.
+      '--',
       url
     ]
 
@@ -5235,8 +5320,39 @@ function usableTitle(value: string): string {
   return value && !TITLE_ERROR_RE.test(value) ? value : ''
 }
 
+/** Yalnızca ``http(s)`` — ve GERÇEKTEN ayrıştırılabilir bir URL.
+ *
+ * Bu, renderer'dan gelen bir dize ve iki tehlikeli yere gidiyor: ``curl``
+ * argümanları ve gizli bir ``BrowserWindow``un ``loadURL``i. Tek şema
+ * denetimi renderer tarafındaydı (``src/lib/external-link.tsx``) -- yani
+ * güven sınırının YANLIŞ tarafında. */
+function httpTitleTarget(rawUrl: string): null | string {
+  const value = String(rawUrl || '').trim()
+
+  if (!value) {
+    return null
+  }
+
+  try {
+    const parsed = new URL(value)
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null
+    }
+
+    return parsed.toString()
+  } catch {
+    return null
+  }
+}
+
 function fetchLinkTitle(rawUrl) {
-  const url = String(rawUrl || '').trim()
+  const url = httpTitleTarget(rawUrl)
+
+  if (!url) {
+    return Promise.resolve('')
+  }
+
   const key = canonicalTitleCacheKey(url)
 
   if (!key) {
@@ -5484,21 +5600,66 @@ async function filePathFromPreviewUrl(rawUrl) {
   return resolvedPath
 }
 
-function sendPreviewFileChanged(payload) {
-  if (!mainWindow || mainWindow.isDestroyed()) {
+/** İzlemeyi İSTEYEN pencereye gönder — ana pencereye değil.
+ *
+ * Ölçülen hata: bu işlev her zaman ``mainWindow``a gönderiyordu ve iki IPC
+ * girişi de ``event.sender``ı hiç okumuyordu. Sonucu, bir özelliğin ikincil
+ * pencerelerde tamamen ölü olması: oturum pop-out'unda, örnek penceresinde ya
+ * da HUD'da bir önizleme açıp dosyayı düzenlemek hiçbir şey yapmıyordu. Ana
+ * pencere hiç kaydetmediği bir kimlik için olay alıyor (işlemsiz), soran
+ * pencere ise hiçbir şey duymuyor. */
+function sendPreviewFileChanged(payload, targetId: number) {
+  const target = webContents.fromId(targetId)
+
+  if (!target || target.isDestroyed()) {
     return
   }
 
-  const { webContents } = mainWindow
-
-  if (!webContents || webContents.isDestroyed()) {
-    return
-  }
-
-  webContents.send('fool:preview-file-changed', payload)
+  target.send('fool:preview-file-changed', payload)
 }
 
-async function watchPreviewFile(rawUrl) {
+/** Bu pencerenin bütün izleyicilerini kapat. */
+function closePreviewWatchersForOwner(ownerId: number) {
+  for (const [id, watcher] of [...previewWatchers.entries()]) {
+    if (watcher.ownerId === ownerId) {
+      watcher.close()
+      previewWatchers.delete(id)
+    }
+  }
+}
+
+/** Pencere yok olduğunda izleyicilerini SERBEST BIRAK.
+ *
+ * Ölçülen sızıntı: kayıt yalnızca açık bir ``stopPreviewFileWatch`` ile ya da
+ * uygulama kapanışında küçülüyordu. Renderer'ın yeniden yüklenmesi kimlikleri
+ * kaybediyor ve tuttuğu her izleyiciyi öksüz bırakıyor -- renderer çökme
+ * kurtarması, ``fool:profile:set`` -> ``mainWindow.reload()``, dev HMR, ya da
+ * önizlemesi açık bir pencerenin kapatılması. Her sızıntı canlı bir
+ * ``fs.watch`` tutamacı: POSIX'te bir FSEvents/inotify izlemesi, Windows'ta o
+ * dizini silmeyi ya da yeniden adlandırmayı ENGELLEYEN açık bir dizin
+ * tutamacı.
+ *
+ * Aynı desen ``activeWorkByWebContents`` ve ``foundInPageForwarders`` için
+ * zaten uygulanıyor; eksik olan tek kayıt buydu. */
+const previewWatcherOwners = new Set<number>()
+
+function trackPreviewWatcherOwner(sender: Electron.WebContents) {
+  const ownerId = sender.id
+
+  if (previewWatcherOwners.has(ownerId)) {
+    return ownerId
+  }
+
+  previewWatcherOwners.add(ownerId)
+  sender.once('destroyed', () => {
+    previewWatcherOwners.delete(ownerId)
+    closePreviewWatchersForOwner(ownerId)
+  })
+
+  return ownerId
+}
+
+async function watchPreviewFile(rawUrl, ownerId: number) {
   const filePath = await filePathFromPreviewUrl(rawUrl)
   const watchDir = path.dirname(filePath)
   const targetName = path.basename(filePath)
@@ -5523,7 +5684,7 @@ async function watchPreviewFile(rawUrl) {
         return
       }
 
-      sendPreviewFileChanged({ id, path: filePath, url: pathToFileURL(filePath).toString() })
+      sendPreviewFileChanged({ id, path: filePath, url: pathToFileURL(filePath).toString() }, ownerId)
     }, PREVIEW_WATCH_DEBOUNCE_MS)
   })
 
@@ -5534,7 +5695,8 @@ async function watchPreviewFile(rawUrl) {
       }
 
       watcher.close()
-    }
+    },
+    ownerId
   })
 
   return { id, path: filePath }
@@ -5574,7 +5736,7 @@ function requestOptionsWithHeaders(options: any = {}, headers = {}) {
  *  readdir poll. Same registry + change channel as the preview file watchers
  *  (the renderer reconciles on any tick; per-file edits stay on their own
  *  watches), so stopPreviewFileWatch/closePreviewWatchers manage these too. */
-function watchDirectory(rawDir) {
+function watchDirectory(rawDir, ownerId: number) {
   const watchDir = path.resolve(String(rawDir || ''))
 
   if (!fs.existsSync(watchDir) || !fs.statSync(watchDir).isDirectory()) {
@@ -5591,7 +5753,7 @@ function watchDirectory(rawDir) {
 
     timer = setTimeout(() => {
       timer = null
-      sendPreviewFileChanged({ id, path: watchDir, url: pathToFileURL(watchDir).toString() })
+      sendPreviewFileChanged({ id, path: watchDir, url: pathToFileURL(watchDir).toString() }, ownerId)
     }, PREVIEW_WATCH_DEBOUNCE_MS)
   })
 
@@ -5602,7 +5764,8 @@ function watchDirectory(rawDir) {
       }
 
       watcher.close()
-    }
+    },
+    ownerId
   })
 
   return { id, path: watchDir }
@@ -6288,6 +6451,11 @@ function installContextMenu(window) {
   })
 }
 
+/** Güvenilmeyen gömülü içeriğin oturum bölmeleri.
+ *  ``persist:fool-preview`` -> önizleme webview'i (ajanın yazdığı yerel HTML,
+ *  localhost geliştirme sunucuları); ``persist:fool-embed`` -> gömme katmanı. */
+const UNTRUSTED_PARTITIONS = ['persist:fool-preview', 'persist:fool-embed'] as const
+
 // Microphone and camera capture. The voice composer drives mic access and
 // renderer features (e.g. desktop plugins) can drive camera access, both
 // through getUserMedia, which Chromium gates behind these two session hooks.
@@ -6352,6 +6520,44 @@ function installDownloadHandling() {
   })
 }
 
+/**
+ * Gömülü ``<webview>`` misafirlerini ANA SÜREÇTE sınırla.
+ *
+ * ``webviewTag: true`` her sohbet penceresinde açık (``session-windows.ts``)
+ * ve ``will-attach-webview`` kancası hiç kurulmamıştı. O kanca olmadan her
+ * misafirin ``preload``ını, ``nodeIntegration``ını ve bölmesini YALNIZCA
+ * renderer belirliyor -- ana süreç hiçbir şeyi denetlemiyor.
+ *
+ * Bedeli, köprünün genişliğinden geliyor: ``preload.ts`` keyfi kabuk
+ * başlatma (``terminal.start``), dosya yazma/silme ve bütün ``git.*`` ad
+ * uzayını sunuyor. Renderer'a tek bir enjeksiyon, arada hiçbir şey olmadan
+ * tam RCE demek.
+ *
+ * Uygulamanın kendi tek webview'i (önizleme bölmesi) zaten bu ayarlarla
+ * açılıyor, yani bu kural mevcut davranışı değiştirmiyor -- yalnızca kararı
+ * renderer'dan alıp ana sürece taşıyor.
+ */
+function installWebviewAttachGuard() {
+  app.on('web-contents-created', (_event, contents) => {
+    contents.on('will-attach-webview', (_attachEvent, webPreferences, params) => {
+      // Preload SÖKÜLÜYOR: misafirin köprüye erişimi olamaz.
+      delete webPreferences.preload
+
+      webPreferences.nodeIntegration = false
+      webPreferences.nodeIntegrationInSubFrames = false
+      webPreferences.contextIsolation = true
+      webPreferences.sandbox = true
+      webPreferences.webSecurity = true
+
+      // Bölme SABİTLENİYOR: misafir varsayılan oturuma (uygulamanın kendi
+      // çerezleri ve izinleri) giremesin.
+      if (!UNTRUSTED_PARTITIONS.includes(params.partition as (typeof UNTRUSTED_PARTITIONS)[number])) {
+        params.partition = UNTRUSTED_PARTITIONS[0]
+      }
+    })
+  })
+}
+
 function installMediaPermissions() {
   // Async request handler: the prompt-style path (most platforms).
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback, details) => {
@@ -6369,6 +6575,39 @@ function installMediaPermissions() {
       permission === ('videoCapture' as any)
     )
   })
+
+  lockDownUntrustedPartitions()
+}
+
+/**
+ * Gömülü içeriğin bölmelerinde HER İZİN REDDEDİLİR.
+ *
+ * Yukarıdaki iki işleyici yalnızca ``session.defaultSession``a kuruluyor.
+ * Önizleme webview'i ``persist:fool-preview``, gömme katmanı
+ * ``persist:fool-embed`` bölmesinde koşuyor ve Electron'da izin işleyicisi
+ * OLMAYAN bir oturum her isteği ONAYLIYOR.
+ *
+ * Oradaki içerik güvenilir DEĞİL: önizleme bölmesi ajanın yazdığı yerel HTML'i
+ * ve localhost geliştirme sunucularını yüklüyor. Yani mikrofon, kamera, konum,
+ * bildirim ve pano okuma hiçbir soru sorulmadan veriliyordu.
+ *
+ * Reddetmek doğru varsayılan: bu yüzeylerin hiçbirinin bu izinlere meşru bir
+ * ihtiyacı yok, ve olsaydı açıkça istenirdi.
+ */
+function lockDownUntrustedPartitions() {
+  for (const partition of UNTRUSTED_PARTITIONS) {
+    try {
+      const partitionSession = session.fromPartition(partition)
+
+      partitionSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false))
+      partitionSession.setPermissionCheckHandler(() => false)
+    } catch (error) {
+      rememberLog(
+        `[security] could not lock down partition ${partition}: ` +
+          (error instanceof Error ? error.message : String(error))
+      )
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -8038,10 +8277,35 @@ function sanitizeConnectionProfiles(raw: Record<string, any>) {
   return out
 }
 
+/**
+ * Diskteki değişikliği ne sıklıkla yoklarız.
+ *
+ * ``statSync`` bir SENKRON sistem çağrısı ve bu işlev ağ isteklerinin en sıcak
+ * yolunda: ``onBeforeSendHeaders`` her URL için buraya iniyor
+ * (``headersForRemoteRequest`` -> ``readDesktopConnectionConfig``), yani her
+ * ağ geçidi REST çağrısı, her WS el sıkışması, her varlık yüklemesi ana iş
+ * parçacığında bloke bir sistem çağrısı ödüyordu -- Windows'ta antivirüs
+ * kancalarıyla, ağ üzerinden bağlı profil dizinlerinde belirgin biçimde daha
+ * pahalı.
+ *
+ * Yoklama KALDIRILMADI, SEYRELTİLDİ: dış bir düzenleme (başka bir süreç,
+ * elle yapılan bir değişiklik) en geç bu süre içinde görülüyor. Uygulamanın
+ * KENDİ yazımları önbelleği zaten satır içi güncelliyor, yani kendi
+ * değişikliklerimizde hiçbir gecikme yok.
+ */
+const CONNECTION_CONFIG_STAT_INTERVAL_MS = 1_000
+let connectionConfigStatAt = 0
+
 function readDesktopConnectionConfig() {
   // Check if file changed on disk since last read (e.g. modified by another
   // process or an external tool).  Our own writes update the cache inline
   // via writeDesktopConnectionConfig, but external changes would be missed.
+  const now = Date.now()
+
+  if (connectionConfigCache && now - connectionConfigStatAt < CONNECTION_CONFIG_STAT_INTERVAL_MS) {
+    return connectionConfigCache
+  }
+
   let mtime = null
 
   try {
@@ -8049,6 +8313,8 @@ function readDesktopConnectionConfig() {
   } catch {
     mtime = null
   }
+
+  connectionConfigStatAt = now
 
   if (connectionConfigCache && connectionConfigCacheMtime === mtime) {
     return connectionConfigCache
@@ -8121,6 +8387,9 @@ function writeDesktopConnectionConfig(config) {
   writeSecretFileAtomic(DESKTOP_CONNECTION_CONFIG_PATH, JSON.stringify(config, null, 2))
   connectionConfigCache = config
   connectionConfigCacheMtime = fs.statSync(DESKTOP_CONNECTION_CONFIG_PATH).mtimeMs
+  // Kendi yazimimiz: yoklama saati de tazeleniyor, yoksa bir sonraki okuma
+  // gereksiz bir ``statSync`` daha yapardi.
+  connectionConfigStatAt = Date.now()
 }
 
 // ── v2 connection registry (multi-source) ──────────────────────────────────
@@ -9951,16 +10220,38 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     rejectStart = reject
   })
 
+  // Havuzdan YALNIZCA kendi kaydını sil.
+  //
+  // Ölçülen hata: iki işleyici de koşulsuz ``backendPool.delete(poolKey)``
+  // çağırıyordu. Diğer bütün yıkım yolları kimlik karşılaştırıyor
+  // (``if (backendPool.get(key) === entry)``); bu ikisi karşılaştırmıyordu.
+  //
+  // Zincir: P profili için arka uç A tahliye ediliyor ya da boşta toplayıcı
+  // tarafından alınıyor -- SIGTERM'in inmesi 5 saniyeyi bulabiliyor. Bu
+  // arada renderer P için bir bağlantı istiyor, kayıt boş görünüyor ve arka
+  // uç B başlatılıp haritaya yazılıyor. Sonra A'nın ``exit``i ateşleniyor ve
+  // B'yi haritadan siliyor.
+  //
+  // B'nin Python süreci artık İZLENMİYOR: ``backendShutdown`` haritayı
+  // dolaşıyor ve onu göremiyor, yani ``app.quit()``tan SONRA da yaşıyor --
+  // portunu ve venv kabuğunu tutarak (Windows'ta bir sonraki ``fool update``i
+  // bloke ediyor).
+  const forgetOwnPoolEntry = () => {
+    if (backendPool.get(poolKey) === entry) {
+      backendPool.delete(poolKey)
+    }
+  }
+
   child.once('error', error => {
     rememberLog(`The Fool backend for profile "${profile}" failed to start: ${error.message}`)
     releaseBackendChild(child)
-    backendPool.delete(poolKey)
+    forgetOwnPoolEntry()
     rejectStart?.(error)
   })
   child.once('exit', (code, signal) => {
     rememberLog(`The Fool backend for profile "${profile}" exited (${signal || code})`)
     releaseBackendChild(child)
-    backendPool.delete(poolKey)
+    forgetOwnPoolEntry()
 
     if (!ready) {
       rejectStart?.(
@@ -10538,6 +10829,60 @@ function installPushToTalkForwarding(win) {
   })
 }
 
+/** Bu adres UYGULAMANIN KENDİ renderer'ı mı?
+ *
+ * Eski muhafız iki yerden birden geçiriyordu::
+ *
+ *     (DEV_SERVER && url.startsWith(DEV_SERVER)) || (!DEV_SERVER && url.startsWith('file:'))
+ *
+ * İkisi de dize ön eki, ikisi de yetersiz:
+ *
+ *   - Paketlenmiş yapıda diskteki HERHANGİ bir ``file:///…``, tam preload
+ *     köprüsünü taşıyan bir pencereyi gezinebiliyordu. O köprüde keyfi kabuk
+ *     başlatma, dosya yazma ve ``git.*`` var.
+ *   - Geliştirmede ``startsWith(DEV_SERVER)`` ``http://127.0.0.1:5174`` için
+ *     ``http://127.0.0.1:5174.evil.example/`` adresini de eşliyor -- ön ek
+ *     karşılaştırması köken karşılaştırması değil.
+ *
+ * Doğru soru köken/dizin: geliştirmede AYRIŞTIRILMIŞ köken eşitliği,
+ * paketlenmiş yapıda renderer'ın kendi klasörünün ALTINDA olmak. */
+function isOwnRendererNavigation(rawUrl: string): boolean {
+  let target: URL
+
+  try {
+    target = new URL(String(rawUrl || ''))
+  } catch {
+    return false
+  }
+
+  if (DEV_SERVER) {
+    try {
+      return target.origin === new URL(DEV_SERVER).origin
+    } catch {
+      return false
+    }
+  }
+
+  if (target.protocol !== 'file:') {
+    return false
+  }
+
+  try {
+    const indexPath = resolveRendererIndex()
+
+    if (!indexPath) {
+      return false
+    }
+
+    const rendererDir = path.resolve(path.dirname(indexPath))
+    const requested = path.resolve(fileURLToPath(target))
+
+    return requested === rendererDir || requested.startsWith(rendererDir + path.sep)
+  } catch {
+    return false
+  }
+}
+
 function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {}) {
   installPreviewShortcut(win)
   installDevToolsShortcut(win)
@@ -10572,7 +10917,7 @@ function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {})
     return { action: 'deny' }
   })
   win.webContents.on('will-navigate', (event, url) => {
-    if ((DEV_SERVER && url.startsWith(DEV_SERVER)) || (!DEV_SERVER && url.startsWith('file:'))) {
+    if (isOwnRendererNavigation(url)) {
       return
     }
 
@@ -11093,7 +11438,24 @@ function startHudCursorFeed(win: BrowserWindow) {
   let last: string | null = null
 
   const timer = setInterval(() => {
-    if (win.isDestroyed() || !win.isVisible()) {
+    // Zamanlayici KENDINI kapatiyor.
+    //
+    // Tek temizleme yolu asagidaki ``win.on('closed', ...)`` idi ve o dinleyici
+    // uc ayri yerde ``win.removeAllListeners('closed')`` ile toptan
+    // siliniyor -- HUD'un normal kapanis yolu (``closeHudWindow``) dahil.
+    // Yani her ac/kapa dongusu saniyede ~16 kez atesleyen bir zamanlayici
+    // birakiyor ve kapanisi icinde YOK EDILMIS bir ``BrowserWindow``
+    // tutuyordu.
+    //
+    // ``isDestroyed`` kontrolu zaten burada duruyordu; eksik olan ondan sonra
+    // durmasiydi.
+    if (win.isDestroyed()) {
+      clearInterval(timer)
+
+      return
+    }
+
+    if (!win.isVisible()) {
       return
     }
 
@@ -11585,6 +11947,192 @@ function closeQuickEntryWindow() {
   quickEntryWindow = null
 }
 
+// ---------------------------------------------------------------------------
+// FOOL-SEAM: system-tray
+//
+// Kapatma dugmesi uygulamayi BITIRMIYOR, sistem tepsisine indiriyor -- ve
+// tepsi menusu o an bellekte ne tutuldugunu gosterip birakmayi sunuyor.
+//
+// Ikisi TEK bir karar: gizlenen bir uygulama sicak surecini koruyor (olculdu:
+// ilk transkripsiyon 6,94 sn, soguk Kokoro cumlesi 24,17 sn -- her acilista
+// yeniden odenmesi gereken bedel), ama gorunmeyen bir uygulamanin kartta
+// 6,5 GB tutmasi kabul edilemez. Menu o yuzden susleme degil, kapanmanin
+// diger yarisi.
+// ---------------------------------------------------------------------------
+
+// ``before-quit`` bunu yaziyor, boylece pencerenin ``close`` isleyicisi GERCEK
+// bir cikisi kapatma dugmesinden ayirt edebiliyor. Cikis iptal edilirse
+// ("Keep Running") geri aliniyor -- yoksa bir sonraki kapatma, tepsiye
+// inmek yerine uygulamayi bitirirdi.
+let quitRequested = false
+
+// Cikista modeller BIR KEZ birakiliyor. ``before-quit`` yeniden giriliyor
+// (``app.quit()`` -> ayni olay), mandal olmadan her tur yeniden bosaltma
+// istegi gonderirdi.
+let quitModelUnloadDone = false
+
+// Pencere ilk kez tepsiye inince Windows'ta bir kez gosterilen balon.
+// Olmadan uygulama "kapanmadi" gibi gorunuyor ve kullanici gorev
+// yoneticisine gidiyor.
+let trayHideNoticeShown = false
+
+const RUNTIME_RESIDENCY_PATH = '/api/fool/runtime/residency'
+const RUNTIME_UNLOAD_PATH = '/api/fool/runtime/unload'
+
+// Tepsi menusu bu cevabi BEKLIYOR; uzun bir zaman asimi menuyu gecikmis
+// gosterir. Yerel bir istek milisaniyeler suruyor.
+const TRAY_REQUEST_TIMEOUT_MS = 4_000
+
+// Bosaltma ``lms unload`` alt surecini calistirabiliyor. Cikis yolunda ust
+// sinir SART: model bosaltmak, uygulamanin kapanmamasinin sebebi olamaz.
+const QUIT_UNLOAD_TIMEOUT_MS = 8_000
+
+/**
+ * ZATEN calisan arka uca sor -- asla yeni bir tane baslatma.
+ *
+ * Olagan istek yolu (``handleHermesApiRequest`` -> ``ensureBackend``) arka uc
+ * yoksa bir tane baslatiyor. Burada tam olarak yanlis olan bu: tepsi menusunu
+ * acmak (ya da uygulamadan cikmak) "ne yuklu" diye sormak icin bir Python
+ * sureci baslatirdi.
+ *
+ * Arka uc yoksa ``null`` DONUYOR, hata FIRLATMIYOR: acilisin ilk saniyelerinde
+ * ve arka uc kapaliyken bu olagan bir durum, gunluge yazilacak bir ariza
+ * degil.
+ */
+async function runtimeBackendRequest(
+  path: string,
+  { body, method = 'GET', timeoutMs = TRAY_REQUEST_TIMEOUT_MS }: any = {}
+) {
+  const pending = backendConnectionState.getPromise()
+
+  if (!pending) {
+    return null
+  }
+
+  // Baglanti sozu HENUZ cozulmemis olabilir: arka uc aciliyor olabilir ve o
+  // acilis saglik sondalari + WS dogrulamasi ile saniyeler suruyor. Ust sinir
+  // olmadan burasi cikis yolunu ASILI birakirdi -- kullanici uygulamayi kapatir
+  // ve pencere gider ama surec kalir.
+  const connection: any = await Promise.race([pending, sleepValue(timeoutMs, null)])
+
+  if (!connection?.baseUrl) {
+    return null
+  }
+
+  // OAuth kapili UZAK bir arka uc buradan kimlik dogrulayamaz (o yol cerez /
+  // native bearer istiyor). Modeller zaten bu makinede degil; menu "durum
+  // bilinmiyor" diyor ve Ac/Cik satirlari calismaya devam ediyor.
+  return fetchJson(`${connection.baseUrl}${path}`, connection.token, { body, method, timeoutMs })
+}
+
+/** ``ms`` sonra ``value`` -- zamanlayici olay dongusunu ayakta tutmuyor. */
+function sleepValue<T>(ms: number, value: T): Promise<T> {
+  return new Promise(resolve => {
+    const timer = setTimeout(() => resolve(value), ms)
+
+    timer.unref?.()
+  })
+}
+
+function createTrayIcon() {
+  const iconPath = getAppIconPath()
+
+  if (!iconPath) {
+    return null
+  }
+
+  const image = nativeImage.createFromPath(iconPath)
+
+  if (image.isEmpty()) {
+    return null
+  }
+
+  // Tepsi ikonlari kucuk cizilir; tam boy uygulama ikonu Windows'ta bulanik
+  // olcekleniyor. macOS menu cubugu 22 pt, Windows/Linux 16 px.
+  const size = IS_MAC ? 22 : 16
+
+  return new Tray(image.resize({ height: size, width: size })) as any
+}
+
+const trayRuntime = createTrayRuntime({
+  appName: 'The Fool',
+  buildMenu: template => Menu.buildFromTemplate(template as any),
+  createTray: createTrayIcon,
+  fetchResidency: () => runtimeBackendRequest(RUNTIME_RESIDENCY_PATH),
+  log: rememberLog,
+  // Cikis TEK yoldan gidiyor: ``app.quit()`` -> ``before-quit``. Modelleri
+  // burada bosaltmak, ayni isi iki yerde yapmak olurdu.
+  onQuit: () => app.quit(),
+  onShow: () => revealFromTray(),
+  // Linux'ta sag tik olayi yok: menu onceden takiliyor ve suresel
+  // tazeleniyor. Windows/macOS menuyu tikin kendisinde kuruyor, yani menu
+  // kapaliyken hicbir sey harcamiyor.
+  refreshIntervalMs: process.platform === 'linux' ? 30_000 : 0,
+  unload: (kind: 'all' | ResidencyKind, id: string) =>
+    runtimeBackendRequest(RUNTIME_UNLOAD_PATH, {
+      body: { id, kind },
+      method: 'POST',
+      timeoutMs: QUIT_UNLOAD_TIMEOUT_MS
+    })
+})
+
+function revealFromTray() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    // Pencere yok edilmis olabiliyor (renderer cokmesi): tepsiden acmak yine
+    // de bir pencere getirmeli, yoksa uygulamaya ulasmanin yolu kalmiyor.
+    createWindow()
+
+    return
+  }
+
+  focusWindow(mainWindow)
+}
+
+function hideMainWindowToTray() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return
+  }
+
+  mainWindow.hide()
+
+  if (trayHideNoticeShown) {
+    return
+  }
+
+  trayHideNoticeShown = true
+  trayRuntime.notify(
+    'The Fool is still running',
+    'Right-click the tray icon to unload models or quit.'
+  )
+}
+
+/**
+ * Cikmadan once bellekte ne varsa birak.
+ *
+ * Ana surec olduruldugunde whisper ve motor SURECLERI zaten onunla birlikte
+ * gidiyor (arka uc surec AGACI olarak olduruluyor). LM Studio GITMIYOR: ayri
+ * bir uygulama ve yukledigi modeli kendiliginden birakmiyor -- kullanicinin
+ * karti, uygulama kapandiktan sonra da 6,5 GB dolu kaliyordu.
+ *
+ * Hata YUTULUYOR: bir temizlik ugruna cikisi engellemek, cozdugunden cok
+ * sorun uretir.
+ */
+async function unloadModelsForQuit() {
+  const request = runtimeBackendRequest(RUNTIME_UNLOAD_PATH, {
+    body: { id: '', kind: 'all' },
+    method: 'POST',
+    timeoutMs: QUIT_UNLOAD_TIMEOUT_MS
+  }).catch(error => {
+    rememberLog(`[tray] unload-on-quit skipped: ${error?.message || error}`)
+  })
+
+  // Istegin KENDI zaman asimi var; bu ikinci sinir onun tutmadigi hali
+  // kapsiyor (cevap govdesi damla damla gelen bir soket, asili bir yazma).
+  // Cikis yolunda dogru takas net: bir modeli bosaltamamak kotu, uygulamanin
+  // kapanmamasi daha kotu.
+  await Promise.race([request, sleepValue(QUIT_UNLOAD_TIMEOUT_MS + 1_000, undefined)])
+}
+
 function createWindow() {
   const icon = getAppIconPath()
   const savedWindowState = readWindowState()
@@ -11692,6 +12240,24 @@ function createWindow() {
   mainWindow.on('maximize', schedulePersistWindowState)
   mainWindow.on('unmaximize', schedulePersistWindowState)
   mainWindow.on('close', () => schedulePersistWindowState.flush())
+
+  // FOOL-SEAM: system-tray
+  // Kapatma dugmesi uygulamayi BITIRMIYOR, tepsiye indiriyor.
+  //
+  // Geometri yukaridaki isleyicide zaten yaziliyor: kapanis engellense de
+  // kullanicinin biraktigi konum korunuyor.
+  //
+  // ``shouldHideOnClose`` iki kosulu birden goruyor: cikis suruyorsa (Cmd+Q,
+  // tepsiden Cik, guncelleme devri) pencere GERCEKTEN kapanmali, ve tepsi
+  // ikonu yoksa gizlemek uygulamaya ulasmanin son yolunu kapatmak olurdu.
+  createdMainWindow.on('close', event => {
+    if (!shouldHideOnClose({ quitting: quitRequested, trayReady: trayRuntime.isReady() })) {
+      return
+    }
+
+    event.preventDefault()
+    hideMainWindowToTray()
+  })
 
   // the closed wrapper remains truthy, so clear only the window this callback owns.
   mainWindow.on('closed', () => {
@@ -13800,9 +14366,13 @@ ipcMain.handle('fool:normalizePreviewTarget', (_event, target, baseDir) =>
   normalizePreviewTarget(String(target || ''), baseDir ? String(baseDir) : '')
 )
 
-ipcMain.handle('fool:watchPreviewFile', (_event, url) => watchPreviewFile(String(url || '')))
+ipcMain.handle('fool:watchPreviewFile', (event, url) =>
+  watchPreviewFile(String(url || ''), trackPreviewWatcherOwner(event.sender))
+)
 
-ipcMain.handle('fool:watchDirectory', (_event, dir) => watchDirectory(String(dir || '')))
+ipcMain.handle('fool:watchDirectory', (event, dir) =>
+  watchDirectory(String(dir || ''), trackPreviewWatcherOwner(event.sender))
+)
 
 ipcMain.handle('fool:stopPreviewFileWatch', (_event, id) => stopPreviewFileWatch(String(id || '')))
 
@@ -14642,8 +15212,25 @@ ipcMain.handle('fool:terminal:start', async (event, payload = {}) => {
   return { cwd: remote ? null : cwd, id, shell: remote ? 'ssh' : name }
 })
 
-ipcMain.handle('fool:terminal:write', (_event, id, data) => {
+/** Bu pencerenin SAHİP OLDUĞU terminal oturumu — değilse ``null``.
+ *
+ * ``webContentsId`` oturum kaydında ZATEN tutuluyordu ama hiçbir işleyici onu
+ * okumuyordu: kimliği bilen her pencere -- oturum pop-out'u, HUD, çentik,
+ * hızlı giriş, evcil hayvan katmanı; hepsi aynı preload'ı taşıyor -- başka
+ * bir pencerenin PTY'sine keyfi bayt yazabiliyor ya da çalışma dizinini
+ * okuyabiliyordu. Bir terminale yazmak, o kabukta komut çalıştırmaktır. */
+function ownedTerminalSession(event: Electron.IpcMainInvokeEvent, id: unknown) {
   const sessionInfo = terminalSessions.get(String(id || ''))
+
+  if (!sessionInfo || sessionInfo.webContentsId !== event.sender.id) {
+    return null
+  }
+
+  return sessionInfo
+}
+
+ipcMain.handle('fool:terminal:write', (event, id, data) => {
+  const sessionInfo = ownedTerminalSession(event, id)
 
   if (!sessionInfo) {
     return false
@@ -14654,8 +15241,8 @@ ipcMain.handle('fool:terminal:write', (_event, id, data) => {
   return true
 })
 
-ipcMain.handle('fool:terminal:resize', (_event, id, size = {}) => {
-  const sessionInfo = terminalSessions.get(String(id || ''))
+ipcMain.handle('fool:terminal:resize', (event, id, size = {}) => {
+  const sessionInfo = ownedTerminalSession(event, id)
 
   if (!sessionInfo) {
     return false
@@ -14668,8 +15255,8 @@ ipcMain.handle('fool:terminal:resize', (_event, id, size = {}) => {
 
   return true
 })
-ipcMain.handle('fool:terminal:cwd', async (_event, id) => {
-  const sessionInfo = terminalSessions.get(String(id || ''))
+ipcMain.handle('fool:terminal:cwd', async (event, id) => {
+  const sessionInfo = ownedTerminalSession(event, id)
 
   if (!sessionInfo) {
     return null
@@ -14678,7 +15265,9 @@ ipcMain.handle('fool:terminal:cwd', async (_event, id) => {
   return sessionInfo.sshScope !== undefined ? null : readProcessCwd(sessionInfo.pty.pid)
 })
 
-ipcMain.handle('fool:terminal:dispose', (_event, id) => disposeTerminalSession(String(id || '')))
+ipcMain.handle('fool:terminal:dispose', (event, id) =>
+  ownedTerminalSession(event, id) ? disposeTerminalSession(String(id || '')) : false
+)
 
 ipcMain.handle('fool:updates:check', async () =>
   checkUpdates().catch(error => ({
@@ -15070,11 +15659,9 @@ function registerDeepLinkProtocol() {
   }
 }
 
-// Single-instance lock: deep links on a running app (Win/Linux) arrive as a
-// second-instance argv. Without the lock a second `fool://` launch spawns a
-// whole new app instead of routing into the running one.
-const _gotSingleInstanceLock = app.requestSingleInstanceLock()
-const isPrimaryInstance = _gotSingleInstanceLock
+// Kilit ARTIK YUKARIDA aliniyor (bkz. ``isPrimaryInstance`` bildirimi):
+// Windows kum havuzu isaretcisi ondan once kosuyordu ve kilidi kaybeden
+// ornek de isaretciye yaziyordu.
 
 if (!isPrimaryInstance) {
   // Hard-exit, not app.quit(): the before-quit teardown coordinator defers a
@@ -15140,6 +15727,7 @@ app.whenReady().then(() => {
     Menu.setApplicationMenu(null)
   }
 
+  installWebviewAttachGuard()
   installMediaPermissions()
   installDownloadHandling()
   registerMediaProtocol()
@@ -15182,6 +15770,17 @@ app.whenReady().then(() => {
   }
 
   createWindow()
+
+  // FOOL-SEAM: system-tray
+  // Pencereden SONRA: ``start()`` arka uca "ne yuklu" diye soruyor ve o
+  // istegin pencerenin acilisini bekletmesi icin hicbir sebep yok.
+  //
+  // Basarisizlik SESSIZ degil: tepsi yoksa kapatma dugmesi uygulamayi
+  // bitirmeye devam ediyor (bkz. ``shouldHideOnClose``) ve kullanicinin bunu
+  // gunlukte gorebilmesi gerekiyor.
+  if (!trayRuntime.start()) {
+    rememberLog('[tray] no tray icon available - the close button will quit the app')
+  }
 
   // Win/Linux cold start: the launching fool:// URL is in our own argv.
   const _coldStartLink = _extractDeepLink(process.argv)
@@ -15229,8 +15828,27 @@ function configureSpellChecker() {
 // and the confirmation is on screen; "Quit Anyway" re-enters before-quit with
 // the latch set and falls straight through to the teardown below.
 function heldQuitForActiveWork(event: Electron.Event): boolean {
-  if (SKIP_QUIT_CONFIRM || quitConfirmedWithActiveWork || quitPromptOpen) {
+  if (SKIP_QUIT_CONFIRM || quitConfirmedWithActiveWork) {
     return false
+  }
+
+  // Onay kutusu ZATEN ekrandaysa quit'i TUT.
+  //
+  // ``quitPromptOpen`` yığılmış kutuları engellemek için var, quit'i serbest
+  // bırakmak için değil -- ama ``false`` dönmek tam olarak onu yapıyordu:
+  // ``before-quit`` bunu "tutacak bir şey yok" diye okuyup doğrudan
+  // ``backendShutdown.run()``a düşüyordu. Yani soru hâlâ ekranda dururken
+  // arka uç SIGTERM alıyordu -- muhafızın önlemek için var olduğu veri kaybı.
+  //
+  // Tetik sıradan: Cmd+Q -> kutu açılır -> ikinci Cmd+Q. Aynı zincir son
+  // pencere kapatılınca da işliyor (``window-all-closed`` -> ``app.quit()``).
+  //
+  // Bekleyen kutu TEK karar noktası: cevap gelince ya hiçbir şey olmuyor ya
+  // da ``quitConfirmedWithActiveWork`` ile yeniden quit çağrılıyor.
+  if (quitPromptOpen) {
+    event.preventDefault()
+
+    return true
   }
 
   const prompt = quitPromptFor(mergeActiveWork(activeWorkByWebContents.values()), isQuittingForHandoff)
@@ -15258,7 +15876,15 @@ function heldQuitForActiveWork(event: Electron.Event): boolean {
       if (response === 1) {
         quitConfirmedWithActiveWork = true
         app.quit()
+
+        return
       }
+
+      // FOOL-SEAM: system-tray
+      // Cikis IPTAL edildi. Bayrak acik kalirsa bir sonraki kapatma dugmesi
+      // tepsiye inmek yerine uygulamayi bitirir -- kullanici az once tam
+      // bunun tersini secmisken.
+      quitRequested = false
     })
     .catch(() => {
       // A dialog we can't show must not become a quit we can't perform.
@@ -15271,9 +15897,35 @@ function heldQuitForActiveWork(event: Electron.Event): boolean {
 }
 
 app.on('before-quit', event => {
+  // FOOL-SEAM: system-tray
+  // EN BASTA yaziliyor: pencerelerin ``close`` olayi bu isleyici dondukten
+  // hemen sonra geliyor ve orasi kapatmayi "tepsiye in"e ceviriyor. Bayrak
+  // olmadan bir cikis, sessizce bir gizlemeye donusurdu -- yani uygulama HIC
+  // kapanmazdi.
+  quitRequested = true
+
   // Runs ahead of every teardown below, so "Keep Running" leaves the app
   // exactly as it was.
   if (heldQuitForActiveWork(event)) {
+    return
+  }
+
+  // FOOL-SEAM: system-tray
+  // Modeller arka uctan ONCE birakiliyor: bosaltma cagrisi tam da asagidaki
+  // blogun oldurecegi surece gidiyor.
+  //
+  // Asil hedef LM Studio: AYRI bir uygulama, surec agaciyla gitmiyor ve
+  // yukledigi modeli kendiliginden birakmiyor -- kullanicinin karti uygulama
+  // kapandiktan sonra da dolu kaliyordu.
+  //
+  // Guncelleme/kaldirma devrinde ATLANIYOR: orada ayrilmis bir betik bu
+  // surecin olmesini bekliyor ve bir temizlik ugruna onu bekletmek, kullaniciya
+  // takilmis bir guncelleme olarak gorunurdu.
+  if (!quitModelUnloadDone && !isQuittingForHandoff) {
+    quitModelUnloadDone = true
+    event.preventDefault()
+    void unloadModelsForQuit().finally(() => app.quit())
+
     return
   }
 
@@ -15313,6 +15965,11 @@ app.on('before-quit', event => {
       void 0
     }
   }
+
+  // FOOL-SEAM: system-tray
+  // Ikon kapanan uygulamadan sonra tepside asili kalmasin: uzerine tiklamak
+  // olu bir surece gider ve kullanici uygulamanin hala calistigini sanir.
+  trayRuntime.destroy()
 
   // The always-on-top overlay isn't a "real" app window; close it so a stray
   // pet can't keep the process alive or float over a quit app.
@@ -15374,6 +16031,7 @@ app.on('before-quit', event => {
   }
 
   flushDesktopLogBufferSync()
+  flushZoomState()
   closePreviewWatchers()
 
   // Kill open PTYs before environment teardown to avoid the node-pty#904

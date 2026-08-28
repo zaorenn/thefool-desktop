@@ -161,9 +161,28 @@ def warm(provider: str = "") -> dict[str, Any]:
     return status()
 
 
+def _mark_cold_locked() -> None:
+    _state.update(status="cold", error="", provider="")
+
+
+def mark_cold() -> None:
+    """Motor DIŞARIDAN durduruldu -- durum bunu söylesin.
+
+    Kullanıcı sistem tepsisinden "boşalt" dediğinde süreç ölüyor ama bu
+    modülün durumu "warm" yazmaya devam ediyordu. ``_still_resident``
+    sayesinde bir sonraki ``warm()`` yine de doğru davranıyor; yanlış olan
+    ARADAKİ pencere: tepsi menüsü boşaltmanın hemen ardından "sıcak"
+    gösteriyor ve kullanıcı isteğinin işlemediğini sanıyor.
+
+    Bkz. ``fool/residency.py::_mark_cold``.
+    """
+    with _lock:
+        _mark_cold_locked()
+
+
 def reset_for_tests() -> None:
     global _thread
 
     with _lock:
         _thread = None
-        _state.update(status="cold", error="", provider="")
+        _mark_cold_locked()

@@ -20,6 +20,7 @@ import { useModelControls } from './use-model-controls'
 
 const setGlobalModel = vi.fn()
 const notifyError = vi.fn()
+const dropUnselectedModels = vi.fn()
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void
@@ -60,6 +61,10 @@ vi.mock('@/store/notifications', () => ({
   notifyError: (...args: Parameters<typeof notifyError>) => notifyError(...args)
 }))
 
+vi.mock('@/fool/runtime-api', () => ({
+  dropUnselectedModels: () => dropUnselectedModels()
+}))
+
 type Controls = ReturnType<typeof useModelControls>
 
 function Harness({
@@ -90,6 +95,7 @@ describe('useModelControls', () => {
 
   afterEach(() => {
     cleanup()
+    dropUnselectedModels.mockClear()
     vi.restoreAllMocks()
     $activeGatewayProfile.set('default')
     $activeSessionId.set(null)
@@ -371,6 +377,49 @@ describe('useModelControls', () => {
       key: 'model',
       value: 'BeastMode --provider moa --session'
     })
+  })
+
+  it('drops the model that was just switched away from', async () => {
+    // LM Studio keeps what it loaded: a separate application that never
+    // releases a model on its own. Measured on the user's 16 GB card, two
+    // resident models came to 12,88 GB — and the voice engines share that card.
+    $activeSessionId.set('session-1')
+    const requestGateway = vi.fn(async () => ({ key: 'model', value: 'claude-sonnet-4.6' }) as never)
+    let controls!: Controls
+
+    render(<Harness onReady={value => (controls = value)} requestGateway={requestGateway} />)
+
+    await expect(controls.selectModel({ model: 'claude-sonnet-4.6', provider: 'anthropic' })).resolves.toBe(true)
+
+    expect(dropUnselectedModels).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves memory alone for a session-scoped pick', async () => {
+    // A --session pick never writes model.default, so "unload everything that
+    // is not the default" would unload the model the user just chose.
+    $activeSessionId.set('session-1')
+    const requestGateway = vi.fn(async () => ({ key: 'model', value: 'BeastMode' }) as never)
+    let controls!: Controls
+
+    render(<Harness onReady={value => (controls = value)} requestGateway={requestGateway} />)
+
+    await expect(controls.selectModel({ model: 'BeastMode', provider: 'moa' })).resolves.toBe(true)
+
+    expect(dropUnselectedModels).not.toHaveBeenCalled()
+  })
+
+  it('waits for a mid-turn pick to actually apply before dropping anything', async () => {
+    // A deferred switch has not been written yet; enforcing now would drop the
+    // model the running turn is still speaking through.
+    $activeSessionId.set('session-1')
+    const requestGateway = vi.fn(async () => ({ deferred: true, key: 'model', value: 'grok-4.5' }) as never)
+    let controls!: Controls
+
+    render(<Harness onReady={value => (controls = value)} requestGateway={requestGateway} />)
+
+    await expect(controls.selectModel({ model: 'grok-4.5', provider: 'xai' })).resolves.toBe(true)
+
+    expect(dropUnselectedModels).not.toHaveBeenCalled()
   })
 
   it('stores a no-session pick as UI state with no gateway or global write', async () => {

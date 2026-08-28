@@ -116,15 +116,19 @@ def busy_models() -> set[str]:
     }
 
 
-def loaded_models(base_url: str) -> list[str]:
+def loaded_models(base_url: str, timeout: float = _TIMEOUT_SECONDS) -> list[str]:
     """ŞU AN yüklü sohbet modellerinin kimlikleri.
 
     Hata YUTULUYOR: LM Studio kapalıysa ya da başka bir sağlayıcı
     kullanılıyorsa burada yapılacak bir şey yok.
+
+    ``timeout`` çağırana bırakıldı: sistem tepsisi menüsü bunu MENÜ AÇILIRKEN
+    soruyor ve orada varsayılan 20 saniyeyi beklemek, menünün hiç açılmaması
+    demek (bkz. ``fool/residency.py::SNAPSHOT_TIMEOUT_SECONDS``).
     """
     url = f"{_api_root(base_url)}/api/v0/models"
     try:
-        with urllib.request.urlopen(url, timeout=_TIMEOUT_SECONDS) as response:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except (OSError, ValueError, urllib.error.URLError) as exc:
         logger.debug("LM Studio model listesi okunamadi: %s", exc)

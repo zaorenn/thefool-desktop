@@ -553,7 +553,22 @@ class RecallStore:
         self._set_meta("last_seen", repr(now or time.time()))
 
     def last_seen(self) -> float | None:
-        raw = self._get_meta("last_seen")
+        return self._get_float("last_seen")
+
+    def mark_farewell(self, *, now: float | None = None) -> None:
+        """VEDALAŞILDI.
+
+        Ayrı bir damga, çünkü aradan geçen süre bunu taşımıyor: sekiz saatlik
+        bir boşluk, "iyi geceler deyip yattı" ile "ortadan kayboldu" arasında
+        hiçbir fark görmüyor (gerekçe ``fool/time_context.py``de).
+        """
+        self._set_meta("last_farewell", repr(now or time.time()))
+
+    def last_farewell(self) -> float | None:
+        return self._get_float("last_farewell")
+
+    def _get_float(self, key: str) -> float | None:
+        raw = self._get_meta(key)
 
         try:
             return float(raw) if raw else None

@@ -169,10 +169,14 @@ class Relationship:
         """Zaman geçti: sıcaklık taban çizgisine doğru yaklaşıyor.
 
         Dertler çürümüyor -- unutulan bir dert hiç var olmamış demektir.
+
+        Hiç olay geçmemişken burası ERKEN dönüyor ve damga ATMIYOR. Bir zamanlar
+        atıyordu ve ``updated_at`` "aranızda bir şey geçti mi" sorusunun tek
+        cevabıydı: her oturum açılışı, hiçbir şey olmadan, ilişkiyi başlamış
+        gösteriyordu. Çürütecek bir şey de yok zaten -- olay yoksa sıcaklık
+        taban çizgisinde duruyor.
         """
         if not self.updated_at:
-            self.updated_at = now
-
             return
 
         days = max(0.0, (now - self.updated_at)) / 86400.0
@@ -194,6 +198,8 @@ class Relationship:
         """Bir olay işle."""
         now = now or time.time()
         self.decay(now)
+        # Damgayı OLAY atıyor, zamanın geçmesi değil.
+        self.updated_at = now
 
         delta = EVENT_WARMTH.get(event, 0.0) * max(0.1, min(3.0, weight))
         self.warmth = max(WARMTH_MIN, min(WARMTH_MAX, self.warmth + delta))

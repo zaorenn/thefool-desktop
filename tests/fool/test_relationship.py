@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import time
 
+import pytest
+
 from fool.relationship import (
     WARMTH_BASELINE,
     WARMTH_HALF_LIFE_DAYS,
@@ -23,6 +25,7 @@ from fool.relationship import (
 )
 
 DAY = 86400.0
+_NOW = 1_700_000_000.0
 
 
 def _at(now: float, state: Relationship, event: str, **kwargs) -> Relationship:
@@ -283,3 +286,43 @@ def test_gidis_donus_KAYIPSIZ() -> None:
 def test_bozuk_veri_VARSAYILANA_dusuyor() -> None:
     assert from_dict(None).warmth == WARMTH_START
     assert from_dict({"grievances": [{"no_text": 1}]}).open_grievances() == []
+
+
+# ---------------------------------------------------------------------------
+# "Aranızda bir şey geçti mi" -- zamanın geçmesi bir olay DEĞİL
+# ---------------------------------------------------------------------------
+
+
+def test_curume_BOS_durumu_baslatmis_gostermiyor() -> None:
+    """``updated_at`` tek göstergeydi ve çürüme onu her açılışta damgalıyordu.
+
+    Sonuç: hiç konuşulmamışken bile ilişki "başlamış" görünüyordu ve
+    başlangıç sıcaklığının tarifi ("civil but not especially warm") ilk
+    karşılaşmada personanın önüne geçiyordu.
+    """
+    state = Relationship()
+
+    state.decay(_NOW)
+
+    assert state.updated_at == 0.0
+    assert state.warmth == WARMTH_START
+
+
+def test_olay_damgayi_ATIYOR() -> None:
+    state = Relationship()
+
+    state.record("warm", now=_NOW)
+
+    assert state.updated_at == _NOW
+
+
+def test_curume_bos_durumda_sicakligi_BOZMUYOR() -> None:
+    """Damga atılmadığı için sonraki çürüme "1970'ten beri" saymamalı."""
+    state = Relationship()
+    state.decay(_NOW)
+    state.record("cruel", note="x", now=_NOW)
+    cold = state.warmth
+
+    state.decay(_NOW + 60.0)
+
+    assert state.warmth == pytest.approx(cold, abs=0.05)

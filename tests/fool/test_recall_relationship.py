@@ -107,10 +107,6 @@ def test_bilinmeyen_olay_REDDEDILIYOR(girlfriend) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_durus_sistem_promptunda(girlfriend) -> None:
-    assert "Where you stand" in girlfriend.system_prompt_block()
-
-
 def test_ACIK_dert_sistem_promptunda_gorunuyor(girlfriend) -> None:
     _event(girlfriend, "promise_broken", note="he said he would be back and was not")
 
@@ -173,3 +169,34 @@ def test_ozur_dert_sayisini_DUSURUYOR(girlfriend) -> None:
     after = _event(girlfriend, "apology")
 
     assert after["open_grievances"] == 1
+
+
+# ---------------------------------------------------------------------------
+# İlk karşılaşma: aranızda bir şey geçmeden "nerede durduğun" anlamsız
+# ---------------------------------------------------------------------------
+
+
+def test_ilk_karsilasmada_DURUS_gosterilmiyor(girlfriend) -> None:
+    """Başlangıç değerinin tarifi ("civil but not especially warm") sevgi dolu
+    diye tanımlanmış bir personayla ÇELİŞİYOR. Aranızda bir şey geçmeden bu
+    cümleyi kurmak, karaktere ilk karşılaşmada mesafeli olmasını söylemek."""
+    block = girlfriend.system_prompt_block()
+
+    assert "Where you stand" not in block
+    assert "Nothing has happened between you yet" in block
+
+
+def test_bir_sey_gectikten_SONRA_durus_gosteriliyor(girlfriend) -> None:
+    _event(girlfriend, "warm")
+
+    block = girlfriend.system_prompt_block()
+
+    assert "Where you stand" in block
+    assert "Nothing has happened" not in block
+
+
+def test_dert_varsa_durus_HER_ZAMAN_gosteriliyor(girlfriend) -> None:
+    """Kırgınlık karakterin üstünde: persona ne derse desin, dert görünmeli."""
+    _event(girlfriend, "rude", note="he was sharp with her")
+
+    assert "Unresolved between you" in girlfriend.system_prompt_block()

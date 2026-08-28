@@ -258,13 +258,31 @@ class RecallMemoryProvider(MemoryProvider):
             if state is not None:
                 state.decay(now)
                 self._save_relationship()
-                lines.append("")
-                lines.append("Where you stand with them right now:")
-                lines.append(state.render())
-                lines.append(
-                    "Report how they treated you with relationship() so this keeps "
-                    "meaning something. Do not narrate the mechanism."
-                )
+
+                # Duruş yalnızca ARANIZDA BİR ŞEY GEÇTİYSE gösteriliyor.
+                #
+                # Hiçbir olay kaydedilmemişken sıcaklık başlangıç değerinde
+                # duruyor ve o değerin tarifi ("civil but not especially warm")
+                # persona ile ÇELİŞİYOR: sevgi dolu diye tanımlanmış bir
+                # karaktere ilk karşılaşmada mesafeli olmasını söylüyordu.
+                #
+                # "Nerede durduğun" aranızda bir şey geçmeden anlamsız. Geçtiği
+                # anda anlamlı hâle geliyor ve o zaman personayı EZMESİ de
+                # doğru -- kırgınlık karakterin üstünde.
+                if state.updated_at or state.grievances:
+                    lines.append("")
+                    lines.append("Where you stand with them right now:")
+                    lines.append(state.render())
+                    lines.append(
+                        "Report how they treated you with relationship() so this keeps "
+                        "meaning something. Do not narrate the mechanism."
+                    )
+                else:
+                    lines.append("")
+                    lines.append(
+                        "Nothing has happened between you yet. Report how they treat "
+                        "you with relationship() as it does."
+                    )
 
             # Teslimat etiketi ipucu BURADA, çünkü sesle konuşan persona bu.
             # Sıradan ajanın cevabı çoğunlukla okunuyor, seslendirilmiyor; ona

@@ -437,6 +437,19 @@ def prepare_spoken_text(text: str, max_chars: int | None = 4000) -> str:
     spoken = strip_nonspoken_blocks(text)
     spoken = strip_markdown_for_tts(spoken)
     spoken = normalize_symbols_for_tts(spoken)
+    # Teslimat etiketi AYIKLANIYOR.
+    #
+    # Etiketi anlayan yol yalnizca akis yolu (``fool/voice_stream_local.py``).
+    # Diger yollar -- tek seferlik sentez, ajanin kendi TTS araci -- onu
+    # gormezse Chatterbox ``[warm]`` sozcugunu SESLI OKUR; satir ici etiket
+    # ayristiricisi yok. Burada ayiklamak, hangi yoldan gecerse gecsin
+    # etiketin duyulmamasini garanti ediyor.
+    try:
+        from fool.voice_emotion import strip_tags
+
+        spoken = strip_tags(spoken)
+    except Exception:
+        pass
     # BAGIRMA yumusatiliyor: motorlar buyuk harf obeklerini kisaltma sanip
     # harf harf okuyor (bkz. ``soften_shouted_caps``).
     spoken = soften_shouted_caps(spoken)

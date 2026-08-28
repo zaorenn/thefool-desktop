@@ -34,12 +34,18 @@ sayı YAZMAK riskli: yanlış olursa oynatma hızı/perdesi bozuk çıkar ama
 ÇÖKMEZ -- sessiz bir kalite hatası. Bunun yerine ilk gerçek sentezin WAV
 başlığından okunuyor; ``sample_rate``/``channels`` o ana kadar 0.
 
-Neden ``wave`` yetiyor (ffmpeg gerekmiyor)
--------------------------------------------
-Her yerel motor eklentisi çıktıyı 16-bit PCM WAV'a yazıyor (bkz.
-``fool/sidecar.py`` altındaki eklentiler — float32 çıktı orada PCM_16'ya
-çevriliyor). Yani stdlib'in ``wave`` modülü format sorununu tam çözüyor;
-sesli sohbet yolunda ffmpeg'e bağımlılık eklemiyor.
+Neden ffmpeg gerekmiyor
+-----------------------
+WAV başlığı burada elle çözülüyor (``read_wav_as_int16``), yani sesli sohbet
+yoluna ffmpeg bağımlılığı eklenmiyor.
+
+Bir zamanlar burada stdlib'in ``wave`` modülü vardı ve bu satırlar "her yerel
+motor 16-bit PCM yazıyor" diyordu. YANLIŞTI: Chatterbox ``pcm_f32le`` yazıyor
+(doğrulandı, ``ffprobe`` -> ``sample_fmt=flt``) ve ``wave`` kayan noktayı
+okumuyor. Yani cümle-cümle akış varsayılan klonlama motorunda HİÇ çalışmamış;
+her cümle düşüyor, oturum ``fallback`` ile kapanıyor ve istemci sessizce yavaş
+tam-metin yoluna geri düşüyordu. Yorum ile kod ayrışmıştı ve tek belirtisi
+gecikmeydi.
 
 Zone A: upstream bu dosyayı bilmiyor.
 """
@@ -49,6 +55,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import struct
 import tempfile
 import wave
 from typing import Any, Iterator, Optional
@@ -113,6 +120,92 @@ def _parse_tool_result(raw: Any) -> Optional[dict]:
     return payload if isinstance(payload, dict) else None
 
 
+#: WAV biçim etiketleri. 1 = tamsayı PCM, 3 = IEEE kayan nokta.
+_WAVE_FORMAT_PCM = 1
+_WAVE_FORMAT_FLOAT = 3
+#: ``WAVE_FORMAT_EXTENSIBLE`` -- gerçek biçim ``SubFormat`` GUID'inin ilk
+#: iki baytında duruyor.
+_WAVE_FORMAT_EXTENSIBLE = 0xFFFE
+
+
+def read_wav_as_int16(path: str) -> tuple[bytes, int, int]:
+    """WAV'ı ham int16 PCM olarak oku: ``(bayt, ornekleme, kanal)``.
+
+    Ölçülen hata
+    ------------
+    Burada ``wave.open`` kullanılıyordu ve o modül YALNIZCA tamsayı PCM
+    okuyor. Chatterbox ise ``pcm_f32le`` yazıyor (biçim etiketi 3, 32 bit
+    kayan nokta) -- doğrulandı, ``ffprobe`` çıktısı ``sample_fmt=flt``.
+
+    Sonuç: cümle-cümle akış Chatterbox'ta HİÇ çalışmamış. Her cümle
+    ``wave.Error: unknown format: 3`` ile düşüyor, çağıran taraf oturumu
+    ``fallback`` ile kapatıyor ve istemci tek-seferlik POST yoluna geri
+    düşüyor. Yani "ses ilk cümlede başlasın" -- üzerinde en çok çalışılan
+    özellik -- tam da varsayılan klonlama motorunda kapalıydı ve tek belirtisi
+    gecikmeydi.
+
+    Kayan nokta int16'ya çevriliyor çünkü PROTOKOL öyle: soket ham int16
+    taşıyor ve istemci onu öyle çözüyor. Kırpma bilinçli -- taşan bir örneği
+    sarmalamak (wrap) gürültü yaratır.
+    """
+    with open(path, "rb") as handle:
+        data = handle.read()
+
+    if len(data) < 12 or data[:4] != b"RIFF" or data[8:12] != b"WAVE":
+        raise RuntimeError("not a RIFF/WAVE file: " + str(path))
+
+    fmt: tuple[int, int, int, int] | None = None
+    payload = b""
+    cursor = 12
+
+    while cursor + 8 <= len(data):
+        chunk_id = data[cursor:cursor + 4]
+        size = struct.unpack("<I", data[cursor + 4:cursor + 8])[0]
+        body = data[cursor + 8:cursor + 8 + size]
+
+        if chunk_id == b"fmt " and len(body) >= 16:
+            tag, channels, rate, _brate, _align, bits = struct.unpack("<HHIIHH", body[:16])
+
+            if tag == _WAVE_FORMAT_EXTENSIBLE and len(body) >= 26:
+                tag = struct.unpack("<H", body[24:26])[0]
+
+            fmt = (tag, channels, rate, bits)
+        elif chunk_id == b"data":
+            payload = body
+
+        # Parcalar cift sayiya hizali.
+        cursor += 8 + size + (size & 1)
+
+    if fmt is None:
+        raise RuntimeError("WAV has no fmt chunk: " + str(path))
+
+    tag, channels, rate, bits = fmt
+    channels = channels or 1
+
+    if tag == _WAVE_FORMAT_PCM and bits == 16:
+        return payload, rate, channels
+
+    if tag == _WAVE_FORMAT_FLOAT and bits in (32, 64):
+        import array
+
+        code = "f" if bits == 32 else "d"
+        samples = array.array(code)
+        usable = len(payload) - (len(payload) % (bits // 8))
+        samples.frombytes(payload[:usable])
+
+        out = array.array("h", [0]) * len(samples)
+
+        for index, value in enumerate(samples):
+            scaled = int(value * 32767.0)
+            out[index] = 32767 if scaled > 32767 else (-32768 if scaled < -32768 else scaled)
+
+        return out.tobytes(), rate, channels
+
+    raise RuntimeError(
+        "unsupported WAV format (tag=" + str(tag) + ", bits=" + str(bits) + ") in " + str(path)
+    )
+
+
 class LocalSentenceStreamer:
     """Chunked API'si olmayan bir motoru cümle başına senkron seslendirir.
 
@@ -136,8 +229,21 @@ class LocalSentenceStreamer:
         produced = tmp_path
         frames = b""
 
+        # Cümlenin başındaki teslimat etiketi burada AYIKLANIYOR ve yerine
+        # iki sentez ayarı geçiyor. Ayıklanmazsa Chatterbox onu sözcük olarak
+        # okur -- satır içi etiket ayrıştırıcısı yok (bkz.
+        # ``fool/voice_emotion.py``).
+        from fool.voice_emotion import split_delivery
+
+        spoken, delivery = split_delivery(text)
+
         try:
-            raw = text_to_speech_tool(text, output_path=tmp_path, provider=self.provider or None)
+            raw = text_to_speech_tool(
+                spoken,
+                output_path=tmp_path,
+                provider=self.provider or None,
+                config_overrides=delivery.as_config() if delivery else None,
+            )
             payload = _parse_tool_result(raw)
 
             if payload is not None:
@@ -147,22 +253,7 @@ class LocalSentenceStreamer:
                 if isinstance(candidate, str) and candidate:
                     produced = candidate
 
-            with wave.open(produced, "rb") as wav_file:
-                if wav_file.getsampwidth() != 2:
-                    # Protokol yalnizca ham int16 PCM tasiyor. Baska bir
-                    # ornek genisligi sessizce gonderilirse GURULTU calar --
-                    # burada acikca reddetmek, cagiran tarafin (ki her
-                    # istisnayi zaten "senkron sentez basarisiz" olarak
-                    # gunluge yazip oturumu normal sekilde bitiriyor)
-                    # dogru yola dusmesini sagliyor.
-                    raise RuntimeError(
-                        f"{self.provider}: beklenmeyen örnek genişliği "
-                        f"{wav_file.getsampwidth()} (int16 PCM bekleniyordu)"
-                    )
-
-                self.sample_rate = wav_file.getframerate()
-                self.channels = wav_file.getnchannels() or 1
-                frames = wav_file.readframes(wav_file.getnframes())
+            frames, self.sample_rate, self.channels = read_wav_as_int16(produced)
         finally:
             for path in {tmp_path, produced}:
                 with contextlib.suppress(OSError):

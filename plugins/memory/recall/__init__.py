@@ -266,6 +266,17 @@ class RecallMemoryProvider(MemoryProvider):
                     "meaning something. Do not narrate the mechanism."
                 )
 
+            # Teslimat etiketi ipucu BURADA, çünkü sesle konuşan persona bu.
+            # Sıradan ajanın cevabı çoğunlukla okunuyor, seslendirilmiyor; ona
+            # etiket sözlüğü vermek promptu bedelsiz şişirirdi.
+            try:
+                from fool.voice_emotion import prompt_hint
+
+                lines.append("")
+                lines.append(prompt_hint())
+            except Exception:
+                pass
+
         return "\n".join(line for line in lines if line is not None)
 
     # -- tur başına geri getirme -------------------------------------------

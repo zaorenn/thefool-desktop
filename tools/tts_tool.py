@@ -1507,6 +1507,7 @@ def _has_any_command_tts_provider(tts_config: Optional[Dict[str, Any]] = None) -
     """Return True when any command-type TTS provider is configured."""
     if tts_config is None:
         tts_config = _load_tts_config()
+
     for _name, _cfg in _iter_command_providers(tts_config):
         return True
     return False
@@ -3632,6 +3633,7 @@ def text_to_speech_tool(
     speed: Optional[float] = None,
     instructions: Optional[str] = None,
     provider: Optional[str] = None,
+    config_overrides: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Convert text to speech audio with long-form chunking.
 
@@ -3680,6 +3682,22 @@ def text_to_speech_tool(
         clamped = max(0.25, min(4.0, float(speed)))
         tts_config = dict(tts_config)  # shallow copy to avoid mutating the cache
         tts_config["speed"] = clamped
+
+    # ISTEK BASINA ayar.
+    #
+    # Duygu tur basina degisebilsin diye: motorun kendisi ``exaggeration`` /
+    # ``cfg_weight`` gibi degerleri istek basina ZATEN kabul ediyor; eksik olan
+    # onlari buraya tasiyan yoldu (bkz. ``fool/voice_emotion.py``).
+    #
+    # Saglayici BOLUMUNE yaziliyor, kok anahtarlara degil: kokte
+    # ``exaggeration`` diye bir sey yok ve oraya yazmak hicbir motorun
+    # okumadigi bir deger birakirdi.
+    if config_overrides:
+        tts_config = dict(tts_config)
+        _target = (provider or _get_provider(tts_config)).lower().strip()
+        _section = dict(_get_provider_section(tts_config, _target))
+        _section.update(config_overrides)
+        tts_config[_target] = _section
 
     # Allow per-call provider override; fall back to the configured default.
     if provider:

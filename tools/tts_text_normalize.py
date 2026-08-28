@@ -258,6 +258,172 @@ def flatten_newlines_for_payload(text: str) -> str:
     return text.strip()
 
 
+#: Art arda kaç BÜYÜK HARF sözcüğü "bağırma" sayılıyor.
+#:
+#: İki değil üç: "HTTP API", "CPU GPU" gibi gerçek kısaltma çiftleri iki
+#: sözcüktür ve onları harf harf okumak DOĞRU. Üç ve üstü art arda büyük harf
+#: sözcüğü ise pratikte bir cümledir.
+SHOUTED_RUN_MIN = 3
+
+#: Tek başına duran bir büyük harf sözcüğü bu uzunluktan itibaren sözcük
+#: sayılıyor. Kısaltmalar kısadır (API, USA, JSON, HTTP); altı harf ve üstü
+#: tek bir büyük harf öbeği neredeyse her zaman bağırılmış bir sözcüktür.
+SHOUTED_SINGLE_MIN_LEN = 6
+
+_WORD_EXTRA_CHARS = ("'", "’", "-")
+
+
+def _is_word_char(ch: str) -> bool:
+    return ch.isalnum() or ch in _WORD_EXTRA_CHARS
+
+
+def _tokenize_words(text: str) -> list[tuple[int, int]]:
+    """Sözcük aralıkları ``(bas, son)``. Regex YOK: düz tarama."""
+    spans: list[tuple[int, int]] = []
+    start: int | None = None
+
+    for index, ch in enumerate(text):
+        if _is_word_char(ch):
+            if start is None:
+                start = index
+            continue
+        if start is not None:
+            spans.append((start, index))
+            start = None
+
+    if start is not None:
+        spans.append((start, len(text)))
+
+    return spans
+
+
+def _caps_kind(token: str) -> str:
+    """``"caps"`` | ``"lower"`` | ``"neutral"``."""
+    letters = [ch for ch in token if ch.isalpha()]
+
+    if not letters:
+        return "neutral"
+
+    if any(ch.islower() for ch in letters):
+        return "lower"
+
+    # Tek harfli sözcükler ("I", "A") ne diziyi başlatır ne bozar: büyük
+    # harf olmaları normaldir.
+    if len(letters) < 2:
+        return "neutral"
+
+    return "caps"
+
+
+def _starts_sentence(text: str, at: int) -> bool:
+    """``at`` konumundaki sözcük bir cümlenin başında mı?"""
+    cursor = at - 1
+
+    while cursor >= 0 and text[cursor].isspace():
+        cursor -= 1
+
+    if cursor < 0:
+        return True
+
+    # Kapanış tırnak/parantezlerini atla: `"BITTI!" DEDI` gibi haller.
+    while cursor >= 0 and text[cursor] in "\"')]}”’":
+        cursor -= 1
+
+    if cursor < 0:
+        return True
+
+    ch = text[cursor]
+
+    # ÜÇ NOKTA cümle sonu değil, bir duraklama: "ULTRAMAN... PROTECTS" tek
+    # cümledir ve ikinci sözcük büyük harfle başlamamalı.
+    if ch == "." and cursor > 0 and text[cursor - 1] == ".":
+        return False
+
+    if ch == "…":
+        return False
+
+    return ch in ".!?:"
+
+
+def soften_shouted_caps(text: str) -> str:
+    """BAĞIRILMIŞ metni küçült ki motor harf harf okumasın.
+
+    Ölçülen hata
+    ------------
+    Model tamamen büyük harfle cevap verdiğinde (bir kişilik/kip gereği ya da
+    vurgu için) Chatterbox cümleyi sözcük olarak değil HARF HARF okuyordu:
+    "THE LIGHT OF HOPE" -> "ti eyç i, el ay ci ...". Genel bir seslendirme
+    davranışı: motorlar büyük harf öbeklerini kısaltma sanıp heceliyor.
+
+    Kural sözcük sayısına bakıyor, çünkü ayırmamız gereken iki şey var:
+
+    - ``CPU``, ``USA``, ``JSON`` -- gerçekten harf harf okunmalı.
+    - ``THE LIGHT OF HOPE BURNS FOREVER`` -- bir cümle.
+
+    Art arda üç ve daha fazla büyük harf sözcüğü ikincisidir. Tek başına duran
+    bir öbek ise ancak altı harften uzunsa sözcük sayılıyor -- kısaltmalar
+    kısadır.
+
+    Küçültme yalnızca DİZİNİN kendisine uygulanıyor; metnin geri kalanına
+    dokunulmuyor.
+    """
+    if not text:
+        return text
+
+    spans = _tokenize_words(text)
+
+    if not spans:
+        return text
+
+    kinds = [_caps_kind(text[a:b]) for a, b in spans]
+    lowered: list[int] = []
+    index = 0
+
+    while index < len(spans):
+        if kinds[index] != "caps":
+            index += 1
+            continue
+
+        # Diziyi büyüt: ``lower`` bir sözcük görene kadar.
+        end = index
+        caps_indexes: list[int] = []
+
+        while end < len(spans) and kinds[end] != "lower":
+            if kinds[end] == "caps":
+                caps_indexes.append(end)
+            end += 1
+
+        # Sondaki ``neutral`` kuyruğu diziye dahil değil.
+        run_length = len(caps_indexes)
+        long_single = run_length == 1 and (spans[caps_indexes[0]][1] - spans[caps_indexes[0]][0]) >= SHOUTED_SINGLE_MIN_LEN
+
+        if run_length >= SHOUTED_RUN_MIN or long_single:
+            lowered.extend(caps_indexes)
+
+        index = end if end > index else index + 1
+
+    if not lowered:
+        return text
+
+    out = list(text)
+
+    for token_index in lowered:
+        a, b = spans[token_index]
+        piece = text[a:b].lower()
+
+        # CÜMLE başındaki sözcük büyük kalsın -- dizinin başındaki değil.
+        #
+        # Diziye göre büyütmek iki yerde yanlış oluyordu: "That was AMAZING."
+        # cümle ortasında büyüyor, "WE WILL NOT LOSE! WE WILL NEVER LOSE!"
+        # ikinci cümlesi küçük kalıyordu.
+        if piece and _starts_sentence(text, a):
+            piece = piece[0].upper() + piece[1:]
+
+        out[a:b] = list(piece)
+
+    return "".join(out)
+
+
 def prepare_spoken_text(text: str, max_chars: int | None = 4000) -> str:
     """Return a TTS-friendly script from assistant text.
 
@@ -271,6 +437,9 @@ def prepare_spoken_text(text: str, max_chars: int | None = 4000) -> str:
     spoken = strip_nonspoken_blocks(text)
     spoken = strip_markdown_for_tts(spoken)
     spoken = normalize_symbols_for_tts(spoken)
+    # BAGIRMA yumusatiliyor: motorlar buyuk harf obeklerini kisaltma sanip
+    # harf harf okuyor (bkz. ``soften_shouted_caps``).
+    spoken = soften_shouted_caps(spoken)
     spoken = smooth_whitespace_for_tts(spoken)
     spoken = flatten_newlines_for_payload(spoken)
     if max_chars is not None and max_chars > 0 and len(spoken) > max_chars:

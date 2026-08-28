@@ -237,6 +237,8 @@ EXPECTED_SEAMS = {
     "voice-owner",
     "voice-routes",
     "relationship-bar",
+    "persona-greeting",
+    "persona-kickoff",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

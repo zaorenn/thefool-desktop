@@ -1,6 +1,7 @@
 import type { ThreadMessageLike } from '@assistant-ui/react'
 import { type BillingBlock, skillInvocationText } from '@fool/shared'
 
+import { isPersonaKickoff } from '@/fool/persona-greeting'
 import { extractImageRefs } from '@/lib/embedded-images'
 import { dedupeGeneratedImageEchoesInParts } from '@/lib/generated-images'
 import { mediaDisplayLabel, mediaMarkdownHref } from '@/lib/media'
@@ -1252,7 +1253,17 @@ export function toChatMessages(messages: SessionMessage[]): ChatMessage[] {
       timestamp: earliestTimestamp(message.timestamp, ...parts.map(part => part.timestamp)),
       ...(rowId !== undefined ? { rowId } : {}),
       ...(reactions.length ? { reactions } : {}),
-      ...(extractedAttachmentRefs ? { attachmentRefs: extractedAttachmentRefs } : {})
+      ...(extractedAttachmentRefs ? { attachmentRefs: extractedAttachmentRefs } : {}),
+      // FOOL-SEAM: persona-kickoff
+      //
+      // The persona's opening turn is started by the app, not by the person
+      // using it (apps/desktop/src/fool/persona-greeting.ts). Its prompt is
+      // written to the model and is persisted like any other user turn, so
+      // without this it would appear in the transcript as words the user
+      // never said — a lie about the conversation itself, and one that
+      // survives every reload. Hidden here rather than at the send site
+      // because this is the single place persisted history becomes messages.
+      ...(displayRole === 'user' && isPersonaKickoff(displayContent || '') ? { hidden: true } : {})
     })
 
     activeAssistantIndex = message.role === 'assistant' ? result.length - 1 : null

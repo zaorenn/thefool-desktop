@@ -13,6 +13,8 @@ export interface RelationshipSnapshot {
   enabled: boolean
   /** Aranızda bir şey geçti mi. ``false`` ise duruş İDDİA EDİLMİYOR. */
   started?: boolean
+  /** Bu kişiyle daha önce konuşulmuş mu -- tanışma selamının kapısı. */
+  met?: boolean
   warmth?: number
   stance?: RelationshipStance
   label?: string

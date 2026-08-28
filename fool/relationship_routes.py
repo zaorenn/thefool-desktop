@@ -80,7 +80,7 @@ def snapshot() -> dict[str, Any]:
 
     if not os.path.exists(path):
         # Henüz hiç konuşulmamış: bar başlangıç hâlinde görünüyor.
-        return _render(None)
+        return _render(None, met=False)
 
     try:
         import json
@@ -89,27 +89,30 @@ def snapshot() -> dict[str, Any]:
         connection = sqlite3.connect("file:" + path.replace("?", "%3f") + "?mode=ro", uri=True)
 
         try:
-            row = connection.execute(
-                "SELECT value FROM meta WHERE key = 'relationship'"
-            ).fetchone()
+            rows = dict(
+                connection.execute(
+                    "SELECT key, value FROM meta WHERE key IN ('relationship', 'last_seen')"
+                ).fetchall()
+            )
         finally:
             connection.close()
     except Exception:  # noqa: BLE001
-        return _render(None)
+        return _render(None, met=False)
 
     payload = None
+    raw = rows.get("relationship")
 
-    if row and row[0]:
+    if raw:
         try:
-            candidate = json.loads(row[0])
+            candidate = json.loads(raw)
             payload = candidate if isinstance(candidate, dict) else None
         except ValueError:
             payload = None
 
-    return _render(payload)
+    return _render(payload, met=bool(rows.get("last_seen")))
 
 
-def _render(payload: dict | None) -> dict[str, Any]:
+def _render(payload: dict | None, *, met: bool) -> dict[str, Any]:
     from fool import relationship as relationship_module
 
     state = relationship_module.from_dict(payload)
@@ -121,6 +124,12 @@ def _render(payload: dict | None) -> dict[str, Any]:
 
     return {
         "enabled": True,
+        # Bu kişiyle DAHA ÖNCE konuşulmuş mu. Tanışma selamının kapısı bu
+        # (bkz. ``apps/desktop/src/fool/persona-greeting.ts``): sağlayıcı ilk
+        # turun sistem promptunu kurarken "görüldü" damgasını atıyor, yani
+        # selamın kendi turu bile kapıyı kapatıyor ve istemcinin kalıcı olarak
+        # hatırlaması gereken bir şey kalmıyor.
+        "met": met,
         # Aranızda hiçbir şey geçmediyse bar "durum" iddia etmiyor.
         "started": bool(state.updated_at or state.grievances),
         "warmth": round(state.warmth, 1),

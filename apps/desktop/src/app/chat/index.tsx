@@ -17,6 +17,7 @@ import { PromptOverlays } from '@/components/prompt-overlays'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '@/components/ui/error-state'
 import { TitleMenuTrigger } from '@/components/ui/title-menu-trigger'
+import { usePersonaGreeting } from '@/fool/use-persona-greeting'
 import { type HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import type { ChatMessage } from '@/lib/chat-messages'
@@ -356,6 +357,14 @@ export const ChatView = memo(function ChatView({
   const view = useSessionView()
   const composerScope = useComposerScope()
   const isPrimary = view.kind === 'primary'
+
+  // FOOL-SEAM: persona-greeting
+  //
+  // Bir persona profilinde ve bu kişiyle hiç konuşulmamışsa ilk sözü O
+  // söylüyor. Koşullar ve neden bu kadar dar oldukları
+  // ``@/fool/persona-greeting`` içinde yazılı. Yalnızca birincil görünüm:
+  // her kutucuk aynı bileşenden türüyor ve hepsi aynı atomları okuyor.
+  usePersonaGreeting(isPrimary && !isAuxiliaryWindow())
   const activeSessionId = useStore(view.$runtimeId)
   const storedId = useStore(view.$storedId)
   // Dock anchor for a session drop onto this surface: the workspace pane for the

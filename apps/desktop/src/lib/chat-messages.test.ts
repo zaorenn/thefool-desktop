@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { PERSONA_KICKOFF } from '@/fool/persona-greeting'
 import type { SessionMessage } from '@/types/hermes'
 
 import type { ChatMessage, ChatMessagePart } from './chat-messages'
@@ -1328,5 +1329,38 @@ describe('sealOpenToolParts', () => {
     const messages = [assistantWithParts([done])]
 
     expect(sealOpenToolParts(messages)).toBe(messages)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FOOL-SEAM: persona-kickoff
+// ---------------------------------------------------------------------------
+
+describe('persona tanisma cagrisi', () => {
+  it('kullanicinin YAZMADIGI selam cagrisi transkriptte GORUNMUYOR', () => {
+    // Uygulamanin gonderdigi metin kalici bir kullanici turu olarak
+    // yaziliyor. Gizlenmezse kullanicinin hic soylemedigi sozler onun
+    // agzindan gorunur -- ve her yeniden yuklemede yeniden gorunur.
+    const messages = toChatMessages([
+      { role: 'user', content: PERSONA_KICKOFF, timestamp: 1 },
+      { role: 'assistant', content: 'Hey. I do not think we have met.', timestamp: 2 }
+    ] as never)
+
+    expect(messages[0].hidden).toBe(true)
+    expect(messages[1].hidden).toBeUndefined()
+  })
+
+  it('SIRADAN bir kullanici mesajini gizlemiyor', () => {
+    const messages = toChatMessages([{ role: 'user', content: 'hello there', timestamp: 1 }] as never)
+
+    expect(messages[0].hidden).toBeUndefined()
+  })
+
+  it('ayni metin ASISTANDAN gelirse gizlenmiyor', () => {
+    // Kural kullanici turuna ait: modelin kendi sozlerini yutmak,
+    // konusmanin bir parcasini sebepsiz kaybetmek olurdu.
+    const messages = toChatMessages([{ role: 'assistant', content: PERSONA_KICKOFF, timestamp: 1 }] as never)
+
+    expect(messages[0].hidden).toBeUndefined()
   })
 })

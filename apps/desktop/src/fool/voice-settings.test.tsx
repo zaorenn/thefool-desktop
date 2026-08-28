@@ -14,7 +14,7 @@ import type { VoiceCatalog, VoiceItem, VoiceJob } from './voice-api'
 const catalog = vi.fn()
 const install = vi.fn()
 const job = vi.fn()
-const setKnob = vi.fn(() => Promise.resolve({ ok: true }))
+const setKnob = vi.fn((..._args: unknown[]) => Promise.resolve({ ok: true }))
 
 vi.mock('./voice-api', () => ({
   voiceApi: {

@@ -230,3 +230,32 @@ def test_yoklama_deftere_YAZMIYOR(home, monkeypatch) -> None:
     store.close()
 
     assert after == raw
+
+
+# ---------------------------------------------------------------------------
+# Tanışma selamının kapısı
+# ---------------------------------------------------------------------------
+
+
+def test_hic_konusulmamissa_met_YANLIS(home, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+
+    assert relationship_routes.snapshot()["met"] is False
+
+
+def test_defter_varken_ama_hic_gorulmemisken_met_YANLIS(home, monkeypatch) -> None:
+    _enable(monkeypatch, True)
+    _store(home).close()
+
+    assert relationship_routes.snapshot()["met"] is False
+
+
+def test_bir_kez_gorulduyse_met_DOGRU(home, monkeypatch) -> None:
+    """Sağlayıcı ilk turun sistem promptunu kurarken damgayı atıyor; yani
+    selamın kendi turu bile kapıyı kapatıyor."""
+    _enable(monkeypatch, True)
+    store = _store(home)
+    store.touch_seen(now=1000.0)
+    store.close()
+
+    assert relationship_routes.snapshot()["met"] is True

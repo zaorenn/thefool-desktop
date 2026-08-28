@@ -12,6 +12,8 @@
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
+import { getApiRequestProfile } from '@/hermes'
+
 export interface VoiceJob {
   detail: string
   device: 'cpu' | 'cuda'
@@ -115,8 +117,26 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
     throw new Error('Desktop bridge unavailable — voice settings need the desktop app')
   }
 
+  // AKTIF PROFILE gidiyor.
+  //
+  // Olculen hata: bu cagrilar profil kapsami TASIMIYORDU, yani butun ses
+  // ayarlari paneli her zaman BIRINCIL arka uca yaziyordu -- oysa oynatma ve
+  // yaziya dokme ``profileScoped()`` kullaniyor ve AKTIF profile gidiyor.
+  //
+  // Iki yuzey iki ayri arka uca bakinca panel yalan soyluyor: kullanici
+  // ``girlfriend`` profili acikken motoru "Chatterbox" secmis gorunuyor
+  // (birincil profilin config'i oyle), ama konusma o profilin kendi
+  // config'inden okunuyor ve orada hala ``kokoro`` yaziyor. Ekranda cikan
+  // hata da yanlis motoru sucluyor: "Kokoro kurulu degil" -- kullanicinin
+  // hicbir zaman secmedigi motor.
+  //
+  // Ayni sey kurulan motorlar, aygit secimi ve YUKLENEN KLONLAR icin de
+  // gecerliydi: hepsi yanlis profile gidiyordu.
+  const profile = getApiRequestProfile()
+
   return desktop.api<T>({
     ...(body === undefined ? {} : { body }),
+    ...(profile ? { profile } : {}),
     method: body === undefined ? 'GET' : 'POST',
     path,
     // Kurulum baslatma cagrisi ag gecidinde is nesnesi yaratana kadar

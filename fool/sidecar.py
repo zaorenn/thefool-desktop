@@ -75,9 +75,12 @@ def _isolated_env() -> dict[str, str]:
 
 
 def sidecar_root() -> Path:
-    from fool_constants import get_hermes_home
+    # MAKINE koku -- profil evi degil. Bir sidecar ortami gigabaytlarca ve
+    # degismez; profil basina kopyalamak, her profilin motorlari bastan
+    # indirmesi demekti (bkz. ``fool/machine_assets.py``).
+    from fool.machine_assets import machine_home
 
-    return Path(get_hermes_home()) / _SIDECAR_DIRNAME
+    return machine_home() / _SIDECAR_DIRNAME
 
 
 def sidecar_dir(name: str) -> Path:

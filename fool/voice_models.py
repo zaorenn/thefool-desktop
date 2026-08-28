@@ -472,11 +472,15 @@ def _module_available(name: str) -> bool:
 def voice_dir() -> Path:
     """Ses varlıklarının indiği dizin.
 
-    ``FOOL_HOME`` altında; kullanıcının orijinal Hermes kurulumuna dokunulmaz.
+    MAKINE kokunde; kullanicinin orijinal Hermes kurulumuna dokunulmaz.
+    Profil evinin ALTINDA DEGIL: indirilen agirliklar ve yuklenen klonlar
+    makine varligi, kullanici durumu degil -- profil basina kopyalamak her
+    profilin ayni gigabaytlari yeniden indirmesi demekti (bkz.
+    ``fool/machine_assets.py``).
     """
-    from fool_constants import get_hermes_home
+    from fool.machine_assets import machine_home
 
-    path = Path(get_hermes_home()) / "voices"
+    path = machine_home() / "voices"
     path.mkdir(parents=True, exist_ok=True)
     return path
 

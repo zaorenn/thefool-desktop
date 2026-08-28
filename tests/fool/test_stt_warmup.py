@@ -45,9 +45,23 @@ def test_isitma_durumu_warm_yapiyor(monkeypatch) -> None:
 
 
 def test_ikinci_cagri_yeniden_yuklemiyor(monkeypatch) -> None:
-    """Isıtma idempotent olmalı: iki kez yüklemek 7 saniyeyi iki kez ödemek."""
+    """Isıtma idempotent olmalı: iki kez yüklemek 7 saniyeyi iki kez ödemek.
+
+    Sınav MODELİN YERLEŞİK olduğunu da taklit ediyor. Eskiden yalnızca
+    ``_warm_now`` sahteleniyordu ve idempotanslık ``_state["status"]``
+    üzerinden okunuyordu -- ama o durum bir kez "warm" olunca bir daha hiç
+    düşmüyor, oysa model boşta kalınca bellekten bırakılıyor. Yani sınav
+    "aynı çağrı iki kez yüklemesin"i değil, "bayrak bir kez yazılsın"ı
+    tutuyordu ve gerçek kusuru (bkz. ``test_stt_warmup_rearm.py``)
+    göremiyordu.
+
+    Doğru sözleşme: model YERLEŞİKKEN ikinci çağrı işlemsiz.
+    """
     calls = []
-    monkeypatch.setattr(stt_warmup, "_warm_now", lambda: calls.append(1))
+    resident = []
+
+    monkeypatch.setattr(stt_warmup, "_warm_now", lambda: (calls.append(1), resident.append(1)))
+    monkeypatch.setattr(stt_warmup, "_still_resident", lambda: bool(resident))
 
     stt_warmup.warm(blocking=True)
     stt_warmup.warm(blocking=True)

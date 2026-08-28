@@ -54,16 +54,50 @@ import wave
 from typing import Any, Iterator, Optional
 
 
+def _wav_capable_providers() -> frozenset[str]:
+    """WAV üreten YEREL motorlar -- katalogdan türetiliyor, elle yazılmıyor.
+
+    Katalog tek kaynak: yeni bir yerel motor eklendiğinde burası kendiliğinden
+    öğreniyor. Katalog okunamazsa boş küme dönüyor ve çağıran senkron yolu hiç
+    denemiyor -- yani en kötü hâl eski (yavaş ama çalışan) tam-metin yolu.
+    """
+    try:
+        from fool import voice_models
+
+        names: set[str] = set()
+        for entry in voice_models.CATALOG:
+            if entry.kind != "tts":
+                continue
+            names.add((entry.provider_id or entry.id).strip().lower())
+            names.add(entry.id.strip().lower())
+        return frozenset(names)
+    except Exception:  # noqa: BLE001
+        return frozenset()
+
+
 def usable_local_provider(provider: str) -> bool:
     """Bu ad senkron cümle-cümle sentez için denenmeye değer mi?
 
+    Sınıfın adı "yerel" diyor ama kural bunu HİÇ uygulamıyordu: boş olmayan
+    ve ``"none"`` olmayan HER ad kabul ediliyordu.
+
+    Ölçülen sonuç: ``tts.provider: edge`` (desteklenen bir sağlayıcı) seçili
+    olduğunda bu uç senkron yola giriyor, ``_generate_edge_tts`` uzantıya hiç
+    bakmadan ``.wav`` yoluna MP3 baytları yazıyor ve ``wave.open`` "file does
+    not start with RIFF id" ile düşüyor. Yani her cümle bir Microsoft gidiş
+    dönüşü israf ediyor, hiç ses çıkmıyor ve istemci yedek yola ancak bu
+    gecikmeden SONRA düşüyor. Aynı şekil ``minimax`` ve MP3 dönen her
+    sağlayıcı için geçerli.
+
     ``_get_provider`` hiçbir motor kurulu/yapılandırılı değilken ``"none"``
-    döner (bkz. ``tools/tts_tool.py`` FOOL-SEAM: local-only-tts) — o durumda
-    denemek her cümlede aynı hatayı üretip oturumu gecikmeyle bitirirdi.
+    döner (bkz. ``tools/tts_tool.py`` FOOL-SEAM: local-only-tts).
     """
     name = (provider or "").strip().lower()
 
-    return bool(name) and name != "none"
+    if not name or name == "none":
+        return False
+
+    return name in _wav_capable_providers()
 
 
 def _parse_tool_result(raw: Any) -> Optional[dict]:

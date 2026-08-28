@@ -10,6 +10,9 @@ Uçlar
 ``GET  /api/fool/voice/job/{job_id}`` — canlı ilerleme
 ``POST /api/fool/voice/cancel``       — süren kurulumu iptal et
 
+Bellek yerleşimi uçları (``/api/fool/runtime/...``) bu yönlendiriciye
+takılı — bkz. ``fool/residency_routes.py``.
+
 İlerleme neden SSE değil de yoklama ile
 ---------------------------------------
 Kurulum dakikalarca sürebiliyor ve panel bu sırada kapanıp açılabiliyor. Akış
@@ -20,14 +23,23 @@ gösterir. Saniyede bir yoklama bu iş için fazlasıyla yeterli.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from fool import voice_models
+from fool import residency_routes, voice_models
 
 router = APIRouter()
+
+# Bellek yerlesimi uclari (``/api/fool/runtime/...``) BURAYA takiliyor.
+#
+# Sebebi dikis yuzeyi: ``web_server.py``de yalnizca ``FOOL-SEAM: voice-routes``
+# iki satiri var ve ikinci bir ``include_router`` eklemek birlestirmede yeni
+# bir catisma noktasi acardi. Uclarin kendisi ayri dosyada duruyor cunku dil
+# modelini de kapsiyorlar -- bkz. ``fool/residency_routes.py``.
+router.include_router(residency_routes.router)
 
 
 class InstallBody(BaseModel):
@@ -71,7 +83,19 @@ class CancelBody(BaseModel):
 
 @router.get("/api/fool/voice/catalog")
 async def voice_catalog() -> dict[str, Any]:
-    items = voice_models.catalog_status()
+    """Katalog İŞ PARÇACIĞINDA kuruluyor, olay döngüsünde DEĞİL.
+
+    ``catalog_status()`` dokuz sidecar motorunun CUDA sondasını paralel
+    çalıştırıyor -- her biri izole bir yorumlayıcıda ``import torch`` yapan bir
+    alt süreç. Paralel olması onu OLAY DÖNGÜSÜ için ucuz yapmıyor: ``async def``
+    içinden senkron çağrılınca döngü, havuz bitene kadar (ölçüldü: paneli ilk
+    açışta ~6 sn) tamamen duruyor.
+
+    Duran şey yalnızca bu istek değil: aynı döngü o sırada konuşan
+    ``speak-stream`` soketine PCM gönderiyor. Yani ses panelini açmak, çalmakta
+    olan konuşmayı kesiyordu.
+    """
+    items = await asyncio.to_thread(voice_models.catalog_status)
     # Süren bir kurulum varsa öğeye iliştiriliyor: panel yeniden açıldığında
     # kullanıcı çubuğu kaldığı yerden görsün.
     for item in items:
@@ -81,7 +105,7 @@ async def voice_catalog() -> dict[str, Any]:
         "items": items,
         "voice_dir": str(voice_models.voice_dir()),
         "active": voice_models.active_providers(),
-        "cuda_available": voice_models._cuda_available(),
+        "cuda_available": await asyncio.to_thread(voice_models._cuda_available),
         # Secili motor OLCULMUS olarak yavassa panel bunu soylesin.
         # Olculdu: kyutai cumle basina 2,52 sn, kokoro 0,20 sn. Kullanici
         # "cevaplar nerdeyse realtime olmali" istedi ama en yavas motorda
@@ -129,7 +153,10 @@ async def voice_install(body: InstallBody) -> dict[str, Any]:
 @router.post("/api/fool/voice/select")
 async def voice_select(body: SelectBody) -> dict[str, Any]:
     try:
-        return voice_models.select(body.entry_id)
+        # İŞ PARÇACIĞINDA: ``select`` bir sidecar durum sondası (alt süreç)
+        # çalıştırıyor ve önceki motoru durdururken ``process.wait(timeout=5)``
+        # ile bekliyor.
+        return await asyncio.to_thread(voice_models.select, body.entry_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -217,7 +244,12 @@ async def voice_preview_route(body: SelectBody) -> dict[str, Any]:
     from fool import voice_preview
 
     try:
-        return voice_preview.preview(body.entry_id)
+        # İŞ PARÇACIĞINDA: bu çağrı bir model yüklemesi ve tam bir sentez.
+        # Ölçüldü: Kokoro soğuk 7,6 sn, Qwen3 18,4 sn, Chatterbox 58 sn. O süre
+        # boyunca olay döngüsü senkron çağrıda kilitli kalıyordu -- yani
+        # Ayarlar'da "Dinle"ye basmak, o sırada çalan konuşmayı ve bütün
+        # transkripsiyon isteklerini donduruyordu.
+        return await asyncio.to_thread(voice_preview.preview, body.entry_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
@@ -228,7 +260,7 @@ async def voice_preview_route(body: SelectBody) -> dict[str, Any]:
 @router.post("/api/fool/voice/device")
 async def voice_device(body: DeviceBody) -> dict[str, Any]:
     try:
-        return voice_models.set_device(body.entry_id, body.device)
+        return await asyncio.to_thread(voice_models.set_device, body.entry_id, body.device)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -236,7 +268,7 @@ async def voice_device(body: DeviceBody) -> dict[str, Any]:
 @router.post("/api/fool/voice/voice")
 async def voice_set_voice(body: VoiceBody) -> dict[str, Any]:
     try:
-        return voice_models.set_voice(body.entry_id, body.voice)
+        return await asyncio.to_thread(voice_models.set_voice, body.entry_id, body.voice)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -252,7 +284,7 @@ async def voice_cuda(body: SelectBody) -> dict[str, Any]:
 
 @router.get("/api/fool/voice/clones")
 async def voice_clones() -> dict[str, Any]:
-    return {"clones": voice_models.list_clones()}
+    return {"clones": await asyncio.to_thread(voice_models.list_clones)}
 
 
 @router.post("/api/fool/voice/clones/upload")
@@ -266,7 +298,8 @@ async def voice_clone_upload(body: CloneUploadBody) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=f"gecersiz veri: {exc}") from exc
 
     try:
-        return voice_models.save_clone(body.filename, raw)
+        # Disk yazimi -- klon dosyalari birkac megabayt olabiliyor.
+        return await asyncio.to_thread(voice_models.save_clone, body.filename, raw)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -274,14 +307,14 @@ async def voice_clone_upload(body: CloneUploadBody) -> dict[str, Any]:
 @router.post("/api/fool/voice/clones/select")
 async def voice_clone_select(body: CloneSelectBody) -> dict[str, Any]:
     try:
-        return voice_models.set_clone(body.entry_id, body.clone_id)
+        return await asyncio.to_thread(voice_models.set_clone, body.entry_id, body.clone_id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/api/fool/voice/clones/delete")
 async def voice_clone_delete(body: CloneDeleteBody) -> dict[str, Any]:
-    return voice_models.delete_clone(body.clone_id)
+    return await asyncio.to_thread(voice_models.delete_clone, body.clone_id)
 
 
 @router.get("/api/fool/voice/job/{job_id}")

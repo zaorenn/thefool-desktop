@@ -5396,25 +5396,91 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
             future.result(timeout=5)
             start_announced = True
 
+        # Bir CUMLENIN dusmesi turun geri kalanini oldurmemeli.
+        #
+        # Olculen hata: ``try`` butun ``for sentence in _sentences()``
+        # dongusunu sariyordu. Tek bir gecici hata -- motor sureci
+        # ``_evict_for`` tarafindan toplandi, saglayici bir HTTP 500 dondu,
+        # motor bir cumleyi sindiremedi -- kalan BUTUN cumlelerin sentezini
+        # iptal ediyordu. Ses zaten baslamis oldugu icin istemci ``end``
+        # karesini "basariyla calindi" diye okuyor: kullanici cevabin ilk
+        # yarisini duyuyor, ikinci yarisi hic konusulmuyor ve hicbir yerde
+        # hata gorunmuyor.
+        #
+        # Sinir artik CUMLE: dusen cumle atlaniyor, sonraki denenmeye devam
+        # ediyor. Art arda cok sayida cumle duserse motor gercekten bozuk
+        # demektir ve orada birakiliyor.
+        consecutive_failures = 0
+        max_consecutive_failures = 3
+
         try:
             for sentence in _sentences():
+                # Araya girme SENTEZDEN ONCE de kontrol ediliyor.
+                #
+                # Eski hali yalnizca uretilen parcalar ARASINDA bakiyordu ve
+                # yerel yol cumle basina TEK parca uretiyor -- yani kullanici
+                # sozu kestikten sonra o cumlenin sentezi sonuna kadar
+                # kosuyordu (olculdu: chatterbox 1,7 sn, qwen3 9-15 sn),
+                # ustelik motor kilidini tutarak. Kullanicinin YENI cumlesi o
+                # bitene kadar bekliyordu.
+                if stop.is_set():
+                    return
+
                 cleaned = _strip_markdown_for_tts(sentence)
                 if not cleaned:
                     continue
-                for piece in _split_text_for_speak_stream(cleaned, cap):
-                    for chunk in engine.stream(piece):
+
+                try:
+                    for piece in _split_text_for_speak_stream(cleaned, cap):
                         if stop.is_set():
                             return
-                        if not start_announced:
-                            # Yerel motorun GERCEK orneklem hizi bu chunk
-                            # sentezlenirken ogrenildi (bkz. LocalSentenceStreamer) --
-                            # once o duyuruluyor, sonra ses.
-                            _announce_local_start()
-                        loop.call_soon_threadsafe(chunks.put_nowait, chunk)
+                        for chunk in engine.stream(piece):
+                            if stop.is_set():
+                                return
+                            if not start_announced:
+                                # Yerel motorun GERCEK orneklem hizi bu chunk
+                                # sentezlenirken ogrenildi (bkz. LocalSentenceStreamer) --
+                                # once o duyuruluyor, sonra ses.
+                                _announce_local_start()
+                            loop.call_soon_threadsafe(chunks.put_nowait, chunk)
+                except Exception as exc:
+                    consecutive_failures += 1
+                    _log.warning(
+                        "speak-stream sentence failed (%d/%d): %s",
+                        consecutive_failures,
+                        max_consecutive_failures,
+                        exc,
+                    )
+                    if consecutive_failures >= max_consecutive_failures:
+                        _log.warning("speak-stream giving up after repeated sentence failures")
+                        return
+                    continue
+
+                consecutive_failures = 0
+
                 # Duraklama CUMLENIN sonunda, uzunluk sinirindan bolunmus her
                 # parcanin degil: ikincisi cumle ortasinda kekelemek olurdu.
+                #
+                # ``start_announced`` MUHAFIZI: motor sifir kareli bir dalga
+                # dondurdugunde (noktalama-yalniz metin, desteklenmeyen yazi)
+                # ustteki dongunun govdesi hic kosmuyor ve ``start``
+                # gonderilmiyor. Muhafizsiz burasi ikili bir kareyi ``start``
+                # karesinden ONCE kuyruga koyuyordu: istemci onu atiyor ama
+                # "ses uretildi" sayaci artiyor ve gercekten sessiz kalan bir
+                # oturum "calindi" diye raporlaniyordu.
+                if not start_announced:
+                    continue
+
                 _gap_rate = int(getattr(engine, "sample_rate", 0) or _rate)
-                _gap = pause_pcm_after(cleaned, _gap_rate, enabled=_pauses)
+                _gap = pause_pcm_after(
+                    cleaned,
+                    _gap_rate,
+                    enabled=_pauses,
+                    # Kanal sayisi motordan: sabit mono varsaymak, stereo bir
+                    # motorda her cumle arasindaki duraklamayi YARIYA
+                    # indiriyordu.
+                    channels=int(getattr(engine, "channels", 1) or 1),
+                )
                 if _gap and not stop.is_set():
                     loop.call_soon_threadsafe(chunks.put_nowait, _gap)
         except Exception as exc:
@@ -5442,20 +5508,33 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
         text_q.put(None)  # unblock the producer
 
     pump = asyncio.ensure_future(_pump_client())
+    # Gercekten iletilen ses. ``end`` ile ``fallback`` arasindaki fark bu:
+    # oturumun temiz kapanmasi ile bir sey DUYULMUS olmasi ayri seyler.
+    sent_bytes = 0
     try:
         while True:
             chunk = await chunks.get()
             if chunk is None:
                 break
+            sent_bytes += len(chunk)
             await ws.send_bytes(chunk)
         if not stop.is_set():
-            await ws.send_json({"type": "end"})
+            # Hic ses gitmediyse ``end`` DEGIL ``fallback``: istemci o zaman
+            # metni tek seferlik yoldan okuyor. ``end`` demek, sentez hic
+            # calismamisken "calindi" demek olurdu.
+            await ws.send_json({"type": "end" if sent_bytes else "fallback"})
     except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
         stop.set()
         text_q.put(None)
         pump.cancel()
+        # Oturum bitti: SDK istemcisi (baglanti havuzu + TLS oturumu) burada
+        # birakiliyor. Istemci artik cumle basina degil oturum basina
+        # kuruluyor, yani onu kapatan da oturumun sonu olmali.
+        if streamer is not None:
+            with contextlib.suppress(Exception):
+                streamer.close()
         with contextlib.suppress(Exception):
             await ws.close()
 

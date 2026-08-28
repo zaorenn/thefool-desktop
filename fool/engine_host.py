@@ -117,31 +117,40 @@ _ENGINES_LOCK = threading.Lock()
 #: FOOL-SEAM: engine-vram-eviction
 #:
 #: Bir varsayilan degil, olculmus bir zorunluluk. Her motor modelini VRAM'e
-#: yukluyor ve kalici surec oldugu icin HIC birakmiyordu. Bes TTS motoru +
-#: whisper + LM Studio'daki 9B model ayni 16 GB kartta birikince olculen
-#: sonuc su oldu:
-#:
-#:     nvidia-smi -> 15338 / 16376 MiB dolu, 724 MiB bos, 10 surec
-#:
-#: O noktadan sonra her sey bozuluyor: sentez saniyelerce takiliyor, panelde
-#: "Speaking..." donuyor, cogu zaman hic ses cikmiyor. Kullaniciya "TTS
+#: yukluyor ve kalici surec oldugu icin HIC birakmiyordu. Kullaniciya "TTS
 #: calismiyor" diye gorunen sey buydu -- tek tek her motor calisiyor, hepsi
 #: birlikte hicbiri calismiyor.
 #:
-#: IKI motor bilincli, bir degil.
+#: TEK motor. Bir sure IKI idi ve o karar SEBEBIYLE dogruydu:
 #:
-#: Once 1 yapmistim ve daha kotu bir sorun urettim: uygulamada AYNI ANDA iki
-#: yuzey konusuyor (sohbet paneli genel ``tts.provider`` ile, Friend kendi
-#: sectigiyle). Ikisi farkli motor secince her tur yukle-bosalt-yukle
-#: donguse giriyordu -- olculdu, qwen3 40 sn + styletts2 37 sn, yani makine
+#: Once 1 denendi ve daha kotu bir sorun uretti: o gun uygulamada AYNI ANDA
+#: iki yuzey konusuyordu (sohbet paneli genel ``tts.provider`` ile, Friend
+#: KENDI sectigiyle). Ikisi farkli motor secince her tur yukle-bosalt-yukle
+#: dongusune giriyordu -- olculdu, qwen3 40 sn + styletts2 37 sn, yani makine
 #: surekli model yukluyor ve hicbir cumle zamaninda seslendirilmiyor.
 #: Kullanicinin "bilgisayarim deli gibi kasti ve yine ses gelmedi" dedigi
-#: sey buydu ve sebebi benim yamamdi.
+#: sey buydu. Sinir 2'ye cikarilinca iki yuzeyin cakismasi bitti.
 #:
-#: Iki motor hem yuzeylerin cakismasini bitiriyor hem VRAM'i siniri altinda
-#: tutuyor: olculdu, iki motor ayaktayken en dusuk bos VRAM 6688 MB
-#: (tahliye oncesi 724 MB).
-MAX_RESIDENT_ENGINES = 2
+#: O SEBEP ARTIK YOK: kip basina ses uclari kaldirildi ve seslendirme motoru
+#: her yuzeyde TEK yerden seciliyor -- ``tts.provider`` (bkz.
+#: ``fool/voice_modes.py::FRIEND`` ve ``fool/voice_routes.py``deki kaldirma
+#: notu). Iki yuzey artik ayni motoru istiyor, yani ikinci yuva yalnizca
+#: ONCEKI secimi bellekte tutmaya yariyordu.
+#:
+#: Kullanicinin kurali da bu: ayni anda tek STT + tek TTS + tek LLM, ve bir
+#: kategoride yeni bir sey secilince oncekisi TAMAMEN birakilsin
+#: (``fool/residency.py``). Ikinci yuva o kurali sessizce bozuyordu:
+#: Ayarlar'da bir motoru dinlemek (``voice_preview``) ikinci bir modeli
+#: karta yukluyor ve secili motor yaninda oylece kaliyordu.
+#:
+#: Olculmus zemin degismedi: bes TTS motoru + whisper + LM Studio'daki 9B
+#: model ayni 16 GB kartta birikince
+#:
+#:     nvidia-smi -> 15338 / 16376 MiB dolu, 724 MiB bos, 10 surec
+#:
+#: ve o noktadan sonra her sey bozuluyor: sentez saniyelerce takiliyor,
+#: panelde "Speaking..." donuyor, cogu zaman hic ses cikmiyor.
+MAX_RESIDENT_ENGINES = 1
 
 #: Bosta kalan bir motor bu sureden sonra kendiliginden bosaltiliyor.
 #:
@@ -392,7 +401,18 @@ def _spawn(name: str, setup: str) -> _Engine:
 
         line = process.stdout.readline() if process.stdout else ""
         if not line:
-            continue
+            # ``readline()`` bos dize YALNIZCA EOF'ta doner: boru kapandi.
+            #
+            # Eski kod burada ``continue`` diyordu ve dongu ``poll()``a
+            # bakiyordu -- ama surec stdout'u kapatip henuz cikmadiysa
+            # ``poll()`` hala ``None``. Yani dongu 600 saniyelik acilis
+            # suresi dolana kadar HIZLI DONUYOR: bir CPU cekirdegi doluyor ve
+            # istemciye on dakika boyunca hicbir sey soylenmiyor -- ne
+            # ``start``, ne ``end``, ne ``fallback``.
+            #
+            # EOF geri donusu olmayan bir hal: dongu yerine hata.
+            process.kill()
+            raise RuntimeError(f"{name}: motor sureci acilista ciktisini kapatti")
 
         try:
             payload = json.loads(line)
@@ -429,6 +449,40 @@ def stop(name: str) -> None:
         engine.process.kill()
 
 
+def stop_gracefully(name: str, timeout: float = 30.0) -> None:
+    """Motoru durdur ama SÜREN bir sentezi ortasından kesme.
+
+    ``stop()`` stdin'i motorun kilidini ALMADAN kapatıyor. O sırada bir sentez
+    sürüyorsa sidecar'ın ``for line in sys.stdin`` döngüsü bitiyor, süreç
+    çıkıyor ve bekleyen ``readline()`` boş dönüyor -- yani kullanıcının o an
+    dinlediği cümle ortasında susuyor ve çağıran "motor cevap vermeden
+    kapandı" hatası alıyor.
+
+    Somut tetik: ses panelinden başka bir motor seçmek (``voice_models.select``)
+    ya da bir klon değiştirmek. Kullanıcı konuşurken ayar değiştirdiğinde ses
+    kesiliyordu.
+
+    ``_evict_for`` ve ``_idle_sweep`` bu inceliği zaten gözetiyor (kilitli
+    motoru atlıyorlar); eksik olan açık ``stop`` yoluydu.
+
+    Süre dolarsa yine de durduruluyor: kullanıcının açık isteği (motoru
+    değiştir) sonsuza kadar bekletilemez.
+    """
+    with _ENGINES_LOCK:
+        engine = _ENGINES.get(name)
+
+    if engine is None:
+        stop(name)
+        return
+
+    acquired = engine.lock.acquire(timeout=timeout)
+    try:
+        stop(name)
+    finally:
+        if acquired:
+            engine.lock.release()
+
+
 def stop_all() -> None:
     with _ENGINES_LOCK:
         names = list(_ENGINES)
@@ -440,6 +494,68 @@ def is_running(name: str) -> bool:
     with _ENGINES_LOCK:
         engine = _ENGINES.get(name)
     return engine is not None and engine.process.poll() is None
+
+
+def running() -> list[str]:
+    """Su an AYAKTA olan motorlarin adlari (en eski kullanilan basta).
+
+    Kayitta OLUP sureci olmus motorlar eleniyor: ``_ENGINES`` anahtarlarini
+    dogrudan okumak "yuklu" diye olu bir surec gostermek olurdu ve tepsi
+    menusu kullaniciya bosaltacak bir sey olmadigi halde bosaltma dugmesi
+    verirdi.
+
+    Sira ``last_used``: tahliyenin kurbanini sectigi sirayla ayni, yani
+    listeyi okuyan bir yuzey "sirada kim var" sorusunu da cevaplayabiliyor.
+    """
+    with _ENGINES_LOCK:
+        rows = sorted(_ENGINES.items(), key=lambda item: item[1].last_used)
+
+    return [name for name, engine in rows if engine.process.poll() is None]
+
+
+#: Motor basina acilis kilidi. ``_SPAWN_LOCKS_LOCK`` yalnizca bu haritayi
+#: koruyor -- acilisin kendisi motor basina kilitle serilestiriliyor.
+_SPAWN_LOCKS: dict[str, threading.Lock] = {}
+_SPAWN_LOCKS_LOCK = threading.Lock()
+
+
+def _spawn_lock_for(name: str) -> threading.Lock:
+    with _SPAWN_LOCKS_LOCK:
+        lock = _SPAWN_LOCKS.get(name)
+        if lock is None:
+            lock = threading.Lock()
+            _SPAWN_LOCKS[name] = lock
+        return lock
+
+
+def _read_reply_bounded(engine: Any, timeout: float) -> str | None:
+    """Bir cevap satiri oku; ``None`` = sure doldu.
+
+    ``readline()`` AYRI bir is parcaciginda kosuyor cunku boru okumalarinin
+    tasinabilir bir zaman asimi yok. Sure dolunca cagiran sureci olduruyor;
+    bu, asili kalan okumayi da bitiriyor ve is parcacigi kendiliginden
+    sonlaniyor -- yani birikmiyor.
+    """
+    box: list[str] = []
+    failure: list[BaseException] = []
+
+    def _read() -> None:
+        try:
+            box.append(engine.process.stdout.readline())
+        except BaseException as exc:  # noqa: BLE001 -- cagirana tasiniyor
+            failure.append(exc)
+
+    reader = threading.Thread(target=_read, daemon=True, name="fool-engine-reply")
+    reader.start()
+    reader.join(timeout)
+
+    if reader.is_alive():
+        return None
+
+    if failure:
+        raise failure[0]
+
+    return box[0] if box else ""
 
 
 def request(name: str, setup: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -462,11 +578,38 @@ def request(name: str, setup: str, payload: dict[str, Any]) -> dict[str, Any]:
         engine = None
 
     if engine is None:
-        # FOOL-SEAM: engine-vram-eviction -- yer ACMADAN once yukleme yapma.
-        _evict_for(name)
-        engine = _spawn(name, setup)
-        with _ENGINES_LOCK:
-            _ENGINES[name] = engine
+        # Ayni motoru IKI kez baslatmayi engelle.
+        #
+        # Olculen hata: ``_spawn`` kilidin DISINDA kosuyordu. Iki is parcacigi
+        # (isitma ucu + ilk cumle, ya da iki ses yuzeyi) ayni anda ``None``
+        # goruyor, IKISI de bir surec baslatip modeli yukluyor ve ikincisi
+        # birincinin kaydini eziyordu. Ezilen surec artik ``_ENGINES``te
+        # olmadigi icin ``stop()``, ``_idle_sweep()`` ve ``stop_all()`` ona
+        # ULASAMIYOR: VRAM'i uygulama kapanana kadar tutuyor.
+        #
+        # Bu, ``MAX_RESIDENT_ENGINES`` / ``engine-vram-eviction`` tasariminin
+        # tam olarak onlemek icin var oldugu sonuc -- chatterbox'ta anlik ve
+        # kalici 3,5 GB.
+        #
+        # Kilit MOTOR BASINA: farkli motorlarin paralel acilisi (STT + TTS
+        # isitmasi) yavaslamamali.
+        with _spawn_lock_for(name):
+            # Kilidi bekleyen ikinci cagiran icin: birincisi kurmus olabilir.
+            with _ENGINES_LOCK:
+                existing = _ENGINES.get(name)
+                if existing is not None and (
+                    existing.setup_hash != setup_hash or existing.process.poll() is not None
+                ):
+                    existing = None
+                engine = existing
+
+            if engine is None:
+                # FOOL-SEAM: engine-vram-eviction -- yer ACMADAN once yukleme yapma.
+                _evict_for(name)
+                spawned = _spawn(name, setup)
+                with _ENGINES_LOCK:
+                    _ENGINES[name] = spawned
+                engine = spawned
 
     engine.last_used = time.monotonic()
     _ensure_idle_watcher()
@@ -474,6 +617,8 @@ def request(name: str, setup: str, payload: dict[str, Any]) -> dict[str, Any]:
     # Tek sürece aynı anda iki istek giderse cevaplar birbirine karışır:
     # protokol satır sıralı ve hangi cevabın hangi isteğe ait olduğunu
     # ayırt edecek bir kimlik taşımıyor.
+    timed_out = False
+
     with engine.lock:
         if engine.process.poll() is not None:
             stop(name)
@@ -482,15 +627,35 @@ def request(name: str, setup: str, payload: dict[str, Any]) -> dict[str, Any]:
         try:
             engine.process.stdin.write(json.dumps(payload) + "\n")  # type: ignore[union-attr]
             engine.process.stdin.flush()  # type: ignore[union-attr]
-            line = engine.process.stdout.readline()  # type: ignore[union-attr]
+            # Cevap SINIRLI bir sure bekleniyor.
+            #
+            # Eski hali ciplak ``readline()`` idi ve ``REQUEST_TIMEOUT_SECONDS``
+            # tanimliydi ama HICBIR YERDE kullanilmiyordu. Sidecar takilirsa
+            # (CUDA kilidi, model kilitlenmesi, yarim kalmis indirme) o cagri
+            # SONSUZA kadar bloke oluyor -- ustelik ``engine.lock`` elde
+            # tutularak. Yani hata yerel kalmiyor: o motora giden BUTUN sonraki
+            # istekler de ayni kilitte bekliyor ve ses kalici olarak susuyor,
+            # hicbir hata da gorunmuyor.
+            line = _read_reply_bounded(engine, REQUEST_TIMEOUT_SECONDS)
         except (BrokenPipeError, OSError) as exc:
             stop(name)
             raise RuntimeError(f"{name}: motorla iletisim koptu: {exc}") from exc
+
+        if line is None:
+            timed_out = True
 
         # Istek BITTIGINDE de tazeleniyor: uzun bir sentez sirasinda
         # baslangic damgasi eskiyor ve motor is biter bitmez "bosta"
         # sayilabiliyordu.
         engine.last_used = time.monotonic()
+
+    if timed_out:
+        # Surec OLDURULUYOR: takilmis bir motor kendine gelmiyor ve ayakta
+        # birakmak bir sonraki istegi de ayni kilitte bekletirdi. Oldurunce
+        # bekleyenler "surec kapandi" alip hemen dusuyor, cagiran da yedek
+        # yola gecebiliyor.
+        stop(name)
+        raise RuntimeError(f"{name}: motor {REQUEST_TIMEOUT_SECONDS} sn icinde cevap vermedi")
 
     if not line:
         stop(name)

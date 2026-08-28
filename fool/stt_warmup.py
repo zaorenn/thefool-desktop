@@ -79,6 +79,36 @@ def _warm_now() -> None:
     tt._touch_transcription_time()
 
 
+def _still_resident() -> bool:
+    """Model GERÇEKTEN bellekte mi?
+
+    ``_state["status"] == "warm"`` bir kez yazılıyor ve bir daha hiç
+    düşmüyordu. Oysa model boşta kalınca bellekten bırakılıyor
+    (``fool/gpu_budget.py`` -> ``tools.transcription_tools._unload_local_model``;
+    ölçüldü: 16 GB kartta 300 sn). Yani ilk başarılı ısıtmadan sonra ``warm()``
+    kalıcı olarak hiçbir şey yapmıyor: durum "warm" diyor, model yok, ve bir
+    sonraki konuşma soğuk yükleme bedelini yeniden ödüyor.
+
+    Ölçüldü (bu modülün kendi belgesinden): ısıtmasız ilk transkripsiyon
+    6,94 sn / ısıtılmış 0,66 sn. Kullanıcının "ilk cümlem hep geç yazıya
+    dönüyor" dediği şey her uzun aradan sonra geri geliyordu.
+
+    SESLENDIRME tarafı bunu zaten çözmüştü (``fool/tts_warmup.py``
+    ``_still_resident`` + ``tests/fool/test_tts_warmup_rearm.py``); eksik olan
+    yalnızca buranın aynısını yapmasıydı -- düz bir asimetri.
+
+    Hata YUTULUYOR ve "yerleşik değil" varsayılıyor: yanlış tarafa düşmenin
+    bedeli fazladan bir ısıtma (ucuz ve zaten korumalı), diğer tarafta ise
+    sessizce ölü kalan bir ısıtma yolu var.
+    """
+    try:
+        from tools import transcription_tools as tt
+
+        return tt._local_model is not None
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def warm(*, blocking: bool = False) -> dict[str, Any]:
     """Modeli arka planda yükle. Zaten yükleniyorsa/yüklüyse işlemsiz.
 
@@ -88,7 +118,10 @@ def warm(*, blocking: bool = False) -> dict[str, Any]:
     global _thread
 
     with _lock:
-        if _state["status"] in ("warming", "warm"):
+        if _state["status"] == "warming":
+            return status()
+        # "warm" TEK BASINA yetmiyor -- bkz. ``_still_resident``.
+        if _state["status"] == "warm" and _still_resident():
             return status()
         if _thread is not None and _thread.is_alive():
             return status()
@@ -118,11 +151,30 @@ def warm(*, blocking: bool = False) -> dict[str, Any]:
     return status()
 
 
+def _mark_cold_locked() -> None:
+    _state["status"] = "cold"
+    _state["error"] = ""
+
+
+def mark_cold() -> None:
+    """Model DIŞARIDAN boşaltıldı -- durum bunu söylesin.
+
+    Kullanıcı sistem tepsisinden "boşalt" dediğinde model gidiyor ama bu
+    modülün durumu "warm" yazmaya devam ediyordu. ``_still_resident``
+    sayesinde bir sonraki ``warm()`` yine de doğru davranıyor; yanlış olan
+    ARADAKİ pencere: tepsi menüsü boşaltmanın hemen ardından "ısınıyor/sıcak"
+    gösteriyor ve kullanıcı isteğinin işlemediğini sanıyor.
+
+    Bkz. ``fool/residency.py::_mark_cold``.
+    """
+    with _lock:
+        _mark_cold_locked()
+
+
 def reset_for_tests() -> None:
     """Durumu sıfırla -- yalnızca testler için."""
     global _thread
 
     with _lock:
         _thread = None
-        _state["status"] = "cold"
-        _state["error"] = ""
+        _mark_cold_locked()

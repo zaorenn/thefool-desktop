@@ -694,25 +694,7 @@ def select(entry_id: str) -> dict[str, Any]:
     from fool_cli.config import set_config_value
 
     if e.kind == "tts":
-        previous = active_providers().get("tts", "")
         set_config_value("tts.provider", e.provider_id or e.id)
-
-        # ESKI motoru HEMEN birak: kullanici baska bir ses sectiyse oncekinin
-        # karti tutmasinin hicbir sebebi yok ve bes dakika beklemek, o sure
-        # boyunca iki motorluk VRAM tutmak demek. Kullanicinin istegi birebir
-        # buydu: "ses modeli degistigi anda tekrar kapatilsin".
-        #
-        # Hata YUTULUYOR: motor durdurulamadiysa bosta-bosaltma zaten
-        # yakalayacak; secimi bunun icin dusurmek oransiz olurdu.
-        if previous and previous != (e.provider_id or e.id):
-            try:
-                from fool import engine_host
-
-                engine_host.stop(_entry_id_for_provider(previous))
-            except Exception as exc:  # pragma: no cover
-                import logging
-
-                logging.getLogger(__name__).debug("eski motor durdurulamadi: %s", exc)
     else:
         # Yerel whisper: saglayici "local", asil secim model boyutu.
         set_config_value("stt.provider", "local")
@@ -720,7 +702,32 @@ def select(entry_id: str) -> dict[str, Any]:
         # Dil OTOMATIK kalmali: sabitlemek baska dilde konusmayi bozuyor.
         set_config_value("stt.local.language", "")
 
-    return {"ok": True, "active": active_providers()}
+    # ESKISINI HEMEN birak. Kullanicinin istegi birebir buydu: "bir kategoride
+    # digeri secildiginde oncekiler tamamen unload edilmeli".
+    #
+    # Bosta-bosaltmayi beklemek, o bes dakika boyunca IKI modelluk bellek
+    # tutmak demek -- ve ikisi ayni karti paylasiyor.
+    return {"ok": True, "active": active_providers(), "unloaded": _drop_unselected(e.kind)}
+
+
+def _drop_unselected(kind: Kind) -> dict[str, list[str]]:
+    """Bu kategoride SECILI olmayan her seyi birak.
+
+    Yalnizca DEGISEN kategori: dil modeli kurali ``lms ps`` alt surecini
+    calistiriyor ve kullanici bir ses motoru secip cevabi bekliyor.
+
+    Hata YUTULUYOR: bosaltma yapilamadiysa bosta-bosaltma zaten yakalayacak;
+    kullanicinin secimini bir temizlik ugruna dusurmek oransiz olurdu.
+    """
+    try:
+        from fool import residency
+
+        return residency.enforce_single(kinds=(kind,)).get("unloaded", {})
+    except Exception as exc:  # pragma: no cover
+        import logging
+
+        logging.getLogger(__name__).debug("onceki model birakilamadi: %s", exc)
+        return {}
 
 
 def device_key(e: VoiceEntry) -> str:

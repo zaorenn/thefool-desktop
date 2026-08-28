@@ -39,6 +39,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Final, Sequence
@@ -89,18 +90,56 @@ def sidecar_python(name: str) -> Path:
     return base / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+#: ``(ad, sonda)`` -> yorumlayıcı imzası. Yalnızca OLUMLU sonuçlar.
+_READY_CACHE: dict[tuple[str, str], tuple[float, int]] = {}
+_READY_LOCK = threading.Lock()
+
+
+def _python_signature(python: Path) -> tuple[float, int] | None:
+    """Yorumlayıcının kimliği: değişirse önbellek geçersiz."""
+    try:
+        stat = python.stat()
+    except OSError:
+        return None
+    return (stat.st_mtime, stat.st_size)
+
+
 def is_ready(name: str, probe_module: str | None = None) -> bool:
     """Ortam var ve motor içinde kurulu mu?
 
     Yalnızca dizin varlığına bakmak yetmez: yarıda kesilmiş bir kurulum
     ortamı bırakır ama motoru bırakmaz, ve "kurulu" demek kullanıcıyı
     çalışma anında anlaşılmaz bir hataya götürürdü.
+
+    OLUMLU cevap ÖNBELLEKLENİYOR
+    ----------------------------
+    Sonda izole bir yorumlayıcı SÜRECİ başlatıyor ve bu makinede ölçülen
+    maliyeti 50-61 ms. Sorun maliyetin kendisi değil, NEREDE ödendiği:
+    seslendirme eklentileri bunu ``synthesize()`` içinden, yani HER CÜMLE
+    için çağırıyor. Kokoro'nun sıcak bir cümlesi 140-200 ms sürüyor -- yani
+    ilk sese kadar geçen sürenin dörtte biri, oturum boyunca değişmesi
+    mümkün olmayan bir bilgiyi yeniden öğrenmeye gidiyordu.
+
+    Önbellek yorumlayıcının mtime+boyutuna bağlı: yeniden kurulum onu
+    değiştiriyor ve sonda tekrar çalışıyor.
+
+    OLUMSUZ cevap önbelleklenMİYOR. Kullanıcı motoru oturum ortasında
+    kurabiliyor; "kurulu değil"i saklamak, kurulumdan sonra motorun
+    görünmemesi olurdu -- ve o, düzeltilenden daha kötü bir hata.
     """
     python = sidecar_python(name)
     if not python.exists():
         return False
     if not probe_module:
         return True
+
+    signature = _python_signature(python)
+    cache_key = (name, probe_module)
+
+    if signature is not None:
+        with _READY_LOCK:
+            if _READY_CACHE.get(cache_key) == signature:
+                return True
 
     try:
         completed = subprocess.run(
@@ -112,7 +151,15 @@ def is_ready(name: str, probe_module: str | None = None) -> bool:
         )
     except (OSError, subprocess.SubprocessError):
         return False
-    return completed.returncode == 0
+
+    if completed.returncode != 0:
+        return False
+
+    if signature is not None:
+        with _READY_LOCK:
+            _READY_CACHE[cache_key] = signature
+
+    return True
 
 
 def _torch_build_is_cuda(name: str) -> bool | None:
@@ -196,7 +243,15 @@ def has_cuda_torch(name: str) -> bool:
         )
     except (OSError, subprocess.SubprocessError):
         return False
-    return completed.returncode == 0
+
+    if completed.returncode != 0:
+        return False
+
+    if signature is not None:
+        with _READY_LOCK:
+            _READY_CACHE[cache_key] = signature
+
+    return True
 
 
 def installed_version(name: str, package: str) -> str:

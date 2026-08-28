@@ -25,7 +25,7 @@ import logging
 import re
 import time
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Iterator, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional
 
 from tools.tool_backend_helpers import resolve_openai_audio_api_key
 from tools.tts_tool import _get_provider, _load_tts_config, get_env_value
@@ -121,6 +121,11 @@ class SentenceChunker:
     #: "uzun cumlelerde speak aloud duzgun calismiyor". Sinir asilinca en son
     #: virgul/noktali virgulden kesiliyor; o da yoksa son bosluktan.
     MAX_BUFFER = 240
+    #: Kapanmayan bir ``<think`` blogu en fazla bu kadar birikebilir. Ustune
+    #: cikarsa kapanis etiketi gelmeyecek demektir ve etiket duz metin
+    #: sayiliyor -- bkz. ``feed``. Sinir MAX_BUFFER'in katlari duzeyinde:
+    #: mesru bir akil yurutme blogu uzun olabilir, ama sinirsiz degil.
+    THINK_MAX_BUFFER: int = 8_000
 
     def __init__(self, min_len: int = 20):
         self.min_len = min_len
@@ -146,11 +151,8 @@ class SentenceChunker:
                 return at + len(mark)
         return 0
 
-    def feed(self, delta: str) -> List[str]:
-        """Absorb *delta*; return every complete sentence now ready to speak."""
-        self.buf = _THINK_BLOCK_RE.sub("", self.buf + delta)
-        if "<think" in self.buf and "</think>" not in self.buf:
-            return []  # open think tag — the closing tag may arrive next delta
+    def _drain(self) -> List[str]:
+        """Tampondan konuşmaya hazır olan her şeyi çıkar."""
         out: List[str] = []
         start = 0  # skip boundaries that would leave the head too short
         while m := SENTENCE_BOUNDARY_RE.search(self.buf, start):
@@ -171,6 +173,42 @@ class SentenceChunker:
             out.append(self.buf[:cut])
             self.spoke = True
             self.buf = self.buf[cut:]
+
+        return out
+
+    def feed(self, delta: str) -> List[str]:
+        """Absorb *delta*; return every complete sentence now ready to speak."""
+        self.buf = _THINK_BLOCK_RE.sub("", self.buf + delta)
+
+        open_at = self.buf.find("<think")
+
+        if open_at == -1 or "</think>" in self.buf:
+            return self._drain()
+
+        # AÇIK bir ``<think`` bloğu. Eski kod burada ``return []`` diyordu ve
+        # iki ayrı kusur üretiyordu:
+        #
+        #   1. Etiketten ÖNCEKİ metin de bekletiliyordu -- oysa o gerçek cevap
+        #      ve hemen konuşulabilir. Modelin "Bir bakayım." deyip ardından
+        #      düşünmeye başladığı her turda o cümle sessizce bekliyordu.
+        #
+        #   2. ``MAX_BUFFER`` muhafızı ATLANIYORDU: erken dönüş onun
+        #      üstündeydi. Kapanış etiketi hiç gelmezse (kesilmiş akış, farklı
+        #      bir kapanış belirteci) tampon sınırsız büyüyor ve tur BOYUNCA
+        #      tam sessizlik oluyordu -- yani tam olarak o muhafızın var olma
+        #      sebebi.
+        head, pending = self.buf[:open_at], self.buf[open_at:]
+
+        if len(pending) >= self.THINK_MAX_BUFFER:
+            # Kapanış gelmeyecek kadar büyüdü. Etiketi DÜZ METİN sayıp normal
+            # bölmeye dönüyoruz: akıl yürütmeyi sesli okumak kötü, ama cevabın
+            # tamamını susturup belleği sınırsız büyütmek daha kötü.
+            return self._drain()
+
+        # Etiketten önceki metni şimdi konuş; düşünme bloğunu bekletmeye devam et.
+        self.buf = head
+        out = self._drain()
+        self.buf += pending
 
         return out
 
@@ -196,6 +234,36 @@ class StreamingTTSProvider(ABC):
     def __init__(self, tts_config: Dict, section: Dict):
         self.tts_config = tts_config
         self.section = section
+        # SDK istemcisi OTURUM basina, cumle basina degil.
+        #
+        # Olculen hata: ``stream()`` her cagrisinda yeni bir istemci
+        # kuruyordu -- yani HER CUMLEDE yeni bir baglanti havuzu, yeni TCP
+        # el sikismasi ve yeni TLS anlasmasi. Tipik bedeli 100-300 ms ve
+        # dogrudan ILK SESE kadar gecen sureye biniyor; ustelik sistemdeki
+        # en dusuk gecikmeli iki saglayicida.
+        #
+        # Ornek ZATEN butun oturum boyunca yasiyor
+        # (``resolve_streaming_provider`` bir kez cagriliyor), yani istemciyi
+        # burada tutmak dogal yer. Kapatma ``close()`` ile.
+        self._client: Any = None
+
+    def close(self) -> None:
+        """Oturum bitti — varsa SDK istemcisini bırak."""
+        client = self._client
+        self._client = None
+
+        if client is None:
+            return
+
+        for method in ("close", "__exit__"):
+            closer = getattr(client, method, None)
+            if closer is None:
+                continue
+            try:
+                closer() if method == "close" else closer(None, None, None)
+            except Exception:  # noqa: BLE001 -- kapatma bir iyilestirme
+                logger.debug("streaming TTS client close failed", exc_info=True)
+            return
 
     @staticmethod
     @abstractmethod
@@ -293,20 +361,29 @@ class ElevenLabsStreamer(StreamingTTSProvider):
             _import_elevenlabs,
         )
 
-        client = _import_elevenlabs()(
-            api_key=_resolve_key("ELEVENLABS_API_KEY", "elevenlabs"),
-            **_elevenlabs_environment_kwargs(self.section),
-        )
+        if self._client is None:
+            self._client = _import_elevenlabs()(
+                api_key=_resolve_key("ELEVENLABS_API_KEY", "elevenlabs"),
+                **_elevenlabs_environment_kwargs(self.section),
+            )
+
+        client = self._client
         voice_id = self.section.get("voice_id", DEFAULT_ELEVENLABS_VOICE_ID)
         model_id = self.section.get(
             "streaming_model_id",
             self.section.get("model_id", DEFAULT_ELEVENLABS_STREAMING_MODEL_ID),
         )
-        yield from client.text_to_speech.convert(
-            text=text,
-            voice_id=voice_id,
-            model_id=model_id,
-            output_format="pcm_24000",
+        # ``_capped``: cumle basina 16 MiB siniri bu modulun belgelenmis
+        # degismezi ama VARSAYILAN akis saglayicisinda uygulanmiyordu --
+        # OpenAI ve Gemini yollarinda vardi, burada yoktu.
+        yield from _capped(
+            client.text_to_speech.convert(
+                text=text,
+                voice_id=voice_id,
+                model_id=model_id,
+                output_format="pcm_24000",
+            ),
+            "ElevenLabs streaming TTS",
         )
 
 
@@ -332,14 +409,17 @@ class OpenAIStreamer(StreamingTTSProvider):
     def stream(self, text: str) -> Iterator[bytes]:
         from openai import OpenAI
 
-        client = OpenAI(
-            api_key=(self.section.get("api_key") or resolve_openai_audio_api_key()),
-            base_url=(
-                self.section.get("base_url")
-                or get_env_value("OPENAI_BASE_URL")
-                or None
-            ),
-        )
+        if self._client is None:
+            self._client = OpenAI(
+                api_key=(self.section.get("api_key") or resolve_openai_audio_api_key()),
+                base_url=(
+                    self.section.get("base_url")
+                    or get_env_value("OPENAI_BASE_URL")
+                    or None
+                ),
+            )
+
+        client = self._client
         model = self.section.get("model", "gpt-4o-mini-tts")
         voice = self.section.get("voice", "alloy")
         with client.audio.speech.with_streaming_response.create(

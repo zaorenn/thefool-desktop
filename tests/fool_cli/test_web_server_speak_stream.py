@@ -204,15 +204,18 @@ def test_no_provider_at_all_still_falls_back_immediately(stream_client, monkeypa
 
 
 def test_local_synthesis_failure_ends_session_CLEANLY_without_start(stream_client, monkeypatch):
-    """Bir cümle patlarsa sunucu ÇÖKMEMELİ, oturumu düzgün bitirmeli.
+    """Bir cümle patlarsa sunucu ÇÖKMEMELİ ve SESSİZLİĞİ SÖYLEMELİ.
 
-    Sunucu tarafında dogru sozlesme "end" gonderip kapanmak -- bu bir
-    protokol hatasi degil, gercekten hicbir sey uretilemedi. Hicbir "start"
-    gelmemis olmasi onemli: istemci taraf bunu ``started`` bayragiyla ayirt
-    edip tam-metin fallback'ine duser (bkz. lib/voice-playback.ts,
-    ``end`` isleyicisi -- once bu senaryoda YANLISLIKLA 'done' donduruyordu,
-    yani sentez patladiginda kullanici HICBIR SEY duymuyor ve fallback da
-    tetiklenmiyordu).
+    Sözleşme GÜÇLENDİRİLDİ: eskiden burada ``end`` bekleniyordu ve gerekçesi
+    "istemci ``started`` bayrağıyla ayırt eder" idi. Doğru ama kırılgan --
+    sunucu "oturum temiz kapandı" derken istemcinin ondan "hiçbir şey
+    duyulmadı" sonucunu ÇIKARMASI gerekiyordu. İki ayrı şeyi tek kareye
+    yüklemek, aradaki farkı her yeni istemcinin yeniden keşfetmesi demek.
+
+    Sunucu artık gerçekten ilettiği baytı sayıyor ve sıfırsa ``fallback``
+    gönderiyor. ``end`` yalnızca ses AKMIŞ bir oturumun kapanışı.
+    ``fallback`` ise doğrudan "hiç ses çıkmadı, metni sen oku" demek --
+    istemcinin zaten uyguladığı davranışın adı konmuş hâli.
     """
 
     def fake_synth(text, output_path=None, provider=None, **kw):
@@ -227,5 +230,68 @@ def test_local_synthesis_failure_ends_session_CLEANLY_without_start(stream_clien
     with stream_client.websocket_connect(_url()) as conn:
         conn.send_text(json.dumps({"text": "This will fail.", "done": True}))
         # "start" hic gelmiyor -- hicbir sentez basarili olmadi. Tek mesaj
-        # "end" olmali, arada ne ikili bir kare ne baska bir sey.
-        assert conn.receive_json() == {"type": "end"}
+        # "fallback" olmali, arada ne ikili bir kare ne baska bir sey.
+        assert conn.receive_json() == {"type": "fallback"}
+
+
+def test_one_failed_sentence_does_not_kill_the_rest_of_the_reply(stream_client, monkeypatch):
+    """Bir cümlenin düşmesi turun GERİ KALANINI öldürmemeli.
+
+    Ölçülen hata
+    ------------
+    ``try/except`` bütün ``for sentence in _sentences()`` döngüsünü sarıyordu.
+    Tek bir geçici hata -- motor süreci boşaltma sırasında toplandı,
+    sağlayıcı bir HTTP 500 döndü, motor bir cümleyi sindiremedi -- kalan
+    BÜTÜN cümlelerin sentezini iptal ediyordu.
+
+    Sessiz sınıfın ders kitabı hâli: ses zaten başlamış olduğu için istemci
+    ``end`` karesini "başarıyla çalındı" diye okuyor. Kullanıcı cevabın ilk
+    yarısını duyuyor, ikinci yarısı hiç konuşulmuyor ve hiçbir yerde hata
+    görünmüyor.
+    """
+
+    calls: list[str] = []
+
+    def flaky_synth(text, output_path=None, provider=None, **kw):
+        calls.append(text)
+        # IKINCI cumle duser; birinci ve ucuncu calisir.
+        if len(calls) == 2:
+            raise RuntimeError("gecici hata")
+        _write_wav(output_path)
+        return json.dumps({"success": True, "file_path": output_path})
+
+    monkeypatch.setattr("tools.tts_streaming.resolve_streaming_provider", lambda cfg: None)
+    monkeypatch.setattr("tools.tts_tool._load_tts_config", lambda: {})
+    monkeypatch.setattr("tools.tts_tool._get_provider", lambda cfg: "kokoro")
+    monkeypatch.setattr("tools.tts_tool._resolve_max_text_length", lambda provider, cfg: 4000)
+    monkeypatch.setattr("tools.tts_tool.text_to_speech_tool", flaky_synth)
+
+    with stream_client.websocket_connect(_url()) as conn:
+        conn.send_text(
+            json.dumps(
+                {
+                    "text": (
+                        "Birinci cumle burada duruyor ve yeterince uzun. "
+                        "Ikinci cumle sentezde dusecek olan cumledir. "
+                        "Ucuncu cumle bundan sonra hala konusulmali."
+                    ),
+                    "done": True,
+                }
+            )
+        )
+
+        assert conn.receive_json() == {"type": "start", "sample_rate": 22050, "channels": 1}
+
+        audio_frames = 0
+        while True:
+            message = conn.receive()
+            if message.get("bytes") is not None:
+                audio_frames += 1
+                continue
+            # Ses AKTI: oturum "end" ile kapaniyor, "fallback" ile degil.
+            assert json.loads(message["text"]) == {"type": "end"}
+            break
+
+    # UC cumlenin ucu de DENENDI -- ikincinin dusmesi ucuncuyu engellemedi.
+    assert len(calls) == 3, calls
+    assert audio_frames >= 1

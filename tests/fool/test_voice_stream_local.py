@@ -157,3 +157,34 @@ def test_duz_yol_donen_eski_bicimle_de_calisiyor(tmp_path, monkeypatch) -> None:
     frames = list(vsl.LocalSentenceStreamer("piper").stream("Merhaba."))
 
     assert frames
+
+
+def test_MP3_donen_saglayicilar_yerel_yola_SOKULMUYOR():
+    """Sınıfın adı "yerel" diyor; kural bunu hiç uygulamıyordu.
+
+    Ölçülen hata: ``usable_local_provider`` boş olmayan ve ``"none"`` olmayan
+    HER adı kabul ediyordu. ``tts.provider: edge`` seçili olduğunda -- ki
+    desteklenen bir sağlayıcı -- bu uç senkron cümle yoluna giriyor,
+    ``_generate_edge_tts`` uzantıya hiç bakmadan ``.wav`` yoluna MP3 baytları
+    yazıyor ve ``wave.open`` "file does not start with RIFF id" ile düşüyor.
+
+    Bedeli iki katmanlı: her cümle bir Microsoft gidiş dönüşü israf ediyor VE
+    istemci yedek yola ancak o gecikmeden sonra düşüyor. Aynı şekil
+    ``minimax`` ve MP3 dönen her sağlayıcı için geçerli.
+    """
+    from fool.voice_stream_local import usable_local_provider
+
+    # WAV ureten YEREL motorlar -- katalogdan turetiliyor.
+    assert usable_local_provider("kokoro") is True
+    assert usable_local_provider("piper") is True
+    # Katalog kimligi de saglayici kimligi de kabul ediliyor.
+    assert usable_local_provider("qwen3") is True
+    assert usable_local_provider("qwen3-tts") is True
+
+    # MP3 donen bulut saglayicilari BU yola girmiyor.
+    assert usable_local_provider("edge") is False
+    assert usable_local_provider("minimax") is False
+
+    # Eski kural korunuyor.
+    assert usable_local_provider("none") is False
+    assert usable_local_provider("") is False

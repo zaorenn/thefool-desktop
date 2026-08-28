@@ -958,3 +958,68 @@ def test_sync_pipeline_cleans_temp_files(monkeypatch):
     assert created, "expected temp files to be created via mkstemp"
     leftovers = [p for p in created if os.path.exists(p)]
     assert not leftovers, f"temp files not cleaned: {leftovers}"
+
+
+# ---------------------------------------------------------------------------
+# Açık ``<think`` bloğu — sessizlik ve sınırsız tampon
+# ---------------------------------------------------------------------------
+
+
+def test_think_etiketinden_ONCEKI_metin_hemen_konusuluyor():
+    """Model "Bir bakayım." deyip düşünmeye başlarsa o cümle beklememeli.
+
+    Eski kod açık bir ``<think`` görünce ``return []`` diyordu -- tamponun
+    TAMAMI için. Etiketten önceki metin gerçek cevap ve konuşulmaya hazır;
+    onu bekletmek modelin düşünmesi kadar süren gereksiz bir sessizlikti.
+    """
+    from tools.tts_streaming import SentenceChunker
+
+    chunker = SentenceChunker()
+
+    out = chunker.feed(
+        "Bir bakayim, bu cumle ilk parca sinirini gecmek icin yeterince uzun. "
+        "<think>simdi dusunuyorum"
+    )
+
+    assert out, "etiketten onceki metin konusulmali"
+    assert "Bir bakayim" in out[0]
+    # Dusunme blogu HALA bekliyor -- sesli okunmuyor.
+    assert "dusunuyorum" not in "".join(out)
+    assert chunker.buf.startswith("<think")
+
+
+def test_KAPANMAYAN_think_blogu_turu_susturmuyor():
+    """Kapanış etiketi hiç gelmezse ne sessizlik ne sınırsız bellek.
+
+    Ölçülen hata: erken dönüş ``MAX_BUFFER`` muhafızının ÜSTÜNDEYDİ -- yani
+    sınırsız birikmeyi durdurmak için var olan tek kural atlanıyordu. Kapanış
+    belirteci gelmeyen bir akışta (kesilmiş yanıt, farklı bir kapanış
+    belirteci) bütün cevap bellekte birikiyor ve tur boyunca hiç ses
+    çıkmıyordu.
+    """
+    from tools.tts_streaming import SentenceChunker
+
+    chunker = SentenceChunker()
+    spoken: list[str] = []
+
+    spoken += chunker.feed("<think>")
+    for _ in range(200):
+        spoken += chunker.feed("bu bir akil yurutme cumlesi ve hic kapanmiyor. ")
+
+    assert spoken, "kapanmayan blok turu tamamen susturmamali"
+    # Tampon SINIRLI: bir kere birakildiktan sonra normal bolme isliyor.
+    assert len(chunker.buf) < chunker.THINK_MAX_BUFFER
+
+
+def test_KAPANAN_think_blogu_hala_sesli_okunmuyor():
+    """Kural korunuyor: düzgün kapanan akıl yürütme sesli okunmaz."""
+    from tools.tts_streaming import SentenceChunker
+
+    chunker = SentenceChunker()
+
+    out = chunker.feed("<think>bunu kimse duymamali</think>")
+    out += chunker.feed("Cevap burada ve yeterince uzun bir cumle olarak yaziliyor. ")
+
+    joined = "".join(out)
+    assert "duymamali" not in joined
+    assert "Cevap burada" in joined

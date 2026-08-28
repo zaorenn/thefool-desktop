@@ -31,7 +31,7 @@ import {
   formatAccelerator,
   toAccelerator
 } from './notch/shortcut-accelerator'
-import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem, type VoiceJob } from './voice-api'
+import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem, type VoiceJob, type VoiceKnob } from './voice-api'
 
 //: Süren bir kurulum varken yoklama aralığı. Saniyede bir, dakikalarca sürebilen
 //: bir iş için fazlasıyla yeterli ve ağ geçidini meşgul etmiyor.
@@ -122,6 +122,7 @@ function VoiceRow({
   onClone,
   onSelect,
   onVoice,
+  onKnob,
   pending
 }: {
   item: VoiceItem
@@ -129,6 +130,7 @@ function VoiceRow({
   onDevice: (id: string, device: 'auto' | 'cpu' | 'cuda') => void
   onSelect: (id: string) => void
   onVoice: (id: string, voice: string) => void
+  onKnob: (entryId: string, knobId: string, value: number) => void
   clones: VoiceClone[]
   onClone: (action: 'select' | 'delete' | 'upload', payload: string | File, entryId: string) => void
   pending: VoiceJob | null
@@ -281,8 +283,17 @@ function VoiceRow({
     />
   )
 
+  const knobs = <KnobSection item={item} onCommit={(knobId, value) => onKnob(item.id, knobId, value)} />
+
   if (!item.installed || !item.clone_capable) {
-    return row
+    return knobs ? (
+      <div>
+        {row}
+        {knobs}
+      </div>
+    ) : (
+      row
+    )
   }
 
   // Klonlama YALNIZCA destekleyen ve KURULU motorlarda. Digerlerine referans
@@ -291,6 +302,7 @@ function VoiceRow({
   return (
     <div>
       {row}
+      {knobs}
       <CloneSection
         clones={clones}
         item={item}
@@ -298,6 +310,83 @@ function VoiceRow({
         onSelect={(entryId, cloneId) => onClone('select', cloneId, entryId)}
         onUpload={file => onClone('upload', file, item.id)}
       />
+    </div>
+  )
+}
+
+
+/**
+ * Motora özel sayılar: yoğunluk, tempo, adım sayısı.
+ *
+ * Bildirilen: "ayarlardan ses modellerinin exaggeration gibi ayarlarını
+ * yapamıyoruz." Değerler ``config.yaml``da duruyordu ve motor onları okuyordu
+ * -- eksik olan yalnızca burasıydı; tek yol dosyayı elle açmaktı.
+ *
+ * Yalnızca KURULU motorlarda: kurulmamış bir motorun tonunu ayarlamak, hiçbir
+ * şeyi ayarlamamak demek.
+ *
+ * Yazma GECİKTİRİLİYOR
+ * --------------------
+ * Bir kaydıraç sürüklenirken onlarca olay üretiyor. Her birinde
+ * yapılandırmaya yazmak, tek bir sürüklemede ``config.yaml``ı elli kez
+ * kaydetmek olurdu. Ekrandaki sayı anında oynuyor (yerel durum), yazma
+ * duraklamayı bekliyor.
+ */
+function KnobSection({ item, onCommit }: { item: VoiceItem; onCommit: (knobId: string, value: number) => void }) {
+  if (!item.installed || item.knobs.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="mt-1 mb-2 flex flex-col gap-2 pl-1">
+      {item.knobs.map(knob => (
+        <KnobRow key={knob.id} knob={knob} onCommit={onCommit} />
+      ))}
+    </div>
+  )
+}
+
+/** Yazmadan önce beklenen duraklama. */
+const KNOB_COMMIT_MS = 400
+
+function KnobRow({ knob, onCommit }: { knob: VoiceKnob; onCommit: (knobId: string, value: number) => void }) {
+  const [value, setValue] = useState(knob.value)
+  // Zamanlayıcı tutacağı -- atom aynası DEĞİL, bu yüzden ref uygun.
+  const timer = useRef<number | undefined>(undefined)
+
+  // Sunucudan gelen değer değiştiğinde (profil değişimi, dışarıdan düzenleme)
+  // kaydıraç ona uyuyor. Sürükleme sırasında bu tetiklenmiyor: katalog knob
+  // yazımından SONRA yeniden çekilmiyor, tam da bunun için.
+  useEffect(() => {
+    setValue(knob.value)
+  }, [knob.value])
+
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  const change = (next: number) => {
+    setValue(next)
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => onCommit(knob.id, next), KNOB_COMMIT_MS)
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-2">
+        <span className="w-24 shrink-0 text-[0.66rem] text-muted-foreground">{knob.label}</span>
+        <input
+          className="h-1 min-w-0 flex-1 accent-(--theme-accent)"
+          max={knob.max}
+          min={knob.min}
+          onChange={event => change(Number(event.target.value))}
+          step={knob.step}
+          type="range"
+          value={value}
+        />
+        <span className="w-8 shrink-0 text-right font-mono text-[0.62rem] text-muted-foreground">
+          {knob.step >= 1 ? value.toFixed(0) : value.toFixed(2)}
+        </span>
+      </div>
+      {knob.help && <p className="pl-26 text-[0.62rem] leading-snug text-muted-foreground/70">{knob.help}</p>}
     </div>
   )
 }
@@ -810,6 +899,17 @@ export function VoiceSettings() {
     }
   }, [])
 
+  const setKnob = useCallback(async (entryId: string, knobId: string, value: number) => {
+    try {
+      await voiceApi.setKnob(entryId, knobId, value)
+    } catch (error) {
+      // Katalog YENIDEN CEKILMIYOR (basarida da): tam bir katalog kurulumu
+      // saniyeler suruyor ve kaydiracin altindaki degeri kullanici hala
+      // surukluyorken degistirirdi. Yazilan deger zaten ekranda duruyor.
+      notifyError(error, 'Could not change that setting')
+    }
+  }, [])
+
   const install = useCallback(async (id: string, device: 'cpu' | 'cuda') => {
     try {
       const job = await voiceApi.install(id, device)
@@ -853,7 +953,7 @@ export function VoiceSettings() {
           </div>
         )}
         {tts.map(item => (
-          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
+          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onKnob={setKnob} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}
       </SettingsSection>
 
@@ -864,7 +964,7 @@ export function VoiceSettings() {
 
       <SettingsSection icon={Mic} title="Speech to text">
         {stt.map(item => (
-          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
+          <VoiceRow clones={clones} item={item} key={item.id} onClone={onClone} onDevice={setDevice} onInstall={install} onKnob={setKnob} onSelect={select} onVoice={setVoice} pending={jobs[item.id] ?? null} />
         ))}
       </SettingsSection>
 

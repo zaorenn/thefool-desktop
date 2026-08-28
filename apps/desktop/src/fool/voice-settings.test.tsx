@@ -14,6 +14,7 @@ import type { VoiceCatalog, VoiceItem, VoiceJob } from './voice-api'
 const catalog = vi.fn()
 const install = vi.fn()
 const job = vi.fn()
+const setKnob = vi.fn(() => Promise.resolve({ ok: true }))
 
 vi.mock('./voice-api', () => ({
   voiceApi: {
@@ -23,6 +24,7 @@ vi.mock('./voice-api', () => ({
     job: (...args: unknown[]) => job(...args),
     setDevice: (...args: unknown[]) => Promise.resolve({ ok: true }),
     setVoice: (...args: unknown[]) => Promise.resolve({ ok: true }),
+    setKnob: (...args: unknown[]) => setKnob(...args),
     clones: () => Promise.resolve({ clones: [] }),
     installCuda: () => Promise.resolve({}),
     uploadClone: () => Promise.resolve({ id: 'x', label: 'x' }),
@@ -53,6 +55,7 @@ function item(overrides: Partial<VoiceItem> = {}): VoiceItem {
     usable: true,
     cpu_warning: '',
     voice: '',
+    knobs: [],
     voices: [],
     clone_capable: false,
     cuda_ready: false,
@@ -365,5 +368,95 @@ describe('VoiceSettings', () => {
       expect(clickSpy).not.toHaveBeenCalled()
       clickSpy.mockRestore()
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Motora ozel sayilar
+//
+// Bildirilen: "ayarlardan ses modellerinin exaggeration gibi ayarlarini
+// yapamiyoruz." Degerler yapilandirmada duruyordu ve motor onlari okuyordu;
+// eksik olan YALNIZCA bu yuzeydi.
+// ---------------------------------------------------------------------------
+
+const INTENSITY = {
+  id: 'exaggeration',
+  label: 'Intensity',
+  min: 0.25,
+  max: 2,
+  step: 0.05,
+  default: 0.5,
+  help: 'How much feeling goes into a line.',
+  value: 0.7
+}
+
+describe('motor ayarlari', () => {
+  it('kurulu motorun kaydiraci GORUNUYOR, degeriyle', async () => {
+    catalog.mockResolvedValue(reply([item({ installed: true, knobs: [INTENSITY] })]))
+
+    render(<VoiceSettings />)
+
+    expect(await screen.findByText('Intensity')).toBeTruthy()
+    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('0.7')
+  })
+
+  it('KURULU OLMAYAN motorda cikmiyor', async () => {
+    // Kurulmamis bir motorun tonunu ayarlamak, hicbir seyi ayarlamamak.
+    catalog.mockResolvedValue(
+      reply([item({ engine_installed: false, installed: false, knobs: [INTENSITY] })])
+    )
+
+    render(<VoiceSettings />)
+
+    await screen.findByText('Piper')
+    expect(screen.queryByRole('slider')).toBeNull()
+  })
+
+  it('kolu OLMAYAN motorda bos alan birakmiyor', async () => {
+    catalog.mockResolvedValue(reply([item({ installed: true, knobs: [] })]))
+
+    render(<VoiceSettings />)
+
+    await screen.findByText('Piper')
+    expect(screen.queryByRole('slider')).toBeNull()
+  })
+
+  it('surukleme sirasinda YAZMIYOR, duraklayinca yaziyor', async () => {
+    // Bir kaydirac surukleninken onlarca olay uretiyor; her birinde
+    // yapilandirmaya yazmak tek surukleyisde elli kayit demekti.
+    vi.useFakeTimers()
+
+    try {
+      catalog.mockResolvedValue(reply([item({ installed: true, knobs: [INTENSITY] })]))
+
+      render(<VoiceSettings />)
+
+      await vi.waitFor(() => expect(screen.queryByRole('slider')).toBeTruthy())
+
+      const slider = screen.getByRole('slider')
+
+      fireEvent.change(slider, { target: { value: '0.9' } })
+      fireEvent.change(slider, { target: { value: '1.1' } })
+      fireEvent.change(slider, { target: { value: '1.25' } })
+
+      // Ekrandaki sayi ANINDA oynuyor.
+      expect((slider as HTMLInputElement).value).toBe('1.25')
+      expect(setKnob).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(setKnob).toHaveBeenCalledTimes(1)
+      expect(setKnob).toHaveBeenCalledWith('piper', 'exaggeration', 1.25)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('yardim metni gorunuyor -- sayinin kendisi hicbir sey anlatmiyor', async () => {
+    catalog.mockResolvedValue(reply([item({ installed: true, knobs: [INTENSITY] })]))
+
+    render(<VoiceSettings />)
+
+    expect(await screen.findByText('How much feeling goes into a line.')).toBeTruthy()
   })
 })

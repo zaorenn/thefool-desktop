@@ -26,6 +26,26 @@ export interface VoiceJob {
   state: 'running' | 'done' | 'failed' | 'cancelled'
 }
 
+/**
+ * Motora ozel, ayarlanabilir tek bir sayi.
+ *
+ * Bildirilen: "ayarlardan ses modellerinin exaggeration gibi ayarlarini
+ * yapamiyoruz." Degerler yapilandirmada duruyordu ve motor onlari okuyordu;
+ * eksik olan YALNIZCA arayuz yoluydu.
+ */
+export interface VoiceKnob {
+  id: string
+  label: string
+  min: number
+  max: number
+  step: number
+  default: number
+  /** Sayinin kendisi hicbir sey anlatmiyor; NE YAPTIGI. */
+  help: string
+  /** Motorun SU AN kullandigi deger (ayarli degilse varsayilan). */
+  value: number
+}
+
 export interface VoiceItem {
   /** Su an SECILI olan saglayici mi? */
   active: boolean
@@ -35,6 +55,8 @@ export interface VoiceItem {
   voice: string
   /** Bu motorun secilebilir sesleri. */
   voices: { id: string; label: string }[]
+  /** Bu motorun ayarlanabilir sayilari (bos = yok). */
+  knobs: VoiceKnob[]
   /** Motor GERCEKTEN CUDA calistirabiliyor mu? Yapilandirmada "cuda"
    *  yazmasindan AYRI: calisma zamani eksikse sessizce CPU'ya duser. */
   cuda_ready: boolean
@@ -167,6 +189,12 @@ export const voiceApi = {
     call<{ ok: boolean }>('/api/fool/voice/device', { device, entry_id: entryId }),
   setVoice: (entryId: string, voice: string) =>
     call<{ ok: boolean }>('/api/fool/voice/voice', { entry_id: entryId, voice }),
+  setKnob: (entryId: string, knobId: string, value: number) =>
+    call<{ ok: boolean; id: string; value: number }>('/api/fool/voice/knob', {
+      entry_id: entryId,
+      knob_id: knobId,
+      value
+    }),
   installCuda: (entryId: string) => call<VoiceJob>('/api/fool/voice/cuda', { entry_id: entryId }),
   /** Konusma tanima modelini arka planda yukle. Sesli oturum ACILDIGI anda
    *  cagriliyor: olculdu, isitmasiz ilk transkripsiyon 6,94 sn, isitilmis

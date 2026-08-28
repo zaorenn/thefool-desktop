@@ -67,6 +67,12 @@ class VoiceBody(BaseModel):
     voice: str
 
 
+class KnobBody(BaseModel):
+    entry_id: str
+    knob_id: str
+    value: float
+
+
 class CloneUploadBody(BaseModel):
     filename: str
     #: base64 gövde. Dosya köprüden geçtiği için ham bayt taşınamıyor.
@@ -275,6 +281,22 @@ async def voice_device(body: DeviceBody) -> dict[str, Any]:
 async def voice_set_voice(body: VoiceBody) -> dict[str, Any]:
     try:
         return await asyncio.to_thread(voice_models.set_voice, body.entry_id, body.voice)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/api/fool/voice/knob")
+async def voice_set_knob(body: KnobBody) -> dict[str, Any]:
+    """Motora ozel bir sayiyi ayarla (yogunluk, tempo, adim sayisi...).
+
+    Bu ucun var olma sebebi: degerler yapilandirmada duruyor ve motor onlari
+    okuyor, ama arayuzde hicbir yerde gorunmuyorlardi -- tek yol dosyayi elle
+    acmakti.
+    """
+    try:
+        return await asyncio.to_thread(
+            voice_models.set_knob, body.entry_id, body.knob_id, body.value
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

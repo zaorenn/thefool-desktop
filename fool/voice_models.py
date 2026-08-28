@@ -67,6 +67,40 @@ CudaProbe = Literal["ctranslate2", "onnxruntime", "torch"]
 
 
 @dataclass(frozen=True)
+class VoiceKnob:
+    """Motorun KENDİ ad alanından okuduğu, ayarlanabilir tek bir sayı.
+
+    Neden katalogda
+    ---------------
+    Kullanıcı "ayarlardan ses modellerinin exaggeration gibi ayarlarını
+    yapamıyoruz" dedi ve haklıydı: bu değerler ``config.yaml``da duruyor,
+    motor onları okuyor, ama arayüzde hiçbir yerde görünmüyorlardı. Tek yolu
+    dosyayı elle açmaktı.
+
+    Kolları burada tutmanın sebebi, panelin YALAN SÖYLEMEMESİ. Arayüze elle
+    kaydırıcı koymak, motorun gerçekten okumadığı bir değeri ayarlıyormuş gibi
+    göstermeye çok açık -- ölçülmüş bir hata sınıfı: ``tts.<motor>.voice``
+    yıllarca yazılıyor ve hiç okunmuyordu. Kol katalogda, motorun kaydının
+    yanında duruyor; kimse okumuyorsa kayıt da yok.
+
+    Kapsam DAR: yalnızca motorun ``config["<motor>"]`` sözlüğünden okuduğu
+    değerler. Üst seviye ``tts.speed`` burada YOK, çünkü o motora değil bütün
+    motorlara ait ve motor başına gösterilseydi her birinde ayrı sanılırdı.
+    """
+
+    #: Yapılandırma anahtarı: ``tts.<motor>.<id>``.
+    id: str
+    label: str
+    minimum: float
+    maximum: float
+    step: float
+    #: Ayarlanmamışken motorun kullandığı değer.
+    default: float
+    #: Kullanıcı diliyle NE YAPTIĞI -- sayının kendisi hiçbir şey anlatmıyor.
+    help: str = ""
+
+
+@dataclass(frozen=True)
 class VoiceEntry:
     """Katalogda tek bir kurulabilir öğe."""
 
@@ -176,6 +210,8 @@ class VoiceEntry:
     #: sesleri ayri ayri INEN dosyalar oldugu icin listesi diskten uretiliyor:
     #: inmemis bir sesi sunmak, secildiginde calisma aninda patlardi.
     voices: tuple[tuple[str, str], ...] = ()
+    #: Bu motorun ayarlanabilir sayıları (bkz. ``VoiceKnob``).
+    knobs: tuple[VoiceKnob, ...] = ()
     assets: tuple[VoiceAsset, ...] = ()
     #: Yaklaşık toplam indirme boyutu, kullanıcıya gösterilir.
     size_label: str = ""
@@ -259,6 +295,26 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
             "instead of drifting. English."
         ),
         provider_id="styletts2",
+        knobs=(
+            VoiceKnob(
+                id="expressiveness",
+                label="Expressiveness",
+                minimum=0.0,
+                maximum=1.0,
+                step=0.05,
+                default=0.3,
+                help="How much the reference voice's style carries into the reading.",
+            ),
+            VoiceKnob(
+                id="diffusion_steps",
+                label="Quality steps",
+                minimum=3,
+                maximum=20,
+                step=1,
+                default=5,
+                help="More steps sound better and take longer, per sentence.",
+            ),
+        ),
         probe_module="styletts2",
         # Kendi ortamina SART: paketin pinleri 2024'ten ve sert --
         # ``huggingface-hub<0.20``, ``accelerate<0.26``, ``langchain<0.2``,
@@ -325,6 +381,17 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
             "matching, so it is fast for what it does. English."
         ),
         provider_id="f5tts",
+        knobs=(
+            VoiceKnob(
+                id="nfe_step",
+                label="Quality steps",
+                minimum=8,
+                maximum=48,
+                step=1,
+                default=32,
+                help="More steps sound better and take longer, per sentence.",
+            ),
+        ),
         probe_module="f5_tts",
         # Olculdu (bu makine): ``import torchcodec`` -> OSError, cunku
         # torchcodec 0.15.0'in libtorchcodec_core4..8.dll'lerinin her biri
@@ -351,6 +418,39 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
     ),
     VoiceEntry(
         id="chatterbox",
+        # Iki kol da ISTEK BASINA da geciliyor (bkz. ``fool/voice_emotion.py``):
+        # model bir cumleyi ``[laughing]`` diye acarsa o cumle icin buradaki
+        # deger yerine etiketin degeri kullaniliyor. Yani bu ayar TABAN ton --
+        # yardim metni bunu soyluyor, cunku "ayarladigim deger neden hep
+        # tutmuyor" tam olarak burada sorulur.
+        knobs=(
+            VoiceKnob(
+                id="exaggeration",
+                label="Intensity",
+                minimum=0.25,
+                maximum=2.0,
+                step=0.05,
+                default=0.5,
+                help=(
+                    "How much feeling goes into a line. Higher is more "
+                    "dramatic, and also a little faster. This is the baseline; "
+                    "a single line can still be delivered differently."
+                ),
+            ),
+            VoiceKnob(
+                id="cfg_weight",
+                label="Pace",
+                minimum=0.2,
+                maximum=1.0,
+                step=0.05,
+                default=0.5,
+                help=(
+                    "Lower is slower and heavier, higher is tighter and "
+                    "quicker. Pair a low value with high intensity for a "
+                    "voice that lingers."
+                ),
+            ),
+        ),
         weights_repo="ResembleAI/chatterbox",
         label="Chatterbox",
         kind="tts",
@@ -1138,7 +1238,92 @@ def _catalog_row(e: VoiceEntry, active: dict[str, str]) -> dict[str, Any]:
     row["clone_help"] = CLONE_HELP.get(e.provider_id or e.id, "") if row["clone_capable"] else ""
     row["voices"] = available_voices(e) if e.kind == "tts" else []
     row["voice"] = current_voice(e) if e.kind == "tts" else ""
+    row["knobs"] = knob_status(e)
     return row
+
+
+def knob_status(e: VoiceEntry) -> list[dict[str, Any]]:
+    """Motorun kollari + O ANKI degerleri.
+
+    Deger yapilandirmada YOKSA katalogdaki varsayilan doniyor -- yani panel
+    hep motorun gercekten kullanacagi sayiyi gosteriyor. Bos gostermek,
+    kullaniciya "ayarli degil" dedirtirdi; oysa motorun bir varsayilani var ve
+    kaydiraci oynatmak o degeri hicbir yerde gormeden degistirmek olurdu.
+    """
+    if not e.knobs:
+        return []
+
+    provider = e.provider_id or e.id
+
+    try:
+        from fool_cli.config import load_config_readonly
+
+        node = ((load_config_readonly().get("tts") or {}).get(provider) or {})
+    except Exception:  # noqa: BLE001
+        node = {}
+
+    rows: list[dict[str, Any]] = []
+
+    for knob in e.knobs:
+        raw = node.get(knob.id) if isinstance(node, dict) else None
+        value = knob.default
+
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+            value = float(raw)
+        elif isinstance(raw, str) and raw.strip():
+            try:
+                value = float(raw)
+            except ValueError:
+                value = knob.default
+
+        rows.append(
+            {
+                "id": knob.id,
+                "label": knob.label,
+                "min": knob.minimum,
+                "max": knob.maximum,
+                "step": knob.step,
+                "default": knob.default,
+                "help": knob.help,
+                "value": round(_clamp_knob(knob, value), 4),
+            }
+        )
+
+    return rows
+
+
+def _clamp_knob(knob: VoiceKnob, value: float) -> float:
+    return max(knob.minimum, min(knob.maximum, value))
+
+
+def set_knob(entry_id: str, knob_id: str, value: float) -> dict[str, Any]:
+    """Bir kolu ayarla.
+
+    Deger KIRPILIYOR, reddedilmiyor: aralik disi bir sayi cogu motorda
+    sessizce bozuk ses veriyor (Chatterbox'ta ``cfg_weight=0`` konusmayi
+    tamamen durduruyor) ve panelin kaydiraci zaten araligi biliyor. Buraya
+    aralik disi bir deger yalnizca elle bir cagriyla gelebilir.
+    """
+    e = entry(entry_id)
+
+    if e is None:
+        raise ValueError(f"bilinmeyen oge: {entry_id}")
+
+    knob = next((k for k in e.knobs if k.id == knob_id), None)
+
+    if knob is None:
+        raise ValueError(f"{e.label} icin bilinmeyen ayar: {knob_id}")
+
+    clamped = _clamp_knob(knob, float(value))
+    # Tamsayi kollar (adim sayilari) yapilandirmaya TAMSAYI yaziliyor: motor
+    # ``range(5.0)`` ile patlar.
+    stored: float | int = int(round(clamped)) if float(knob.step).is_integer() else round(clamped, 4)
+
+    from fool_cli.config import set_config_value
+
+    set_config_value(f"tts.{e.provider_id or e.id}.{knob.id}", stored)
+
+    return {"ok": True, "id": knob.id, "value": stored}
 
 
 def visible_catalog() -> list[VoiceEntry]:

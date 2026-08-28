@@ -44,15 +44,30 @@ DEFAULT_CFG_WEIGHT = 0.5
 
 @dataclass(frozen=True)
 class Delivery:
-    """Bir cümlenin nasıl söyleneceği."""
+    """Bir cümlenin nasıl söyleneceği.
+
+    İki sayı ve bir AD taşıyor çünkü motorlar duyguyu aynı dilde konuşmuyor.
+    Chatterbox iki kol veriyor (yoğunluk ve tempo); başka motorlar adlandırılmış
+    duygular istiyor. Etiketin kendi adını da taşımak, her motorun anladığını
+    almasını sağlıyor ve anlamadığını sessizce yok saymasına izin veriyor --
+    ikisini birbirine çevirmeye çalışmaktan iyi.
+    """
 
     #: Duygu yoğunluğu (0.25-2.0).
     exaggeration: float
     #: İfade/hız dengesi. DÜŞÜK = ağır ve yavaş, YÜKSEK = sıkı ve hızlı.
     cfg_weight: float
+    #: Etiketin kendi adı (``warm``, ``laughing``...). ``as_config`` sonradan
+    #: dolduruyor -- sözlükteki anahtar zaten bu.
+    name: str = ""
 
     def as_config(self) -> dict:
-        return {"exaggeration": self.exaggeration, "cfg_weight": self.cfg_weight}
+        config = {"exaggeration": self.exaggeration, "cfg_weight": self.cfg_weight}
+
+        if self.name:
+            config["emotion"] = self.name
+
+        return config
 
 
 #: Etiket -> teslimat.
@@ -63,26 +78,26 @@ class Delivery:
 #: birlikte oynatılıyor -- tek başına exaggeration yükseltmek, bağıran ve
 #: aceleci bir ses veriyor.
 DELIVERIES: dict[str, Delivery] = {
-    "neutral": Delivery(0.5, 0.5),
+    "neutral": Delivery(0.5, 0.5, "neutral"),
     # Sıcak: biraz daha ifadeli, belirgin biçimde daha yavaş.
-    "warm": Delivery(0.6, 0.40),
-    "affectionate": Delivery(0.65, 0.35),
-    "soft": Delivery(0.40, 0.30),
+    "warm": Delivery(0.6, 0.40, "warm"),
+    "affectionate": Delivery(0.65, 0.35, "affectionate"),
+    "soft": Delivery(0.40, 0.30, "soft"),
     # Gülme ENERJİK: yoğunluk yüksek ve tempo da yüksek.
-    "amused": Delivery(0.85, 0.55),
-    "laughing": Delivery(1.10, 0.60),
-    "teasing": Delivery(0.75, 0.45),
-    "excited": Delivery(1.00, 0.60),
-    "playful": Delivery(0.80, 0.55),
+    "amused": Delivery(0.85, 0.55, "amused"),
+    "laughing": Delivery(1.10, 0.60, "laughing"),
+    "teasing": Delivery(0.75, 0.45, "teasing"),
+    "excited": Delivery(1.00, 0.60, "excited"),
+    "playful": Delivery(0.80, 0.55, "playful"),
     # Soğuk: düz ve ağır. Düşük yoğunluk + düşük cfg.
-    "cold": Delivery(0.30, 0.35),
-    "flat": Delivery(0.25, 0.40),
-    "hurt": Delivery(0.45, 0.30),
-    "sad": Delivery(0.40, 0.28),
-    "annoyed": Delivery(0.80, 0.50),
-    "angry": Delivery(1.15, 0.60),
-    "serious": Delivery(0.40, 0.45),
-    "sleepy": Delivery(0.30, 0.28),
+    "cold": Delivery(0.30, 0.35, "cold"),
+    "flat": Delivery(0.25, 0.40, "flat"),
+    "hurt": Delivery(0.45, 0.30, "hurt"),
+    "sad": Delivery(0.40, 0.28, "sad"),
+    "annoyed": Delivery(0.80, 0.50, "annoyed"),
+    "angry": Delivery(1.15, 0.60, "angry"),
+    "serious": Delivery(0.40, 0.45, "serious"),
+    "sleepy": Delivery(0.30, 0.28, "sleepy"),
 }
 
 #: Etiket, metnin EN BAŞINDA ve sözlükte olmak zorunda.

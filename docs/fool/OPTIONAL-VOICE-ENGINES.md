@@ -84,14 +84,38 @@ huggingface-cli download IndexTeam/IndexTTS-2 --local-dir "$FOOL_HOME/voices/ind
 
 ### 4. Add the provider plugin
 
-TTS engines plug in through `plugins/tts/fool-<name>/__init__.py`. Copy
-`plugins/tts/fool-chatterbox/` as your starting point — it is the closest
-match, since both clone from a reference clip — and change three things:
+Write it to `$FOOL_HOME/plugins/fool-indextts2/`, **not** into this repository —
+user plugins are discovered from there, and keeping it outside the tree is what
+keeps the engine out of a distributed build.
 
-- `SIDECAR_NAME` to `"indextts2"`,
-- the import probe to `indextts`,
-- the synthesis call to `IndexTTS2.infer(...)`, passing `spk_audio_prompt` for
-  the cloned voice and `emo_vector` for the mood.
+Two files. `plugin.yaml`:
+
+```yaml
+name: fool-indextts2
+version: 1.0.0
+kind: backend
+provides_tts_providers:
+  - indextts2
+```
+
+And `__init__.py`, for which `plugins/tts/fool-chatterbox/__init__.py` is the
+closest starting point — both clone from a reference clip, so the shape is the
+same. Four things change:
+
+- `SIDECAR_NAME` becomes `"indextts2"`,
+- the readiness probe imports `indextts`,
+- synthesis calls `IndexTTS2.infer(spk_audio_prompt=…, text=…, output_path=…,
+  emo_vector=…)`,
+- there is no default voice, so a missing `voice_sample` must raise rather than
+  fall through — the engine cannot speak without a reference clip and silence
+  with no explanation is the worst outcome.
+
+Two details are easy to get wrong quietly. Load the model with
+`use_qwen_emo=False` unless you want its text-to-emotion model on the same card;
+the delivery tag already carries the mood. And pass the device preference
+through **raw** rather than resolving it in the main process — the agent's
+environment has no CUDA-enabled torch, so every `cuda.is_available()` asked
+there answers `False` and a user who picked CUDA silently runs on CPU.
 
 The emotion vector is eight floats in this order:
 
@@ -99,12 +123,16 @@ The emotion vector is eight floats in this order:
 [happy, angry, sad, afraid, disgusted, melancholic, surprised, calm]
 ```
 
-`emo_alpha` (0.0–1.0) scales the whole thing. This is the part that Chatterbox
-cannot do: the vector changes per utterance while `spk_audio_prompt` keeps the
-voice constant.
+(Confirmed against `indextts/infer_v2.py::normalize_emo_vec`, which also caps
+the sum at 0.8.) `emo_alpha` (0.0–1.0) scales the whole thing. This is the part
+Chatterbox cannot do: the vector changes per utterance while `spk_audio_prompt`
+keeps the voice constant.
 
-User-installed plugins are also read from `$FOOL_HOME/plugins/`, so you can keep
-yours out of the repository entirely.
+Per-sentence delivery reaches the plugin as `tts.indextts2.emotion` — one of the
+tag names in `fool/voice_emotion.py`, written per request rather than stored.
+Map the names you care about to vectors and ignore the rest; an unrecognised
+name should send **no** vector at all, so the fallback is the reference clip's
+own tone rather than a wrong emotion.
 
 ### 5. Select it
 
@@ -113,12 +141,19 @@ tts:
   provider: indextts2
   indextts2:
     device: cuda
-    reference: ~/.fool/voices/clones/your-voice.wav
+    voice_sample: ~/.fool/voices/clones/your-voice.wav
+    emo_alpha: 0.9
 ```
 
 Remember that voice settings are **per profile**. Selecting an engine while the
 `girlfriend` profile is active writes to that profile's `config.yaml`, not the
-main one.
+main one — and user plugins are read from the *active profile's* directory too,
+so the plugin folder has to exist under each profile that uses the engine.
+
+Sentence-by-sentence streaming works for it without any extra step: the check
+that decides which engines can be streamed reads the plugin registry as well as
+the built-in catalogue, precisely so an engine that cannot ship is not quietly
+demoted to the slow whole-reply path.
 
 ---
 
@@ -137,7 +172,8 @@ main one.
 Chatterbox is the default recommendation for a character voice: it clones from
 about ten seconds of clean audio and its `exaggeration` / `cfg_weight` pair can
 be varied per call, which is enough to shift delivery with the situation even
-though it has no inline emotion tags.
+though it has no inline emotion tags. Both knobs are editable in
+**Settings → Voice**, under the engine.
 
 ### A note on laughter
 

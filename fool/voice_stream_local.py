@@ -62,24 +62,44 @@ from typing import Any, Iterator, Optional
 
 
 def _wav_capable_providers() -> frozenset[str]:
-    """WAV üreten YEREL motorlar -- katalogdan türetiliyor, elle yazılmıyor.
+    """WAV üreten YEREL motorlar -- türetiliyor, elle yazılmıyor.
 
-    Katalog tek kaynak: yeni bir yerel motor eklendiğinde burası kendiliğinden
-    öğreniyor. Katalog okunamazsa boş küme dönüyor ve çağıran senkron yolu hiç
-    denemiyor -- yani en kötü hâl eski (yavaş ama çalışan) tam-metin yolu.
+    İki kaynak, ve ikincisi sonradan eklendi:
+
+    1. **Katalog.** Uygulamayla gelen her yerel motor orada duruyor, yani yeni
+       bir motor eklendiğinde burası kendiliğinden öğreniyor.
+
+    2. **Kayıtlı TTS eklentileri.** Bazı motorlar katalogda OLAMIYOR: lisansı
+       dağıtıma izin vermeyen bir motoru kullanıcı kendi eklenti klasörüne
+       kurabiliyor (bkz. ``docs/fool/OPTIONAL-VOICE-ENGINES.md``). Yalnızca
+       kataloğa bakmak, o motorda cümle-cümle akışı SESSİZCE kapatıyordu --
+       kullanıcı yalnızca "ses geç başlıyor" görürdü ve sebebi hiçbir yerde
+       yazmazdı. Eklenti sağlayıcı sözleşmesi zaten WAV yazıyor.
+
+    İkisi de okunamazsa boş küme dönüyor ve çağıran senkron yolu hiç denemiyor
+    -- yani en kötü hâl eski (yavaş ama çalışan) tam-metin yolu.
     """
+    names: set[str] = set()
+
     try:
         from fool import voice_models
 
-        names: set[str] = set()
         for entry in voice_models.CATALOG:
             if entry.kind != "tts":
                 continue
             names.add((entry.provider_id or entry.id).strip().lower())
             names.add(entry.id.strip().lower())
-        return frozenset(names)
     except Exception:  # noqa: BLE001
-        return frozenset()
+        pass
+
+    try:
+        from agent.tts_registry import list_providers
+
+        names.update(provider.name.strip().lower() for provider in list_providers())
+    except Exception:  # noqa: BLE001
+        pass
+
+    return frozenset(names)
 
 
 def usable_local_provider(provider: str) -> bool:

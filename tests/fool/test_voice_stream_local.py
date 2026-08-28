@@ -188,3 +188,35 @@ def test_MP3_donen_saglayicilar_yerel_yola_SOKULMUYOR():
     # Eski kural korunuyor.
     assert usable_local_provider("none") is False
     assert usable_local_provider("") is False
+
+
+# ---------------------------------------------------------------------------
+# Katalogda OLMAYAN, yerel kurulmuş motorlar
+# ---------------------------------------------------------------------------
+
+
+def test_kayitli_EKLENTI_motoru_da_akisa_giriyor(monkeypatch) -> None:
+    """Lisansı dağıtıma izin vermeyen bir motor katalogda OLAMIYOR ama
+    kullanıcı kendi eklenti klasörüne kurabiliyor. Yalnızca kataloğa bakmak,
+    o motorda cümle-cümle akışı SESSİZCE kapatıyordu -- kullanıcı yalnızca
+    "ses geç başlıyor" görür ve sebebi hiçbir yerde yazmazdı."""
+    from fool import voice_stream_local
+
+    class _Fake:
+        name = "indextts2"
+
+    monkeypatch.setattr(
+        "agent.tts_registry.list_providers", lambda *a, **k: [_Fake()], raising=False
+    )
+
+    assert voice_stream_local.usable_local_provider("indextts2") is True
+
+
+def test_kayitta_olmayan_ad_hala_REDDEDILIYOR(monkeypatch) -> None:
+    from fool import voice_stream_local
+
+    monkeypatch.setattr(
+        "agent.tts_registry.list_providers", lambda *a, **k: [], raising=False
+    )
+
+    assert voice_stream_local.usable_local_provider("edge") is False

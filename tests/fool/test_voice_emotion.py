@@ -121,6 +121,20 @@ def test_teslimat_motorun_bekledigi_ANAHTARLARI_veriyor() -> None:
     assert config == {"exaggeration": 0.7, "cfg_weight": 0.3}
 
 
+def test_etiketin_ADI_da_tasiniyor() -> None:
+    """Motorlar duyguyu aynı dilde konuşmuyor: kimi iki kol istiyor, kimi
+    adlandırılmış bir duygu. Adı da taşımak, her motorun anladığını almasını
+    ve anlamadığını sessizce yok saymasını sağlıyor."""
+    config = DELIVERIES["laughing"].as_config()
+
+    assert config["emotion"] == "laughing"
+
+
+@pytest.mark.parametrize("name", sorted(DELIVERIES))
+def test_her_teslimat_KENDI_adini_biliyor(name: str) -> None:
+    assert DELIVERIES[name].name == name
+
+
 # ---------------------------------------------------------------------------
 # Modele söylenen
 # ---------------------------------------------------------------------------

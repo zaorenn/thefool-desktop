@@ -30,15 +30,20 @@ describe('eslik kipi yapi bayragi', () => {
     expect(PUBLISHED).toBe(false)
   })
 
-  it('takas vite yapilandirmasinda DURUYOR', () => {
-    expect(VITE_CONFIG).toContain("'@/fool/companion/build-flag': companionEntry(")
+  it('takas MODUL duzeyinde, bayrak duzeyinde DEGIL', () => {
+    // Olculen hata: yalnizca sabit takas edilince bilesenin govdesi pakette
+    // kaliyordu -- ozellik calismiyor ama metinleri (``Not met yet``,
+    // ``thing unresolved``) paketin icinde aranabiliyordu. "Calismiyor" ile
+    // "yok" ayni sey degil.
+    expect(VITE_CONFIG).toContain("'@/fool/relationship-bar': companionModule(")
+    expect(VITE_CONFIG).toContain("'@/fool/use-persona-greeting': companionModule(")
   })
 
   it('takas yalnizca gelistirmede ve ACIKCA istendiginde gercek dosyayi veriyor', () => {
     // ``command === 'serve'`` gelistirme; ``VITE_COMPANION=1`` bilerek istenen
-    // yapi. Baska hicbir yol gercek bayragi pakete sokmamali.
+    // yapi. Baska hicbir yol eslik kipini pakete sokmamali.
     expect(VITE_CONFIG).toContain("command === 'serve' || env.VITE_COMPANION === '1'")
-    expect(VITE_CONFIG).toContain('build-flag.noop.ts')
+    expect(VITE_CONFIG).toContain(".noop'")
   })
 
   it('iki dosya AYNI adi disa aciyor', () => {

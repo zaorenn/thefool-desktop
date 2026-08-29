@@ -1,9 +1,10 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import path from 'path'
 import fs from 'fs'
 import { createRequire } from 'module'
+import path from 'path'
+
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
 
 // `hgui` symlinks a worktree's node_modules to the main checkout. Vite realpaths
 // those before enforcing server.fs.allow, so codicon/font assets resolve outside
@@ -59,10 +60,20 @@ const debugEntry = (command: string, env: Record<string, string>) =>
 // elle duzenlemek bile geri getirmiyor.
 //
 // Yerel calistirma (``vite dev``) ve acikca istenen bir yapi disinda kapali.
-const companionEntry = (command: string, env: Record<string, string>) =>
+const companionOn = (command: string, env: Record<string, string>) =>
   command === 'serve' || env.VITE_COMPANION === '1'
-    ? path.resolve(__dirname, './src/fool/companion/build-flag.ts')
-    : path.resolve(__dirname, './src/fool/companion/build-flag.noop.ts')
+
+// Takas MODUL duzeyinde, bayrak duzeyinde DEGIL.
+//
+// Once yalnizca bir sabit takas ediliyordu ve bilesenin govdesi pakette
+// kaliyordu: ozellik calismiyordu ama metinleri (``Not met yet``,
+// ``thing unresolved``) paketin icinde aranabiliyordu. "Calismiyor" ile "yok"
+// ayni sey degil ve istenen ikincisiydi.
+const companionModule = (command: string, env: Record<string, string>, name: string, ext: string) =>
+  path.resolve(
+    __dirname,
+    './src/fool/' + name + (companionOn(command, env) ? '' : '.noop') + ext
+  )
 
 // The emoji picker (frimousse) fetches `<emojibaseUrl>/<locale>/data.json` at
 // runtime. Its default is a CDN; Electron must work offline, so serve the
@@ -81,9 +92,10 @@ const emojibaseAssets = () => ({
   }) {
     server.middlewares.use('/emojibase', (req, res, next) => {
       const rel = (req.url ?? '').split('?')[0].replace(/^\/+/, '')
-      if (!emojibaseDir || !EMOJIBASE_PATH.test(rel)) return next()
+
+      if (!emojibaseDir || !EMOJIBASE_PATH.test(rel)) {return next()}
       fs.readFile(path.join(emojibaseDir, rel), (err: unknown, buf: Buffer) => {
-        if (err) return next()
+        if (err) {return next()}
         res.setHeader('Content-Type', 'application/json')
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
         res.end(buf)
@@ -91,7 +103,8 @@ const emojibaseAssets = () => ({
     })
   },
   generateBundle(this: { emitFile: (asset: { type: 'asset'; fileName: string; source: Uint8Array }) => void }) {
-    if (!emojibaseDir) return
+    if (!emojibaseDir) {return}
+
     for (const rel of ['en/data.json', 'en/messages.json', 'en/shortcodes/emojibase.json']) {
       this.emitFile({
         type: 'asset',
@@ -171,7 +184,18 @@ export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       '@/debug/dev-only': debugEntry(command, process.env as Record<string, string>),
-      '@/fool/companion/build-flag': companionEntry(command, process.env as Record<string, string>),
+      '@/fool/relationship-bar': companionModule(
+        command,
+        process.env as Record<string, string>,
+        'relationship-bar',
+        '.tsx'
+      ),
+      '@/fool/use-persona-greeting': companionModule(
+        command,
+        process.env as Record<string, string>,
+        'use-persona-greeting',
+        '.ts'
+      ),
       '@': path.resolve(__dirname, './src'),
       '@fool/plugin-sdk': path.resolve(__dirname, './src/sdk/index.ts'),
       '@fool/shared/billing': path.resolve(__dirname, '../shared/src/billing-types.ts'),

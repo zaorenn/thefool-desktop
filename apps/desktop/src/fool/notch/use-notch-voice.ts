@@ -42,7 +42,7 @@ import { $voicePlayback } from '@/store/voice-playback'
 import { voiceApi } from '../voice-api'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 
-import { $voiceSessionId, waitForVoiceSession } from './active-session'
+import { $voiceSessionId, waitForVoiceSessionOrOpen } from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -386,7 +386,10 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
    * (``desktop`` -- terminal, dosya, kod dahil). Bunu ayıran mekanizma
    * kiplerdi ve kipler kullanıcının kararıyla kaldırıldı.
    */
-  const resolveSessionId = useCallback(async () => waitForVoiceSession(), [])
+  // Oturum YOKSA ana pencereden bir tane ISTIYOR (bkz. ``active-session.ts``).
+  // Eskiden burasi bos donuyordu ve kullanici, ekranda acik bir sohbet olmadigi
+  // icin, konustugu cumleyi kaybediyordu.
+  const resolveSessionId = useCallback(async () => waitForVoiceSessionOrOpen(), [])
 
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
@@ -453,7 +456,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
         // voice session") sebebi de caresi de vermiyordu: oturumu ana pencere
         // aciyor, centik yalnizca onu okuyor. Kullanici centige bakip
         // bekleyebilirdi.
-        setError('No chat is open yet — open one in the main window, then talk')
+        setError('Could not open a chat to talk into — try the main window')
         setStatus('idle')
 
         return

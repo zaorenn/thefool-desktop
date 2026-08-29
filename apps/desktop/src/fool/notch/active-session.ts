@@ -34,6 +34,9 @@ export const $voiceSessionId = sharedAtom<string>('fool.desktop.voice.sessionId'
 /** Oturum kimliğinin gelmesi için beklenecek en uzun süre. */
 const WAIT_MS = 3_000
 
+/** YENİ bir oturum açılması için beklenecek süre -- kurmak okumaktan uzun. */
+const OPEN_WAIT_MS = 12_000
+
 /**
  * Oturum kimliğini BEKLEYEREK oku (``''`` = süre doldu).
  *
@@ -79,4 +82,48 @@ export function waitForVoiceSession(timeoutMs: number = WAIT_MS): Promise<string
       }
     })
   })
+}
+
+/**
+ * "Sesin gidecegi bir sohbet ACILSIN" istegi — PENCERELER ARASI.
+ *
+ * Olculen davranis: kullanici intro ekranindayken bas-konusa basiyor,
+ * konusuyor, ve centik "No chat is open yet — open one in the main window"
+ * diyor. Mesaj DOGRU: acik oturum gercekten yok. Yanlis olan davranis --
+ * bas-konusun butun amaci once pencereye gidip sohbet acmadan konusabilmek.
+ *
+ * Oturumu ACAN taraf ana pencere (arka uc oturumunu o kuruyor), isteyen taraf
+ * centik. Aradaki kanal, oturum kimliginin kendisiyle ayni yerden geciyor:
+ * paylasilan atom. Deger bir SAYAC, cunku istenen sey bir durum degil bir
+ * OLAY -- ust uste iki istek ayirt edilebilmeli.
+ */
+export const $voiceSessionWanted = sharedAtom<string>('fool.desktop.voice.sessionWanted', '', {
+  decode: raw => raw,
+  encode: value => value
+})
+
+/** Ana pencereden yeni bir oturum iste. */
+export function requestVoiceSession(): void {
+  $voiceSessionWanted.set(String(Date.now()))
+}
+
+/**
+ * Oturum kimligini bekle; YOKSA once bir tane ISTE.
+ *
+ * Bekleme suresi acikca daha uzun: yeni bir arka uc oturumu kurmak, var olani
+ * okumaktan uzun suruyor.
+ */
+export async function waitForVoiceSessionOrOpen(
+  timeoutMs: number = WAIT_MS,
+  openTimeoutMs: number = OPEN_WAIT_MS
+): Promise<string> {
+  const existing = await waitForVoiceSession(timeoutMs)
+
+  if (existing) {
+    return existing
+  }
+
+  requestVoiceSession()
+
+  return waitForVoiceSession(openTimeoutMs)
 }

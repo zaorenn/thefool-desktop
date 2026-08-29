@@ -25,6 +25,7 @@ import { $newSessionTabAction, registerPaneCloser } from '@/components/pane-shel
 import { FloatingPet } from '@/components/pet/floating-pet'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
+import { useVoiceSessionRequests } from '@/fool/notch/use-voice-session-requests'
 import { isNotchWindow } from '@/fool/notch/window'
 import { getLatestSessionMessages } from '@/hermes'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
@@ -488,6 +489,14 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     lastFreshRef.current = freshSessionRequest
     startFreshSessionDraft()
   }, [freshSessionRequest, startFreshSessionDraft])
+
+  // FOOL-SEAM: notch-opens-session
+  //
+  // Centik giris ekranindayken bas-konusa basildiginda "No chat is open yet"
+  // diyordu. Mesaj dogruydu, davranis yanlisti: bas-konusun butun amaci once
+  // pencereye gidip sohbet acmadan konusabilmek. Oturumu kuran taraf BURASI,
+  // isteyen taraf centik.
+  useVoiceSessionRequests(createBackendSessionForSend)
 
   // Swapping the live gateway to another profile must re-pull that profile's
   // global model + active-profile pill (both are nanostores — the blanket

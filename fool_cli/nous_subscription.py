@@ -419,7 +419,27 @@ def get_nous_subscription_features(
     # Per-capability overrides: if set, they determine which backend is active for
     # search/extract independently of web.backend.
     web_search_backend = str(web_cfg.get("search_backend") or "").strip().lower()
-    tts_provider = str(tts_cfg.get("provider") or "edge").strip().lower()
+    # FOOL-SEAM: local-only-tts
+    #
+    # Secim yokken burasi ``edge`` diyordu ve PANEL o adi gosteriyordu --
+    # oysa sentez yolu (``tools/tts_tool.py::_get_provider``) secim yokken
+    # kurulu YEREL bir motora dusuyor, edge'e degil. Yani taze bir kurulumda
+    # Ayarlar "Text-To-Speech Provider: Edge" yaziyor, motor bambaska bir sey
+    # kosuyor ve kullanici duydugu sesin nereden geldigini panelde bulamiyor.
+    #
+    # Bu kod tabaninin tekrar tekrar duzelttigi hata sinifi: panelin
+    # gosterdigi ile calisanin ayrismasi. Cozum ayni cozucuye sormak.
+    tts_provider = str(tts_cfg.get("provider") or "").strip().lower()
+
+    if not tts_provider:
+        try:
+            from tools.tts_tool import _get_provider
+
+            tts_provider = str(_get_provider(tts_cfg) or "").strip().lower()
+        except Exception:  # noqa: BLE001
+            # Cozucu okunamadi: adi UYDURMAK yerine bos birak. Bos bir alan
+            # "secilmemis" diyor, yanlis bir ad yalan soyluyor.
+            tts_provider = ""
     # STT default is "local" (faster-whisper) per DEFAULT_CONFIG, which
     # requires `pip install faster-whisper`. For Nous subscribers we'd
     # rather route through the managed OpenAI audio gateway — see

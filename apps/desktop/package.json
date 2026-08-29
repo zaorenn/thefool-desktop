@@ -2,7 +2,7 @@
   "name": "fool",
   "productName": "The Fool",
   "private": true,
-  "version": "0.21.0",
+  "version": "0.21.1",
   "description": "Native desktop shell for The Fool.",
   "author": "Fool Labs",
   "license": "MIT",

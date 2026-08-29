@@ -284,3 +284,42 @@ def test_gomme_sonradan_DOLDURULABILIYOR(tmp_path) -> None:
     assert warm.backfill_embeddings() == 1
     # Ikinci cagri doldurulacak bir sey bulmuyor.
     assert warm.backfill_embeddings() == 0
+
+
+# ---------------------------------------------------------------------------
+# Bütçe TEK bir olguya harcanmasın
+# ---------------------------------------------------------------------------
+
+
+def test_ayni_seyi_soyleyen_anilar_bir_kez_giriyor(store) -> None:
+    """Yazma eşiği yalnızca son 200 anıya ve neredeyse birebir tekrara bakıyor.
+    Aylar içinde aynı şey farklı sözcüklerle söylendiğinde ikisi de kaydediliyor,
+    ikisi de aynı sorguda üste çıkıyor ve sabit bütçe tek olguya gidiyor."""
+    store.remember("his cat is called Pamuk")
+    store.remember("the cat Pamuk is his")
+
+    _block, ids = store.context_block("cat Pamuk", budget=4000)
+
+    assert len(ids) == 1
+
+
+def test_SIGMAYAN_uzun_ani_arkasindakileri_goturmuyor(store) -> None:
+    """``break`` uzun bir anı sırada öndeyken arkasındaki kısa ve sığacak
+    olanları da birlikte götürüyordu."""
+    store.remember("cats " + ("x" * 400))
+    store.remember("cats are his whole life")
+
+    block, ids = store.context_block("cats", budget=120)
+
+    assert len(ids) == 1
+    assert "whole life" in block
+
+
+def test_farkli_seyler_ikisi_de_giriyor(store) -> None:
+    """Sözcük paylaşmak aynı şey olmak değil: eşik ikisinin arasına konuldu."""
+    store.remember("his cat is called Pamuk")
+    store.remember("his dog is called Boncuk")
+
+    _block, ids = store.context_block("his cat is called", budget=4000)
+
+    assert len(ids) == 2

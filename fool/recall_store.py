@@ -69,8 +69,35 @@ UNSEEN_BONUS = 0.15
 #: doldurmak, hatırlananla düşünecek yeri kaybetmek olurdu.
 DEFAULT_CHAR_BUDGET = 1500
 
-#: Aynı anının tekrar yazılmasını engelleyen benzerlik eşiği.
+#: Aynı anının tekrar YAZILMASINI engelleyen benzerlik eşiği.
+#:
+#: Yüksek tutuluyor çünkü buradaki hata GERİ ALINAMAZ: eşiğin altına düşen bir
+#: anı hiç kaydedilmiyor, yani gerçekten yeni bir şey sessizce kaybolabilir.
 DUPLICATE_RATIO = 0.92
+
+#: Aynı şeyi TEKRAR SÖYLEYEN bir anının o turda ATLANMA eşiği.
+#:
+#: Yazma eşiğinden belirgin biçimde düşük, çünkü buradaki hata UCUZ: yalnızca
+#: bir turun bağlamından bir satır düşüyor, anı yerinde duruyor ve bir sonraki
+#: soruda geri geliyor.
+#:
+#: Neden gerekli: yazma eşiği yalnızca SON 200 anıya bakıyor ve yalnızca
+#: neredeyse birebir tekrarı yakalıyor. Aylar içinde aynı şey farklı
+#: sözcüklerle üç kez söylendiğinde üçü de kaydediliyor, üçü de aynı sorguda
+#: yüksek puan alıyor ve sabit bütçe tek bir olguyu üç kez anlatmaya gidiyor.
+#: Yani "her şeyi hatırlasın" isteği tam da burada, sessizce yarıya iniyor.
+#:
+#: Sayı ÖLÇÜLDÜ, seçilmedi. Aynı olgunun iki anlatımı ile ayrı iki olgunun
+#: bu ölçüde nereye düştüğü (Jaccard):
+#:
+#:   0,667  "his cat is called Pamuk" / "the cat Pamuk is his"   <- aynı şey
+#:   0,667  "his cat is called Pamuk" / "his cat is named Pamuk" <- aynı şey
+#:   0,500  "he likes coffee"         / "he likes tea"           <- AYRI
+#:   0,429  "his cat is called Pamuk" / "his dog is called Boncuk" <- AYRI
+#:
+#: Eşik ikisinin arasında. Yanlış tarafa düşerse tercih SAKLAMAK yönünde:
+#: fazladan bir satır bütçe israfı, eksik bir satır unutmak.
+REDUNDANT_RATIO = 0.6
 
 _WORD_RE = re.compile(r"[^\W\d_]+", re.UNICODE)
 
@@ -529,16 +556,30 @@ class RecallStore:
 
         lines: list[str] = []
         used: list[int] = []
+        chosen: list[str] = []
         spent = 0
 
         for memory, _score in hits:
+            # Zaten seçilmiş bir satırın AYNISINI söylüyorsa atlanıyor.
+            #
+            # Puanı yüksek olması onu yeni yapmıyor: "kedisinin adı Pamuk" üç
+            # kez farklı sözcüklerle söylenmişse üçü de aynı sorguda üste
+            # çıkıyor ve bütçenin tamamı tek olguya gidiyor.
+            if any(_similarity(existing, memory.text) >= REDUNDANT_RATIO for existing in chosen):
+                continue
+
             line = "- (" + _ago(memory.created_at, now) + ") " + memory.text
 
             if spent + len(line) + 1 > budget:
-                break
+                # ``break`` DEĞİL: uzun bir anı sırada öndeyse, arkasındaki
+                # kısa ve sığacak olanları da birlikte götürürdü. Sıra
+                # korunuyor, yalnızca sığmayan atlanıyor -- aynı bütçeye daha
+                # çok anı giriyor.
+                continue
 
             lines.append(line)
             used.append(memory.id)
+            chosen.append(memory.text)
             spent += len(line) + 1
 
         if not lines:

@@ -11,9 +11,9 @@ Kullanıcının makinesinde ölçüldü::
 
     fool/sidecars/                       chatterbox, f5-tts, kokoro,
                                          kyutai, qwen3-tts, styletts2
-    fool/profiles/girlfriend/sidecars/   YOK
+    fool/profiles/persona/sidecars/   YOK
 
-Sonuç: ``girlfriend`` profilinde konuşma denemesi "Chatterbox kurulu degil"
+Sonuç: ``persona`` profilinde konuşma denemesi "Chatterbox kurulu degil"
 ile düşüyor -- oysa Chatterbox kurulu, sadece bir dizin yukarıda. Kullanıcının
 gördüğü, motoru seçmiş olmasına rağmen hiç ses çıkmaması.
 
@@ -39,7 +39,7 @@ _PROFILES_DIRNAME = "profiles"
 def machine_home() -> Path:
     """``FOOL_HOME`` -- ama bir PROFİL evi ise kökü.
 
-    ``.../fool/profiles/girlfriend`` -> ``.../fool``
+    ``.../fool/profiles/persona`` -> ``.../fool``
     ``.../fool``                     -> ``.../fool``
     """
     from fool_constants import get_hermes_home

@@ -15,7 +15,7 @@ import { RelationshipBar } from './relationship-bar'
 
 const api = vi.fn()
 
-vi.mock('@/hermes', () => ({ getApiRequestProfile: () => 'girlfriend' }))
+vi.mock('@/hermes', () => ({ getApiRequestProfile: () => 'persona' }))
 
 beforeEach(() => {
   api.mockReset()
@@ -57,7 +57,7 @@ describe('RelationshipBar', () => {
     render(<RelationshipBar />)
 
     await waitFor(() => expect(api).toHaveBeenCalled())
-    expect(api.mock.calls[0][0]).toMatchObject({ profile: 'girlfriend', path: '/api/fool/relationship' })
+    expect(api.mock.calls[0][0]).toMatchObject({ profile: 'persona', path: '/api/fool/relationship' })
   })
 
   it('dertleri ve durusu gosteriyor', async () => {

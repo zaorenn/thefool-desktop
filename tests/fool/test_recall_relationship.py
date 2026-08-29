@@ -34,7 +34,7 @@ def _provider(tmp_path, monkeypatch, *, relationship: bool):
 
 
 @pytest.fixture
-def girlfriend(tmp_path, monkeypatch):
+def persona(tmp_path, monkeypatch):
     instance = _provider(tmp_path, monkeypatch, relationship=True)
     yield instance
     instance.shutdown()
@@ -73,8 +73,8 @@ def test_normal_ajanda_cagri_REDDEDILIYOR(plain) -> None:
     assert _event(plain, "rude", note="x")["ok"] is False
 
 
-def test_persona_profilinde_arac_VAR(girlfriend) -> None:
-    names = {schema["name"] for schema in girlfriend.get_tool_schemas()}
+def test_persona_profilinde_arac_VAR(persona) -> None:
+    names = {schema["name"] for schema in persona.get_tool_schemas()}
 
     assert "relationship" in names
 
@@ -84,22 +84,22 @@ def test_persona_profilinde_arac_VAR(girlfriend) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_kabalik_SOGUTUYOR_ve_dert_aciyor(girlfriend) -> None:
-    result = _event(girlfriend, "rude", note="he snapped at her over nothing")
+def test_kabalik_SOGUTUYOR_ve_dert_aciyor(persona) -> None:
+    result = _event(persona, "rude", note="he snapped at her over nothing")
 
     assert result["ok"] is True
     assert result["warmth"] < 50
     assert result["open_grievances"] == 1
 
 
-def test_sevgi_ISITIYOR(girlfriend) -> None:
-    result = _event(girlfriend, "affectionate")
+def test_sevgi_ISITIYOR(persona) -> None:
+    result = _event(persona, "affectionate")
 
     assert result["warmth"] > 50
 
 
-def test_bilinmeyen_olay_REDDEDILIYOR(girlfriend) -> None:
-    assert _event(girlfriend, "vibing")["ok"] is False
+def test_bilinmeyen_olay_REDDEDILIYOR(persona) -> None:
+    assert _event(persona, "vibing")["ok"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -107,21 +107,21 @@ def test_bilinmeyen_olay_REDDEDILIYOR(girlfriend) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ACIK_dert_sistem_promptunda_gorunuyor(girlfriend) -> None:
-    _event(girlfriend, "promise_broken", note="he said he would be back and was not")
+def test_ACIK_dert_sistem_promptunda_gorunuyor(persona) -> None:
+    _event(persona, "promise_broken", note="he said he would be back and was not")
 
-    block = girlfriend.system_prompt_block()
+    block = persona.system_prompt_block()
 
     assert "Unresolved between you" in block
     assert "and was not" in block
 
 
-def test_cok_soguyunca_REDDETME_izni_veriliyor(girlfriend) -> None:
+def test_cok_soguyunca_REDDETME_izni_veriliyor(persona) -> None:
     """Kullanıcının istediği: kötü davranılırsa istekleri reddedebilmeli."""
     for index in range(3):
-        _event(girlfriend, "cruel", note="cruel thing " + str(index))
+        _event(persona, "cruel", note="cruel thing " + str(index))
 
-    block = girlfriend.system_prompt_block()
+    block = persona.system_prompt_block()
 
     assert "refuse requests" in block
 
@@ -150,11 +150,11 @@ def test_durum_OTURUMLAR_arasi_kaliyor(tmp_path, monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_arayuz_ozeti_MODELDEN_bagimsiz(girlfriend) -> None:
+def test_arayuz_ozeti_MODELDEN_bagimsiz(persona) -> None:
     """Ekranda görünen şey defterin kendisine bakıyor, modelin dediğine değil."""
-    _event(girlfriend, "dismissive", note="he brushed her off twice")
+    _event(persona, "dismissive", note="he brushed her off twice")
 
-    snapshot = girlfriend.relationship_snapshot()
+    snapshot = persona.relationship_snapshot()
 
     assert set(snapshot) == {"warmth", "stance", "grievances"}
     assert snapshot["stance"] in ("close", "fond", "neutral", "cool", "cold")
@@ -162,11 +162,11 @@ def test_arayuz_ozeti_MODELDEN_bagimsiz(girlfriend) -> None:
     assert snapshot["grievances"][0]["since"] > 0
 
 
-def test_ozur_dert_sayisini_DUSURUYOR(girlfriend) -> None:
-    _event(girlfriend, "rude", note="first thing")
-    _event(girlfriend, "rude", note="second thing")
+def test_ozur_dert_sayisini_DUSURUYOR(persona) -> None:
+    _event(persona, "rude", note="first thing")
+    _event(persona, "rude", note="second thing")
 
-    after = _event(girlfriend, "apology")
+    after = _event(persona, "apology")
 
     assert after["open_grievances"] == 1
 
@@ -176,27 +176,27 @@ def test_ozur_dert_sayisini_DUSURUYOR(girlfriend) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_ilk_karsilasmada_DURUS_gosterilmiyor(girlfriend) -> None:
+def test_ilk_karsilasmada_DURUS_gosterilmiyor(persona) -> None:
     """Başlangıç değerinin tarifi ("civil but not especially warm") sevgi dolu
     diye tanımlanmış bir personayla ÇELİŞİYOR. Aranızda bir şey geçmeden bu
     cümleyi kurmak, karaktere ilk karşılaşmada mesafeli olmasını söylemek."""
-    block = girlfriend.system_prompt_block()
+    block = persona.system_prompt_block()
 
     assert "Where you stand" not in block
     assert "Nothing has happened between you yet" in block
 
 
-def test_bir_sey_gectikten_SONRA_durus_gosteriliyor(girlfriend) -> None:
-    _event(girlfriend, "warm")
+def test_bir_sey_gectikten_SONRA_durus_gosteriliyor(persona) -> None:
+    _event(persona, "warm")
 
-    block = girlfriend.system_prompt_block()
+    block = persona.system_prompt_block()
 
     assert "Where you stand" in block
     assert "Nothing has happened" not in block
 
 
-def test_dert_varsa_durus_HER_ZAMAN_gosteriliyor(girlfriend) -> None:
+def test_dert_varsa_durus_HER_ZAMAN_gosteriliyor(persona) -> None:
     """Kırgınlık karakterin üstünde: persona ne derse desin, dert görünmeli."""
-    _event(girlfriend, "rude", note="he was sharp with her")
+    _event(persona, "rude", note="he was sharp with her")
 
-    assert "Unresolved between you" in girlfriend.system_prompt_block()
+    assert "Unresolved between you" in persona.system_prompt_block()

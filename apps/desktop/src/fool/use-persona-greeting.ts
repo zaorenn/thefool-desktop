@@ -16,6 +16,7 @@ import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
+import { COMPANION_BUILD } from '@/fool/companion/build-flag'
 import { $activeSessionId, $busy, $messages } from '@/store/session'
 
 import { PERSONA_KICKOFF, shouldGreet } from './persona-greeting'
@@ -34,7 +35,7 @@ export function usePersonaGreeting(active: boolean): void {
     // ``active``: yalnizca ana pencerenin BIRINCIL gorunumu. Her sohbet
     // kutucugu ayni bilesenden turuyor ve hepsi ayni kuresel atomlari okuyor;
     // kapisiz kalsaydi acik kutucuk sayisi kadar selam gonderilirdi.
-    if (!active || !sessionId || messages.length > 0 || busy || attempted.current.has(sessionId)) {
+    if (!COMPANION_BUILD || !active || !sessionId || messages.length > 0 || busy || attempted.current.has(sessionId)) {
       return
     }
 

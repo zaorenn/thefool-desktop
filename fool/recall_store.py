@@ -29,7 +29,7 @@ ALTINDAKİ katman.
 İki BAĞIMSIZ hafıza -- bedavaya
 -------------------------------
 Depo ``FOOL_HOME/memories/recall.db``. Masaüstü bir profili çalıştırırken
-``FOOL_HOME`` o profilin dizini, yani ``girlfriend`` profilinin hafızası ile
+``FOOL_HOME`` o profilin dizini, yani ``persona`` profilinin hafızası ile
 normal ajanınki fiziksel olarak ayrı dosyalar. Ek bir mekanizmaya gerek yok.
 
 (Motorlar ve ses varlıkları için kural TERSİ -- onlar makine düzeyinde
@@ -68,6 +68,18 @@ UNSEEN_BONUS = 0.15
 #: 64k'da iki katı rahat. Varsayılan küçük taraftan: bağlamı hafızayla
 #: doldurmak, hatırlananla düşünecek yeri kaybetmek olurdu.
 DEFAULT_CHAR_BUDGET = 1500
+
+#: Bir DÜZELTMENİN sıralamadaki ek ağırlığı.
+#:
+#: "Kullanıcının sevdiği şeyleri VE kendi hatalarını öğrensin" istendi. İkisi
+#: aynı ağırlıkta değil: unutulmuş bir tercih küçük bir kayıp, unutulmuş bir
+#: düzeltme AYNI HATANIN TEKRARI -- ve bir kez düzeltilmiş bir şeyde ikinci kez
+#: yanılmak, hiç bilmemekten daha kötü karşılanıyor.
+#:
+#: Değer, tazelik teriminin (en fazla 0,5) üstünde ve ilgi teriminin (3,0)
+#: çok altında bilinçli olarak: bir düzeltme, konuyla ilgisi olmadığında yine
+#: de geri gelmemeli. Yaptığı tek şey, EŞİT ilgideki bir yarışı kazanmak.
+CORRECTION_BONUS = 0.6
 
 #: Aynı anının tekrar YAZILMASINI engelleyen benzerlik eşiği.
 #:
@@ -390,6 +402,23 @@ class RecallStore:
 
         return int(row["n"]) if row else 0
 
+    def all_texts(self, limit: int = 400) -> list[str]:
+        """Bilinenlerin METNİ -- "neyi bilmiyorum" sorusu için.
+
+        Arama DEĞİL, kapsam sorusu: geri getirme "bu turda ne gerekiyor" diye
+        sorarken burası "bu konu hiç geçti mi" diye soruyor ve ikisinin doğru
+        cevabı farklı. Bir sorgu yok, çünkü aranan şey de yok.
+
+        Sınır var çünkü bu her oturum açılışında bir kez okunuyor ve binlerce
+        anıyı belleğe almanın karşılığı yok: kapsanmamış bir konu, ilk birkaç
+        yüz anıda da kapsanmamış olacak.
+        """
+        rows = self._db.execute(
+            "SELECT text FROM memories ORDER BY created_at DESC LIMIT ?", (limit,)
+        ).fetchall()
+
+        return [str(r["text"]) for r in rows]
+
     def search(
         self,
         query: str,
@@ -515,11 +544,16 @@ class RecallStore:
         önem 0,5 idi ve tam isabet bir anı, alakasız ama taze bir anının
         arkasında kalıyordu. Hatırlamanın değeri tam olarak o durumda --
         eskiyi doğru anda geri getirmekte.
+
+        Düzeltmeler AYRI tutuluyor (bkz. ``CORRECTION_BONUS``): bir düzeltme,
+        aynı ilgideki sıradan bir anıyla yer değiştirdiğinde sonuç yalnızca
+        "bir şey hatırlamamak" değil, AYNI HATAYI TEKRARLAMAK oluyor.
         """
         recency = 0.5 ** (memory.age_days(now) / RECENCY_HALF_LIFE_DAYS)
         unseen = UNSEEN_BONUS if memory.recall_count == 0 else 0.0
+        corrected = CORRECTION_BONUS if memory.kind == "correction" else 0.0
 
-        return relevance * 3.0 + recency * 0.5 + memory.importance * 0.4 + unseen
+        return relevance * 3.0 + recency * 0.5 + memory.importance * 0.4 + unseen + corrected
 
     def mark_recalled(self, ids: Iterable[int], *, now: float | None = None) -> None:
         listed = list(ids)
@@ -607,6 +641,41 @@ class RecallStore:
 
     def last_farewell(self) -> float | None:
         return self._get_float("last_farewell")
+
+    # -- sorulmuş konular ---------------------------------------------------
+
+    def asked_topics(self) -> list[str]:
+        """Bu profilde daha önce sorulmuş tanışma konuları."""
+        import json
+
+        raw = self._get_meta("asked_topics")
+
+        if not raw:
+            return []
+
+        try:
+            payload = json.loads(raw)
+        except ValueError:
+            return []
+
+        return [str(item) for item in payload] if isinstance(payload, list) else []
+
+    def mark_topic_asked(self, topic_id: str) -> None:
+        """Konu SORULDU -- cevap gelse de gelmese de.
+
+        Cevabı beklemek yerine sorulmayı kaydetmenin sebebi: cevap vermemek de
+        bir cevap. Aynı soruyu üçüncü kez sormak, dinlemediğini göstermenin en
+        hızlı yolu.
+        """
+        import json
+
+        asked = self.asked_topics()
+
+        if topic_id in asked:
+            return
+
+        asked.append(topic_id)
+        self._set_meta("asked_topics", json.dumps(asked, ensure_ascii=False))
 
     # -- ilişki durumu ------------------------------------------------------
 

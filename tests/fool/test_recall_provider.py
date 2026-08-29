@@ -229,14 +229,14 @@ def test_depo_YOKSA_hicbir_sey_patlamiyor(monkeypatch) -> None:
 
 
 def test_iki_PROFIL_ayri_dosya_kullaniyor(tmp_path, monkeypatch) -> None:
-    """Kullanıcının istediği ayrım: normal ajan ve girlfriend ayrı hafızalar."""
+    """Kullanıcının istediği ayrım: normal ajan ve persona ayrı hafızalar."""
     import fool_constants
     from plugins.memory import recall as recall_module
 
     monkeypatch.setattr(recall_module, "_make_embedder", lambda: None)
     paths = []
 
-    for profile in ("main", "girlfriend"):
+    for profile in ("main", "persona"):
         home = tmp_path / profile
         home.mkdir()
         monkeypatch.setattr(fool_constants, "get_hermes_home", lambda h=str(home): h, raising=False)
@@ -247,3 +247,77 @@ def test_iki_PROFIL_ayri_dosya_kullaniyor(tmp_path, monkeypatch) -> None:
         instance.shutdown()
 
     assert paths[0] != paths[1]
+
+
+# ---------------------------------------------------------------------------
+# Tanışma soruları ve düzeltmeler
+# ---------------------------------------------------------------------------
+
+
+def test_sistem_promptunda_TEK_konu_soruluyor(provider) -> None:
+    block = provider.system_prompt_block()
+
+    assert "You still do not know" in block
+    assert block.count("You still do not know") == 1
+
+
+def test_konu_IKINCI_oturumda_tekrarlanmiyor(provider) -> None:
+    """Aynı soruyu her açılışta sormak, dinlemediğini göstermenin en hızlı
+    yolu. Sorulma kaydı deftere yazılıyor."""
+    first = provider.system_prompt_block()
+    second = provider.system_prompt_block()
+
+    asked = [line for line in first.split("\n") if "You still do not know" in line]
+    again = [line for line in second.split("\n") if "You still do not know" in line]
+
+    assert asked and again
+    assert asked[0] != again[0]
+
+
+def test_curiosity_KAPATILABILIYOR(tmp_path, monkeypatch) -> None:
+    import fool_constants
+    from plugins.memory import recall as recall_module
+
+    monkeypatch.setattr(fool_constants, "get_hermes_home", lambda: str(tmp_path), raising=False)
+    monkeypatch.setattr(recall_module, "_make_embedder", lambda: None)
+    monkeypatch.setattr(recall_module, "_recall_config", lambda: {"curiosity": False})
+
+    instance = recall_module.RecallMemoryProvider()
+    instance.initialize("s1")
+
+    try:
+        assert "You still do not know" not in instance.system_prompt_block()
+    finally:
+        instance.shutdown()
+
+
+def test_duzeltme_YANLIS_olani_bastiriyor(provider) -> None:
+    """Unutulmuş bir tercih küçük bir kayıp; unutulmuş bir düzeltme AYNI
+    HATANIN TEKRARI.
+
+    Düzeltme önce sıralanıyor (``CORRECTION_BONUS``), ve düzelttiği cümleyle
+    fazla benzeştiği için eskisi aynı bloğa girmiyor -- yani model yanlış
+    olanı hiç görmüyor."""
+    provider.handle_tool_call("remember", {"text": "he prefers coffee in the morning"})
+    provider.handle_tool_call(
+        "remember",
+        {"text": "he prefers coffee at night, not in the morning", "kind": "correction"},
+    )
+
+    block = provider.prefetch("coffee morning prefers")
+
+    assert "not in the morning" in block
+    assert "- (just now) he prefers coffee in the morning" not in block
+
+
+def test_duzeltme_AYRI_bir_anidan_once_geliyor(provider) -> None:
+    """Bonusun kendisi: eşit ilgideki bir yarışı düzeltme kazanıyor."""
+    provider.handle_tool_call("remember", {"text": "the deploy script lives in scripts"})
+    provider.handle_tool_call(
+        "remember",
+        {"text": "deploy runs from the makefile, not the script", "kind": "correction"},
+    )
+
+    block = provider.prefetch("deploy script")
+
+    assert block.index("not the script") < block.index("lives in scripts")

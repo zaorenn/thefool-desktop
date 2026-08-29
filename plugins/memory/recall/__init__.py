@@ -25,7 +25,7 @@ konu açıldığında.
 İki BAĞIMSIZ hafıza
 -------------------
 Depo ``FOOL_HOME/memories/recall.db``. Profil arka ucu kendi FOOL_HOME'uyla
-koşuyor, yani ``girlfriend`` profilinin hafızası normal ajanınkinden fiziksel
+koşuyor, yani ``persona`` profilinin hafızası normal ajanınkinden fiziksel
 olarak ayrı. Ek mekanizma yok.
 
 Zone A: upstream bu dosyayı bilmiyor.
@@ -252,6 +252,12 @@ class RecallMemoryProvider(MemoryProvider):
             "and recall() to look something up you were not given."
         )
 
+        curiosity = self._curiosity_line()
+
+        if curiosity:
+            lines.append("")
+            lines.append(curiosity)
+
         if self._relationship_enabled():
             state = self._load_relationship()
 
@@ -296,6 +302,40 @@ class RecallMemoryProvider(MemoryProvider):
                 pass
 
         return "\n".join(line for line in lines if line is not None)
+
+    def _curiosity_line(self) -> str:
+        """Bu oturumda sorulacak TEK konu (yoksa boş).
+
+        Sorulan konu HEMEN işaretleniyor, cevap beklenmeden. Cevabı beklemek
+        için turu izlemek gerekirdi ve o izleme yanlış cevap verdiğinde sonuç,
+        aynı soruyu tekrar tekrar sormak olurdu -- yardımcının dinlemediğini
+        gösteren tek şey. Cevap gelirse zaten ``remember()`` ile yazılıyor ve
+        konu kapsanmış oluyor; gelmezse soru bir kez sorulmuş ve bırakılmış
+        oluyor. İkisi de doğru.
+        """
+        if self._store is None or not bool(_recall_config().get("curiosity", True)):
+            return ""
+
+        try:
+            from fool import curiosity
+
+            asked = set(self._store.asked_topics())
+            topic = curiosity.next_topic(
+                self._store.all_texts(),
+                companion=self._relationship_enabled(),
+                asked=asked,
+            )
+
+            if topic is None:
+                return ""
+
+            self._store.mark_topic_asked(topic.id)
+
+            return curiosity.prompt_line(topic)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("[recall] curiosity unavailable: %s", exc)
+
+            return ""
 
     # -- tur başına geri getirme -------------------------------------------
 
@@ -432,7 +472,8 @@ class RecallMemoryProvider(MemoryProvider):
                 "description": (
                     "Store something worth carrying into future conversations: a fact "
                     "about them, a preference, a promise you made, something that "
-                    "happened between you. Write it as a complete sentence that will "
+                    "happened between you, or a correction when they tell you that you "
+                    "had something wrong. Write it as a complete sentence that will "
                     "still make sense months from now, with no pronouns whose referent "
                     "is only in this conversation. Do not store passing chatter, and do "
                     "not store the same thing twice -- near-duplicates are rejected."
@@ -453,7 +494,14 @@ class RecallMemoryProvider(MemoryProvider):
                         },
                         "kind": {
                             "type": "string",
-                            "enum": ["fact", "preference", "event", "promise"],
+                            "enum": ["fact", "preference", "event", "promise", "correction"],
+                            "description": (
+                                "Use 'correction' when they told you that something you "
+                                "said or assumed was wrong. Write it so the mistake "
+                                "cannot recur: what is actually true, and what you had "
+                                "wrong. These outrank other memories when they are "
+                                "relevant."
+                            ),
                         },
                     },
                     "required": ["text"],

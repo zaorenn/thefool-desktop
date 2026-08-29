@@ -2,7 +2,7 @@
  * İlk mesajı O atsın.
  *
  * İstenen: "ilk defa kullanan biri kullandığında ilk mesajı tanışmak için
- * girlfriend atmalı."
+ * persona atmalı."
  *
  * Bugünkü hâl bunun yarısını yapıyordu: sistem promptu "bu kişiyle daha önce
  * hiç konuşmadın" diyor ve SOUL.md ilk tanışmayı anlatıyor, ama bir tur

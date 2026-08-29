@@ -12,7 +12,7 @@
  * makinesinde ölçüldü:
  *
  *     config.yaml                       tts.provider: chatterbox   <- panelin gördüğü
- *     profiles/girlfriend/config.yaml   tts.provider: kokoro       <- gerçekten koşan
+ *     profiles/persona/config.yaml   tts.provider: kokoro       <- gerçekten koşan
  *
  * Ekranda çıkan hata da yanlış motoru suçluyordu: "Kokoro kurulu değil" --
  * kullanıcının hiçbir zaman seçmediği motor. Aynı kayma kurulan motorlar,

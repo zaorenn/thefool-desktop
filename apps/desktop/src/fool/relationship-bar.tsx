@@ -24,6 +24,7 @@
 
 import { useEffect, useState } from 'react'
 
+import { COMPANION_BUILD } from '@/fool/companion/build-flag'
 import { getApiRequestProfile } from '@/hermes'
 
 import {
@@ -41,7 +42,8 @@ const POLL_MS = 10_000
 export async function fetchRelationship(): Promise<null | RelationshipSnapshot> {
   const desktop = window.hermesDesktop
 
-  if (!desktop?.api) {
+  // Yayinlanan yapida sabit ``false`` -- bkz. ``companion/build-flag.ts``.
+  if (!COMPANION_BUILD || !desktop?.api) {
     return null
   }
 

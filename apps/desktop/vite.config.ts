@@ -51,6 +51,19 @@ const debugEntry = (command: string, env: Record<string, string>) =>
     ? path.resolve(__dirname, './src/debug/dev-only.ts')
     : path.resolve(__dirname, './src/debug/dev-only.noop.ts')
 
+// Eslik kipi (iliski bari + tanisma selami) YAYINLANAN pakete girmiyor.
+//
+// Calisma zamani kapisi zaten vardi ve taze bir kurulumda kapali; ama kapali
+// bir sey acilabilir ve istenen "asla olmasin" idi. Bayrak derleme zamaninda
+// sabitlenince arayuzun tamami agac sarsmayla paketten dusuyor -- config'i
+// elle duzenlemek bile geri getirmiyor.
+//
+// Yerel calistirma (``vite dev``) ve acikca istenen bir yapi disinda kapali.
+const companionEntry = (command: string, env: Record<string, string>) =>
+  command === 'serve' || env.VITE_COMPANION === '1'
+    ? path.resolve(__dirname, './src/fool/companion/build-flag.ts')
+    : path.resolve(__dirname, './src/fool/companion/build-flag.noop.ts')
+
 // The emoji picker (frimousse) fetches `<emojibaseUrl>/<locale>/data.json` at
 // runtime. Its default is a CDN; Electron must work offline, so serve the
 // bundled emojibase-data package at a stable local path instead — middleware
@@ -158,6 +171,7 @@ export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       '@/debug/dev-only': debugEntry(command, process.env as Record<string, string>),
+      '@/fool/companion/build-flag': companionEntry(command, process.env as Record<string, string>),
       '@': path.resolve(__dirname, './src'),
       '@fool/plugin-sdk': path.resolve(__dirname, './src/sdk/index.ts'),
       '@fool/shared/billing': path.resolve(__dirname, '../shared/src/billing-types.ts'),

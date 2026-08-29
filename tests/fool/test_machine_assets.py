@@ -9,9 +9,9 @@ dizinini gösteriyor, yani her profil kendi motor kurulumunu istiyordu.
 Kullanıcının makinesinde ölçüldü::
 
     fool/sidecars/                       6 motor kurulu
-    fool/profiles/girlfriend/sidecars/   YOK
+    fool/profiles/persona/sidecars/   YOK
 
-Sonuç: ``girlfriend`` profilinde konuşma "Chatterbox kurulu degil" ile
+Sonuç: ``persona`` profilinde konuşma "Chatterbox kurulu degil" ile
 düşüyordu -- oysa Chatterbox kurulu, bir dizin yukarıda. Kullanıcı motoru
 seçmiş, ayarlarda kurulu görünüyor, ve hiç ses çıkmıyor.
 """
@@ -26,7 +26,7 @@ import pytest
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     root = tmp_path / "fool"
-    (root / "profiles" / "girlfriend").mkdir(parents=True)
+    (root / "profiles" / "persona").mkdir(parents=True)
 
     def use(path: Path) -> None:
         monkeypatch.setenv("FOOL_HOME", str(path))
@@ -41,7 +41,7 @@ def test_profil_evi_KOKE_cozuluyor(home) -> None:
     root, use = home
     from fool.machine_assets import machine_home
 
-    use(root / "profiles" / "girlfriend")
+    use(root / "profiles" / "persona")
     assert machine_home() == root.resolve()
 
 
@@ -60,7 +60,7 @@ def test_sidecar_koku_profilden_BAGIMSIZ(home) -> None:
     use(root)
     at_root = sidecar.sidecar_root()
 
-    use(root / "profiles" / "girlfriend")
+    use(root / "profiles" / "persona")
     at_profile = sidecar.sidecar_root()
 
     assert at_root == at_profile, "profil kendi motorlarini istemek zorunda kalirdi"
@@ -73,7 +73,7 @@ def test_ses_dizini_profilden_BAGIMSIZ(home) -> None:
     use(root)
     at_root = voice_models.voice_dir()
 
-    use(root / "profiles" / "girlfriend")
+    use(root / "profiles" / "persona")
     at_profile = voice_models.voice_dir()
 
     assert at_root == at_profile, "her profil ayni gigabaytlari yeniden indirirdi"

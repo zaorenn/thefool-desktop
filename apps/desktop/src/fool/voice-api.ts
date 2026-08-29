@@ -146,7 +146,7 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   // yaziya dokme ``profileScoped()`` kullaniyor ve AKTIF profile gidiyor.
   //
   // Iki yuzey iki ayri arka uca bakinca panel yalan soyluyor: kullanici
-  // ``girlfriend`` profili acikken motoru "Chatterbox" secmis gorunuyor
+  // ``persona`` profili acikken motoru "Chatterbox" secmis gorunuyor
   // (birincil profilin config'i oyle), ama konusma o profilin kendi
   // config'inden okunuyor ve orada hala ``kokoro`` yaziyor. Ekranda cikan
   // hata da yanlis motoru sucluyor: "Kokoro kurulu degil" -- kullanicinin

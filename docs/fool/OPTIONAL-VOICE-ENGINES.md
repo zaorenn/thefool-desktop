@@ -146,7 +146,7 @@ tts:
 ```
 
 Remember that voice settings are **per profile**. Selecting an engine while the
-`girlfriend` profile is active writes to that profile's `config.yaml`, not the
+`persona` profile is active writes to that profile's `config.yaml`, not the
 main one — and user plugins are read from the *active profile's* directory too,
 so the plugin folder has to exist under each profile that uses the engine.
 

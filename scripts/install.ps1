@@ -3393,6 +3393,27 @@ function Install-NodeDeps {
         }
     }
 
+    # FOOL-SEAM: defer-browser-tools
+    #
+    # ILK ACILISTA ATLANIYOR.
+    #
+    # Olculdu (kullanicinin ikinci makinesi): bu asama TEK BASINA 10 dakika
+    # surdu ve toplam kurulumu 20 dakikanin uzerine cikardi. Yaptigi is depo
+    # kokunde ``npm install`` -- yani BUTUN monorepo'nun devDependencies'i
+    # (electron, electron-builder, vite, playwright) -- ustune Playwright
+    # Chromium indirmesi.
+    #
+    # Masaustu uygulamasi bunlarin HICBIRINE ihtiyac duymuyor: kendi derlenmis
+    # halini paketin icinde tasiyor. Bu is yalnizca TARAYICI ARACLARI icin, ve
+    # onlar istege bagli bir yetenek. Yeni kullanicinin ilk 20 dakikasini hic
+    # kullanmayabilecegi bir yetenegi beklemekle gecirmesi kabul edilemez.
+    #
+    # ``fool setup tools`` isteyene sonradan kuruyor.
+    if ($env:FOOL_INSTALL_DEFER_BROWSER_TOOLS -and $env:FOOL_INSTALL_DEFER_BROWSER_TOOLS -ne "0") {
+        Write-Info "Skipping browser tools for now (run 'fool setup tools' to add them)"
+        return
+    }
+
     # Browser tools
     if (Test-Path "$InstallDir\package.json") {
         Write-Info "Installing Node.js dependencies (browser tools)..."

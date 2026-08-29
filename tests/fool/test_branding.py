@@ -247,6 +247,7 @@ EXPECTED_SEAMS = {
     "shared-window-values",
     "voice-stop-bridge",
     "voice-warm-on-open",
+    "defer-browser-tools",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

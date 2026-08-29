@@ -468,6 +468,16 @@ function spawnPowerShell(scriptPath, args, { emit, stageName, abortSignal, herme
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
+          // FOOL-SEAM: defer-browser-tools
+          //
+          // Tarayici araclari ILK ACILISTA kurulmuyor. Olculdu: o asama tek
+          // basina 10 dakika suruyor (depo kokunde ``npm install`` -- butun
+          // monorepo'nun devDependencies'i -- ustune Playwright Chromium) ve
+          // masaustu uygulamasi bunlarin hicbirine ihtiyac duymuyor; kendi
+          // derlenmis halini paketin icinde tasiyor.
+          //
+          // ``fool setup tools`` isteyene sonradan kuruyor.
+          FOOL_INSTALL_DEFER_BROWSER_TOOLS: '1',
           // Pass FOOL_HOME through so install.ps1 respects the caller's
           // choice rather than re-computing the default.
           FOOL_HOME: hermesHome || process.env.FOOL_HOME || ''
@@ -566,6 +576,8 @@ function spawnBash(scriptPath, args, { emit, stageName, abortSignal, hermesHome 
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,
+        // Ayni gerekce (FOOL-SEAM: defer-browser-tools).
+        FOOL_INSTALL_DEFER_BROWSER_TOOLS: '1',
         FOOL_HOME: hermesHome || process.env.FOOL_HOME || ''
       }
     })

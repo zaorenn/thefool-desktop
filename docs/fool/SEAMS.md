@@ -90,6 +90,7 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `shared-window-values` | `apps/desktop/electron/{main,preload}.ts`, `apps/desktop/src/fool/cross-window-atom.ts` | Paketlenmiş sürümde çentik ana pencerenin değerlerini hiç görmez (`file://` ayrı localStorage) |
 | `voice-stop-bridge` | `apps/desktop/src/main.tsx` | Çentikten araya girmek sesi durdurmaz; ses başka bir pencerede çalmaya devam eder |
 | `voice-warm-on-open` | `apps/desktop/src/main.tsx` | Motor yalnızca kullanıcı konuşmaya hazırlanınca ısınır; ilk cümle soğuk yüklemeyi bekler (ölçüldü: 36,8 sn) |
+| `defer-browser-tools` | `scripts/install.ps1`, `apps/desktop/electron/bootstrap-runner.ts` | İlk açılış tarayıcı araçlarını bekler: tek başına 10 dk, toplam kurulum 20 dk+ |
 | `accent-override` | `apps/desktop/src/themes/*` | Persona vurgu rengi uygulanmaz |
 | `notch-window` / `notch-route` / `notch-ipc` / `notch-shortcut` / `notch-quit` / `notch-no-chrome` | `apps/desktop/electron/main.ts`, `preload.ts`, `app/contrib/*` | Çentik açılmaz ya da Ctrl+Alt+V ölür |
 | `slow-voice-engine` | `fool/voice_models.py` | Gerçek zamandan yavaş motorlar listeye geri döner |

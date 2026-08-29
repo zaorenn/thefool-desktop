@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { claimBarge, createBargeGate, forceClaimBarge, releaseBarge } from '@/fool/notch/barge-in'
 import { HANDS_FREE_VAD } from '@/fool/notch/hands-free'
+import { waitUntilSettled } from '@/fool/notch/interrupt'
 import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { useI18n } from '@/i18n'
@@ -46,10 +47,6 @@ interface VoiceConversationOptions {
    *  fully release the capture device first, so the two never contend. */
   beforeMicOpen?: () => Promise<void> | void
 }
-
-/** How long a barge-triggered interrupt may take to settle before we submit
- *  the captured utterance anyway. */
-const INTERRUPT_SETTLE_TIMEOUT_MS = 5_000
 
 export function useVoiceConversation({
   busy,
@@ -379,11 +376,11 @@ export function useVoiceConversation({
 
         // A generation-phase barge interrupted the in-flight turn; the submit
         // path refuses while `busy`, so wait for the interrupt to settle.
-        const deadline = Date.now() + INTERRUPT_SETTLE_TIMEOUT_MS
-
-        while (busyRef.current && Date.now() < deadline) {
-          await new Promise(resolve => window.setTimeout(resolve, 100))
-        }
+        //
+        // FOOL-SEAM: shared-voice-policy -- kural ORTAK modulde
+        // (``fool/notch/interrupt.ts``). Burada bir dongu, centikte hic bekleme
+        // yoktu; ayni davranisin iki kopyasi olmasi zaten farkin sebebiydi.
+        await waitUntilSettled({ busy: () => busyRef.current })
 
         awaitingSpokenResponseRef.current = true
         dropSpeechSession()

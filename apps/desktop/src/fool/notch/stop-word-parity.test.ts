@@ -62,4 +62,17 @@ describe('sesli yuzey esligi', () => {
     expect(NOTCH).toContain('takeVoicePlaybackInterrupted')
     expect(NOTCH).toContain('interrupted')
   })
+
+  it('IKISI de araya girdikten sonra turun YATISMASINI bekliyor', () => {
+    // Farkin kaldigi son yer buydu: sohbet kipinde bir dongu vardi, centikte
+    // hic bekleme yoktu. Kural artik ``interrupt.ts``te tek kopya.
+    expect(NOTCH).toContain('settle:')
+    expect(CONVERSATION).toContain('waitUntilSettled')
+  })
+
+  it('bekleme kurali ORTAK modulde, kopyalanmis degil', () => {
+    for (const source of [NOTCH, CONVERSATION]) {
+      expect(source).not.toContain('INTERRUPT_SETTLE_TIMEOUT_MS =')
+    }
+  })
 })

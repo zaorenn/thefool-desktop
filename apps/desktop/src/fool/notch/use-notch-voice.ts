@@ -36,7 +36,7 @@ import {
 } from '@/lib/voice-playback'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 import { ownsAmbientCue } from '@/store/ambient'
-import { $messages } from '@/store/session'
+import { $busy, $messages } from '@/store/session'
 import { $voicePlayback } from '@/store/voice-playback'
 
 import { voiceApi } from '../voice-api'
@@ -823,6 +823,14 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
         void interruptThenSubmit({
           interrupt: haltTurn,
           onInterruptError: () => undefined,
+          // Turun YATISMASINI bekle. Sohbet kipi bunu baslangictan beri
+          // yapiyordu, centik yapmiyordu: uretim ortasinda araya girince yeni
+          // cumle hala mesgul bir oturuma gidiyordu. Kural artik ortak
+          // (``./interrupt.ts``), yani ikisi ayrisamiyor.
+          //
+          // ``$busy`` centik penceresinde hic dolmuyorsa bekleme ANINDA
+          // donuyor -- yani en kotu hal bugunku davranis.
+          settle: { busy: () => $busy.get() },
           submit: () => submitAudio(audio)
         }).catch((cause: unknown) => {
           setStatus('idle')

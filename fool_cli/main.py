@@ -7868,6 +7868,63 @@ def _desktop_launch_options() -> tuple[list[str], str, str]:
     return flags, disable_gpu, password_store
 
 
+def _ensure_windows_desktop_shortcut(executable: Optional[Path]) -> None:
+    """Masaüstüne kısayol koy — yoksa.
+
+    İstenen: "``fool desktop`` ilk çalıştığında ... masaüstünde exesi olmalı,
+    kullanıcı isterse hâlâ terminalden ``fool desktop`` ile çalıştırabilmeli
+    ya da isterse masaüstü kısayolundan açabilmeli."
+
+    Kısayolu üreten kod ``scripts/install.ps1``de zaten vardı
+    (``New-DesktopShortcuts``) ama YALNIZCA installer yolunda koşuyordu.
+    Terminalden kuran kullanıcı uygulamayı derliyor, açıyor, kullanıyor --
+    ve masaüstünde hiçbir şey görmüyor. İki kurulum yolu aynı sonucu
+    vermeliydi.
+
+    ÜZERİNE YAZMIYOR: var olan bir kısayolu tazelemek, kullanıcının kendi
+    taşıdığı/yeniden adlandırdığı kısayolu geri getirmek olurdu. Yalnızca
+    hiç yoksa oluşturuluyor.
+
+    Hata YUTULUYOR: kısayol bir kolaylık. Oluşturulamaması uygulamanın
+    açılmasını engellememeli.
+    """
+    if sys.platform != "win32" or executable is None or not executable.is_file():
+        return
+
+    try:
+        desktop = Path(os.path.expanduser("~")) / "Desktop"
+
+        if not desktop.is_dir():
+            return
+
+        link = desktop / "The Fool.lnk"
+
+        if link.exists():
+            return
+
+        # PowerShell WScript.Shell -- ``install.ps1``in kullandigi yol.
+        script = (
+            "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('"
+            + str(link).replace("'", "''")
+            + "');$s.TargetPath='"
+            + str(executable).replace("'", "''")
+            + "';$s.WorkingDirectory='"
+            + str(executable.parent).replace("'", "''")
+            + "';$s.Description='The Fool';$s.Save()"
+        )
+        subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            check=False,
+            capture_output=True,
+            timeout=20,
+        )
+
+        if link.exists():
+            print(f"  ✓ Desktop shortcut created: {link}")
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Desktop shortcut could not be created: %s", exc)
+
+
 def _register_linux_desktop_entry() -> None:
     """Install the XDG desktop entry for Hermes Desktop (Linux only, best-effort).
 
@@ -8112,6 +8169,9 @@ def cmd_gui(args: argparse.Namespace):
     # in the application menu with its icon. Best-effort and idempotent.
     # A failure must never stop the app from launching.
     _register_linux_desktop_entry()
+    # Windows: aynisinin masaustu karsiligi. Installer bunu zaten yapiyordu;
+    # terminalden kuran kullanici masaustunde hicbir sey gormuyordu.
+    _ensure_windows_desktop_shortcut(packaged_executable)
 
     # --build-only: produce the artifact but do NOT launch. The installer's
     # --update flow drives the rebuild headlessly and then launches the desktop

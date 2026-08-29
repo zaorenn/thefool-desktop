@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
+import { interruptThenSubmit, shouldInterruptTurn, waitUntilSettled } from './interrupt'
 
 describe('durdurma penceresi', () => {
   it('dusunme ve konusma sirasinda durduruyor', () => {
@@ -89,5 +89,88 @@ describe('durdur-sonra-gonder sirasi', () => {
         submit: () => Promise.reject(new Error('submit failed'))
       })
     ).rejects.toThrow('submit failed')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Yatışmayı bekleme — iki yüzeyin ORTAK kuralı
+//
+// "notch bu conversation modun birebir aynısı ancak bas konuşlu hali olmalı."
+// Farkın kaldığı son yer buydu: sohbet kipi araya girdikten sonra turun
+// bitmesini bekliyordu, çentik beklemeden gönderiyordu.
+// ---------------------------------------------------------------------------
+
+describe('waitUntilSettled', () => {
+  const sleep = () => Promise.resolve()
+
+  it('tur bitmisse HEMEN donuyor', async () => {
+    expect(await waitUntilSettled({ busy: () => false, sleep })).toBe(true)
+  })
+
+  it('tur bitene kadar BEKLIYOR', async () => {
+    let left = 3
+
+    const settled = await waitUntilSettled({
+      busy: () => {
+        left -= 1
+
+        return left > 0
+      },
+      sleep
+    })
+
+    expect(settled).toBe(true)
+    expect(left).toBeLessThanOrEqual(0)
+  })
+
+  it('yatismayan tur icin SURE DOLUYOR, sonsuza kadar beklemiyor', async () => {
+    // Cumleyi sonsuza kadar tutmak, gec gondermekten kotu.
+    const settled = await waitUntilSettled({ busy: () => true, timeoutMs: 0, sleep })
+
+    expect(settled).toBe(false)
+  })
+})
+
+describe('interruptThenSubmit + settle', () => {
+  it('gonderim yatismadan BASLAMIYOR', async () => {
+    const order: string[] = []
+    let busy = true
+
+    await interruptThenSubmit({
+      interrupt: () => {
+        order.push('interrupt')
+        busy = false
+      },
+      settle: { busy: () => busy, sleep: () => Promise.resolve() },
+      submit: () => order.push('submit')
+    })
+
+    expect(order).toEqual(['interrupt', 'submit'])
+  })
+
+  it('settle VERILMEZSE eski davranis korunuyor', async () => {
+    const order: string[] = []
+
+    await interruptThenSubmit({
+      interrupt: () => order.push('interrupt'),
+      submit: () => order.push('submit')
+    })
+
+    expect(order).toEqual(['interrupt', 'submit'])
+  })
+
+  it('durdurma DUSSE bile cumle gonderiliyor', async () => {
+    // Kullanicinin konusmasini sessizce cope atmak, araya girmenin kendisinden
+    // kotu bir sonuc.
+    const order: string[] = []
+
+    await interruptThenSubmit({
+      interrupt: () => Promise.reject(new Error('ag hatasi')),
+      onInterruptError: () => order.push('reported'),
+      settle: { busy: () => false, sleep: () => Promise.resolve() },
+      submit: () => order.push('submit')
+    })
+
+    expect(order).toEqual(['reported', 'submit'])
   })
 })

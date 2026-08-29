@@ -40,11 +40,56 @@ export function shouldInterruptTurn(status: NotchStatus): boolean {
   return status === 'thinking' || status === 'speaking'
 }
 
+/** Araya girmenin yatışması için beklenecek en uzun süre. */
+export const INTERRUPT_SETTLE_TIMEOUT_MS = 5_000
+
+export interface SettleOptions {
+  /** Tur HÂLÂ sürüyor mu? Her yoklamada yeniden okunuyor. */
+  busy: () => boolean
+  timeoutMs?: number
+  /** Sınav için enjekte edilebilir bekleme. */
+  sleep?: (ms: number) => Promise<void>
+}
+
+/**
+ * Durdurma İSTENDİ ile tur GERÇEKTEN bitti arasını bekle.
+ *
+ * Ağ geçidine "durdur" demek anında değil: istek dönüyor, tur hâlâ
+ * çözülüyor. Gönderim yolu meşgul bir oturumu reddediyor, yani beklemeden
+ * göndermek kullanıcının cümlesini sessizce düşürüyor.
+ *
+ * Süre sınırlı: yatışmayan bir tur yüzünden cümleyi sonsuza kadar tutmak,
+ * geç göndermekten kötü. Süre dolarsa yine de gönderiliyor.
+ */
+export async function waitUntilSettled({
+  busy,
+  timeoutMs = INTERRUPT_SETTLE_TIMEOUT_MS,
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+}: SettleOptions): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs
+
+  while (busy() && Date.now() < deadline) {
+    await sleep(100)
+  }
+
+  return !busy()
+}
+
 export interface InterruptThenSubmitSteps {
   interrupt: () => Promise<unknown> | unknown
   submit: () => Promise<unknown> | unknown
   /** Durdurma düştüyse haber ver — ama akışı kesme. */
   onInterruptError?: (cause: unknown) => void
+  /**
+   * Verilirse gönderimden ÖNCE turun yatışması bekleniyor.
+   *
+   * Sohbet kipi bunu baştan beri yapıyordu, notch yapmıyordu -- ve fark
+   * kullanıcının gördüğü davranışta: üretim ortasında araya girince notch
+   * yeni cümleyi hâlâ meşgul bir oturuma yolluyordu. İki yüzey "notch,
+   * conversation'ın bas-konuşlu hâli olmalı" diye tanımlandığı için kural
+   * TEK yerde duruyor.
+   */
+  settle?: SettleOptions
 }
 
 /**
@@ -58,6 +103,10 @@ export async function interruptThenSubmit(steps: InterruptThenSubmitSteps): Prom
     await steps.interrupt()
   } catch (cause) {
     steps.onInterruptError?.(cause)
+  }
+
+  if (steps.settle) {
+    await waitUntilSettled(steps.settle)
   }
 
   await steps.submit()

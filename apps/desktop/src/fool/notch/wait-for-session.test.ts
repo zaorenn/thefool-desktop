@@ -62,7 +62,17 @@ describe('centik bekleyen cozucuyu kullaniyor', () => {
 
     const source = readFileSync(join(import.meta.dirname, 'use-notch-voice.ts'), 'utf8')
 
-    expect(source.includes('waitForVoiceSession()')).toBe(true)
+    // Artik yalnizca BEKLEMEKLE kalmiyor, oturum yoksa bir tane de ISTIYOR
+    // (bkz. ``active-session.ts``). Sinanan sey ayni: dogrudan ``.get()``
+    // okumak, henuz yayinlanmamis kimligi kacirmak demek.
+    expect(source.includes('waitForVoiceSessionOrOpen()')).toBe(true)
+
+    // ``haltTurn`` icindeki dogrudan okuma BILINCLI ve gerekcesi orada
+    // yazili: suren bir turu durduruyor, oturum yoksa durduracak sey de yok.
+    // Sinanan sey GONDERIM yolu.
+    const resolver = source.slice(source.indexOf('const resolveSessionId'))
+
+    expect(resolver.slice(0, 200)).not.toContain('$voiceSessionId.get()')
   })
 
   it('hata mesaji NE YAPILACAGINI soyluyor', async () => {
@@ -73,6 +83,10 @@ describe('centik bekleyen cozucuyu kullaniyor', () => {
 
     // Eski hali sebebi de caresi de vermiyordu.
     expect(source.includes('Could not open a voice session')).toBe(false)
-    expect(source.includes('open one in the main window')).toBe(true)
+    // "Once pencerede bir sohbet ac" ARTIK bir care degil: centik oturumu
+    // kendisi actiriyor. Mesaj yalnizca o da basarisiz olursa cikiyor ve
+    // hala nereye bakilacagini soyluyor.
+    expect(source.includes('open one in the main window')).toBe(false)
+    expect(source.includes('try the main window')).toBe(true)
   })
 })

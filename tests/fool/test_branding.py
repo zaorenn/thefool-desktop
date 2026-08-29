@@ -245,6 +245,7 @@ EXPECTED_SEAMS = {
     "notch-opens-session",
     "default-memory",
     "shared-window-values",
+    "voice-stop-bridge",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

@@ -1,6 +1,10 @@
 import './styles.css'
 // Side-effect: reports in-flight turns to the main process for the quit guard.
 import './store/active-work'
+// FOOL-SEAM: voice-stop-bridge
+// Sesi kimin caldigi baştan belli degil; "sesi kes" istegi HER pencerede
+// dinlenmeli (bkz. fool/voice-stop-bridge.ts).
+import './fool/voice-stop-bridge'
 // Side-effect: mirrors the machine's AC/battery state for poll demotion.
 import './store/power'
 // Side-effect: applies the persisted window translucency on load.

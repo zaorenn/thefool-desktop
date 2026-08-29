@@ -715,4 +715,18 @@ export function takeVoicePlaybackInterrupted(): boolean {
 export function interruptVoicePlayback() {
   markVoicePlaybackInterrupted()
   stopVoicePlayback()
+
+  // SESI CALAN pencere baska olabilir.
+  //
+  // ``stopVoicePlayback`` cagrildigi pencerenin kendi ``AudioContext``ini
+  // durduruyor. Cevabi cogu zaman ANA pencere seslendiriyor (centik
+  // ``canSpeak('notch')`` ile susuyor), yani centikten araya girmek kendi
+  // sessizligini kesiyor ve kullanicinin duydugu ses calmaya devam ediyordu.
+  //
+  // Dinamik ice aktarma: bu modul tarayici yuzeyinde de kosuyor ve orada
+  // masaustu koprusu yok; ayrica ``voice-stop-bridge`` bu modulu ice
+  // aktardigi icin statik olsaydi dongu olurdu.
+  void import('@/fool/voice-stop-bridge')
+    .then(({ requestVoiceStopEverywhere }) => requestVoiceStopEverywhere())
+    .catch(() => undefined)
 }

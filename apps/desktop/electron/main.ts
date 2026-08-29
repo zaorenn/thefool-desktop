@@ -651,8 +651,16 @@ function loadInstallStamp() {
         })
       }
     } catch (e) {
-      console.warn(`[fool] install-stamp.json found at ${p} , but parsing failed with ${e}`)
-      // Either ENOENT or malformed JSON; try the next candidate
+      // YOK olmak hata DEGIL: aday listesi bilerek iki yerlidir ve calisan her
+      // kurulumda ikisinden yalnizca biri vardir. Mesaj "found at ... but
+      // parsing failed" diyordu, yani her acilista OLMAYAN bir dosyayi
+      // bulunmus ilan edip ENOENT'i ayristirma hatasi gibi gosteriyordu --
+      // gunlukte hicbir seyi bozuk olmayan bir kurulumda duran bir uyari.
+      //
+      // Gercek bir bozukluk (okunabiliyor ama JSON degil) HALA bildiriliyor.
+      if ((e as NodeJS.ErrnoException)?.code !== 'ENOENT') {
+        console.warn(`[fool] install-stamp.json at ${p} could not be parsed: ${e}`)
+      }
     }
   }
 

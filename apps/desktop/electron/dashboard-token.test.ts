@@ -145,3 +145,23 @@ test('adoptServedDashboardToken falls back to the spawn token when the fetch fai
   assert.equal(logs.length, 1)
   assert.match(logs[0], /could not read served dashboard token \(The Fool backend\): boom/)
 })
+
+test('headless backend 404 is not logged as a failure', async () => {
+  // `fool serve` web arayuzunu BILEREK kapatiyor ve bunu 404 ile soyluyor.
+  // Saglikli her acilista bir "could not read" satiri birakmak, gunlukteki
+  // gercek hatalari aramayi zorlastiran seyin ta kendisi.
+  const logs = []
+
+  const token = await adoptServedDashboardToken('http://127.0.0.1:9120', 'spawn-token', {
+    childAlive: () => true,
+    fetchText: async () => {
+      throw new Error(
+        '404: {"error":"Headless backend (fool serve): web UI disabled - use `fool dashboard` for the browser UI."}'
+      )
+    },
+    rememberLog: line => logs.push(line)
+  })
+
+  assert.equal(token, 'spawn-token')
+  assert.deepEqual(logs, [])
+})

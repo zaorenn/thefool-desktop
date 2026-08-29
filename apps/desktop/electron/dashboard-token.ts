@@ -87,7 +87,16 @@ function isForeignBackendToken({ servedToken, spawnToken, childAlive }) {
  */
 async function adoptServedDashboardToken(baseUrl, spawnToken, { childAlive, label = 'The Fool backend', ...options }) {
   const servedToken = await resolveServedDashboardToken(baseUrl, spawnToken, options).catch(error => {
-    options.rememberLog?.(`[boot] could not read served dashboard token (${label}): ${error.message}`)
+    // `fool serve` web arayuzunu BILEREK kapatiyor ve o durumu 404 ile
+    // soyluyor. Bir jeton sayfasi olmamasi burada beklenen hal: masaustu
+    // zaten kendi spawn jetonunu kullanmaya devam ediyor.
+    //
+    // Bunu "could not read" diye gunluge yazmak, saglikli her acilista bir
+    // hata satiri birakiyordu -- ve gunlukteki gercek hatalari aramayi
+    // zorlastiran sey tam olarak bu tur satirlar.
+    if (!/web UI disabled/i.test(error.message ?? '')) {
+      options.rememberLog?.(`[boot] could not read served dashboard token (${label}): ${error.message}`)
+    }
 
     return spawnToken
   })

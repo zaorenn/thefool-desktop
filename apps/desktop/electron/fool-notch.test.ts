@@ -6,6 +6,9 @@
  * yerine tam bir sohbet penceresi ekranın üstüne yapışır.
  */
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -78,5 +81,41 @@ describe('buildNotchWindowUrl', () => {
 
     expect(url.startsWith('file:///')).toBe(true)
     expect(url).toContain('?win=notch#/')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FOOL-SEAM: notch-profile
+// ---------------------------------------------------------------------------
+
+describe('centik profili', () => {
+  it('profil verildiginde sorgu dizesinde TASINIYOR', () => {
+    const url = buildNotchWindowUrl({ devServer: 'http://127.0.0.1:5174', profile: 'girlfriend' })
+
+    expect(url).toContain('profile=girlfriend')
+    expect(url.indexOf('profile=')).toBeLessThan(url.indexOf('#'))
+  })
+
+  it('profil adi KACISLANIYOR', () => {
+    const url = buildNotchWindowUrl({ devServer: 'http://x', profile: 'a b&c' })
+
+    expect(url).toContain('profile=a%20b%26c')
+  })
+
+  it('cagiran taraf profili GERCEKTEN veriyor', () => {
+    // Olculen hata: ``buildNotchWindowUrl`` parametreyi kabul ediyordu ama tek
+    // cagiran onu hic gecmiyordu. Centik birincil arka uca baglaniyor,
+    // kullanicinin acik sohbetini goremiyor ve ekranda sohbet dururken
+    // "No chat is open yet" yaziyordu.
+    const chr10 = String.fromCharCode(10)
+    const SLASHES = '//'
+    const main = readFileSync(join(__dirname, 'main.ts'), 'utf8')
+    // Yorumlar cikariliyor: sinanan sey ARGUMANIN gecilmesi, cagrinin kac
+    // karakter uzun oldugu degil.
+    const code = main.split(chr10).filter(line => !line.trim().startsWith(SLASHES)).join(chr10)
+    const call = code.slice(code.indexOf('buildNotchWindowUrl({'))
+    const args = call.slice(0, call.indexOf('})') + 2)
+
+    expect(args).toContain('profile:')
   })
 })

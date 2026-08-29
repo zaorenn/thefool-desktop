@@ -241,6 +241,7 @@ EXPECTED_SEAMS = {
     "persona-kickoff",
     "setup-voice",
     "setup-voice-intro",
+    "notch-profile",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

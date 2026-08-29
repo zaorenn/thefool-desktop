@@ -12854,6 +12854,19 @@ function spawnNotchWindow() {
     win,
     buildNotchWindowUrl({
       devServer: DEV_SERVER,
+      // FOOL-SEAM: notch-profile
+      //
+      // Centik tam bir uygulama renderer'i ve profil TASIMADAN acilirsa
+      // BIRINCIL arka uca baglaniyor. Kullanici baska bir profilde konusurken
+      // -- ki sesin asil kullanildigi yer orasi -- centik o profilin
+      // oturumlarini hic gormuyor: ``waitForVoiceSession`` bos donuyor ve
+      // kullaniciya "No chat is open yet" yaziyor, ekranda acik bir sohbet
+      // dururken.
+      //
+      // HUD ayni tuzaga dusmustu ve cozumu ayni: profil sorgu dizesinde
+      // tasiniyor ve ``windowProfileOverride()`` onu acilista okuyor. Bu cagri
+      // parametreyi zaten kabul ediyordu; verilmiyordu.
+      profile: readActiveDesktopProfile(),
       rendererIndexPath: DEV_SERVER ? undefined : resolveRendererIndex()
     }),
     'Notch'

@@ -30,6 +30,7 @@ import re
 from dataclasses import dataclass, field
 
 from .kaynak import Belge
+from .turkce import sade_baslik
 from .yonerge import RAPOR_TURLERI, RaporTuru
 
 #: "I. GİRİŞ", "IV. TARTIŞMA VE DEĞERLENDİRME", "X. SONUÇ" gibi bölüm başlıkları.
@@ -89,17 +90,9 @@ class CozumlenmisRapor:
         return None
 
 
-def _sadelestir(baslik: str) -> str:
-    """Karşılaştırma için başlığı normalleştir.
-
-    "I.GİRİŞ", "I. GİRİŞ" ve "I . GIRIŞ" aynı bölüm. Örnek raporda üç yazım
-    da geçiyor; kelimesi kelimesine karşılaştırmak yarım raporu "hiç bölüm
-    yok" diye okurdu.
-    """
-    baslik = baslik.replace("İ", "i").replace("I", "ı")
-    baslik = re.sub(r"[^\w\s]", " ", baslik.lower())
-
-    return " ".join(baslik.split())
+#: Başlık sadeleştirmesi ``turkce``de duruyor -- taslak ve uygunluk denetimi
+#: de aynı kuralı kullanıyor (gerekçe: ``turkce.sade_baslik``).
+_sadelestir = sade_baslik
 
 
 def bolumlere_ayir(belge: Belge) -> CozumlenmisRapor:

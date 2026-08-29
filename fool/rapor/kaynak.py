@@ -52,6 +52,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import pdf_kurtar
+from .turkce import kucuk
 
 #: Türkçe düzyazıda 'i' harfinin harfler içindeki payı ~%8. Bu eşiğin altı,
 #: metnin kendisi değil ÇIKARMANIN bozuk olduğu anlamına geliyor.
@@ -404,9 +405,18 @@ _KISI = re.compile(r"\b([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞ�
 _TUR_ISARETLERI = (
     ("şikâyet dilekçesi", ("şikayet", "şikâyet", "dilekçe")),
     ("ifade tutanağı", ("ifade tutanağı", "ifadesi alınmış", "ifade veren")),
-    ("mahkeme kararı", ("esas", "karar", "mahkemesi")),
-    ("makam onayı", ("olur", "makam onayı")),
+    # "esas" ve "karar" TEK BASINA yeterli sayilmiyor.
+    #
+    # Ikisi de Turkce resmi yazinin siradan sozcukleri: "hakedise esas
+    # puantaj", "kararlastirilmistir". Olculdu -- bir ifade tutanagi ile bir
+    # resmi yazi, yalnizca icinde "esas" gectigi icin "mahkeme karari" diye
+    # siniflandi ve bu tur, EK DIZININE yazilan icerigin varsayilani
+    # (``arac.delil_ekle``). Yani raporun resmi ek dizininde bir ifade
+    # tutanagi "mahkeme karari" olarak gorunuyordu.
+    ("mahkeme kararı", ("mahkemesi", "esas no", "karar no", "gerekçeli karar")),
+    ("makam onayı", ("makam onayı", "makam oluru")),
     ("teftiş raporu", ("cevaplı teftiş", "teftiş raporu")),
+    ("resmî yazı", ("bilgilerinize arz", "gereğini arz", "ilgi yazınız")),
 )
 
 
@@ -417,7 +427,15 @@ def kart_cikar(belge: Belge, ek_no: int) -> DelilKarti:
     o tarihin rapora girip resmî bir iddiaya dönüşmesi demek olurdu.
     """
     metin = belge.metin
-    dusuk = metin.lower()
+
+    # ``turkce.kucuk``, ``str.lower`` DEGIL.
+    #
+    # Python "İFADE".lower() cagrisini "i" + U+0307 (birlesik nokta) olarak
+    # cozuyor, yani sonuc "ifade" ile esit DEGIL. Olculdu: basligi "İFADE
+    # TUTANAĞI" olan bir belgede "ifade tutanağı" isareti hic tutmuyor ve
+    # belge yanlis siniflaniyordu. Turkce resmi evrakta basliklar buyuk
+    # harfle yazildigi icin bu, istisna degil olagan hal.
+    dusuk = kucuk(metin)
 
     tur = ""
     for ad, isaretler in _TUR_ISARETLERI:

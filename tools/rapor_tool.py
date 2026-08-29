@@ -59,6 +59,132 @@ KAYNAK_OKU_SCHEMA = {
     },
 }
 
+YONERGE_OGREN_SCHEMA = {
+    "name": "rapor_yonerge_ogren",
+    "description": (
+        "Read a long directive (yönerge) that DESCRIBES how a report must be "
+        "written, and distil it into a saved, machine-checkable "
+        "specification: required sections and their order, page setup "
+        "(margins, font, size, spacing, alignment), page range, annex "
+        "citation shape, cover fields, and the exact closing/conclusion "
+        "phrases the directive mandates.\n\n"
+        "This is NOT rapor_ornek_ogren. That one learns from a filled-in "
+        "example REPORT; this one learns from the rules text. A 70-page "
+        "directive never enters your context — you get a ~30 line summary "
+        "where every rule cites the article it came from.\n\n"
+        "SHOW that summary to the user and get it confirmed before writing: "
+        "extraction is rule-based and can misread. Everything the directive "
+        "did not state is listed in `eksik_kurallar` rather than silently "
+        "defaulted.\n\n"
+        "If the directive defines several report types, all of them come "
+        "back in `diger_iskeletler`; re-run with `bolum_secimi` to pick one."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "yol": {"type": "string", "description": "Path to the directive (.pdf/.docx/.txt)."},
+            "kimlik": {
+                "type": "string",
+                "description": (
+                    "Short id to save the spec under, e.g. 'teftis-2026'. "
+                    "Reuse it when starting drafts."
+                ),
+            },
+            "bolum_secimi": {
+                "type": "string",
+                "description": (
+                    "Which section list to adopt when the directive defines "
+                    "several — an article ('MADDE 11') or part of its title."
+                ),
+            },
+            "sayfa_en_az": {
+                "type": "integer",
+                "description": (
+                    "Minimum pages, used ONLY if the directive states no page "
+                    "range of its own."
+                ),
+            },
+            "sayfa_en_cok": {"type": "integer", "description": "Maximum pages, same rule."},
+        },
+        "required": ["yol", "kimlik"],
+    },
+}
+
+SARTNAME_GOSTER_SCHEMA = {
+    "name": "rapor_sartname_goster",
+    "description": (
+        "Show a saved report specification, or list them all when no id is "
+        "given. Use it to re-read the rules in a later session — the "
+        "directive itself never has to be read again."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string", "description": "Spec id; omit to list all."}
+        },
+    },
+}
+
+UYGUNLUK_SCHEMA = {
+    "name": "rapor_uygunluk_denetle",
+    "description": (
+        "Check a draft against its specification BEFORE producing the "
+        "document, and report concretely what is wrong: missing or empty "
+        "sections, sections out of the directive's order, empty mandatory "
+        "cover fields, a missing closing formula, a conclusion that carries "
+        "none of the directive's mandated phrases, factual claims (dates, "
+        "amounts, file numbers) with no annex reference, and sentences "
+        "repeated verbatim to pad length.\n\n"
+        "`engel` findings block production; `uyari` findings are for you to "
+        "judge. Call this before rapor_taslak_uret — a non-conforming "
+        "official document that has been produced is worse than one that "
+        "was refused, because produced documents get signed."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "kimlik": {"type": "string", "description": "Draft id."},
+            "sartname_kimligi": {
+                "type": "string",
+                "description": "Spec to check against; defaults to the draft's own.",
+            },
+        },
+        "required": ["kimlik"],
+    },
+}
+
+SAYFA_DENETLE_SCHEMA = {
+    "name": "rapor_sayfa_denetle",
+    "description": (
+        "Measure the produced report's REAL page count and compare it to the "
+        "target range. The document is rendered and its numbered pages are "
+        "counted — not estimated — because the same character count fills a "
+        "different number of pages at a different font or spacing.\n\n"
+        "If it is short you get how many characters are missing, calibrated "
+        "from this document's own measured characters-per-page, plus which "
+        "sections are thinnest. Close that gap with NEW findings from the "
+        "sources (rapor_delil_oku), never by widening spacing or repeating "
+        "text — repetition is itself a blocking finding in "
+        "rapor_uygunluk_denetle."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "docx": {"type": "string", "description": "Path to the produced .docx."},
+            "kimlik": {
+                "type": "string",
+                "description": (
+                    "Draft id — supplies the target range from its spec and "
+                    "lets the tool name the thin sections."
+                ),
+            },
+            "en_az": {"type": "integer", "description": "Minimum pages, if no spec."},
+            "en_cok": {"type": "integer", "description": "Maximum pages, if no spec."},
+        },
+        "required": ["docx"],
+    },
+}
+
 ORNEK_OGREN_SCHEMA = {
     "name": "rapor_ornek_ogren",
     "description": (
@@ -158,7 +284,23 @@ TASLAK_BASLAT_SCHEMA = {
         "type": "object",
         "properties": {
             "kimlik": {"type": "string", "description": "Draft id, e.g. 'fazla-mesai-2026'."},
-            "tur": {"type": "string", "description": "inceleme | disiplin | adli | on_inceleme"},
+            "tur": {
+                "type": "string",
+                "description": (
+                    "inceleme | disiplin | adli | on_inceleme — or any name "
+                    "you like when `sartname_kimligi` is given, since the "
+                    "sections then come from the user's own directive."
+                ),
+            },
+            "sartname_kimligi": {
+                "type": "string",
+                "description": (
+                    "Spec id from rapor_yonerge_ogren. Strongly preferred "
+                    "when the user supplied a directive: the section list, "
+                    "page setup and page range all come from it, and "
+                    "production is refused while the draft breaks it."
+                ),
+            },
             "kapak": {"type": "object", "description": "Cover fields; can also be filled in later."},
             "ozet": {"type": "array", "items": {"type": "string"}},
             "imza_yer": {"type": "string"},
@@ -337,6 +479,52 @@ registry.register(
 )
 
 registry.register(
+    name="rapor_yonerge_ogren",
+    toolset="rapor",
+    schema=YONERGE_OGREN_SCHEMA,
+    handler=lambda args, **kw: arac.yonerge_ogren_arac(
+        yol=args.get("yol", ""),
+        kimlik=args.get("kimlik", ""),
+        bolum_secimi=args.get("bolum_secimi", ""),
+        sayfa_en_az=int(args.get("sayfa_en_az", 0) or 0),
+        sayfa_en_cok=int(args.get("sayfa_en_cok", 0) or 0),
+    ),
+    emoji="📜",
+)
+
+registry.register(
+    name="rapor_sartname_goster",
+    toolset="rapor",
+    schema=SARTNAME_GOSTER_SCHEMA,
+    handler=lambda args, **kw: arac.sartname_goster(kimlik=args.get("kimlik", "")),
+    emoji="📐",
+)
+
+registry.register(
+    name="rapor_uygunluk_denetle",
+    toolset="rapor",
+    schema=UYGUNLUK_SCHEMA,
+    handler=lambda args, **kw: arac.uygunluk_denetle(
+        kimlik=args.get("kimlik", ""),
+        sartname_kimligi=args.get("sartname_kimligi", ""),
+    ),
+    emoji="🔎",
+)
+
+registry.register(
+    name="rapor_sayfa_denetle",
+    toolset="rapor",
+    schema=SAYFA_DENETLE_SCHEMA,
+    handler=lambda args, **kw: arac.sayfa_denetle(
+        docx=args.get("docx", ""),
+        kimlik=args.get("kimlik", ""),
+        en_az=int(args.get("en_az", 0) or 0),
+        en_cok=int(args.get("en_cok", 0) or 0),
+    ),
+    emoji="📏",
+)
+
+registry.register(
     name="rapor_ornek_ogren",
     toolset="rapor",
     schema=ORNEK_OGREN_SCHEMA,
@@ -377,6 +565,7 @@ registry.register(
         imza_tarih=args.get("imza_tarih", ""),
         sifirla=bool(args.get("sifirla", False)),
         ornek_rapor=args.get("ornek_rapor"),
+        sartname_kimligi=args.get("sartname_kimligi", ""),
     ),
     emoji="🗂️",
 )

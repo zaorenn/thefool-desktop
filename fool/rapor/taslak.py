@@ -39,6 +39,8 @@ import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from . import sartname
+from .turkce import sade_baslik
 from .yonerge import RAPOR_TURLERI
 
 #: Taslak kimliğinde yalnızca bunlar: taslak adı dosya yolu oluyor ve
@@ -100,6 +102,13 @@ class Taslak:
     #: dilekçeleri...). Künyeleri burada; TAM METİNLERİ diskte kalıyor ve
     #: yalnızca sorulduğunda parça parça okunuyor.
     deliller: list = field(default_factory=list)
+    #: Bu taslağın uyacağı şartnamenin kimliği (``sartname`` modülü).
+    #:
+    #: Şartnamenin KENDİSİ değil kimliği tutuluyor: kullanıcı yönergedeki bir
+    #: çıkarım hatasını düzeltip şartnameyi yeniden öğrenebiliyor ve o zaman
+    #: yarım kalmış taslakların eski kurallarla devam etmesi istenmez. Kimlik
+    #: tutulduğunda düzeltme bütün taslaklara aynı anda geçiyor.
+    sartname: str = ""
 
     def sozluk(self) -> dict:
         return asdict(self)
@@ -114,6 +123,7 @@ def baslat(
     imza_tarih: str = "",
     sifirla: bool = False,
     hedef_uzunluk: dict | None = None,
+    sartname_kimligi: str = "",
 ) -> Taslak:
     """Yeni taslak aç. Var olanın ÜZERİNE YAZMAZ.
 
@@ -125,9 +135,18 @@ def baslat(
 
     Gerçekten baştan başlanacaksa ``sifirla=True`` açıkça isteniyor.
     """
-    if tur not in RAPOR_TURLERI:
+    # Sartname verildiyse tur ADI SERBEST.
+    #
+    # ``RAPOR_TURLERI`` dort turu koda gomuyor ve kullanicinin yonergesi
+    # bambaska bir rapor tanimlayabiliyor -- iş akışının başlangıç noktası
+    # zaten "bu yönergeyi öğren" olduğu için, öğrenilen türü tanımayan bir
+    # tablo yolun tam ortasında duruyordu. Sartname yoksa eski kural
+    # aynen geçerli: tanınmayan tür reddediliyor.
+    if not sartname_kimligi and tur not in RAPOR_TURLERI:
         raise TaslakHatasi(
-            f"bilinmeyen rapor türü: {tur} (geçerli: {', '.join(sorted(RAPOR_TURLERI))})"
+            f"bilinmeyen rapor türü: {tur} (geçerli: {', '.join(sorted(RAPOR_TURLERI))}). "
+            "Kendi yönergen varsa önce rapor_yonerge_ogren ile şartname çıkar "
+            "ve sartname kimliğini ver."
         )
 
     if not sifirla and _taslak_yolu(kimlik).exists():
@@ -150,6 +169,7 @@ def baslat(
         imza_yer=imza_yer,
         imza_tarih=imza_tarih,
         hedef_uzunluk=dict(hedef_uzunluk or {}),
+        sartname=sartname_kimligi,
     )
     _yaz(taslak)
 
@@ -240,21 +260,46 @@ def kapak_guncelle(kimlik: str, alanlar: dict) -> Taslak:
     return taslak
 
 
+def beklenen_bolumler(taslak: "Taslak") -> tuple[list[str], str]:
+    """Bu taslağın uyması gereken bölüm listesi ve rapor türünün adı.
+
+    Sıra: önce ŞARTNAME (kullanıcının kendi yönergesi), sonra koda gömülü
+    tablo. Şartname kayıtlıysa o kazanıyor -- kullanıcı yönergeyi bilerek
+    verdi ve gömülü tablo başka bir kurumun yönergesinden geliyor.
+
+    Şartname kimliği yazılı ama dosyası silinmişse bölüm listesi BOŞ
+    dönüyor ve bu bilerek: sessizce gömülü tabloya düşmek, taslağın hangi
+    kurallarla denetlendiğini kullanıcıya yanlış söylerdi.
+    """
+    if taslak.sartname:
+        kayitli = sartname.varsa_yukle(taslak.sartname)
+
+        if kayitli is not None:
+            return list(kayitli.bolumler), kayitli.ad
+
+        return [], f"şartname bulunamadı: {taslak.sartname}"
+
+    tur = RAPOR_TURLERI.get(taslak.tur)
+
+    return (list(tur.bolumler), tur.ad) if tur else ([], taslak.tur)
+
+
 def durum(kimlik: str) -> dict:
     """Taslakta ne var, yönergeye göre ne eksik?"""
     taslak = yukle(kimlik)
-    tur = RAPOR_TURLERI[taslak.tur]
+    beklenen, tur_adi = beklenen_bolumler(taslak)
 
     mevcut = [b.get("baslik", "") for b in taslak.bolumler]
     sade = {_sade(b) for b in mevcut}
 
-    eksik = [b for b in tur.bolumler if not _var_mi(_sade(b), sade)]
+    eksik = [b for b in beklenen if not _var_mi(_sade(b), sade)]
 
     return {
         "kimlik": taslak.kimlik,
         "tur": taslak.tur,
-        "tur_adi": tur.ad,
-        "beklenen_bolumler": list(tur.bolumler),
+        "tur_adi": tur_adi,
+        "sartname": taslak.sartname or None,
+        "beklenen_bolumler": list(beklenen),
         "yazilan_bolumler": mevcut,
         "eksik_bolumler": eksik,
         "oge_sayisi": {b.get("baslik", ""): len(b.get("ogeler", [])) for b in taslak.bolumler},
@@ -336,9 +381,14 @@ def _siradaki_adim(taslak: "Taslak", eksik: list[str]) -> str:
             f"rapor_taslak_ozet, kimlik='{taslak.kimlik}'."
         )
 
+    # Uretimden ONCE denetim. Sirali soylenmesinin sebebi olculdu: model
+    # "siradaki adim" ne diyorsa onu yapiyor ve son adim dogrudan uretim
+    # oldugunda denetim hic cagrilmiyordu -- yani yonergeye aykiri bir belge
+    # uretilip imzaya gidebiliyordu (bkz. ``uygunluk`` modul basligi).
     return (
-        f"Taslak hazır. rapor_taslak_uret aracını kimlik='{taslak.kimlik}' "
-        f"ve hedef dosya yolu ile çağırıp .docx üret."
+        f"Taslak hazır. ÖNCE rapor_uygunluk_denetle aracını "
+        f"kimlik='{taslak.kimlik}' ile çağır; engel yoksa "
+        f"rapor_taslak_uret ile .docx üret."
     )
 
 
@@ -392,9 +442,10 @@ def _kisa_kalanlar(taslak: "Taslak") -> list[tuple[str, int, int]]:
     return kisa
 
 
-def _sade(baslik: str) -> str:
-    baslik = baslik.replace("İ", "i").replace("I", "ı")
-    return " ".join(re.sub(r"[^\w\s]", " ", baslik.lower()).split())
+#: Başlık sadeleştirmesi ``turkce``de duruyor: aynı kuralı çözümleyici ve
+#: uygunluk denetimi de kullanıyor ve üçü ayrışırsa "bölüm var mı" sorusuna
+#: üç farklı cevap çıkar.
+_sade = sade_baslik
 
 
 def _var_mi(hedef: str, mevcut: set[str]) -> bool:
@@ -409,19 +460,24 @@ def sil(kimlik: str) -> None:
 def rapor_sozlugu(kimlik: str) -> dict:
     """Taslağı ``arac.rapor_yaz``ın beklediği yapıya çevir."""
     taslak = yukle(kimlik)
+    beklenen, _ = beklenen_bolumler(taslak)
 
     return {
         "tur": taslak.tur,
         "kapak": taslak.kapak,
         "ozet": taslak.ozet,
-        "bolumler": sirala(taslak.bolumler, taslak.tur),
+        "bolumler": sirala(taslak.bolumler, taslak.tur, beklenen),
         "ekler": taslak.ekler,
         "imza_yer": taslak.imza_yer,
         "imza_tarih": taslak.imza_tarih,
+        "sartname": taslak.sartname,
+        "deliller": taslak.deliller,
     }
 
 
-def sirala(bolumler: list[dict], tur_kimligi: str) -> list[dict]:
+def sirala(
+    bolumler: list[dict], tur_kimligi: str, beklenen_sira: list[str] | None = None
+) -> list[dict]:
     """Bölümleri YÖNERGEDEKİ sıraya diz.
 
     Model bölümleri istediği sırada yazıyor -- ölçüldü: yerel model
@@ -431,13 +487,19 @@ def sirala(bolumler: list[dict], tur_kimligi: str) -> list[dict]:
 
     Yönergede olmayan bir başlık ATILMIYOR, sona ekleniyor: müfettiş kendi alt
     bölümünü açabiliyor (MADDE 8(7)) ve sessizce silmek veri kaybı olurdu.
-    """
-    tur = RAPOR_TURLERI.get(tur_kimligi)
 
-    if tur is None:
+    ``beklenen_sira`` şartnameden gelen sıra; verilmezse koda gömülü tabloya
+    düşülüyor. Sıralama tek yerde kalsın diye iki kaynak burada birleşiyor --
+    ikisi ayrı yazılsaydı şartnameli bir rapor gömülü sıraya göre dizilirdi.
+    """
+    if beklenen_sira is None:
+        tur = RAPOR_TURLERI.get(tur_kimligi)
+        beklenen_sira = list(tur.bolumler) if tur else []
+
+    if not beklenen_sira:
         return list(bolumler)
 
-    beklenen = [_sade(b) for b in tur.bolumler]
+    beklenen = [_sade(b) for b in beklenen_sira]
 
     def anahtar(veri: tuple[int, dict]) -> tuple[int, int]:
         sira, bolum = veri

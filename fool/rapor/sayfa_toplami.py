@@ -43,12 +43,19 @@ from pathlib import Path
 
 from .pdf_cikti import donusturucu_bul, pdf_uret
 
-#: Üstbilgideki sayfa numarası: sayfanın EN BAŞINDA "3/12" gibi.
+#: Üstbilgideki sayfa numarası: bir SATIRIN başında "3/12" gibi.
 #
 #: Satırın tamamı aranmıyor: ``pdftotext`` üstbilgiyi gövdenin ilk satırıyla
-#: aynı satıra koyabiliyor ("1/1 I. GİRİŞ"), o yüzden sayfa başında olması
+#: aynı satıra koyabiliyor ("1/1 I. GİRİŞ"), o yüzden satır başında olması
 #: yetiyor. Ölçüldü -- tam satır araması hiçbir sayfayı saymamıştı.
-_NUMARA = re.compile(r"\A\s*\d+\s*/\s*\d+")
+#
+#: SAYFANIN başında değil SATIRIN başında aranıyor (``re.M``). Önce ``\A``
+#: kullanılıyordu ve bir sayfa TABLOYLA başladığında üstbilgi çıkarılan
+#: metnin başına düşmüyor, tablonun arasına düşüyor -- ölçüldü: 12 sayfalık
+#: bir raporda tabloyla başlayan iki sayfa sayılmadı, toplam 10 çıktı ve
+#: belgenin üstbilgisine "12/10" yazıldı. Yani bu modülün var oluş sebebi
+#: olan sayfa numarası, tam da düzeltmesi gereken biçimde yanlıştı.
+_NUMARA = re.compile(r"^[ \t]*(\d+)\s*/\s*\d+", re.MULTILINE)
 
 
 @dataclass
@@ -85,8 +92,26 @@ def metin_sayfalarini_say(pdf: Path) -> int:
 
     Kapak, özet ve ek dizini boş üstbilgiye bağlı (bkz. ``docx_yazici``), o
     yüzden numarası olan sayfalar tam olarak metin bölümü.
+
+    Numara ARDIŞIK olmak zorunda: sayfa ancak üstünde 1, 2, 3... diye devam
+    eden sıradaki numara varsa sayılıyor. Yalnızca "satır başında n/m var mı"
+    diye bakmak, satırı bir sayıyla başlayan bir tablonun sayfayı üstbilgili
+    göstermesine açık kapı bırakırdı -- bu raporlarda tablo olağan ve
+    hücreler sayı. Ardışıklık, tesadüfi bir eşleşmenin sayılmasını
+    engelliyor: rastgele bir hücrenin tam da beklenen sırayı taşıması
+    gerekirdi.
+
+    Payda BİLEREK denetlenmiyor: ilk baskıda ``SECTIONPAGES`` alanı henüz
+    sabitlenmemiş oluyor ve her sayfada "1" olarak basılıyor ("1/1", "2/1").
+    Saymanın amacı zaten o paydayı düzeltmek.
     """
-    return sum(1 for sayfa in _pdf_sayfa_metinleri(pdf) if _NUMARA.search(sayfa))
+    beklenen = 1
+
+    for sayfa in _pdf_sayfa_metinleri(pdf):
+        if any(int(no) == beklenen for no in _NUMARA.findall(sayfa)):
+            beklenen += 1
+
+    return beklenen - 1
 
 
 def _header_sabitle(ham: str, toplam: int) -> str:

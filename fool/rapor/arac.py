@@ -32,7 +32,8 @@ from .kaynak import oku, token_tahmini
 from .pdf_cikti import pdf_uret
 from .sayfa_toplami import sabitle as _toplami_sabitle
 from .model import EKSIK, Alinti, AltBaslik, Bolum, Ek, Kapak, Paragraf, Rapor, Tablo
-from . import taslak
+from . import sartname as _sartname
+from . import sayfa_hedefi, taslak, uygunluk, yonerge_ogren
 from .secici import ilgili_kesitler
 from .yonerge import RAPOR_TURLERI
 
@@ -130,6 +131,98 @@ def kaynak_oku(
             "sayfa_sayisi": belge.sayfa_sayisi,
             "toplam_token": toplam,
             "metin": belge.metin,
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
+# 1b. Yönergeden öğrenme -- örnek rapordan DEĞİL, kuralları anlatan metinden
+# ---------------------------------------------------------------------------
+
+
+def yonerge_ogren_arac(
+    yol: str,
+    kimlik: str,
+    bolum_secimi: str = "",
+    sayfa_en_az: int = 0,
+    sayfa_en_cok: int = 0,
+) -> str:
+    """Yönergeyi oku, şartname çıkar ve diske kaydet.
+
+    Yönergenin METNİ dönmüyor -- 70 sayfa zaten bağlama sığmıyor ve amaç
+    onu bağlamda tutmak değil, KURALA çevirmek. Dönen şey gözden geçirilecek
+    özet: her kural yanında yönergenin kendi maddesiyle.
+    """
+    try:
+        ogrenme = yonerge_ogren.ogren(
+            yol, kimlik, bolum_secimi, sayfa_en_az, sayfa_en_cok
+        )
+    except (FileNotFoundError, ValueError) as sebep:
+        return _hata(str(sebep))
+    except _sartname.SartnameHatasi as sebep:
+        return _hata(str(sebep))
+
+    try:
+        kayit = _sartname.kaydet(ogrenme.sartname)
+    except _sartname.SartnameHatasi as sebep:
+        return _hata(str(sebep))
+
+    secilen = ogrenme.sartname
+
+    return _sonuc(
+        {
+            "sartname": secilen.kimlik,
+            "kaydedildi": str(kayit),
+            "yonerge": secilen.kaynak,
+            "birim_sayisi": ogrenme.birim_sayisi,
+            "ozet": secilen.ozet_metni(),
+            "bolum_sayisi": len(secilen.bolumler),
+            "secilen_iskelet": secilen.bolum_dayanagi,
+            # Yonergede birden cok rapor turu tanimliysa SECIM gizlenmiyor:
+            # arac en uzun listeyi sectiyse bile digerleri burada duruyor ve
+            # tek cagriyla degistirilebiliyor.
+            "diger_iskeletler": [
+                {
+                    "dayanak": a.dayanak,
+                    "baslik": a.baslik,
+                    "bolum_sayisi": len(a.bolumler),
+                    "bolumler": list(a.bolumler),
+                }
+                for a in ogrenme.bolum_adaylari
+                if a.dayanak != secilen.bolum_dayanagi
+            ],
+            "eksik_kurallar": list(secilen.eksik_kurallar),
+            "uyari": (
+                "Bu şartnameyi kullanıcıya GÖSTER ve onaylat. Çıkarım kurallı "
+                "yapıldı ve yanılabilir; yanlış bir kural 20 sayfalık belgeyi "
+                "sessizce bozar."
+            ),
+        }
+    )
+
+
+def sartname_goster(kimlik: str = "") -> str:
+    """Kayıtlı şartnameyi göster; kimlik verilmezse hepsini listele."""
+    if not kimlik:
+        return _sonuc({"sartnameler": _sartname.listele()})
+
+    try:
+        kayitli = _sartname.yukle(kimlik)
+    except _sartname.SartnameHatasi as sebep:
+        return _hata(str(sebep), sartnameler=_sartname.listele())
+
+    return _sonuc(
+        {
+            "sartname": kayitli.kimlik,
+            "ad": kayitli.ad,
+            "yonerge": kayitli.kaynak,
+            "ozet": kayitli.ozet_metni(),
+            "bolumler": list(kayitli.bolumler),
+            "sayfa_en_az": kayitli.sayfa_en_az,
+            "sayfa_en_cok": kayitli.sayfa_en_cok,
+            "zorunlu_ifadeler": list(kayitli.zorunlu_ifadeler),
+            "kapanis_ifadesi": kayitli.kapanis_ifadesi,
+            "eksik_kurallar": list(kayitli.eksik_kurallar),
         }
     )
 
@@ -287,11 +380,24 @@ def _oge_kur(ham: dict) -> Any:
     )
 
 
-def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = None) -> str:
+def rapor_yaz(
+    rapor_json: str | dict,
+    hedef: str,
+    bicim_kaynagi: str | None = None,
+    sartname_kimligi: str | None = None,
+    zorla: bool = False,
+) -> str:
     """Yapılandırılmış rapordan ``.docx`` üret.
 
     ``bicim_kaynagi`` verilirse biçim O BELGEDEN devralınıyor -- yarım bir
     raporu aynı fontla tamamlamanın yolu bu.
+
+    ``sartname_kimligi`` verilirse biçim YÖNERGEDEN geliyor ve rapor
+    üretilmeden önce şartnameye karşı denetleniyor; engel varsa belge
+    YAZILMIYOR. Bu katılık yalnızca şartnameli yola ait: kullanıcı yönergeyi
+    bilerek verdiyse "hata payı yok" şartı devrededir. Şartnamesiz çağrılar
+    eskisi gibi davranıyor, yoksa koda gömülü dört türle çalışan mevcut akış
+    bir anda üretmeyi bırakırdı.
     """
     try:
         veri = json.loads(rapor_json) if isinstance(rapor_json, str) else rapor_json
@@ -303,11 +409,37 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
 
     tur = veri.get("tur", "inceleme")
 
-    if tur not in RAPOR_TURLERI:
+    # Sartname, sozlukte tasiniyorsa oradan da alinabiliyor: ``taslak_uret``
+    # taslagi cevirirken kimligi icine koyuyor ve arada elden ele gecmesi
+    # gerekmiyor.
+    kayitli = _sartname.varsa_yukle(sartname_kimligi or veri.get("sartname"))
+
+    if kayitli is None and tur not in RAPOR_TURLERI:
         return _hata(
             f"bilinmeyen rapor türü: {tur}",
             gecerli=sorted(RAPOR_TURLERI),
+            oneri=(
+                "Kendi yönergen varsa önce rapor_yonerge_ogren ile şartname "
+                "çıkar ve sartname_kimligi ver."
+            ),
         )
+
+    if kayitli is not None and not zorla:
+        denetim = uygunluk.denetle(veri, kayitli)
+
+        if not denetim.uygun:
+            # Belge YAZILMIYOR. Yonergeye aykiri bir resmi evrak uretmek,
+            # uretmemekten kotu: dosyaya dusen sey imzalaniyor.
+            return _hata(
+                "rapor şartnameye uygun değil; belge yazılmadı",
+                sartname=kayitli.kimlik,
+                engeller=[b.sozluk() for b in denetim.engeller],
+                uyarilar=[b.sozluk() for b in denetim.uyarilar],
+                oneri=(
+                    "Engelleri gider ve tekrar dene. Gerçekten böyle "
+                    "üretilmesi gerekiyorsa zorla=true gönder."
+                ),
+            )
 
     kapak_ham = veri.get("kapak", {})
     kapak = Kapak(
@@ -326,7 +458,11 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
     # Bolumler YONERGEDEKI siraya diziliyor: model istedigi sirada
     # gonderebiliyor ve sirasi karismis bir resmi rapor yonergeye aykiri.
     bolumler = []
-    for ham in taslak.sirala(list(veri.get("bolumler", [])), tur):
+    for ham in taslak.sirala(
+        list(veri.get("bolumler", [])),
+        tur,
+        list(kayitli.bolumler) if kayitli else None,
+    ):
         bolum = Bolum(ham.get("baslik", ""))
         ogeler = list(ham.get("ogeler", []))
 
@@ -362,7 +498,14 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
         imza_tarih=veri.get("imza_tarih") or EKSIK,
     )
 
-    bicim = None
+    # Bicim onceligi: YARIM RAPOR > SARTNAME > gomulu varsayilan.
+    #
+    # Yarim rapor once geliyor cunku onu tamamlamanin sarti "ayni font, ayni
+    # punto" (bkz. ``bicim_devral``): elindeki belgenin ikinci yarisini
+    # yonergeye uydurmak, ortaya yarisi farkli gorunen tek bir evrak cikarir.
+    # Yonergeye aykiriysa fark ``yonergeye_uygunluk`` ile bildiriliyor, karar
+    # mufettisin.
+    bicim = kayitli.bicim() if kayitli else None
     devralindi = None
 
     if bicim_kaynagi:
@@ -399,10 +542,27 @@ def rapor_yaz(rapor_json: str | dict, hedef: str, bicim_kaynagi: str | None = No
     # olmuyor.
     sabitleme = _toplami_sabitle(yazilan)
 
+    # Sayfa araligi denetimi BURADAN besleniyor, ikinci bir donusturmeden
+    # degil: ``sabitle`` belgeyi zaten bir kez bastirip metin sayfalarini
+    # saydi. Ayni sayiyi yeniden uretmek icin LibreOffice'i tekrar cagirmak
+    # olculu olarak saniyeler suruyor ve ayni cevabi verirdi.
+    sayfa_notu = None
+
+    if kayitli is not None and kayitli.sayfa_araligi_var_mi():
+        sayfa_notu = sayfa_hedefi.degerlendir(
+            sabitleme.metin_sayfasi,
+            kayitli.sayfa_en_az,
+            kayitli.sayfa_en_cok,
+            veri,
+            olculdu=bool(sabitleme.metin_sayfasi),
+            gerekce=sabitleme.gerekce,
+        ).sozluk()
+
     return _sonuc(
         {
             "yazildi": str(yazilan),
             "metin_sayfasi": sabitleme.metin_sayfasi or None,
+            "sayfa_denetimi": sayfa_notu,
             "sayfa_toplami_notu": None if sabitleme.yapildi else sabitleme.gerekce,
             "bayt": yazilan.stat().st_size,
             "tur": tur,
@@ -438,13 +598,28 @@ def taslak_baslat(
     imza_tarih: str = "",
     sifirla: bool = False,
     ornek_rapor: str | None = None,
+    sartname_kimligi: str = "",
 ) -> str:
     """Yeni bir rapor taslağı aç.
 
     ``ornek_rapor`` verilirse bölüm uzunlukları oradan HEDEF olarak alınıyor:
     kullanıcının şartı "örnek rapordan kısa olamaz" ve bunu güvence altına
     almanın yolu örneği ÖLÇMEK, modelin uzun yazacağını ummak değil.
+
+    ``sartname_kimligi`` verilirse bölüm listesi, biçim ve sayfa aralığı
+    kullanıcının KENDİ yönergesinden geliyor; koda gömülü dört tür devre
+    dışı kalıyor.
     """
+    if sartname_kimligi and _sartname.varsa_yukle(sartname_kimligi) is None:
+        # Kayitli olmayan bir sartname kimligi SESSIZCE gecilmiyor: taslak
+        # acilir, bolum listesi bos gelir ve "eksik bolum yok" diye okunurdu
+        # -- yani hicbir denetimi olmayan bir rapor uretilirdi.
+        return _hata(
+            f"şartname bulunamadı: {sartname_kimligi}",
+            kayitli=_sartname.listele(),
+            oneri="Önce rapor_yonerge_ogren ile yönergeden şartname çıkar.",
+        )
+
     hedef: dict[str, int] = {}
 
     if ornek_rapor:
@@ -466,6 +641,7 @@ def taslak_baslat(
             imza_tarih=imza_tarih,
             sifirla=sifirla,
             hedef_uzunluk=hedef,
+            sartname_kimligi=sartname_kimligi,
         )
     except taslak.TaslakHatasi as sebep:
         return _hata(str(sebep))
@@ -532,6 +708,78 @@ def taslak_uret(kimlik: str, hedef: str, bicim_kaynagi: str | None = None) -> st
 
     if "error" not in cevap:
         cevap["taslak_durumu"] = taslak.durum(kimlik)
+
+    return _sonuc(cevap)
+
+
+# ---------------------------------------------------------------------------
+# 5b. Üretimden ÖNCE uygunluk, üretimden SONRA sayfa denetimi
+# ---------------------------------------------------------------------------
+
+
+def uygunluk_denetle(kimlik: str, sartname_kimligi: str = "") -> str:
+    """Taslak şartnameye uyuyor mu? Uymuyorsa NEYİN eksik olduğunu söyle.
+
+    Belge üretilmeden çağrılıyor: yanlış bir resmî evrakı üretip sonra
+    bildirmek, onu hiç üretmemekten kötü -- üretilen belge imzalanıyor.
+    """
+    try:
+        veri = taslak.yukle(kimlik)
+    except taslak.TaslakHatasi as sebep:
+        return _hata(str(sebep))
+
+    kayitli = _sartname.varsa_yukle(sartname_kimligi or veri.sartname)
+    denetim = uygunluk.denetle(veri.sozluk(), kayitli)
+    cevap = denetim.sozluk()
+
+    cevap["kimlik"] = kimlik
+    cevap["sartname"] = kayitli.kimlik if kayitli else None
+    cevap["siradaki_adim"] = (
+        "Engel yok. rapor_taslak_uret ile .docx üret, sonra "
+        "rapor_sayfa_denetle ile sayfa aralığını ölç."
+        if denetim.uygun
+        else "Engelleri gider: her biri için ilgili bölümü "
+        "rapor_taslak_bolum ile yeniden yaz ya da rapor_taslak_kapak ile "
+        "eksik alanı doldur, sonra bu aracı tekrar çağır."
+    )
+
+    return _sonuc(cevap)
+
+
+def sayfa_denetle(
+    docx: str, kimlik: str = "", en_az: int = 0, en_cok: int = 0
+) -> str:
+    """Üretilmiş raporun GERÇEK sayfa sayısını ölç ve hedefle karşılaştır.
+
+    Hedef aralık öncelikle şartnameden geliyor (yönerge ne diyorsa), yoksa
+    çağrıda verilen sayılardan. Sayfa sayısı hesaplanmıyor, belge bastırılıp
+    SAYILIYOR -- gerekçe ``sayfa_hedefi`` modül başlığında.
+    """
+    sozluk: dict = {}
+    kayitli = None
+
+    if kimlik:
+        try:
+            veri = taslak.yukle(kimlik)
+        except taslak.TaslakHatasi as sebep:
+            return _hata(str(sebep))
+
+        sozluk = veri.sozluk()
+        kayitli = _sartname.varsa_yukle(veri.sartname)
+
+    if kayitli is not None and kayitli.sayfa_araligi_var_mi():
+        en_az = en_az or kayitli.sayfa_en_az
+        en_cok = en_cok or kayitli.sayfa_en_cok
+
+    if not en_az and not en_cok:
+        return _hata(
+            "hedef sayfa aralığı yok: şartnamede yazmıyor ve çağrıda da "
+            "verilmedi (en_az / en_cok)"
+        )
+
+    denetim = sayfa_hedefi.denetle(docx, en_az, en_cok, sozluk)
+    cevap = denetim.sozluk()
+    cevap["belge"] = docx
 
     return _sonuc(cevap)
 

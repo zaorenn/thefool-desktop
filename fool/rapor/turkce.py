@@ -43,6 +43,23 @@ def kucuk(metin: str) -> str:
     return metin.translate(_KUCUK_ESLEME).lower()
 
 
+def sade_baslik(metin: str) -> str:
+    """Başlığı KARŞILAŞTIRMA için sadeleştir -- yazıma değil, adına bak.
+
+    "I.GİRİŞ", "I. GİRİŞ" ve "I . Giriş" aynı bölüm; yönerge "V. SONUÇ"
+    derken rapor "V. SONUÇ VE ÖNERİLER" yazabiliyor. Kelimesi kelimesine
+    karşılaştırma bitmiş bir raporu "bölüm yok" diye okuyordu.
+
+    Burada duruyor çünkü aynı sadeleştirmeyi üç yer birden istiyor: taslağın
+    eksik bölüm sayımı, çözümleyicinin bölüm eşlemesi ve uygunluk denetimi.
+    Üç ayrı kopya, birinin düzeltilip diğerlerinin unutulacağı yerdi -- ve
+    bunların ikisi "rapor tamam mı" sorusuna cevap veriyor.
+    """
+    metin = metin.replace("İ", "i").replace("I", "ı")
+
+    return " ".join(re.sub(r"[^\w\s]", " ", metin.lower()).split())
+
+
 def baslik(metin: str) -> str:
     """Her kelimenin ilk harfi büyük -- MADDE 8(8) alt başlık biçimi.
 

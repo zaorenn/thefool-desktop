@@ -41,6 +41,7 @@ import { $voicePlayback } from '@/store/voice-playback'
 
 import { voiceApi } from '../voice-api'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
+import { $voiceWarm } from '../voice-warm'
 
 import { $voiceSessionId, waitForVoiceSessionOrOpen } from './active-session'
 import {
@@ -258,6 +259,25 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   }, [requestGateway])
 
   const begin = useCallback((activation: BeginActivation = 'key') => {
+    // Motor ISINMADAN bas-konus acilmiyor.
+    //
+    // Istenen: "sadece isinma hazir oldugunda notch bas konusu calissin, o
+    // zamana kadar notchta TTS isiniyor gibi bilgi yazsin."
+    //
+    // Sebebi olculdu: soguk motorda ilk cumle 36,8 sn suruyor. Mikrofonu o
+    // sirada acmak, kullanicinin konusup dakikalarca sessizlik dinlemesi
+    // demek -- ve konustugu cumle o sure boyunca hicbir yere gitmiyor.
+    //
+    // ``failed`` ENGELLEMIYOR: isinmayi bekleyemedigimiz icin kullaniciyi
+    // susturmak, isinmamis bir motorla konusmasina izin vermekten kotu.
+    if ($voiceWarm.get() === 'warming') {
+      // Metin KULLANICIYA gorunuyor.
+      setError('Warming up the voice — one moment')
+      setStatus('idle')
+
+      return
+    }
+
     setError(null)
     discardRef.current = false
     // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.

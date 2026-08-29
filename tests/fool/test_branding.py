@@ -246,6 +246,7 @@ EXPECTED_SEAMS = {
     "default-memory",
     "shared-window-values",
     "voice-stop-bridge",
+    "voice-warm-on-open",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

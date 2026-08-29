@@ -5,6 +5,10 @@ import './store/active-work'
 // Sesi kimin caldigi baştan belli degil; "sesi kes" istegi HER pencerede
 // dinlenmeli (bkz. fool/voice-stop-bridge.ts).
 import './fool/voice-stop-bridge'
+// FOOL-SEAM: voice-warm-on-open
+// Secili seslendirme motoru ACILISTA isitiliyor: olculdu, soguk 36,8 sn /
+// sicak 0,8 sn ve o 36 saniye kullanicinin bekleyisine biniyordu.
+import './fool/voice-warm'
 // Side-effect: mirrors the machine's AC/battery state for poll demotion.
 import './store/power'
 // Side-effect: applies the persisted window translucency on load.

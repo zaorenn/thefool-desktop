@@ -10,6 +10,7 @@ import { UserEditComposer } from '@/components/assistant-ui/thread/user-edit-com
 import { UserMessage } from '@/components/assistant-ui/thread/user-message'
 import { Intro, type IntroProps } from '@/components/chat/intro'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { VoiceSetupStep } from '@/fool/setup/voice-step'
 import type { HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
@@ -150,6 +151,16 @@ export const Thread = memo(function Thread({
   const emptyPlaceholder = intro ? (
     <div className="flex min-h-0 w-full flex-col items-center justify-center pt-[var(--composer-measured-height)]">
       <Intro {...intro} />
+      {/* FOOL-SEAM: setup-voice-intro
+          Ses kurulumu BURADA da duruyor, yalnizca karsilama ekraninda
+          degil. Olculen sebep: makinede LM Studio calisiyorsa ilk acilis
+          saglayiciyi kendiliginden buluyor (FOOL-SEAM: first-run-autodetect)
+          ve karsilama ekrani HIC gorunmuyor -- yani yeni kullanici dogruca
+          buraya dusuyor ve indirilecek bir ses oldugunu hicbir yerde
+          gormuyor. Bilesen kurulacak bir sey yoksa kendini cizmiyor. */}
+      <div className="mt-6 w-full max-w-md px-4">
+        <VoiceSetupStep />
+      </div>
     </div>
   ) : undefined
 

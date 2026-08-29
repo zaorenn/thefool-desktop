@@ -240,6 +240,7 @@ EXPECTED_SEAMS = {
     "persona-greeting",
     "persona-kickoff",
     "setup-voice",
+    "setup-voice-intro",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

@@ -70,6 +70,28 @@ def _recall_config() -> Dict[str, Any]:
     return section if isinstance(section, dict) else {}
 
 
+def _voice_in_use() -> bool:
+    """Bu profilde gerçekten seslendirme yapılıyor mu?
+
+    Sentez yolunun kendi çözücüsüne soruyor (``tools/tts_tool.py``): seçim
+    yokken kurulu yerel bir motora düşüyor ve hiçbiri yoksa ``none`` dönüyor.
+    Yapılandırmaya doğrudan bakmak, motoru kurulu olmayan bir kullanıcıya
+    etiket sözlüğü vermek olurdu.
+
+    Okunamazsa ``False``: ipucu bir iyileştirme, ve emin olmadan prompta
+    satır eklemek onu her kullanıcı için pahalı yapardı.
+    """
+    try:
+        from tools.tts_tool import _get_provider
+
+        section = _config().get("tts")
+        resolved = _get_provider(section if isinstance(section, dict) else {})
+
+        return bool(resolved) and str(resolved).strip().lower() != "none"
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _db_path() -> str:
     from pathlib import Path
 
@@ -258,6 +280,25 @@ class RecallMemoryProvider(MemoryProvider):
             lines.append("")
             lines.append(curiosity)
 
+        # Teslimat etiketleri SESE bağlı, personaya değil.
+        #
+        # Önce bu ipucu ilişki bloğunun içindeydi ve gerekçesi "sıradan ajanın
+        # cevabı okunuyor, seslendirilmiyor" idi. Yanlıştı: sesli sohbet ve
+        # çentik sıradan ajanla da kullanılıyor, yani orada da her cevap
+        # seslendiriliyor -- ve o ajan tonunu hiç değiştiremiyordu.
+        #
+        # Doğru koşul "bu bir persona mı" değil, "ses gerçekten kullanılıyor
+        # mu". Motor yoksa ipucu promptu bedelsiz şişirirdi; varsa ton kontrolü
+        # kimin konuştuğundan bağımsız olarak işe yarıyor.
+        if _voice_in_use():
+            try:
+                from fool.voice_emotion import prompt_hint
+
+                lines.append("")
+                lines.append(prompt_hint())
+            except Exception:  # noqa: BLE001
+                pass
+
         if self._relationship_enabled():
             state = self._load_relationship()
 
@@ -290,16 +331,6 @@ class RecallMemoryProvider(MemoryProvider):
                         "you with relationship() as it does."
                     )
 
-            # Teslimat etiketi ipucu BURADA, çünkü sesle konuşan persona bu.
-            # Sıradan ajanın cevabı çoğunlukla okunuyor, seslendirilmiyor; ona
-            # etiket sözlüğü vermek promptu bedelsiz şişirirdi.
-            try:
-                from fool.voice_emotion import prompt_hint
-
-                lines.append("")
-                lines.append(prompt_hint())
-            except Exception:
-                pass
 
         return "\n".join(line for line in lines if line is not None)
 

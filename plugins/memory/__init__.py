@@ -653,7 +653,31 @@ def _get_active_memory_provider() -> Optional[str]:
     try:
         from fool_cli.config import load_config
         config = load_config()
-        return cfg_get(config, "memory", "provider") or None
+        section = config.get("memory")
+        section = section if isinstance(section, dict) else {}
+
+        # FOOL-SEAM: default-memory
+        #
+        # ANAHTAR YOKSA ``recall``.
+        #
+        # Eskiden varsayilan hicbir seydi: taze bir kurulum hafizasiz
+        # calisiyordu ve kullanici bunu ancak "neden hicbir sey
+        # hatirlamiyorsun" diye sorunca ogreniyordu. Hafizayi acmak icin
+        # once boyle bir saglayici oldugunu bilmek gerekiyordu.
+        #
+        # ``recall`` varsayilan olabilecek TEK saglayici: tamamen yerel,
+        # kurulum istemiyor, bulut hesabi istemiyor ve model
+        # ``remember()`` cagirmadikca hicbir sey yazmiyor. Digerleri
+        # (honcho, mem0) kimlik bilgisi istiyor -- onlari sessizce
+        # varsayilan yapmak, kullanicinin konusmasini kurmadigi bir
+        # servise gondermek olurdu.
+        #
+        # ACIKCA bos birakmak KAPALI demek: ``memory.provider: ""`` yazan
+        # kullanici hafiza istemiyor ve bu karar geri alinmiyor.
+        if "provider" not in section:
+            return "recall"
+
+        return str(section.get("provider") or "").strip() or None
     except Exception:
         return None
 

@@ -58,3 +58,36 @@ test('a repair that deleted the marker does not strand a healthy install', () =>
   // usability, not marker presence, must decide the next boot.
   assert.equal(classifyActiveRuntime(null, 1, true).shouldUseActiveRuntime, true)
 })
+
+test('a half-finished install with no marker is sent back to first-run setup', () => {
+  // Olculen hal: ``%LOCALAPPDATA%\fool`` kalintisi Denetim Masasi'ndan
+  // kaldirmaya ragmen duruyor, ``fool_cli`` ice aktarilabiliyor -- yani
+  // "kullanilabilir" -- ama ``fool`` komutu yok ve kurulum hic bitmemis.
+  // Eski kural bunu gorup kurulum ekranini atliyor, ve YENIDEN KURMAK da
+  // duzeltmiyordu: ayni kalinti ayni dali tetikliyordu.
+  const state = classifyActiveRuntime(null, 1, true, false)
+
+  assert.equal(state.shouldUseActiveRuntime, false)
+  assert.equal(state.usabilityReason, 'incomplete')
+})
+
+test('a complete install without a marker still launches', () => {
+  // CLI ile kurulmus ya da eski bir masaustu surumunun isaret birakmadigi
+  // saglikli kurulumlar kurulum ekranina ZORLANMAMALI.
+  const state = classifyActiveRuntime(null, 1, true, true)
+
+  assert.equal(state.shouldUseActiveRuntime, true)
+})
+
+test('a valid marker wins even if the launcher check says otherwise', () => {
+  // Isaret "masaustu buraya kurdu" diyor; baslaticinin tasinmis olmasi
+  // kurulumu yok saymak icin yeterli degil.
+  const state = classifyActiveRuntime(VALID_MARKER, 1, true, false)
+
+  assert.equal(state.shouldUseActiveRuntime, true)
+})
+
+test('the completeness question is optional', () => {
+  // Cagiran sormuyorsa eski davranis korunuyor.
+  assert.equal(classifyActiveRuntime(null, 1, true).shouldUseActiveRuntime, true)
+})

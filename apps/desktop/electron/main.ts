@@ -4129,13 +4129,32 @@ function isActiveRuntimeUsable() {
   )
 }
 
+function isActiveInstallComplete() {
+  // Kurulumun BITTIGININ kaniti: baslaticilar ``hermes-agent/bin``e
+  // kopyalanmis mi. Bunu ``install.ps1``in ``path`` asamasi yapiyor ve o,
+  // asama listesinin sonlarinda -- yani varsa ondan oncekiler de kosmus
+  // demektir.
+  //
+  // ``fool_cli`` ice aktarilabiliyor olmasi bu soruyu CEVAPLAMIYOR: depo ve
+  // venv yerindeyken kurulum yarida kesilmis olabiliyor, ve tam olarak o hal
+  // kullaniciyi kilitliyordu.
+  const launcher = process.platform === 'win32' ? 'fool.exe' : 'fool'
+
+  return fileExists(path.join(ACTIVE_HERMES_ROOT, 'bin', launcher))
+}
+
 function activeRuntimeState() {
   // We DELIBERATELY do NOT verify that the checkout is currently at the
   // pinned commit -- users update via the in-app update path or `fool
   // update`, which moves HEAD legitimately. The marker only attests "a
   // desktop-managed bootstrap ran here at least once"; runtime usability is
   // what decides whether we can actually launch.
-  return classifyActiveRuntime(readBootstrapMarker(), BOOTSTRAP_MARKER_SCHEMA_VERSION, isActiveRuntimeUsable())
+  return classifyActiveRuntime(
+    readBootstrapMarker(),
+    BOOTSTRAP_MARKER_SCHEMA_VERSION,
+    isActiveRuntimeUsable(),
+    isActiveInstallComplete()
+  )
 }
 
 function writeBootstrapMarker(payload) {
@@ -4433,6 +4452,13 @@ function resolveHermesBackend(backendArgs) {
   //    active runtime is usable, launch it directly; only fall through to
   //    bootstrap when the runtime itself is unusable.
   const activeRuntime = activeRuntimeState()
+
+  if (activeRuntime.usabilityReason === 'incomplete') {
+    rememberLog(
+      `[bootstrap] Active The Fool runtime at ${ACTIVE_HERMES_ROOT} is a half-finished install ` +
+        '(no launcher in bin/, no bootstrap marker); running first-run setup instead of launching it.'
+    )
+  }
 
   if (activeRuntime.shouldUseActiveRuntime && !bootstrapRepairRequested) {
     if (!activeRuntime.hasValidMarker) {

@@ -302,6 +302,7 @@
       "perMachine": false,
       "shortcutName": "The Fool",
       "uninstallDisplayName": "The Fool",
+      "include": "nsis/uninstaller.nsh",
       "warningsAsErrors": false
     }
   }

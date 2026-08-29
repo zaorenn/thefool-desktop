@@ -6,7 +6,7 @@ export interface BootstrapMarkerLike {
 export interface ActiveRuntimeState {
   hasValidMarker: boolean
   shouldUseActiveRuntime: boolean
-  usabilityReason: 'usable' | 'unusable'
+  usabilityReason: 'incomplete' | 'unusable' | 'usable'
 }
 
 export function hasValidBootstrapMarker(
@@ -38,7 +38,13 @@ export function hasValidBootstrapMarker(
 export function classifyActiveRuntime(
   marker: BootstrapMarkerLike | null | undefined,
   schemaVersion: number,
-  runtimeUsable: boolean
+  runtimeUsable: boolean,
+  /**
+   * Kurulum GERÇEKTEN bitmiş mi -- ``hermes-agent/bin`` içinde başlatıcılar
+   * var mı. ``undefined`` verilirse eski davranış (yalnızca çalıştırılabilirlik)
+   * korunuyor; sınavların çoğu bu soruyu sormuyor.
+   */
+  installComplete?: boolean
 ): ActiveRuntimeState {
   const hasValidMarker = hasValidBootstrapMarker(marker, schemaVersion)
 
@@ -47,6 +53,25 @@ export function classifyActiveRuntime(
       hasValidMarker,
       shouldUseActiveRuntime: false,
       usabilityReason: 'unusable'
+    }
+  }
+
+  // YARIM kalmış kurulum: çalıştırılabilir ama BİTMEMİŞ.
+  //
+  // Ölçülen hâl (kullanıcının ikinci makinesi): ``%LOCALAPPDATA%ool``
+  // kalıntısı Denetim Masası'ndan kaldırmaya rağmen duruyor, ``fool_cli`` içe
+  // aktarılabiliyor -- yani "kullanılabilir" -- ama ``fool`` komutu PATH'te yok,
+  // yapılandırma yazılmamış, kurulum hiç bitmemiş. Eski kural bunu görüp
+  // kurulum ekranını ATLIYOR, uygulama bozuk kurulumla açılıyor, ve YENİDEN
+  // KURMAK da düzeltmiyor: aynı kalıntı aynı dalı tetikliyor. Kullanıcı bu
+  // duruma kilitleniyor ve çıkış yolu yok.
+  //
+  // İşaret yoksa ve başlatıcılar da yoksa bu bir kurulum değil, kalıntı.
+  if (installComplete === false && !hasValidMarker) {
+    return {
+      hasValidMarker,
+      shouldUseActiveRuntime: false,
+      usabilityReason: 'incomplete'
     }
   }
 

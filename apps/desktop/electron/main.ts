@@ -13757,6 +13757,45 @@ ipcMain.handle('fool:connection-config:apply', async (_event, payload) => {
   return sanitizeDesktopConnectionConfig(config, payload?.profile)
 })
 
+// FOOL-SEAM: shared-window-values
+//
+// Kucuk pencereler-arasi degerlerin tasiyicisi. Gerekce ``preload.ts``te:
+// ``localStorage`` gelistirmede paylasiliyor (ayni ``http`` kokeni) ama
+// paketlenmis surumde DEGIL (``file://`` belgeleri ayri depo aliyor), yani
+// kopru tam da yayinlanan uygulamada olu kaliyordu.
+//
+// Anlik goruntu BURADA tutuluyor: sonradan acilan bir pencere (centik) mevcut
+// degeri okuyabilmeli, yoksa yalnizca kendisi acildiktan SONRAKI degisimleri
+// gorur -- ve sesin gidecegi oturum kimligi genellikle ONCE yaziliyor.
+const SHARED_WINDOW_VALUES = new Map()
+
+ipcMain.handle('fool:shared:get', async (_event, key) =>
+  typeof key === 'string' ? SHARED_WINDOW_VALUES.get(key) ?? '' : ''
+)
+
+ipcMain.handle('fool:shared:set', async (event, payload) => {
+  const key = typeof payload?.key === 'string' ? payload.key : ''
+  const value = typeof payload?.value === 'string' ? payload.value : ''
+
+  if (!key || SHARED_WINDOW_VALUES.get(key) === value) {
+    // Ayni degeri yeniden yayinlamak, iki pencereyi birbirinin yazisini
+    // sonsuza kadar geri yollarken izlemek olurdu.
+    return { ok: true }
+  }
+
+  SHARED_WINDOW_VALUES.set(key, value)
+
+  for (const window of BrowserWindow.getAllWindows()) {
+    // YAZAN pencereye geri gonderilmiyor: kendi yazdigini duymasi gereksiz
+    // bir render turu ve yankinin baslangici.
+    if (window.webContents.id !== event.sender.id) {
+      window.webContents.send('fool:shared:changed', { key, value })
+    }
+  }
+
+  return { ok: true }
+})
+
 ipcMain.handle('fool:profile:get', async () => ({ profile: readActiveDesktopProfile() }))
 ipcMain.handle('fool:profile:set', async (_event, name) => {
   const next = writeActiveDesktopProfile(name)

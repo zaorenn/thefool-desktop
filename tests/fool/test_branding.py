@@ -244,6 +244,7 @@ EXPECTED_SEAMS = {
     "notch-profile",
     "notch-opens-session",
     "default-memory",
+    "shared-window-values",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

@@ -67,7 +67,7 @@ export function adoptExternalWrites<T>(
       }
     }
 
-    if (codec.encode(incoming) === codec.encode($value.get())) {
+    if ((codec.encode(incoming) ?? '') === (codec.encode($value.get()) ?? '')) {
       return
     }
 
@@ -87,6 +87,84 @@ export function sharedAtom<T>(key: string, fallback: T, codec: Codec<T>): Writab
   const $value = persistentAtom<T>(key, fallback, codec)
 
   adoptExternalWrites($value, key, fallback, codec)
+  adoptDesktopBridge($value, key, fallback, codec)
 
   return $value
+}
+
+/**
+ * Değeri ANA SÜREÇ üzerinden de taşı.
+ *
+ * Ölçülen hata
+ * ------------
+ * ``localStorage`` + ``storage`` olayı geliştirmede çalışıyor: orada iki
+ * pencere de ``http://127.0.0.1:5174`` yüklüyor, yani AYNI köken. Paketlenmiş
+ * sürümde ikisi de ``file://`` yüklüyor ve Chromium ``file:`` belgelerine ayrı
+ * depolar veriyor -- yani bu köprü tam da YAYINLANAN uygulamada ölüydü.
+ *
+ * Kullanıcının gördüğü: çentik ekranda açık duran sohbeti bulamıyor ("No chat
+ * is open yet"), ayarlardan değiştirilen bas-konuş tuşu çentiğe ulaşmıyor.
+ * Geliştirmede denendiğinde hepsi çalışıyor, o yüzden uzun süre görünmedi.
+ *
+ * Köprü VARSA o kullanılıyor; yoksa (tarayıcı, sınav) depo yolu duruyor.
+ */
+function adoptDesktopBridge<T>(
+  $value: WritableAtom<T>,
+  key: string,
+  fallback: T,
+  codec: Codec<T>
+): void {
+  const shared = typeof window === 'undefined' ? undefined : window.hermesDesktop?.shared
+
+  if (!shared) {
+    return
+  }
+
+  let applying = false
+
+  const apply = (raw: unknown) => {
+    let incoming = fallback
+
+    if (typeof raw === 'string' && raw !== '') {
+      try {
+        incoming = codec.decode(raw)
+      } catch {
+        incoming = fallback
+      }
+    }
+
+    if (codec.encode(incoming) === codec.encode($value.get())) {
+      return
+    }
+
+    applying = true
+
+    try {
+      $value.set(incoming)
+    } finally {
+      applying = false
+    }
+  }
+
+  // Acilista MEVCUT degeri al: centik sonradan aciliyor ve sesin gidecegi
+  // oturum kimligi genellikle ONCE yazilmis oluyor. Yalnizca degisimleri
+  // dinlemek, o degeri hic gormemek demekti.
+  void Promise.resolve(shared.get(key)).then(apply).catch(() => undefined)
+
+  shared.onChange(payload => {
+    if (payload?.key === key) {
+      apply(payload.value)
+    }
+  })
+
+  $value.listen(value => {
+    // Disaridan gelen bir degeri geri yayinlamak yankinin baslangici olurdu.
+    if (applying) {
+      return
+    }
+
+    // ``encode`` ``null`` donebiliyor (deger silinmis demek); kanal metin
+    // tasiyor, bos dize ayni anlama geliyor.
+    void Promise.resolve(shared.set(key, codec.encode(value) ?? '')).catch(() => undefined)
+  })
 }

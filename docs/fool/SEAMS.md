@@ -87,6 +87,7 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `notch-profile` | `apps/desktop/electron/main.ts` | Çentik birincil arka uca bağlanır; başka bir profildeki açık sohbeti göremez ve "No chat is open yet" der |
 | `notch-opens-session` | `apps/desktop/src/app/contrib/wiring.tsx` | Açık sohbet yokken çentik konuşulanı atıp "önce pencerede bir sohbet aç" der |
 | `default-memory` | `plugins/memory/__init__.py` | Taze kurulum hafızasız çalışır; kullanıcı bunu ancak "neden hatırlamıyorsun" diye sorunca öğrenir |
+| `shared-window-values` | `apps/desktop/electron/{main,preload}.ts`, `apps/desktop/src/fool/cross-window-atom.ts` | Paketlenmiş sürümde çentik ana pencerenin değerlerini hiç görmez (`file://` ayrı localStorage) |
 | `accent-override` | `apps/desktop/src/themes/*` | Persona vurgu rengi uygulanmaz |
 | `notch-window` / `notch-route` / `notch-ipc` / `notch-shortcut` / `notch-quit` / `notch-no-chrome` | `apps/desktop/electron/main.ts`, `preload.ts`, `app/contrib/*` | Çentik açılmaz ya da Ctrl+Alt+V ölür |
 | `slow-voice-engine` | `fool/voice_models.py` | Gerçek zamandan yavaş motorlar listeye geri döner |

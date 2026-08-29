@@ -89,6 +89,16 @@ declare global {
       // own gateway (like an instance window), sized and skinned as a floating
       // bar — so it mounts the real composer rather than a lookalike. Main
       // owns the window; `onChanged` keeps every window's toggle truthful.
+      // FOOL-SEAM: shared-window-values
+      //
+      // Pencereler arasi kucuk degerlerin ANA SURECTEN gecen tasiyicisi.
+      // ``localStorage`` paketlenmis surumde ``file://`` yuzunden pencereler
+      // arasinda paylasilmiyordu (bkz. ``fool/cross-window-atom.ts``).
+      shared?: {
+        get: (key: string) => Promise<string>
+        set: (key: string, value: string) => Promise<{ ok: boolean }>
+        onChange: (callback: (payload: { key: string; value: string }) => void) => () => void
+      }
       // FOOL-SEAM: notch-ipc
       notch?: {
         open: () => Promise<{ ok: boolean }>

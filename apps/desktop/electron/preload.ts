@@ -58,6 +58,30 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   // HUD mode: the chrome-free floating chat. A full app renderer (own gateway)
   // sized as a floating bar, so it mounts the real composer. Main owns the
   // window; `onChanged` keeps every window's toggle truthful.
+  // FOOL-SEAM: shared-window-values
+  //
+  // Pencereler arasi kucuk degerler (sesin gidecegi oturum, bas-konus tusu,
+  // dinleme kipi) ANA SURECTEN geciyor.
+  //
+  // Once ``localStorage`` + ``storage`` olayi kullaniliyordu ve gelistirmede
+  // calisiyordu: orada iki pencere de ``http://127.0.0.1:5174`` yukluyor, yani
+  // AYNI kokende. Paketlenmis surumde ikisi de ``file://`` yukluyor ve
+  // Chromium ``file:`` belgelerine ayri depolar veriyor -- yani kopru
+  // yayinlanan uygulamada HIC calismiyordu. Kullanicinin gordugu sey: centik
+  // acik sohbeti bulamiyor, ayarlardan degistirilen tus centige ulasmiyor.
+  //
+  // Ana surec her iki pencereyi de goruyor; dogru tasiyici o.
+  shared: {
+    get: (key: string) => ipcRenderer.invoke('fool:shared:get', key),
+    set: (key: string, value: string) => ipcRenderer.invoke('fool:shared:set', { key, value }),
+    onChange: (callback: (payload: { key: string; value: string }) => void) => {
+      const listener = (_e: unknown, payload: { key: string; value: string }) => callback(payload)
+
+      ipcRenderer.on('fool:shared:changed', listener)
+
+      return () => ipcRenderer.removeListener('fool:shared:changed', listener)
+    }
+  },
   // FOOL-SEAM: notch-ipc
   notch: {
     open: () => ipcRenderer.invoke('fool:notch:open'),

@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 /** Başka bir pencere bu anahtarı yazdı: tarayıcının BİZE yolladığı olay. */
 function writeFromAnotherWindow(key: string, newValue: null | string): void {
@@ -98,5 +98,127 @@ describe('notch penceresindeki atomlar paylasilan kaynaktan', () => {
         ).toBe(false)
       }
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FOOL-SEAM: shared-window-values
+//
+// ``localStorage`` gelistirmede paylasiliyor (ayni ``http`` kokeni) ama
+// paketlenmis surumde DEGIL: iki pencere de ``file://`` yukluyor ve Chromium
+// ``file:`` belgelerine ayri depolar veriyor. Yani bu kopru tam da YAYINLANAN
+// uygulamada oluydu -- centik acik sohbeti bulamiyordu.
+// ---------------------------------------------------------------------------
+
+describe('masaustu koprusu', () => {
+  const codec = { decode: (raw: string) => raw, encode: (value: string) => value }
+
+  function bridge() {
+    const listeners: ((p: { key: string; value: string }) => void)[] = []
+    const sent: { key: string; value: string }[] = []
+    let stored = ''
+
+    return {
+      sent,
+      emit: (key: string, value: string) => listeners.forEach(fn => fn({ key, value })),
+      seed: (value: string) => (stored = value),
+      api: {
+        get: async () => stored,
+        set: async (key: string, value: string) => {
+          sent.push({ key, value })
+
+          return { ok: true }
+        },
+        onChange: (fn: (p: { key: string; value: string }) => void) => {
+          listeners.push(fn)
+
+          return () => undefined
+        }
+      }
+    }
+  }
+
+  afterEach(() => {
+    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  })
+
+  it('ACILISTA mevcut degeri aliyor', async () => {
+    // Centik SONRADAN aciliyor ve oturum kimligi genellikle ONCE yazilmis
+    // oluyor; yalnizca degisimleri dinlemek o degeri hic gormemek demekti.
+    const b = bridge()
+
+    b.seed('live-1')
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+
+    const { sharedAtom } = await import('./cross-window-atom')
+
+    const $atom = sharedAtom<string>('fool.test.seed', '', codec)
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect($atom.get()).toBe('live-1')
+  })
+
+  it('DISARIDAN gelen degisimi benimsiyor', async () => {
+    const b = bridge()
+
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+
+    const { sharedAtom } = await import('./cross-window-atom')
+
+    const $atom = sharedAtom<string>('fool.test.incoming', '', codec)
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    b.emit('fool.test.incoming', 'from-other-window')
+
+    expect($atom.get()).toBe('from-other-window')
+  })
+
+  it('KENDI yazisini koprue gonderiyor', async () => {
+    const b = bridge()
+
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+
+    const { sharedAtom } = await import('./cross-window-atom')
+
+    const $atom = sharedAtom<string>('fool.test.outgoing', '', codec)
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    $atom.set('mine')
+
+    expect(b.sent.at(-1)).toEqual({ key: 'fool.test.outgoing', value: 'mine' })
+  })
+
+  it('gelen degeri GERI yayinlamiyor', async () => {
+    // Yoksa iki pencere birbirinin yazisini sonsuza kadar geri yollardi.
+    const b = bridge()
+
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+
+    const { sharedAtom } = await import('./cross-window-atom')
+
+    const $atom = sharedAtom<string>('fool.test.echo', '', codec)
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const before = b.sent.length
+
+    b.emit('fool.test.echo', 'incoming')
+
+    expect(b.sent.length).toBe(before)
+  })
+
+  it('ILGISIZ anahtari yok sayiyor', async () => {
+    const b = bridge()
+
+    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+
+    const { sharedAtom } = await import('./cross-window-atom')
+
+    const $atom = sharedAtom<string>('fool.test.mine', 'start', codec)
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    b.emit('fool.test.other', 'nope')
+
+    expect($atom.get()).toBe('start')
   })
 })

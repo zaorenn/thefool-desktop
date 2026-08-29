@@ -199,8 +199,53 @@ def _import_piper():
     wheels (Linux / macOS / Windows, x86_64 + ARM64) with embedded espeak-ng.
     Voice models (.onnx + .onnx.json) are downloaded on first use.
     """
+    _point_espeak_at_bundled_data()
+
     from piper import PiperVoice
     return PiperVoice
+
+
+def _point_espeak_at_bundled_data() -> None:
+    """espeak-ng'ye verisinin NEREDE olduğunu söyle.
+
+    Ölçülen hata (kullanıcının ikinci makinesi, temiz kurulum)::
+
+        Error processing file 'D:/a/piper1-gpl/piper1-gpl/_skbuild/
+          win-amd64-3.9/cmake-build/espeak_ng-install/share/
+          espeak-ng-data/phontab': No such file or directory.
+        The Fool backend exited (1)
+
+    ``D:/a/piper1-gpl/...`` bir GitHub Actions koşucusunun yolu: espeak-ng
+    tekerleğe DERLENIRKEN gömülmüş ve çalışma anında oraya bakıyor. O yol
+    yalnızca derleme makinesinde vardı.
+
+    Veri aslında paketin içinde geliyor (``piper/espeak-ng-data/phontab``),
+    yani eksik olan dosya değil ADRES. espeak-ng ``ESPEAK_DATA_PATH``
+    değişkenini okuyor; sistemde kurulu bir espeak-ng varsa oradan da
+    bulabiliyor -- ilk makinede sorunun görünmemesinin sebebi buydu.
+
+    Kullanıcının AÇIKÇA ayarladığı değer EZİLMİYOR: kendi espeak kurulumunu
+    gösteren birinin kararını geri almak, düzeltilen hatanın aynası olurdu.
+    """
+    import os
+
+    if os.environ.get("ESPEAK_DATA_PATH"):
+        return
+
+    try:
+        import piper
+
+        bundled = os.path.join(os.path.dirname(piper.__file__), "espeak-ng-data")
+
+        # ``phontab`` sınanıyor, klasörün kendisi değil: boş ya da yarım
+        # kurulmuş bir klasörü göstermek, hiçbir şey göstermemekle aynı hata
+        # mesajını verirdi.
+        if os.path.isfile(os.path.join(bundled, "phontab")):
+            os.environ["ESPEAK_DATA_PATH"] = bundled
+    except Exception:  # noqa: BLE001
+        # Yol gösterilemedi: Piper yine de kendi yolunu deneyecek. Burada
+        # yükselmek, sesi hiç denemeden kapatmak olurdu.
+        pass
 
 
 # ===========================================================================

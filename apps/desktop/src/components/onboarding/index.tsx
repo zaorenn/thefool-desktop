@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
+import { VoiceSetupStep } from '@/fool/setup/voice-step'
 import { getGlobalModelOptions } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { Check, ChevronDown, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
@@ -338,7 +339,17 @@ export function DesktopOnboardingOverlay({
           {reason ? <ReasonNotice reason={reason} /> : null}
           {ready ? (
             showPicker ? (
-              <Picker ctx={ctx} />
+              <>
+                <Picker ctx={ctx} />
+                {/* FOOL-SEAM: setup-voice
+                    Ses modelleri (STT + TTS) BURADAN indirilebiliyor. Saglayici
+                    seciminin ALTINDA, cunku ikisi paralel: indirme surerken
+                    saglayici secilebiliyor ve sohbet acilabiliyor. Onaylama
+                    ekranina koymak, oradaki cikis koreografisini bozardi.
+                    Bilesen Zone A'da; kurulacak bir sey yoksa kendini hic
+                    cizmiyor. */}
+                <VoiceSetupStep />
+              </>
             ) : (
               <FlowPanel ctx={ctx} flow={flow} leaving={leaving} onBegin={finalizeOnboarding} />
             )

@@ -76,6 +76,46 @@ def _api_root(base_url: str) -> str:
     return cleaned or "http://localhost:1234"
 
 
+#: Bu makinenin KENDİSİNİ gösteren adlar.
+#:
+#: ``agent.model_metadata.is_local_endpoint`` BURADA kullanılamaz: o, zaman
+#: aşımı ayarı için "yeterince yakın" diye soruyor ve 192.168/16'yı yerel
+#: sayıyor. Buradaki soru farklı -- "aynı makine mi", çünkü verilecek karar
+#: ``lms unload`` çalıştırmak.
+_LOOPBACK = frozenset({"localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0"})
+
+
+def is_same_machine(base_url: str) -> bool:
+    """LM Studio BU makinede mi koşuyor?
+
+    Neden gerekli: kullanıcı güçlü masaüstündeki LM Studio'yu alt kattaki
+    zayıf dizüstünden sağlayıcı olarak kullanmak istedi. O düzende
+    ``loaded_models()`` UZAKTAKİ makineyi doğru okuyor ama ``unload()`` yerel
+    ``lms`` komutunu çalıştırıyor -- yani dizüstü, masaüstünün listesine
+    bakarak KENDİ modellerini boşaltmaya çalışıyor. En iyi hâlde hiçbir şey
+    yapmıyor; dizüstünde de LM Studio varsa yanlış makinede model kapatıyor.
+
+    Okunamayan bir adres ``False`` dönüyor: emin olmadan boşaltmamak, gereksiz
+    yere bellekte model bırakmaktan daha ucuz.
+    """
+    from urllib.parse import urlparse
+
+    cleaned = (base_url or "").strip()
+
+    if not cleaned:
+        # Adres yoksa varsayılan ``http://localhost:1234`` -- yani bu makine.
+        return True
+
+    candidate = cleaned if "://" in cleaned else "http://" + cleaned
+
+    try:
+        host = (urlparse(candidate).hostname or "").strip().lower()
+    except ValueError:
+        return False
+
+    return host in _LOOPBACK
+
+
 def busy_models() -> set[str]:
     """ŞU AN üretim yapan modeller -- bunlara DOKUNULMAZ.
 
@@ -182,6 +222,17 @@ def enforce_single(base_url: str, keep: str) -> list[str]:
     """
     wanted = (keep or "").strip()
     if not wanted:
+        return []
+
+    if not is_same_machine(base_url):
+        # Sağlayıcı BAŞKA bir makinede. Boşaltma yerel ``lms`` komutuyla
+        # yapılıyor, yani buradan çalıştırmak uzaktaki modeli bırakmıyor --
+        # yalnızca yerelde ne varsa ona dokunuyor. Doğru davranış hiçbir şey
+        # yapmamak: kartı paylaşan makine zaten burası değil.
+        logger.debug(
+            "[The Fool] LM Studio %s uzakta; yerlesim zorlamasi atlandi", base_url
+        )
+
         return []
 
     # UREYEN modele dokunulmuyor.

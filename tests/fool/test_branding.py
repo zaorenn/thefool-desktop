@@ -239,6 +239,7 @@ EXPECTED_SEAMS = {
     "relationship-bar",
     "persona-greeting",
     "persona-kickoff",
+    "setup-voice",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

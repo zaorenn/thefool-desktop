@@ -82,6 +82,7 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `relationship-bar` | `apps/desktop/src/app/chat/sidebar/index.tsx` | Persona ile aranda ne olduğu (neye kırgın, ne kadar yakın) hiçbir yerde görünmez |
 | `persona-greeting` | `apps/desktop/src/app/chat/index.tsx` | Persona ilk sözü hiç söylemez; tanışma kullanıcının "selam" yazmasını bekler |
 | `persona-kickoff` | `apps/desktop/src/lib/chat-messages.ts` | Uygulamanın gönderdiği tanışma çağrısı, kullanıcının yazdığı bir mesajmış gibi transkriptte görünür |
+| `setup-voice` | `apps/desktop/src/components/onboarding/index.tsx` | Kurulumda ses modelleri indirilemez; yeni kullanıcı mikrofona basar ve hiçbir şey olmaz |
 | `accent-override` | `apps/desktop/src/themes/*` | Persona vurgu rengi uygulanmaz |
 | `notch-window` / `notch-route` / `notch-ipc` / `notch-shortcut` / `notch-quit` / `notch-no-chrome` | `apps/desktop/electron/main.ts`, `preload.ts`, `app/contrib/*` | Çentik açılmaz ya da Ctrl+Alt+V ölür |
 | `slow-voice-engine` | `fool/voice_models.py` | Gerçek zamandan yavaş motorlar listeye geri döner |

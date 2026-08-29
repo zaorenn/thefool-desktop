@@ -1,7 +1,7 @@
 /**
  * Eşlik kipi bu YAPIDA var mı.
  *
- * İstenen: "girlfriend seçili değilse hiçbir şey gözükmeli ... ve kurulumda ya
+ * İstenen: eşlik kipi seçili değilse hiçbir şey görünmemeli, ve kurulumda ya
  * da publish sürümlerinde asla olmamalı, bu kısım sadece bu bilgisayara özel
  * kalmalı."
  *

@@ -90,9 +90,9 @@ describe('buildNotchWindowUrl', () => {
 
 describe('centik profili', () => {
   it('profil verildiginde sorgu dizesinde TASINIYOR', () => {
-    const url = buildNotchWindowUrl({ devServer: 'http://127.0.0.1:5174', profile: 'girlfriend' })
+    const url = buildNotchWindowUrl({ devServer: 'http://127.0.0.1:5174', profile: 'companion' })
 
-    expect(url).toContain('profile=girlfriend')
+    expect(url).toContain('profile=companion')
     expect(url.indexOf('profile=')).toBeLessThan(url.indexOf('#'))
   })
 

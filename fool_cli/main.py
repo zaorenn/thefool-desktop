@@ -7877,50 +7877,61 @@ def _ensure_windows_desktop_shortcut(executable: Optional[Path]) -> None:
 
     Kısayolu üreten kod ``scripts/install.ps1``de zaten vardı
     (``New-DesktopShortcuts``) ama YALNIZCA installer yolunda koşuyordu.
-    Terminalden kuran kullanıcı uygulamayı derliyor, açıyor, kullanıyor --
-    ve masaüstünde hiçbir şey görmüyor. İki kurulum yolu aynı sonucu
-    vermeliydi.
+    Terminalden kuran kullanıcı uygulamayı derliyor, açıyor, kullanıyor -- ve
+    masaüstünde hiçbir şey görmüyor. İki kurulum yolu aynı sonucu vermeliydi.
+
+    Masaüstü klasörü WINDOWS'A SORULUYOR, ``~/Desktop`` VARSAYILMIYOR
+    ----------------------------------------------------------------
+    İlk yazımda ``~/Desktop`` kullanıldı ve bu makinede sessizce hiçbir şey
+    yapmadı: klasör OneDrive'a yönlendirilmiş (``~/OneDrive/Masaüstü``) ve
+    ``~/Desktop`` HİÇ yok. Yönlendirme yaygın ve dile de bağlı -- Türkçe
+    Windows'ta klasörün adı "Masaüstü". Sabit bir ad yazmak, kısayolun
+    görünmediği ama hata da vermediği bir sınıf yaratıyor.
+
+    ``install.ps1`` bunu baştan doğru yapıyordu
+    (``[Environment]::GetFolderPath('Desktop')``); aynı çağrı burada da.
 
     ÜZERİNE YAZMIYOR: var olan bir kısayolu tazelemek, kullanıcının kendi
-    taşıdığı/yeniden adlandırdığı kısayolu geri getirmek olurdu. Yalnızca
-    hiç yoksa oluşturuluyor.
+    taşıdığı/yeniden adlandırdığı kısayolu geri getirmek olurdu.
 
-    Hata YUTULUYOR: kısayol bir kolaylık. Oluşturulamaması uygulamanın
-    açılmasını engellememeli.
+    Hata YUTULUYOR: kısayol bir kolaylık, uygulamanın açılmasını engellememeli.
     """
     if sys.platform != "win32" or executable is None or not executable.is_file():
         return
 
+    target = str(executable).replace("'", "''")
+    work = str(executable.parent).replace("'", "''")
+    # Klasor cozumu de kisayol yazimi da AYNI betikte: masaustunun gercek yeri
+    # yalnizca Windows'un kendisinden ogrenilebiliyor.
+    script = (
+        "$d=[Environment]::GetFolderPath('Desktop');"
+        "if(-not $d -or -not (Test-Path $d)){exit 0};"
+        "$p=Join-Path $d 'The Fool.lnk';"
+        "if(Test-Path $p){Write-Output ('exists:'+$p);exit 0};"
+        "$s=(New-Object -ComObject WScript.Shell).CreateShortcut($p);"
+        f"$s.TargetPath='{target}';$s.WorkingDirectory='{work}';"
+        "$s.Description='The Fool';$s.Save();"
+        "Write-Output ('created:'+$p)"
+    )
+
     try:
-        desktop = Path(os.path.expanduser("~")) / "Desktop"
-
-        if not desktop.is_dir():
-            return
-
-        link = desktop / "The Fool.lnk"
-
-        if link.exists():
-            return
-
-        # PowerShell WScript.Shell -- ``install.ps1``in kullandigi yol.
-        script = (
-            "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('"
-            + str(link).replace("'", "''")
-            + "');$s.TargetPath='"
-            + str(executable).replace("'", "''")
-            + "';$s.WorkingDirectory='"
-            + str(executable.parent).replace("'", "''")
-            + "';$s.Description='The Fool';$s.Save()"
-        )
-        subprocess.run(
+        done = subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
             check=False,
             capture_output=True,
-            timeout=20,
+            text=True,
+            # Cikti ACIKCA utf-8 cozuluyor: sistem kod sayfasi Turkce bir yol
+            # adini ("Masaustu") cozemeyip ``UnicodeDecodeError`` firlatiyor ve
+            # o istisna asagidaki yakalayiciya dusuyordu -- kisayol OLUSUYOR ama
+            # kod olusmamis saniyor. Cozulemeyen bayt hata degil, karakter olsun.
+            encoding="utf-8",
+            errors="replace",
+            timeout=25,
         )
+        out = (done.stdout or "").strip()
 
-        if link.exists():
-            print(f"  ✓ Desktop shortcut created: {link}")
+        if out.startswith("created:"):
+            print(f"  ✓ Desktop shortcut created: {out.split(':', 1)[1]}")
     except Exception as exc:  # noqa: BLE001
         logger.debug("Desktop shortcut could not be created: %s", exc)
 

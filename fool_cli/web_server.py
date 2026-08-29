@@ -5434,6 +5434,10 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
                     for piece in _split_text_for_speak_stream(cleaned, cap):
                         if stop.is_set():
                             return
+                        # Parca basina TEK isaret: motor birden cok ses karesi
+                        # dondurebiliyor ve her karede yeniden duyurmak ayni
+                        # cumleyi tekrar tekrar yazdirirdi.
+                        piece_announced = False
                         for chunk in engine.stream(piece):
                             if stop.is_set():
                                 return
@@ -5442,6 +5446,19 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
                                 # sentezlenirken ogrenildi (bkz. LocalSentenceStreamer) --
                                 # once o duyuruluyor, sonra ses.
                                 _announce_local_start()
+                            if not piece_announced:
+                                # ISTEMCI hangi cumleyi duydugunu bilsin.
+                                #
+                                # Istenen: centik "sesli okunan cumleyi
+                                # transcript gibi sirayla ve ses ile eszamanli"
+                                # gostersin. Sunucu hangi cumleyi sentezledigini
+                                # zaten biliyor; istemcinin bilmesinin tek yolu
+                                # bunu SOYLEMEK. Ses karesinden hemen ONCE ve
+                                # ayni kuyruktan, yani sira korunuyor.
+                                piece_announced = True
+                                loop.call_soon_threadsafe(
+                                    chunks.put_nowait, {"type": "sentence", "text": piece}
+                                )
                             loop.call_soon_threadsafe(chunks.put_nowait, chunk)
                 except Exception as exc:
                     consecutive_failures += 1
@@ -5516,6 +5533,16 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
             chunk = await chunks.get()
             if chunk is None:
                 break
+            # Cumle isareti AYNI kuyruktan geciyor.
+            #
+            # Ayri bir ``send_json`` ile gondermek onu sesin ONUNE gecirirdi:
+            # sentez uretici is parcaciginda kosuyor ve sesi kuyruga koyuyor,
+            # yani dogrudan gonderilen bir JSON karesi henuz kuyrukta bekleyen
+            # sesi asardi. Istemci o zaman daha duyulmamis bir cumleyi yazardi
+            # -- yani tam da eszamanliligi bozardi.
+            if isinstance(chunk, dict):
+                await ws.send_json(chunk)
+                continue
             sent_bytes += len(chunk)
             await ws.send_bytes(chunk)
         if not stop.is_set():

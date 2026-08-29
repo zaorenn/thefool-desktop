@@ -128,6 +128,15 @@ function currentState(
 
 export interface VoicePlaybackOptions {
   messageId?: string | null
+  /**
+   * Bir cümle DUYULMAYA başladığında çağrılır.
+   *
+   * İstenen: konuşulan cümle ekranda "transcript gibi sırayla ve ses ile
+   * eşzamanlı" görünsün. Sunucu hangi cümleyi sentezlediğini biliyor ve ses
+   * karesinden hemen önce bildiriyor; buradaki çağrı, o sesin GERÇEKTEN
+   * başladığı ana ertelenmiş hâli.
+   */
+  onSentence?: (sentence: string) => void
   source: VoicePlaybackSource
 }
 
@@ -217,6 +226,8 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
   let context: AudioContext | null = null
   let streamRate = 24_000
   let nextStartAt = 0
+  //: Sunucunun bildirdigi, HENUZ duyulmamis cumle.
+  let pendingSentence: null | string = null
   let carry: null | Uint8Array = null
   let started = false
   let settled = false
@@ -325,6 +336,21 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
 
     const startAt = Math.max(context.currentTime + 0.05, nextStartAt)
     source.start(startAt)
+
+    // Cumleyi GELDIGI anda degil, DUYULDUGU anda bildir.
+    //
+    // Ses ileriye donuk zamanlaniyor (``nextStartAt``): sunucu bir sonraki
+    // cumleyi biz oncekini dinlerken gonderiyor. Cerceve gelir gelmez yazmak,
+    // henuz duyulmamis cumleyi ekrana koymak olurdu -- istenen tam tersi,
+    // "ses ile eszamanli".
+    if (pendingSentence !== null) {
+      const sentence = pendingSentence
+      const delayMs = Math.max(0, (startAt - context.currentTime) * 1000)
+
+      pendingSentence = null
+      window.setTimeout(() => options.onSentence?.(sentence), delayMs)
+    }
+
     nextStartAt = startAt + buffer.duration
 
     if (!started) {
@@ -344,11 +370,19 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
       return
     }
 
-    let frame: { channels?: number; sample_rate?: number; type?: string }
+    let frame: { channels?: number; sample_rate?: number; text?: string; type?: string }
 
     try {
       frame = JSON.parse(event.data) as typeof frame
     } catch {
+      return
+    }
+
+    if (frame.type === 'sentence') {
+      // Ses karesinden HEMEN once geliyor; ekrana yazilmasi o sesin baslama
+      // anina erteleniyor (bkz. ``schedule``).
+      pendingSentence = typeof frame.text === 'string' ? frame.text : null
+
       return
     }
 

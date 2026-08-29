@@ -563,7 +563,11 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
 
     const pending = collectUnspokenTurnSpeech(messages, lastSpokenId)
 
-    if (pending?.text) {
+    // Akis cumle cumle yaziyorsa ona KARISMA.
+    //
+    // Ikisi birden yazinca blok metin, duyulan cumlenin ustune biniyordu:
+    // ekran once tum cevabi gosterip sonra tek cumleye donuyordu.
+    if (pending?.text && !streamRef.current?.session) {
       setReply(pending.text)
     }
 
@@ -636,7 +640,18 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
           // ``messageId`` VERİLİYOR: ``claimSpeech`` onsuz ``undefined`` alıp
           // her zaman ``true`` dönüyordu, yani pencere İÇİ tekilleştirme de
           // baypas ediliyordu.
-          return startSpeechStream({ messageId: claimId, source: 'voice-conversation' })
+          return startSpeechStream({
+            messageId: claimId,
+            // Ekranda KONUSULAN cumle dursun, cevabin tamami degil.
+            //
+            // Eskiden ``setReply`` biriken metnin tamamini yaziyordu: uzun bir
+            // cevap centige tek seferde kocaman bir blok olarak dusuyor ve
+            // duyulanla ekrandaki hicbir zaman ayni olmuyordu. Geri cagirim
+            // cumlenin DUYULMAYA basladigi anda geliyor (bkz.
+            // ``lib/voice-playback.ts``), yani ikisi eszamanli akiyor.
+            onSentence: sentence => setReply(sentence),
+            source: 'voice-conversation'
+          })
         })
         .then(session => {
           if (streamRef.current) {

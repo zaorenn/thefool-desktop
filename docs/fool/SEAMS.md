@@ -85,6 +85,7 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `setup-voice` | `apps/desktop/src/components/onboarding/index.tsx` | Kurulumda ses modelleri indirilemez; yeni kullanıcı mikrofona basar ve hiçbir şey olmaz |
 | `setup-voice-intro` | `apps/desktop/src/components/assistant-ui/thread/index.tsx` | Yerel model kendiliğinden bulunduğunda karşılama ekranı hiç görünmez ve ses kurulumu ulaşılamaz kalır |
 | `notch-profile` | `apps/desktop/electron/main.ts` | Çentik birincil arka uca bağlanır; başka bir profildeki açık sohbeti göremez ve "No chat is open yet" der |
+| `notch-opens-session` | `apps/desktop/src/app/contrib/wiring.tsx` | Açık sohbet yokken çentik konuşulanı atıp "önce pencerede bir sohbet aç" der |
 | `accent-override` | `apps/desktop/src/themes/*` | Persona vurgu rengi uygulanmaz |
 | `notch-window` / `notch-route` / `notch-ipc` / `notch-shortcut` / `notch-quit` / `notch-no-chrome` | `apps/desktop/electron/main.ts`, `preload.ts`, `app/contrib/*` | Çentik açılmaz ya da Ctrl+Alt+V ölür |
 | `slow-voice-engine` | `fool/voice_models.py` | Gerçek zamandan yavaş motorlar listeye geri döner |

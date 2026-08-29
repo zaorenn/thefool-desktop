@@ -242,6 +242,7 @@ EXPECTED_SEAMS = {
     "setup-voice",
     "setup-voice-intro",
     "notch-profile",
+    "notch-opens-session",
     "whatsapp-toolset",
     "delivery-command-name",
     "system-tray",

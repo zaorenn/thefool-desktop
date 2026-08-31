@@ -44,6 +44,17 @@ DEFAULT_CONFIG = {
         "terminal_continue": True,
     },
     "agent": {
+        # FOOL-SEAM: language-mode
+        #
+        # Cevabin YAZILDIGI dil. ``auto`` (varsayilan) kullanicinin yazdigi
+        # dile uyar; bir dil kodu yazildiginda model kullanici hangi dilde
+        # yazarsa yazsin O dilde cevap verir.
+        #
+        # Konusma dili AYRI bir ayar (``tts.speech_language``) -- kullanici
+        # cevabi okuyabilmek icin Ingilizce, sesi Japonca isteyebiliyor ve
+        # ikisi ayni anahtarda olsaydi biri digerini kaybettirirdi.
+        # Bkz. ``fool/language_mode.py``.
+        "reply_language": "auto",
         "max_turns": 500,
         # Inactivity timeout for gateway agent execution (seconds).
         # The agent can run indefinitely as long as it's actively calling
@@ -1570,6 +1581,18 @@ DEFAULT_CONFIG = {
     # limit (OpenAI 4096, xAI 15000, MiniMax 10000, ElevenLabs 5k-40k model-aware,
     # Gemini 32000, Edge 5000, Mistral 4000, NeuTTS/KittenTTS 2000).
     "tts": {
+        # FOOL-SEAM: language-mode
+        #
+        # KONUSULAN dil -- cevabin YAZILDIGI dilden bagimsiz.
+        #
+        # ``same`` (varsayilan) cevap hangi dildeyse onu seslendirir. Bir dil
+        # kodu yazildiginda cevap seslendirilmeden ONCE o dile cevriliyor ve
+        # motor da o dile aliniyor; ekrandaki metne DOKUNULMUYOR.
+        #
+        # Istenen: "cevap dili ingilizce ise ona turkce konusulsa bile
+        # ingilizce cevap verecek, ve ses dili japoncaysa seslendirme japonca
+        # olacak." Bkz. ``fool/language_mode.py``.
+        "speech_language": "same",
         # Set explicitly to pin a backend:
         # "edge" (free) | "elevenlabs" (premium) | "openai" | "xai" | "minimax" | "mistral" | "gemini" | "deepinfra" | "neutts" (local) | "kittentts" (local) | "piper" (local)
         "provider": "edge",

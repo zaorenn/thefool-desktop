@@ -9,6 +9,7 @@ import {
   buildPinArgs,
   buildPosixPinArgs,
   cachedScriptPath,
+  checkoutContainsCommit,
   hasExistingGitCheckout,
   installedAgentInstallScript,
   installRefForStamp,
@@ -271,4 +272,79 @@ test('resolveInstallScript rethrows when the 404 fallback is unavailable', async
   } finally {
     fs.rmSync(home, { recursive: true, force: true })
   }
+})
+
+// ---------------------------------------------------------------------------
+// checkoutContainsCommit — "farkli commit" ile "ESKI commit" ayni sey degil
+// ---------------------------------------------------------------------------
+
+const PIN = 'b08e32ec1aae0f4631ccef9b07dce1de600e5b49'
+
+test('pin runtime gecmisindeyse TRUE -- ve dogru komut kosuluyor', () => {
+  const calls: string[][] = []
+
+  const answer = checkoutContainsCommit('/tmp/runtime', PIN, {
+    execGit: args => {
+      calls.push(args)
+
+      return ''
+    }
+  })
+
+  assert.equal(answer, true)
+  assert.deepEqual(calls, [
+    ['-c', 'windows.appendAtomically=false', 'merge-base', '--is-ancestor', PIN, 'HEAD']
+  ])
+})
+
+test('git CIKIS 1 verirse FALSE -- kesin cevap', () => {
+  const answer = checkoutContainsCommit('/tmp/runtime', PIN, {
+    execGit: () => {
+      const err: any = new Error('exit 1')
+      err.status = 1
+      throw err
+    }
+  })
+
+  assert.equal(answer, false)
+})
+
+test('bozuk klon / git yok NULL doner -- iddia edilmiyor', () => {
+  // 128 = bilinmeyen revizyon (pin bu depoda yok). Bunu "ileride degil" diye
+  // okumak, calisan bir kurulumu her acilista yeniden kurmak olurdu; ama
+  // "ileride" diye okumak da gercek bir eskimeyi gizlerdi. Cevap: bilmiyoruz.
+  for (const status of [128, 127, undefined]) {
+    const answer = checkoutContainsCommit('/tmp/runtime', PIN, {
+      execGit: () => {
+        const err: any = new Error('boom')
+        err.status = status
+        throw err
+      }
+    })
+
+    assert.equal(answer, null)
+  }
+})
+
+test('karsilastirilamayan girdi icin GIT HIC CAGRILMIYOR', () => {
+  // Acilis yolunda gereksiz bir alt surec, olculen maliyeti olan bir seydir.
+  let spawned = false
+
+  const spy = () => {
+    spawned = true
+
+    return ''
+  }
+
+  for (const [root, commit] of [
+    [null, PIN],
+    ['/tmp/runtime', null],
+    ['/tmp/runtime', ''],
+    ['/tmp/runtime', '0000000000000000000000000000000000000000'],
+    ['/tmp/runtime', 'abc']
+  ] as [any, any][]) {
+    assert.equal(checkoutContainsCommit(root, commit, { execGit: spy }), null)
+  }
+
+  assert.equal(spawned, false)
 })

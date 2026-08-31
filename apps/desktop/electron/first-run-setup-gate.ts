@@ -57,8 +57,29 @@ export function createFirstRunSetupGate({
     }
   }
 
+  // İlk açılış seçimi ÖLÇÜLEBİLİR olmalı.
+  //
+  // Kapı gerçek bir karar bekliyor (yerel kurulum mu, uzak bir arka uca
+  // bağlanmak mı) ve bunu beklemesi doğru: kullanıcının makinesine gigabaytlar
+  // indirmeden önce sorulmalı.
+  //
+  // Ama sonucu şuydu: sıfırdan kurulumun NE KADAR SÜRDÜĞÜ hiç ölçülemiyordu.
+  // Depo kendi ``test:desktop:fresh`` sınavını çalıştırıyor, uygulama bu
+  // ekranda duruyor ve sınav orada bitiyor -- yani "kurulum iki üç dakikadan
+  // uzun olmamalı" gereksinimini doğrulayacak bir yol yoktu.
+  //
+  // ``FOOL_DESKTOP_AUTO_SETUP=local`` yalnızca bu boşluğu kapatıyor: kapı
+  // atlanır ve yerel kurulum seçilmiş sayılır. Varsayılan davranış AYNEN
+  // duruyor -- değişken yoksa gerçek kullanıcıya yine sorulur.
+  const autoLocal = process.env.FOOL_DESKTOP_AUTO_SETUP === 'local'
+
   const shouldGate = (backend?: FirstRunSetupBackend | null) =>
-    Boolean(backend && backend.kind === 'bootstrap-needed' && !localBootstrapConfirmed)
+    Boolean(
+      backend &&
+        backend.kind === 'bootstrap-needed' &&
+        !localBootstrapConfirmed &&
+        !autoLocal
+    )
 
   const wait = async (backend?: FirstRunSetupBackend | null) => {
     if (!shouldGate(backend)) {

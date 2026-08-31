@@ -5,7 +5,7 @@
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+#   irm https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.ps1 | iex
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -31,7 +31,21 @@ param(
     [switch]$ForceCommit,
     [string]$Tag = "",
     [string]$HermesHome = $(if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }),
-    [string]$InstallDir = $(if ($env:FOOL_HOME) { "$env:FOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\fool\hermes-agent" }),
+    # Runtime dizini ``fool-agent`` -- ``hermes-agent`` DEGIL.
+    #
+    # Istenen: "hermes kalintisi kalmasin". Veri dizini zaten ayriydi, ama
+    # runtime'in klasoru eski adi tasiyordu ve kullanici onu ``where fool``
+    # ciktisinda goruyordu.
+    #
+    # Eski ad OKUNMAYA devam ediyor: goc edememis (dosya kilitli, izin yok) bir
+    # kurulum calismayi surdurmeli. Sira: yeni varsa yeni, yoksa eski varsa
+    # eski, hicbiri yoksa yeni.
+    [string]$InstallDir = $(
+        $__foolHome = if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }
+        $__new = Join-Path $__foolHome 'fool-agent'
+        $__legacy = Join-Path $__foolHome 'hermes-agent'
+        if (Test-Path $__new) { $__new } elseif (Test-Path $__legacy) { $__legacy } else { $__new }
+    ),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -342,8 +356,18 @@ if ($PSBoundParameters.ContainsKey('HermesHome')) {
 if ($PSBoundParameters.ContainsKey('InstallDir')) {
     $InstallDir = ConvertTo-LongPath $InstallDir
 } else {
+    # AYNI tercih parametre varsayilaninda da var ve IKISI birlikte degismeli.
+    #
+    # Olculen hata: yalnizca parametre varsayilani ``fool-agent``a cevrilmisti,
+    # ama bu blok parametre BAGLANMADIGINDA degeri YENIDEN hesapliyor ve eski
+    # adi sabitliyordu -- yani duzeltme sessizce eziliyordu. Masaustunun
+    # onarimi ``fool-agent`` dururken ``hermes-agent``a klonladi ve iki dizin
+    # birden olustu.
     $InstallDir = ConvertTo-LongPath $(
-        if ($env:FOOL_HOME) { "$env:FOOL_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\fool\hermes-agent" }
+        $__ih = if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }
+        $__inew = Join-Path $__ih 'fool-agent'
+        $__ilegacy = Join-Path $__ih 'hermes-agent'
+        if (Test-Path $__inew) { $__inew } elseif (Test-Path $__ilegacy) { $__ilegacy } else { $__inew }
     )
 }
 if ($script:NormalizedProfilePaths) {
@@ -757,6 +781,22 @@ function Install-Uv {
     try {
         $ErrorActionPreference = "Continue"
         $env:UV_INSTALL_DIR = Join-Path $HermesHome "bin"
+        # uv KULLANICININ PATH'ine dokunmasin.
+        #
+        # Olculen sizinti: sandbox eviyle yapilan bir kurulumdan sonra
+        # kullanicinin KALICI PATH'inde su satir kaldi --
+        #
+        #   C:\...\Temp\hermes-desktop-fresh-install-fNWZmX\hermes-home\bin
+        #
+        # yani test bittiginde hic var olmayacak bir dizin. install.ps1'in
+        # kendi PATH yazmasi zaten korunuyordu (bkz. $isSandboxHome), ama uv'nin
+        # KENDI kurucusu ayri bir yazardi ve o kapinin disindaydi.
+        #
+        # The Fool uv'yi kendi ``bin`` dizininde tutuyor ve MUTLAK yolla
+        # cagiriyor -- kullanicinin PATH'inde bulunmasina hic ihtiyac yok.
+        # Ozel bir bagimlilik icin kalici PATH'i degistirmek, kullanicinin
+        # makinesine birakilan gereksiz bir izdir.
+        $env:UV_NO_MODIFY_PATH = "1"
         # Spawn via the resolved host exe (see Get-PowerShellHostExe) rather
         # than a bare `powershell`, which isn't guaranteed to be on PATH under
         # PowerShell 7 / pwsh-only setups.
@@ -2800,10 +2840,16 @@ import re, sys, tomllib
 try:
     with open('pyproject.toml', 'rb') as fh:
         data = tomllib.load(fh)
+    # Distribution name READ from the file, not hardcoded -- it was the literal
+    # the old hermes distribution name while the project is now fool-agent,
+    # so it matched nothing on every install: Tier 2 became a no-op and one
+    # broken extra on PyPI would drop the user to core-only instead of keeping
+    # the rest.
+    name = re.escape(data['project']['name'])
     specs = data['project']['optional-dependencies']['all']
     out = []
     for s in specs:
-        m = re.search(r'hermes-agent\[([\w-]+)\]', s)
+        m = re.search(name + r'\[([\w-]+)\]', s)
         if m: out.append(m.group(1))
     print(','.join(out))
 except Exception:
@@ -3008,36 +3054,96 @@ function Set-PathVariable {
         }
     }
     
-    $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    # GECICI BIR EV KALICI IZ BIRAKAMAZ -- ne PATH'te ne FOOL_HOME'da.
+    #
+    # Olculen hasar: `npm run test:desktop:fresh` install.ps1'i %TEMP% altindaki
+    # bir sandbox eviyle calistiriyor. Buradaki KALICI yazmalar o gecici yollari
+    # kullanicinin GERCEK ortamina koyuyordu ve test bittiginde kimse geri
+    # almiyordu:
+    #
+    #   * FOOL_HOME  -> uygulama her acilista BOS bir test kutusuna girdi.
+    #     Kullanicinin bildirdigi: "girlfriend gitmis, ses klonlarim gitmis,
+    #     butun sohbetlerim gitmis." Hicbiri silinmemisti; uygulama baska yere
+    #     bakiyordu -- ama kullanici icin farki yok.
+    #   * PATH       -> kullanicinin kalici PATH'ine, testten sonra hic var
+    #     olmayacak bir dizin eklendi. Ayni sinif hata, sessiz kalani.
+    #
+    # Tespit BIR KEZ yapiliyor ve her iki yazmayi da kapsiyor.
+    $isSandboxHome = $false
+    $tempRoots = @($env:TEMP, $env:TMP, [IO.Path]::GetTempPath()) | Where-Object { $_ }
+    foreach ($tempRoot in $tempRoots) {
+        try {
+            $resolvedTemp = [IO.Path]::GetFullPath($tempRoot).TrimEnd('\')
+            $resolvedHome = [IO.Path]::GetFullPath($HermesHome).TrimEnd('\')
+            if ($resolvedHome.Equals($resolvedTemp, [StringComparison]::OrdinalIgnoreCase) -or
+                $resolvedHome.StartsWith($resolvedTemp + '\', [StringComparison]::OrdinalIgnoreCase)) {
+                $isSandboxHome = $true
+                break
+            }
+        } catch {
+            # Cozulemeyen bir yol icin sandbox IDDIA EDILMIYOR: yanlis tarafa
+            # dusmek gercek bir kurulumun PATH'ini yazmamak olurdu.
+        }
+    }
 
-    # Migrate installs that got venv\Scripts onto PATH from earlier
-    # installer versions -- remove it so the python shadowing stops.
-    $legacyBin = "$InstallDir\venv\Scripts"
-    if ((-not $NoVenv) -and $currentPath -like "*$legacyBin*") {
-        $cleaned = ($currentPath -split ';' | Where-Object { $_ -and $_ -ne $legacyBin }) -join ';'
-        [Environment]::SetEnvironmentVariable("Path", $cleaned, "User")
-        $currentPath = $cleaned
-        Write-Info "Removed legacy venv\Scripts from user PATH (kept fool via $hermesBin)"
-    }
-    
-    if ($currentPath -notlike "*$hermesBin*") {
-        [Environment]::SetEnvironmentVariable(
-            "Path",
-            "$hermesBin;$currentPath",
-            "User"
-        )
-        Write-Success "Added to user PATH: $hermesBin"
+    if ($isSandboxHome) {
+        Write-Info "Gecici/sandbox ev: kalici PATH ve FOOL_HOME yazilmadi ($HermesHome)"
     } else {
-        Write-Info "PATH already configured"
+        $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+
+        # Migrate installs that got venv\Scripts onto PATH from earlier
+        # installer versions -- remove it so the python shadowing stops.
+        $legacyBin = "$InstallDir\venv\Scripts"
+        if ((-not $NoVenv) -and $currentPath -like "*$legacyBin*") {
+            $cleaned = ($currentPath -split ';' | Where-Object { $_ -and $_ -ne $legacyBin }) -join ';'
+            [Environment]::SetEnvironmentVariable("Path", $cleaned, "User")
+            $currentPath = $cleaned
+            Write-Info "Removed legacy venv\Scripts from user PATH (kept fool via $hermesBin)"
+        }
+
+        if ($currentPath -notlike "*$hermesBin*") {
+            [Environment]::SetEnvironmentVariable(
+                "Path",
+                "$hermesBin;$currentPath",
+                "User"
+            )
+            Write-Success "Added to user PATH: $hermesBin"
+        } else {
+            Write-Info "PATH already configured"
+        }
     }
-    
+
     # Set FOOL_HOME so the Python code finds config/data in the right place.
     # Only needed on Windows where we install to %LOCALAPPDATA%\fool instead
     # of the Unix default ~/.hermes
-    $currentHermesHome = [Environment]::GetEnvironmentVariable("FOOL_HOME", "User")
-    if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
-        [Environment]::SetEnvironmentVariable("FOOL_HOME", $HermesHome, "User")
-        Write-Success "Set FOOL_HOME=$HermesHome"
+    #
+    # GECICI BIR EV KALICI OLAMAZ
+    # ---------------------------
+    # Olculen hasar, tahmin degil: `npm run test:desktop:fresh` install.ps1'i
+    # %TEMP% altindaki bir sandbox eviyle calistiriyor
+    # (`hermes-desktop-fresh-install-*\hermes-home`). Buradaki KALICI yazma o
+    # gecici yolu HKCU\Environment'a koyuyordu ve test bittiginde kimse geri
+    # almiyordu.
+    #
+    # Sonuc: masaustu uygulamasi (main.ts::resolveHermesHome) kullanici
+    # kapsamli FOOL_HOME'u %LOCALAPPDATA%\fool'dan ONCE okudugu icin, uygulama
+    # o gunden sonra her acilista BOS bir test kutusuna giriyordu -- oturum
+    # gecmisi yok, profil yok, ses klonu yok, sidecar yok. Kullanicinin
+    # gordugu ve bildirdigi sey: "guncelleme girlfriend'i, ses klonlarimi ve
+    # butun sohbetlerimi sildi". Hicbiri silinmemisti; uygulama sadece baska
+    # bir yere bakiyordu.
+    #
+    # Oturum degiskeni yine ayarlaniyor, yani sandbox kurulumu calismaya devam
+    # ediyor -- kalici olan tek sey artik gercek bir ev.
+    # ``$isSandboxHome`` YUKARIDA bir kez hesaplandi (PATH yazmasiyla ayni kapi).
+    if ($isSandboxHome) {
+        Write-Info "FOOL_HOME kalici olarak yazilmadi -- gecici/sandbox ev: $HermesHome"
+    } else {
+        $currentHermesHome = [Environment]::GetEnvironmentVariable("FOOL_HOME", "User")
+        if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
+            [Environment]::SetEnvironmentVariable("FOOL_HOME", $HermesHome, "User")
+            Write-Success "Set FOOL_HOME=$HermesHome"
+        }
     }
     $env:FOOL_HOME = $HermesHome
     

@@ -46,6 +46,42 @@ describe('eslik kipi yapi bayragi', () => {
     expect(VITE_CONFIG).toContain(".noop'")
   })
 
+  it('MAKINEYE ozel isaret dosyasi izni KALICI kiliyor', () => {
+    // Istenen: "lynn sadece bende gelsin ve bende kalici olsun". Her yapida
+    // ``VITE_COMPANION=1`` yazmayi hatirlamak bunu saglamiyordu -- bir kez
+    // unutulunca ozellik paketten dusuyor ve kullanicinin gozunde
+    // "guncelleme Lynn'i sildi" oluyor.
+    expect(VITE_CONFIG).toContain('.companion-local')
+    expect(VITE_CONFIG).toContain('localCompanionOptIn()')
+  })
+
+  it('VITE_COMPANION=0 isaret dosyasini EZIYOR', () => {
+    // Yayin yolunun tek ihtiyaci bu: isaret bu makinede dururken bile temiz
+    // bir paket uretilebilmeli.
+    expect(VITE_CONFIG).toContain("env.VITE_COMPANION === '0'")
+  })
+
+  it('yayin yolu URETILEN paketi tariyor, niyete guvenmiyor', () => {
+    // Isaret dururken dalginlikla ``npm run dist`` calistirmak, eslik kipi
+    // iceren bir paketi disariya gonderirdi ve bu geri alinamaz.
+    const builder = readFileSync(
+      join(__dirname, '..', '..', '..', 'scripts', 'run-electron-builder.mjs'),
+      'utf8'
+    )
+
+    expect(builder).toContain('COMPANION_FINGERPRINTS')
+    expect(builder).toContain('Not met yet')
+    expect(builder).toContain('isPublishing')
+  })
+
+  it('taranan metinler bilesenin GERCEK metinleriyle ayni', () => {
+    // Ikisi ayrisirsa tarama hicbir sey bulamaz ve koruma sessizce olur.
+    const bar = readFileSync(join(__dirname, '..', 'relationship-bar.tsx'), 'utf8')
+
+    expect(bar).toContain('Not met yet')
+    expect(bar).toContain('things unresolved')
+  })
+
   it('iki dosya AYNI adi disa aciyor', () => {
     // Ad ayrisirsa takas sessizce ``undefined`` verir ve ozellik her yapida
     // kapali kalir -- yanlis yone dusen ama fark edilmeyen bir hata.

@@ -158,6 +158,15 @@ test('locateHermes falls back to ~/.local/bin/fool when the login-shell probe mi
 
 test('locateHermes tries the conventional venv path last', async () => {
   const ssh = fakeSsh([[/\[ -x .*venv\/bin\/fool/, 'OK']])
+  // Runtime dizini ``fool-agent`` adini aldi; YENI ad denenen ilk venv yolu.
+  assert.equal(await locateHermes(ssh, ''), '~/.fool/fool-agent/venv/bin/fool')
+})
+
+test('locateHermes ESKI venv yolunu da deniyor', async () => {
+  // Goc edememis (dosya kilitli, izin yok) bir uzak kurulum hala bulunmali:
+  // ad bir kolaylik, baglanmanin sarti degil.
+  const ssh = fakeSsh([[/\[ -x .*hermes-agent\/venv\/bin\/fool/, 'OK']])
+
   assert.equal(await locateHermes(ssh, ''), '~/.fool/hermes-agent/venv/bin/fool')
 })
 

@@ -131,3 +131,58 @@ test('remote apply without a waiter has no first-run side effects', async () => 
   assert.equal(hidden, 0)
   assert.equal(gate.isLocalBootstrapConfirmed(), true)
 })
+
+test('FOOL_DESKTOP_AUTO_SETUP=local kapiyi atlar (kurulum SURESI olculebilsin)', async () => {
+  // Kapı gerçek bir karar bekliyor ve bunu beklemesi doğru. Ama sonucu şuydu:
+  // sıfırdan kurulumun ne kadar sürdüğü hiç ölçülemiyordu -- depo kendi
+  // ``test:desktop:fresh`` sınavını çalıştırıyor, uygulama bu ekranda duruyor
+  // ve sınav orada bitiyor. "Kurulum iki üç dakikadan uzun olmamalı"
+  // gereksinimini doğrulayacak bir yol yoktu.
+  const previous = process.env.FOOL_DESKTOP_AUTO_SETUP
+  process.env.FOOL_DESKTOP_AUTO_SETUP = 'local'
+
+  try {
+    const prompts: unknown[] = []
+    const gate = createFirstRunSetupGate({
+      promptChoice: backend => prompts.push(backend),
+      stuckAfterMs: 0
+    })
+
+    const decision = await gate.wait(bootstrapBackend)
+
+    assert.equal(decision, 'continue-local')
+    assert.equal(prompts.length, 0, 'otomatik kipte kullaniciya SORULMAMALI')
+  } finally {
+    if (previous === undefined) {
+      delete process.env.FOOL_DESKTOP_AUTO_SETUP
+    } else {
+      process.env.FOOL_DESKTOP_AUTO_SETUP = previous
+    }
+  }
+})
+
+test('degisken YOKKEN gercek kullaniciya hala soruluyor', async () => {
+  // Varsayılan davranış değişmemeli: gigabaytlar inmeden önce sorulmalı.
+  const previous = process.env.FOOL_DESKTOP_AUTO_SETUP
+  delete process.env.FOOL_DESKTOP_AUTO_SETUP
+
+  try {
+    const prompts: unknown[] = []
+    const gate = createFirstRunSetupGate({
+      promptChoice: backend => prompts.push(backend),
+      stuckAfterMs: 0
+    })
+
+    const pending = gate.wait(bootstrapBackend)
+
+    assert.equal(await settledState(pending), 'pending')
+    assert.equal(prompts.length, 1)
+
+    gate.continueLocal()
+    await pending
+  } finally {
+    if (previous !== undefined) {
+      process.env.FOOL_DESKTOP_AUTO_SETUP = previous
+    }
+  }
+})

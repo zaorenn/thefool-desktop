@@ -51,6 +51,7 @@ import tempfile
 import threading
 import time
 import uuid
+from collections import OrderedDict
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -3303,6 +3304,391 @@ def _generate_kittentts(text: str, output_path: str, tts_config: Dict[str, Any])
 # ===========================================================================
 # Main tool function
 # ===========================================================================
+# FOOL-SEAM: speech-language
+#
+# KONUSMA dili, CEVABIN dilinden bagimsizdir.
+#
+# Istenen (kullanicinin kendi ifadesi): "girlfriend modunda ona soyledigimde
+# model cevabi ingilizce vermeli ki anlayabileyim, sesi japonca olmali."
+#
+# Yani ekranda okunan metin ile hoparlorden cikan dil AYNI olmak zorunda degil.
+# Bunu personaya yazarak cozmek YANLIS olurdu: persona "japonca cevap ver"
+# derse kullanici cevabi okuyamaz; "ingilizce cevap ver" derse ses de
+# ingilizce cikar. Ikisi ayni anahtarda oldugu surece biri digerini kaybettirir.
+#
+# Bu yuzden ayri bir ayar: ``tts.speech_language``. Bos birakilirsa davranis
+# degismez -- cevap hangi dildeyse o seslendirilir.
+#: ``tts.speech_language`` icin insan okunur adlar. Ceviri istegi model'e
+#: gonderilirken kod degil AD kullaniliyor: kucuk yerel modeller "ja" yerine
+#: "Japanese" gordugunde belirgin sekilde daha guvenilir cevap veriyor.
+SPEECH_LANGUAGE_NAMES: Dict[str, str] = {
+    "ar": "Arabic", "da": "Danish", "de": "German", "el": "Greek",
+    "en": "English", "es": "Spanish", "fi": "Finnish", "fr": "French",
+    "he": "Hebrew", "hi": "Hindi", "it": "Italian", "ja": "Japanese",
+    "ko": "Korean", "ms": "Malay", "nl": "Dutch", "no": "Norwegian",
+    "pl": "Polish", "pt": "Portuguese", "ru": "Russian", "sv": "Swedish",
+    "sw": "Swahili", "tr": "Turkish", "zh": "Chinese",
+}
+
+#: Ceviri cagrisinin gorev adi -- ``auxiliary`` yonlendirmesi bunu kullaniyor.
+SPEECH_TRANSLATION_TASK = "tts_speech_language"
+
+#: Ceviri icin ust sinir (saniye).
+#:
+#: Olculdu: yonlendirme yokken istek bulut saglayicilarina dustu ve 160 saniye
+#: sonra zaman asimina ugradi -- konusma o kadar bekledi. Konusma bekleyemez;
+#: sinir dolarsa ozgun metin seslendiriliyor. Tek bir cumlenin cevirisi yerel
+#: bir modelde saniyeler suruyor, yani bu sinir yalnizca bozuk bir yolu kesiyor.
+SPEECH_TRANSLATION_TIMEOUT = 25.0
+
+
+#: "Ust uste binme yok" anlamina gelen degerler -- bir dil kodu DEGIL.
+#:
+#: ``same`` varsayilan (bkz. ``fool_cli/config_defaults.py``): cevap hangi
+#: dildeyse o seslendirilir. ``auto``/``default`` ayni niyetin baska yazimlari;
+#: kullanici elle yazabiliyor ve reddetmenin bir anlami yok.
+SPEECH_LANGUAGE_SENTINELS = frozenset({"same", "auto", "default", "none", "off"})
+
+
+def _speech_language(tts_config: Dict[str, Any]) -> str:
+    """``tts.speech_language`` -- gecerliyse dil kodu, degilse bos.
+
+    Gecersiz bir kod SESSIZCE kabul edilmiyor: sessizce yok saymak, kullanicinin
+    ayari yazip hicbir sey degismedigini gormesi demekti ve sebebi hicbir yerde
+    yazmiyordu.
+
+    ISTISNA: ``same`` (VARSAYILAN deger) bir dil kodu degil, "ust uste binme"
+    demek -- ve sessizce bos donmeli.
+
+    Olculdu, tahmin degil: ilk yazim sentinel'i taniyamiyordu ve HIC AYAR
+    YAPMAMIS bir kullanicida her cumlede su uyari dusuyordu::
+
+        [The Fool] tts.speech_language='same' taninmadi ve yok sayildi.
+        Desteklenenler: ar, da, de, el, en, ...
+
+    Davranis dogruydu (ceviri yok), ama gunluk kullaniciya AYARININ
+    REDDEDILDIGINI soyluyordu -- oysa reddedilen bir sey yoktu. Akista bu
+    satir cumle basina bir kez tekrarlaniyor; gercek bir uyariyi da
+    gormeyecek hale getiriyordu.
+    """
+    raw = str(tts_config.get("speech_language") or "").strip().lower()
+    if not raw or raw in SPEECH_LANGUAGE_SENTINELS:
+        return ""
+
+    if raw not in SPEECH_LANGUAGE_NAMES:
+        logger.warning(
+            "[The Fool] tts.speech_language=%r taninmadi ve yok sayildi. "
+            "Desteklenenler: %s",
+            raw,
+            ", ".join(sorted(SPEECH_LANGUAGE_NAMES)),
+        )
+        return ""
+
+    return raw
+
+
+#: Ceviri onbellegi -- ``(metin, hedef) -> cevrilmis``.
+#:
+#: Var olma sebebi BOYUT degil ZAMANLAMA: akis katmani bir sonraki cumleyi
+#: arka planda BURAYA yaziyor (``prefetch_speech_translation``), boylece sira
+#: o cumleye geldiginde cagri aninda donuyor. Onbellek olmasaydi on-yukleme
+#: yapilan is bosa giderdi -- ayni ceviri ikinci kez istenirdi.
+_TRANSLATION_CACHE: "OrderedDict[tuple[str, str], str]" = OrderedDict()
+_TRANSLATION_CACHE_LOCK = threading.Lock()
+
+#: Sinirli tutuluyor: uzun bir oturumda her cumle burada birikirdi.
+TRANSLATION_CACHE_MAX = 128
+
+
+def _translation_cached(key: tuple) -> Optional[str]:
+    with _TRANSLATION_CACHE_LOCK:
+        value = _TRANSLATION_CACHE.get(key)
+        if value is not None:
+            _TRANSLATION_CACHE.move_to_end(key)
+
+        return value
+
+
+def _translation_store(key: tuple, value: str) -> None:
+    with _TRANSLATION_CACHE_LOCK:
+        _TRANSLATION_CACHE[key] = value
+        _TRANSLATION_CACHE.move_to_end(key)
+        while len(_TRANSLATION_CACHE) > TRANSLATION_CACHE_MAX:
+            _TRANSLATION_CACHE.popitem(last=False)
+
+
+def prefetch_speech_translation(text: str, tts_config: Dict[str, Any]) -> None:
+    """Bir cumlenin cevirisini ONCEDEN yap ve onbellege koy.
+
+    Akis katmani bunu ayri bir is parcaciginda cagiriyor: cumle N
+    seslendirilirken cumle N+1 ceviriliyor. Sira N+1'e geldiginde
+    ``_translate_for_speech`` onbellekten donuyor ve ceviri suresi
+    KULLANICIYA HIC gorunmuyor.
+
+    Olculen sebep: sirali akista cumle basina ceviri 2,4-9,7 sn ekliyordu ve
+    kullanicinin bildirdigi sey "es zamanli konusma hissi vermiyor" idi.
+
+    ASLA yukselmez: bu bir hizlandirma. Basarisiz olursa gercek cagri normal
+    yolundan gider.
+    """
+    try:
+        target = _speech_language(tts_config)
+        if not target:
+            return
+
+        stripped = text.strip()
+        if not stripped:
+            return
+
+        # Zaten hedef dildeyse cevrilecek bir sey yok -- arka planda bile
+        # olsa bos bir LLM turu, modeli sohbetin onunden alirdi.
+        if _already_in_language(stripped, target):
+            return
+
+        key = (stripped, target)
+        if _translation_cached(key) is not None:
+            return
+
+        _translate_for_speech(stripped, target)
+    except Exception as exc:  # pragma: no cover - on-yukleme sessizce vazgecer
+        logger.debug("konusma dili on-yuklemesi atlandi: %s", exc)
+
+
+def _translate_for_speech(text: str, target: str) -> str:
+    """Metni SESLENDIRME icin hedef dile cevir.
+
+    ASLA yukselmez ve asla bos donmez: ceviri basarisiz olursa OZGUN metin
+    seslendiriliyor. Yanlis dilde konusmak, hic konusmamaktan iyi -- kullanici
+    sesi duyar ve bir seyin ters gittigini anlar; sessizlik ise "TTS yine
+    bozuldu" olarak okunur.
+    """
+    stripped = text.strip()
+    if not stripped:
+        return text
+
+    # On-yukleme buraya yazmis olabilir: o zaman ceviri suresi SIFIR.
+    cache_key = (stripped, target)
+    cached = _translation_cached(cache_key)
+    if cached is not None:
+        return cached
+
+    language = SPEECH_LANGUAGE_NAMES.get(target, target)
+    system_prompt = (
+        f"You translate text into {language} so it can be SPOKEN ALOUD.\n\n"
+        "Rules:\n"
+        f"- Output ONLY the {language} translation. No notes, no romanization, "
+        "no original text, no quotes around it.\n"
+        "- Keep the speaker's tone and register — this is dialogue, not a "
+        "document.\n"
+        "- Write it the way it should be SAID: expand numbers, dates and units "
+        "into spoken form.\n"
+        "- Leave code, file paths, commands and URLs exactly as they are.\n"
+        f"- If the text is already {language}, return it unchanged."
+    )
+
+    # YEREL modele sabitleniyor.
+    #
+    # Olculdu: yonlendirme birakilinca istek bulut saglayicilarina (nous,
+    # openrouter) gitti, ikisi de kimlik/kredi hatasi verdi ve cagri 160
+    # saniye sonra zaman asimina ugradi. Kullanicinin gordugu: konusmanin
+    # dakikalarca gecikmesi.
+    #
+    # Bu urun yerel-once ve kullanicinin modeli zaten calisiyor. Ceviri kucuk
+    # bir gorev; ana modelin yapamayacagi bir sey degil. ``auxiliary`` altinda
+    # bu goreve ozel bir yonlendirme varsa o kazaniyor.
+    route: Dict[str, Any] = {}
+    try:
+        from fool_cli.config import load_config
+        from fool_constants import resolve_reasoning_config
+
+        full_config = load_config() or {}
+        aux = full_config.get("auxiliary") or {}
+        task_route = aux.get(SPEECH_TRANSLATION_TASK) if isinstance(aux, dict) else None
+
+        # Gorev yonlendirmesi ana model ayarinin UZERINE biniyor, onun yerine
+        # gecmiyor. Neden: ``auxiliary.tts_speech_language`` normalde yalnizca
+        # ``provider`` + ``model`` yaziyor. Yerine gecseydi ``base_url``
+        # kaybolur ve istek varsayilan uc noktaya giderdi -- kullanicinin
+        # kendi LM Studio'su dururken.
+        source: Dict[str, Any] = dict(full_config.get("model") or {})
+        if isinstance(task_route, dict):
+            source.update(task_route)
+
+        for key in ("provider", "model", "base_url"):
+            value = source.get(key) or (source.get("default") if key == "model" else None)
+            if value:
+                route[key] = value
+
+        # DUSUNME KAPATILIYOR -- olculdu, tahmin degil.
+        #
+        # Kullanicinin yerel modeli (qwen3.5-9b) bir dusunen model. Dusunme
+        # acikken tek bir cumlenin cevirisi icin butun token butcesini akil
+        # yurutmeye harcadi ve ``content`` BOS dondu; cagiran taraf bunu
+        # "ceviri basarisiz" olarak gordu. Cumle cevirmek akil yurutme
+        # gerektiren bir is degil.
+        #
+        # Cozunurluk uygulamanin kendi tek noktasindan geliyor, yani
+        # kullanicinin ``agent.reasoning_overrides`` ayari burada da gecerli.
+        reasoning = resolve_reasoning_config(full_config, route.get("model", ""))
+        if reasoning is not None:
+            route["reasoning_config"] = reasoning
+    except Exception as exc:  # pragma: no cover — yonlendirme okunamazsa varsayilan
+        logger.debug("konusma dili yonlendirmesi okunamadi: %s", exc)
+
+    try:
+        from agent.auxiliary_client import call_llm
+
+        response = call_llm(
+            task=SPEECH_TRANSLATION_TASK,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": stripped},
+            ],
+            temperature=0.2,
+            # Konusma BEKLEYEMEZ: cevirisi gecikirse ozgun metni sesledirmek,
+            # kullaniciyi sessizlikte bekletmekten iyi.
+            timeout=SPEECH_TRANSLATION_TIMEOUT,
+            **route,
+        )
+        translated = _extract_auxiliary_message_content(response).strip()
+    except Exception as exc:
+        logger.warning(
+            "[The Fool] konusma dili cevirisi basarisiz (%s); ozgun metin "
+            "seslendiriliyor.",
+            exc,
+        )
+        return text
+
+    if not translated:
+        logger.warning(
+            "[The Fool] konusma dili cevirisi bos dondu; ozgun metin "
+            "seslendiriliyor."
+        )
+        return text
+
+    # BASARILI ceviri onbellege giriyor -- basarisizlik girmiyor: gecici bir
+    # hata butun oturum boyunca ayni cumleyi cevrilmemis birakirdi.
+    _translation_store(cache_key, translated)
+
+    return translated
+
+
+#: Yaziya gore dil aileleri. Ceviri GEREKMEDIGINI ucuza anlamak icin.
+#:
+#: Dil ALGILAMA degil -- o bir bagimlilik ve yanilabilir. Burada sorulan daha
+#: dar bir soru: "bu metin zaten hedef dilin YAZI sisteminde mi?" Cevap
+#: hayirsa ceviri gerekiyor; evetse ceviriye gerek YOK.
+_CJK = ((0x3040, 0x30FF), (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF))
+_HANGUL = ((0x1100, 0x11FF), (0xAC00, 0xD7AF))
+_CYRILLIC = ((0x0400, 0x04FF),)
+_ARABIC = ((0x0600, 0x06FF),)
+_HEBREW = ((0x0590, 0x05FF),)
+_DEVANAGARI = ((0x0900, 0x097F),)
+
+#: ``dil -> o dilin yazi araliklari``. Listede olmayan diller Latin yazili
+#: kabul ediliyor (Turkce, Almanca, Ispanyolca...).
+_SCRIPT_RANGES: Dict[str, tuple] = {
+    "ja": _CJK,
+    "zh": _CJK,
+    "ko": _HANGUL,
+    "ru": _CYRILLIC,
+    "ar": _ARABIC,
+    "he": _HEBREW,
+    "hi": _DEVANAGARI,
+    "el": ((0x0370, 0x03FF),),
+}
+
+
+def _in_ranges(char: str, ranges: tuple) -> bool:
+    point = ord(char)
+
+    return any(low <= point <= high for low, high in ranges)
+
+
+def _already_in_language(text: str, target: str) -> bool:
+    """``text`` zaten ``target`` dilinin yazi sisteminde mi?
+
+    Kasitli olarak KABA ve tek yonlu:
+
+    * Latin yazili bir hedef (en, tr, de...) icin metinde CJK/Kiril/Arap gibi
+      Latin disi harfler YOKSA ``True``. Yani Ingilizce bir cevabi
+      Ingilizce'ye "cevirmek" icin model cagrilmiyor.
+    * Latin disi bir hedef (ja, zh, ko, ru...) icin metin o yazi sistemini
+      ICERIYORSA ``True``.
+    * Emin olunamayan her durumda ``False`` -- yani ceviri yapilir. Yanlis
+      tarafa dusmenin bedeli asimetrik: gereksiz ceviri gecikme, atlanan
+      ceviri YANLIS DILDE konusma.
+
+    Bu bir dil algilayici DEGIL: Ingilizce ile Turkce'yi ayirmiyor, ikisi de
+    Latin. O ayrimi yapmak bir bagimlilik ve yanilma payi getirirdi; buradaki
+    kazanc zaten en sik durumda -- cevap ve ses ayni yazi sisteminde.
+    """
+    stripped = text.strip()
+    if not stripped:
+        return True
+
+    letters = [c for c in stripped if c.isalpha()]
+    if not letters:
+        # Rakam/noktalama: cevrilecek bir sey yok.
+        return True
+
+    target_ranges = _SCRIPT_RANGES.get(target)
+
+    if target_ranges is None:
+        # Latin yazili hedef: metinde Latin DISI bir yazi varsa ceviri gerekli.
+        non_latin = any(
+            _in_ranges(c, rng)
+            for c in letters
+            for rng in (_CJK, _HANGUL, _CYRILLIC, _ARABIC, _HEBREW, _DEVANAGARI)
+        )
+
+        return not non_latin
+
+    # Latin disi hedef: metin o yaziyi iceriyorsa zaten o dilde.
+    return any(_in_ranges(c, target_ranges) for c in letters)
+
+
+def _apply_speech_language(
+    text: str, tts_config: Dict[str, Any]
+) -> tuple[str, Dict[str, Any]]:
+    """Konusma dili ayarliysa metni cevir VE motoru ayni dile al.
+
+    Ikisi birlikte yapilmali: yalnizca metni cevirmek, japonca metni ingilizce
+    fonetigiyle okuyan bir motor birakirdi -- olculen bozulmanin ta kendisi
+    (``Merhaba`` -> ``Mehabal``).
+    """
+    target = _speech_language(tts_config)
+    if not target:
+        return text, tts_config
+
+    # ZATEN O DILDEYSE CEVIRI YOK.
+    #
+    # Istenen: "seslendirme ingilizce oldugunda ya da cevap dili ile ses dili
+    # ayni oldugunda ceviri katmanlari calismamali ki cevap direkt olarak sesli
+    # okunup hizlica gelsin."
+    #
+    # Onceki hali kosulsuz ceviriyordu: Voice=English ve cevap zaten
+    # Ingilizce'yken bile bir LLM turu doner, Ingilizce'yi Ingilizce'ye
+    # "cevirir" ve kullaniciyi bekletirdi. Olculen maliyet cumle basina
+    # 2,4-9,7 sn -- tamami bosa.
+    if _already_in_language(text, target):
+        updated = dict(tts_config)
+        engine = dict(updated.get("chatterbox") or {})
+        engine["language"] = target
+        updated["chatterbox"] = engine
+
+        return text, updated
+
+    spoken = _translate_for_speech(text, target)
+
+    updated = dict(tts_config)
+    engine = dict(updated.get("chatterbox") or {})
+    engine["language"] = target
+    updated["chatterbox"] = engine
+
+    return spoken, updated
+
+
 def _text_to_speech_single(
     text: str,
     output_path: Optional[str] = None,
@@ -3327,6 +3713,12 @@ def _text_to_speech_single(
         if tts_config_override is not None
         else _load_tts_config()
     )
+
+    # FOOL-SEAM: speech-language
+    # Konusulan dil, cevabin dilinden bagimsiz olabiliyor. Burasi TEK huni:
+    # akista cumle cumle gelen cagrilar da tek seferlik cagrilar da buradan
+    # geciyor, yani ayar her yuzeyde ayni davraniyor.
+    text, tts_config = _apply_speech_language(text, tts_config)
 
     # When the model supplies a speed parameter, inject it into the config
     # so all downstream provider functions pick it up uniformly.
@@ -4694,6 +5086,106 @@ TTS_SCHEMA = {
         "required": ["text"]
     }
 }
+
+# FOOL-SEAM: language-mode
+#
+# "Ses dilini japonca yap" bir SOHBET cumlesi degil, bir AYAR degisikligi.
+#
+# Arac olmadan model yalnizca "tamam" diyebiliyordu ve hicbir sey degismiyordu
+# -- kullanici ayni seyi tekrar tekrar istiyor, her seferinde onay aliyor ve
+# ses ayni kaliyordu. Sessiz basarisizlik.
+LANGUAGE_MODE_SCHEMA = {
+    "name": "set_language_mode",
+    "description": (
+        "Set the reply language and/or the spoken (voice) language. These are "
+        "two INDEPENDENT settings: the reply language is what you write in the "
+        "chat, the speech language is what the voice says out loud. Use this "
+        "whenever the user asks to change either one — saying you will change "
+        "it is not enough, the setting only changes through this tool. The "
+        "change is written to config and survives restarts."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "reply_language": {
+                "type": "string",
+                "description": (
+                    "Language you write replies in, as a 2-letter code "
+                    "(en, tr, ja, de, ...), or 'auto' to match whatever "
+                    "language the user writes in. Omit to leave unchanged."
+                ),
+            },
+            "speech_language": {
+                "type": "string",
+                "description": (
+                    "Language the voice speaks, as a 2-letter code "
+                    "(ja, en, tr, ...), or 'same' to speak in the reply "
+                    "language. The written reply is NOT translated — only the "
+                    "audio. Omit to leave unchanged."
+                ),
+            },
+        },
+        "required": [],
+    },
+}
+
+
+def set_language_mode_tool(
+    reply_language: Optional[str] = None,
+    speech_language: Optional[str] = None,
+) -> str:
+    """Cevap dili / konusma dili ayarlarini YAZ."""
+    if reply_language is None and speech_language is None:
+        return tool_error(
+            "Nothing to change: pass reply_language, speech_language, or both.",
+            success=False,
+        )
+
+    try:
+        from fool.language_mode import apply as _apply, display
+    except Exception as exc:  # pragma: no cover
+        return tool_error(f"Language settings unavailable: {exc}", success=False)
+
+    result = _apply(reply=reply_language, speech=speech_language)
+    changed, rejected = result["changed"], result["rejected"]
+
+    if not changed:
+        return tool_error(
+            "Not a language I know: " + ", ".join(rejected) + ". "
+            "Use a 2-letter code (en, tr, ja, ...), 'auto' for the reply "
+            "language, or 'same' for the speech language.",
+            success=False,
+        )
+
+    parts = []
+    if "reply_language" in changed:
+        code = changed["reply_language"]
+        parts.append(
+            "replies are now written in " + ("the user's own language" if code == "auto" else display(code))
+        )
+    if "speech_language" in changed:
+        code = changed["speech_language"]
+        parts.append(
+            "the voice now speaks " + ("the reply language" if code == "same" else display(code))
+        )
+
+    message = "Done — " + " and ".join(parts) + "."
+    if rejected:
+        message += " Ignored (unknown language): " + ", ".join(rejected) + "."
+
+    return json.dumps({"success": True, "message": message, **changed})
+
+
+registry.register(
+    name="set_language_mode",
+    toolset="tts",
+    schema=LANGUAGE_MODE_SCHEMA,
+    handler=lambda args, **kw: set_language_mode_tool(
+        reply_language=args.get("reply_language"),
+        speech_language=args.get("speech_language"),
+    ),
+    emoji="🗣️",
+)
 
 registry.register(
     name="text_to_speech",

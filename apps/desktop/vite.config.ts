@@ -60,8 +60,41 @@ const debugEntry = (command: string, env: Record<string, string>) =>
 // elle duzenlemek bile geri getirmiyor.
 //
 // Yerel calistirma (``vite dev``) ve acikca istenen bir yapi disinda kapali.
-const companionOn = (command: string, env: Record<string, string>) =>
-  command === 'serve' || env.VITE_COMPANION === '1'
+//
+// BU MAKINEYE OZEL, KALICI izin
+// -----------------------------
+// Istenen: "lynn sadece bende gelsin ve bende kalici olsun, publishledigimiz
+// surumlerde bulunmamali". Her yapida ``VITE_COMPANION=1`` yazmayi hatirlamak
+// bunu saglamiyordu -- bir kez unutulunca esilik kipi paketten dusuyor ve
+// kullanicinin gozunde "guncelleme Lynn'i sildi" oluyor. Olculen sikayet tam
+// olarak buydu.
+//
+// Izin artik bir DOSYANIN VARLIGI: ``apps/desktop/.companion-local``. Dosya
+// ``.gitignore``da, yani klonlanmiyor, itilmiyor ve baska hicbir makinede
+// bulunmuyor. Bu makinede duruyor; oradaki her yapi esilik kipini iceriyor.
+//
+// ``VITE_COMPANION=0`` her seyi EZIYOR ve yayin yolu bunu kullaniyor: isaret
+// dosyasi dursa bile yayinlanan paket temiz cikiyor. Ustune
+// ``scripts/run-electron-builder.mjs`` yayindan once paketi TARIYOR -- niyet
+// degil, uretilen dosya denetleniyor.
+const COMPANION_MARKER = path.resolve(__dirname, '.companion-local')
+
+const localCompanionOptIn = (): boolean => {
+  try {
+    return fs.existsSync(COMPANION_MARKER)
+  } catch {
+    return false
+  }
+}
+
+const companionOn = (command: string, env: Record<string, string>) => {
+  // Kapatma her zaman kazanir -- yayin yolunun tek ihtiyaci bu.
+  if (env.VITE_COMPANION === '0') {
+    return false
+  }
+
+  return command === 'serve' || env.VITE_COMPANION === '1' || localCompanionOptIn()
+}
 
 // Takas MODUL duzeyinde, bayrak duzeyinde DEGIL.
 //

@@ -93,6 +93,17 @@ class CancelBody(BaseModel):
     job_id: str
 
 
+class LanguageBody(BaseModel):
+    """Cevap dili ve/veya konuşma dili.
+
+    İkisi de isteğe bağlı: panel yalnızca değişeni gönderiyor, böylece bir
+    açılır listeyi değiştirmek diğerini sessizce sıfırlamıyor.
+    """
+
+    reply_language: str | None = None
+    speech_language: str | None = None
+
+
 @router.get("/api/fool/voice/catalog")
 async def voice_catalog() -> dict[str, Any]:
     """Katalog İŞ PARÇACIĞINDA kuruluyor, olay döngüsünde DEĞİL.
@@ -283,6 +294,52 @@ async def voice_set_voice(body: VoiceBody) -> dict[str, Any]:
         return await asyncio.to_thread(voice_models.set_voice, body.entry_id, body.voice)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/api/fool/voice/language")
+async def voice_language_get() -> dict[str, Any]:
+    """Şu anki cevap dili + konuşma dili, ve seçilebilir diller.
+
+    Bu ucun var olma sebebi: ayarlar yapılandırmada duruyordu ve tek değiştirme
+    yolu modele söylemekti. Kullanıcının isteği açıktı -- "illa modele söyleyip
+    değiştirmemize gerek kalmasın".
+    """
+    from fool import language_mode
+
+    reply, speech = await asyncio.to_thread(language_mode.current)
+
+    return {
+        "reply_language": reply or language_mode.AUTO,
+        "speech_language": speech or language_mode.SAME,
+        "languages": [
+            {"code": code, "name": name}
+            for code, name in sorted(language_mode.LANGUAGE_NAMES.items(), key=lambda kv: kv[1])
+        ],
+    }
+
+
+@router.post("/api/fool/voice/language")
+async def voice_language_set(body: LanguageBody) -> dict[str, Any]:
+    """Cevap dilini ve/veya konuşma dilini YAZ."""
+    from fool import language_mode
+
+    result = await asyncio.to_thread(
+        language_mode.apply, body.reply_language, body.speech_language
+    )
+
+    if result["rejected"] and not result["changed"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Bilinmeyen dil: " + ", ".join(result["rejected"]),
+        )
+
+    reply, speech = await asyncio.to_thread(language_mode.current)
+
+    return {
+        "ok": True,
+        "reply_language": reply or language_mode.AUTO,
+        "speech_language": speech or language_mode.SAME,
+    }
 
 
 @router.post("/api/fool/voice/knob")

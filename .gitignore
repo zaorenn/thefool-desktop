@@ -205,3 +205,14 @@ native/fts5_cjk/*.so
 # interrupted; consumed by launch-time recovery. Never commit it (was tracked
 # by accident via 3a69e34702, removed in the #72002 salvage).
 .lazy-refresh-incomplete
+
+# Eslik kipi izni -- MAKINEYE ozel, asla itilmez (bkz. apps/desktop/vite.config.ts)
+apps/desktop/.companion-local
+
+# fool_cli/managed_uv.py'nin calisma dizini. Depo kokunde calistirildiginda
+# BURADA olusuyor ve uretilmis ciktilar (rapor-cikti/, runtime-repair.lock)
+# iceriyor -- hicbiri kaynak degil.
+.fool-runtime/
+
+# graphify beceresinin bilgi grafigi ciktisi -- makineye ozel, uretilmis.
+graphify-out/

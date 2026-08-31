@@ -61,7 +61,14 @@ logger = logging.getLogger(__name__)
 # exclude ``.archive`` here because the curator's ``skills/.archive/`` holds
 # restorable user skills that must survive a backup.
 _EXCLUDED_DIRS = {
-    "hermes-agent",     # the codebase repo — re-clone instead
+    # The codebase repo — re-clone instead. BOTH names: the runtime directory
+    # migrated ``hermes-agent`` -> ``fool-agent``
+    # (apps/desktop/electron/runtime-root.ts), and a checkout that could not be
+    # renamed keeps the old one. Listing only the old name silently put the
+    # multi-gigabyte clone back into every backup on migrated installs.
+    # Classification lives in ``fool/user_data.py`` (REPLACEABLE).
+    "fool-agent",
+    "hermes-agent",
     "__pycache__",      # bytecode caches — regenerated on import
     ".git",             # nested git dirs (profiles shouldn't have these, but safety)
     "node_modules",     # js deps — reinstalled on demand

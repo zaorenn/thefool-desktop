@@ -4,7 +4,16 @@ import { redactSecrets, SSH_ERROR } from './ssh-connection'
 
 const LOCKFILE_SCHEMA_VERSION = 2
 const PROTOCOL_VERSION = 1
-const READY_RE = /^HERMES_(?:BACKEND|DASHBOARD)_READY port=(\d+)/gm
+// FOOL-SEAM: ready-token
+//
+// UCUNCU kopya -- ve bu da atlanmisti. Backend `FOOL_BACKEND_READY port=<n>`
+// yaziyor; bu desen `HERMES_` ariyordu, yani uzak bir WINDOWS ana makinesine
+// baglanmak hicbir zaman calismiyordu: surec basliyor, portunu duyuruyor,
+// yoklama gunlukte hicbir sey bulamiyor ve baglanti zaman asimiyla oluyor.
+//
+// Eski token da kabul ediliyor: guncellenememis bir uzak kurulum hala
+// baglanabilmeli.
+const READY_RE = /^(?:FOOL|HERMES)_(?:BACKEND|DASHBOARD)_READY port=(\d+)/gm
 const READY_POLL_INTERVAL_MS = 750
 
 function psLiteral(value) {
@@ -31,6 +40,10 @@ async function probeWindowsRemote(ssh, explicitHermesPath = '') {
     'if($explicit){$candidates+=$explicit}',
     '$cmd=Get-Command fool.exe -ErrorAction SilentlyContinue',
     'if($cmd){$candidates+=$cmd.Source}',
+    // FOOL-SEAM: runtime-dir-name
+    // Runtime dizini ``fool-agent`` adini aldi; YENI ad once, eski ad aday
+    // olarak KALIYOR -- goc edememis bir uzak kurulum hala bulunmali.
+    '$candidates+=(Join-Path $hermesHome "fool-agent\\venv\\Scripts\\fool.exe")',
     '$candidates+=(Join-Path $hermesHome "hermes-agent\\venv\\Scripts\\fool.exe")',
     '$candidates+=(Join-Path $HOME "hermes-agent\\.venv\\Scripts\\fool.exe")',
     '$fool=$candidates|Where-Object{Test-Path -LiteralPath $_ -PathType Leaf}|Select-Object -First 1',

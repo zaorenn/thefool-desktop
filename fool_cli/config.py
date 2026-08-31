@@ -3759,6 +3759,29 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
                     user_config.pop("max_turns", None)
 
                 config = _deep_merge(config, user_config)
+
+                # FOOL-SEAM: ipv4-loopback
+                #
+                # ``localhost`` Windows'ta ONCE IPv6 ``::1``e cozuluyor ve
+                # yerel cikarim sunuculari (LM Studio, Ollama, llama.cpp)
+                # varsayilan olarak yalnizca IPv4 dinliyor. IPv6 denemesi
+                # zaman asimina ugrayip IPv4'e dusuyor.
+                #
+                # Olculdu, ayni sunucu, yalnizca konak adi degisti::
+                #
+                #     localhost  ->  2,028 / 2,037 / 2,038 sn
+                #     127.0.0.1  ->  0,002 / 0,013 / 0,004 sn
+                #
+                # Cikarim YAPMAYAN ``GET /v1/models`` bile 2,047 sn suruyordu.
+                # Kullanicinin bildirdigi "her mesajda 10 saniye gecikme"nin
+                # en buyuk tek bileseni buydu -- ve bir tur birden cok istek
+                # yapiyor, yani bedel katlaniyor.
+                #
+                # Yalnizca CIPLAK ``localhost`` yeniden yaziliyor: ``[::1]``
+                # ya da bir konak adi yazan kullanici bilerek yazmistir.
+                from fool.loopback import normalize_config_urls
+
+                config = normalize_config_urls(config)
             except Exception as e:
                 # Last-known-good fallback (port of openai/codex#31188's
                 # invariant: a parse failure in a policy/config file must not
@@ -5546,7 +5569,27 @@ def set_config_value(key: str, value: str, force: bool = False):
     # such as approvals.mode="off" must not become YAML booleans.  Unknown keys
     # retain the historical best-effort coercion behavior.
     coerced_value: Any = value
-    if not isinstance(_default_value_for_key(key), str):
+
+    # ZATEN TIPLI bir deger cevrilmiyor.
+    #
+    # Asagidaki blok metin bekliyor: ``value.lower()``, ``value.isdigit()``.
+    # Bir cagiran gercek bir sayi gonderdiginde ilk satirda patliyordu::
+    #
+    #     File "fool/voice_models.py", line 1324, in set_knob
+    #         set_config_value(f"tts.{...}.{knob.id}", stored)
+    #     AttributeError: 'float' object has no attribute 'lower'
+    #
+    # Kullaniciya gorunen: ses ayarlarindaki HER kaydiriciyi oynatmak
+    # "Could not change that setting -- 500: Internal Server Error".
+    # Chatterbox'in yogunluk/tempo ayarlari hic degistirilemiyordu.
+    #
+    # Imza ``value: str`` diyor ve cagiran tarafi duzeltmek de dogru olurdu,
+    # ama burada durmak bu SINIF hatayi bitiriyor: zaten dogru tipte gelen bir
+    # sayi/bool cevrilecek bir sey degil, oldugu gibi yazilir. Metin yolu
+    # aynen duruyor.
+    if isinstance(value, (bool, int, float)) and not isinstance(value, str):
+        pass
+    elif not isinstance(_default_value_for_key(key), str):
         if value.lower() in {'true', 'yes', 'on'}:
             coerced_value = True
         elif value.lower() in {'false', 'no', 'off'}:

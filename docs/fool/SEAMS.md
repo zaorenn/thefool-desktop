@@ -67,7 +67,14 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | id | Dosya | Kaybolursa |
 |----|-------|------------|
 | `plugin-tts-config` | `tools/tts_tool.py` | Motora `config` hiç gitmez: klon sesi, cihaz ve ses seçimi sessizce yok sayılır, herkes varsayılan kadın sesiyle konuşur |
+| `home-repair` | `apps/desktop/electron/main.ts` | Bozuk bir `FOOL_HOME` (silinmiş sandbox yolu) kör körüne kabul edilir; uygulama boş bir dizine açılır ve kullanıcı her şeyini kaybetmiş görünür |
+| `runtime-dir-name` | `apps/desktop/electron/runtime-root.ts`, `main.ts`, `scripts/install.ps1`, `scripts/install.sh`, `fool/user_data.py`, `fool_cli/backup.py` | Runtime klasörü `hermes-agent` adında kalır: kullanıcı `where fool` çıktısında Hermes görür, ürün ayrı ama ad değil |
+| `runtime-version` | `apps/desktop/electron/runtime-version.ts`, `bootstrap-runner.ts`, `main.ts` | Eski bir runtime "hazır" sayılır: yeni sürüm kurulur ama koşan kod eskidir — backend durur, terminalde "Hermes Agent" görünür. Ters yön de tehlikeli: her farkı "eski" saymak, güncel bir runtime'da HER AÇILIŞTA yükleyiciyi koşturur (`checkoutContainsCommit` + onarım damgası bunu kesiyor) |
+| `bundled-installer` | `apps/desktop/electron/bootstrap-runner.ts`, `apps/desktop/package.json` | Kurulum betiği GitHub'dan indirilir: sürümdeki düzeltmeler çalışmaz (ağdaki eski dosya koşar) ve internet yoksa kurulum hiç başlamaz |
+| `ipv4-loopback` | `fool/loopback.py`, `fool_cli/config.py` | `localhost` IPv6'ya çözülüp her istekte 2 sn zaman aşımı bekler; her mesaj iki saniye geç başlar |
 | `engine-namespaced-config` | `tools/tts_tool.py` | Motora özel ses (`tts.<motor>.voice`) genel ayara ezdirilir |
+| `speech-language` | `tools/tts_tool.py` | Konuşulan dil cevabın diline geri düşer: kullanıcı İngilizce okuyup Japonca duyamaz |
+| `language-mode` | `fool/language_mode.py`, `agent/system_prompt.py`, `tools/tts_tool.py`, `fool_cli/config_defaults.py` | Model dil ayarlarını göremez ve değiştiremez: "ses dilini japonca yap" dendiğinde "tamam" der, hiçbir şey değişmez |
 | `first-sentence-latency` | `tools/tts_streaming.py` | Ses ilk cümlede değil, tüm cevap bitince başlar; uzun cevaplarda dakikalarca sessizlik |
 | `local-sentence-streaming` | `tools/tts_streaming.py` | Cümle cümle akış kapanır |
 | `speech-pauses` | `tools/tts_streaming.py` | Duraklamalar kaybolur, konuşma robotlaşır |
@@ -107,6 +114,7 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `os-text-encoding` | `agent/system_prompt.py` | Türkçe Windows'ta sistem istemi kurulamaz, ajan hiç cevap vermez |
 | `context-floor` | `agent/agent_init.py` | 32K bağlamda çalışmayı reddeder |
 | `release-repo-url` | `scripts/release.py` | Release upstream depoya gitmeye çalışır |
+| `ready-token` | `fool_cli/web_server.py`, `apps/desktop/electron/backend-ready.ts`, `remote-lifecycle.ts`, `windows-remote-lifecycle.ts` | Backend `FOOL_BACKEND_READY port=<n>` yazar; masaüstü onu duymaz ve zaman aşımıyla ölür. Hata mesajı backend'i suçlu gösterir, oysa backend çalışıyordur. **ÜÇ ayrı kopya var** — toplu marka dönüşümü üçünü de atlayabiliyor; muhafız (`tests/fool/test_branding.py`) artık dosya adı değil DESEN arıyor. |
 
 ### Ajanın kendini tanıması
 

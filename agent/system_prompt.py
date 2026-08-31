@@ -389,6 +389,26 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         # Fallback to hardcoded identity
         stable_parts.append(DEFAULT_AGENT_IDENTITY)
 
+    # FOOL-SEAM: language-mode
+    #
+    # Cevap dili ve konusma dili AYRI iki ayar ve model ikisini de GORMELI.
+    #
+    # Istenen: "model bunu bilmeli, ona ses dilini degistir dedigimizde net
+    # olarak degistirmeli ve kesin olmali." Yapilandirmada durup isteme
+    # girmeyen bir ayar, modelin goremedigi bir ayardir: kullanici "ses
+    # dilini japonca yap" der, model "tamam" der ve hicbir sey degismez.
+    #
+    # SOUL'dan HEMEN SONRA geliyor: personanin kendi dil tercihi olabilir ve
+    # kullanicinin acik ayari onu ezmeli.
+    try:
+        from fool.language_mode import prompt_block as _language_block
+
+        _lang_rules = _language_block()
+        if _lang_rules:
+            stable_parts.append(_lang_rules)
+    except Exception:  # pragma: no cover — dil kurali istemi dusurmemeli
+        pass
+
     # Pointer to the hermes-agent skill + docs for user questions about The Fool itself.
     stable_parts.append(FOOL_AGENT_HELP_GUIDANCE)
 

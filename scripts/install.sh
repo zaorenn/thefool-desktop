@@ -6,7 +6,7 @@
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -185,19 +185,20 @@ while [[ $# -gt 0 ]]; do
             echo "  --non-interactive  Skip stages that require user input"
             echo "  --include-desktop  Also build the desktop app (apps/desktop -> The Fool.app)"
             echo "  --dir PATH     Installation directory"
-            echo "                   default (non-root):  ~/.fool/hermes-agent"
-            echo "                   default (root, Linux): /usr/local/lib/hermes-agent"
+            echo "                   default (non-root):  ~/.fool/fool-agent"
+            echo "                   default (root, Linux): /usr/local/lib/fool-agent"
             echo "  --fool-home PATH  Data directory (default: ~/.fool, or \$FOOL_HOME)"
             echo "  -h, --help     Show this help"
             echo ""
             echo "Notes:"
             echo "  When running as root on Linux, The Fool installs the code under"
-            echo "  /usr/local/lib/hermes-agent and links the command into"
+            echo "  /usr/local/lib/fool-agent and links the command into"
             echo "  /usr/local/bin/fool (FHS layout — matches Claude Code / Codex CLI)."
             echo "  Data, config, sessions, and logs still live in \$FOOL_HOME"
             echo "  (default /root/.fool).  This keeps Docker bind-mounted volumes"
             echo "  small and ensures the command is on PATH for all shells."
-            echo "  Existing installs at \$FOOL_HOME/hermes-agent are preserved in-place."
+            echo "  Existing installs at \$FOOL_HOME/fool-agent (or the legacy"
+            echo "  \$FOOL_HOME/hermes-agent) are preserved in-place."
             echo "  --ensure DEPS  Install only specified deps (comma-separated)"
             echo "                   Supported: node, browser, ripgrep, ffmpeg"
             echo "                   Does NOT clone repo or create venv"
@@ -401,16 +402,44 @@ is_termux() {
 # symlink goes.  Called after detect_os so $OS/$DISTRO are known.
 #
 # Defaults:
-#   - Non-root, any OS:       INSTALL_DIR = $FOOL_HOME/hermes-agent
+#   - Non-root, any OS:       INSTALL_DIR = $FOOL_HOME/fool-agent
 #                             command link in $HOME/.local/bin
-#   - Termux (any uid):       INSTALL_DIR = $FOOL_HOME/hermes-agent
+#   - Termux (any uid):       INSTALL_DIR = $FOOL_HOME/fool-agent
 #                             command link in $PREFIX/bin (already on PATH)
-#   - Root on Linux (new):    INSTALL_DIR = /usr/local/lib/hermes-agent
+#   - Root on Linux (new):    INSTALL_DIR = /usr/local/lib/fool-agent
 #                             command link in /usr/local/bin
 #                             (unless a legacy install already exists at
 #                              $FOOL_HOME/hermes-agent — then preserve it)
 #
 # Always no-op when the user set --dir or $FOOL_INSTALL_DIR.
+#
+# FOOL-SEAM: runtime-dir-name
+#
+# The runtime directory is `fool-agent` — NOT `hermes-agent`.
+#
+# install.ps1 and the desktop app (apps/desktop/electron/runtime-root.ts) were
+# moved to the new name; this script was left behind, and the two then
+# disagreed on macOS/Linux. Measured consequence: the desktop renames the
+# checkout to `fool-agent` on first launch, then a later `curl | bash` install
+# — which takes no `--dir` — clones a SECOND multi-gigabyte checkout under the
+# old name, and `fool` in the terminal runs the stale one while the app runs
+# the new one.
+#
+# Same order as install.ps1: new name if it exists, else the legacy name if it
+# exists, else the new name. The legacy name stays READABLE forever — a
+# checkout that could not be migrated (locked file, no permission) has to keep
+# working. The name is a convenience, not a condition of running.
+fool_runtime_dir() {
+    # $1 = parent directory that holds the runtime checkout
+    if [ -d "$1/fool-agent" ]; then
+        echo "$1/fool-agent"
+    elif [ -d "$1/hermes-agent" ]; then
+        echo "$1/hermes-agent"
+    else
+        echo "$1/fool-agent"
+    fi
+}
+
 resolve_install_layout() {
     if [ "$INSTALL_DIR_EXPLICIT" = true ]; then
         log_info "Install directory: $INSTALL_DIR (explicit)"
@@ -419,7 +448,7 @@ resolve_install_layout() {
 
     # Termux: package manager manages /data/data/..., keep code in FOOL_HOME.
     if is_termux; then
-        INSTALL_DIR="$FOOL_HOME/hermes-agent"
+        INSTALL_DIR="$(fool_runtime_dir "$FOOL_HOME")"
         return 0
     fi
 
@@ -427,13 +456,13 @@ resolve_install_layout() {
     # macOS root installs keep the legacy layout because /usr/local/ on macOS
     # is Homebrew territory and we don't want to fight that.
     if [ "$OS" = "linux" ] && [ "$(id -u)" -eq 0 ]; then
-        if [ -d "$FOOL_HOME/hermes-agent/.git" ]; then
-            INSTALL_DIR="$FOOL_HOME/hermes-agent"
+        if [ -d "$FOOL_HOME/fool-agent/.git" ] || [ -d "$FOOL_HOME/hermes-agent/.git" ]; then
+            INSTALL_DIR="$(fool_runtime_dir "$FOOL_HOME")"
             log_info "Existing install detected at $INSTALL_DIR — keeping legacy layout"
-            log_info "  (new root installs use /usr/local/lib/hermes-agent)"
+            log_info "  (new root installs use /usr/local/lib/fool-agent)"
             return 0
         fi
-        INSTALL_DIR="/usr/local/lib/hermes-agent"
+        INSTALL_DIR="$(fool_runtime_dir /usr/local/lib)"
         ROOT_FHS_LAYOUT=true
         # Place uv-managed Python under /usr/local/share so the venv interpreter
         # is world-readable.  Default uv paths land in /root/.local/share/uv,
@@ -450,8 +479,8 @@ resolve_install_layout() {
         return 0
     fi
 
-    # Default: non-root, non-Termux → legacy user-scoped layout.
-    INSTALL_DIR="$FOOL_HOME/hermes-agent"
+    # Default: non-root, non-Termux → user-scoped layout.
+    INSTALL_DIR="$(fool_runtime_dir "$FOOL_HOME")"
 }
 
 get_command_link_dir() {
@@ -536,7 +565,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  iex (irm https://hermes-agent.nousresearch.com/install.ps1)"
+            log_info "  irm https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.ps1 | iex"
             exit 1
             ;;
         *)
@@ -1655,10 +1684,22 @@ import re, sys, tomllib
 try:
     with open("pyproject.toml", "rb") as fh:
         data = tomllib.load(fh)
+    # The distribution name is read from the file, NOT hardcoded.
+    #
+    # It used to be the literal "hermes-agent". The project renamed itself to
+    # "fool-agent" and this regex went on matching nothing: every install
+    # printed "Could not parse [all] from pyproject.toml" and Tier 2 silently
+    # collapsed into Tier 1. That is not cosmetic -- Tier 2 is the whole
+    # degradation path. With it dead, ONE unresolvable extra on PyPI drops the
+    # user straight to "core only (no extras)" instead of keeping everything
+    # else they asked for, which is exactly what the tiers exist to prevent.
+    #
+    # Reading the name means the next rename cannot break it again.
+    name = re.escape(data["project"]["name"])
     specs = data["project"]["optional-dependencies"]["all"]
     extras = []
     for s in specs:
-        m = re.search(r"hermes-agent\[([\w-]+)\]", s)
+        m = re.search(name + r"\[([\w-]+)\]", s)
         if m:
             extras.append(m.group(1))
     print(",".join(extras))

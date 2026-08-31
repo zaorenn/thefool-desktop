@@ -43,6 +43,20 @@ logger = logging.getLogger(__name__)
 #: olmak zorunda, yoksa panel "kurulu" derken sağlayıcı ortamı bulamaz.
 SIDECAR_NAME = "chatterbox"
 
+#: ``chatterbox.mtl_tts``in desteklediği diller (paketteki
+#: ``SUPPORTED_LANGUAGES`` ile aynı).
+#:
+#: Burada KOPYA duruyor çünkü doğrulama ANA süreçte yapılıyor ve ``chatterbox``
+#: orada içe aktarılamaz — motor kendi izole ortamında. Kopyayı okumak, geçersiz
+#: bir dil kodunun alt sürece kadar gidip orada anlaşılmaz bir hatayla
+#: düşmesinden iyi.
+_SUPPORTED_LANGUAGES = frozenset(
+    {
+        "ar", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi", "it",
+        "ja", "ko", "ms", "nl", "no", "pl", "pt", "ru", "sv", "sw", "tr", "zh",
+    }
+)
+
 #: Kalıcı motor sürecinin AÇILIŞ kodu.
 #:
 #: Chatterbox katalogdaki en ağır motor; her cümlede yeniden yüklemek
@@ -70,14 +84,32 @@ if _device == "cuda" and not torch.cuda.is_available():
 #
 # Geri dusus ONEMLI: eski bir kurulumda ``chatterbox.tts_turbo`` yok ve
 # oradaki kullaniciyi sessizce sessizlige dusurmek kabul edilemez.
-try:
-    from chatterbox.tts_turbo import ChatterboxTurboTTS as _Engine
+#
+# INGILIZCE DISI DIL AYRI BIR MODEL ISTIYOR
+# -----------------------------------------
+# Olculdu: Turkce bir cumle (``Merhaba. Ben Lynn.``) turbo motorla
+# sentezlenip geri yaziya dokuldugunde ``Mehabal, denlin, baradiyam`` cikti --
+# yani motor Turkce metni INGILIZCE fonetigiyle okuyor. Ses uretiliyor, hata
+# yok, kullaniciya "TTS calismiyor" gibi gorunuyor. Sessiz basarisizlik.
+#
+# ``chatterbox.mtl_tts`` 23 dil destekliyor (``SUPPORTED_LANGUAGES``, Turkce
+# dahil) ve klonlamayi ayni ``audio_prompt_path`` ile yapiyor. Ingilizce yolu
+# turbo'da birakiliyor: olculen 1,60 sn/cumle ile en hizlisi o.
+_lang = LANG_ID
 
-    _variant = "turbo"
-except Exception:
-    from chatterbox.tts import ChatterboxTTS as _Engine
+if _lang and _lang != "en":
+    from chatterbox.mtl_tts import ChatterboxMultilingualTTS as _Engine
 
-    _variant = "classic"
+    _variant = "multilingual"
+else:
+    try:
+        from chatterbox.tts_turbo import ChatterboxTurboTTS as _Engine
+
+        _variant = "turbo"
+    except Exception:
+        from chatterbox.tts import ChatterboxTTS as _Engine
+
+        _variant = "classic"
 
 _model = _Engine.from_pretrained(device=_device)
 
@@ -98,6 +130,10 @@ def handle(req):
         kwargs["exaggeration"] = float(req["exaggeration"])
     if req.get("cfg_weight") and "cfg_weight" in _accepts:
         kwargs["cfg_weight"] = float(req["cfg_weight"])
+    # Cok dilli motorda ZORUNLU; tekdilli motorda parametre yok ve
+    # gondermek TypeError ile sessizlige dusururdu.
+    if _lang and "language_id" in _accepts:
+        kwargs["language_id"] = _lang
 
     wav = _model.generate(req["text"], **kwargs)
     torchaudio.save(req["out"], wav, _model.sr)
@@ -226,9 +262,22 @@ class ChatterboxTTSProvider(TTSProvider):
         if not target.lower().endswith(".wav"):
             target = os.path.splitext(output_path)[0] + ".wav"
 
+        # Dil: yapilandirmadan gelir, bos birakilirsa Ingilizce (turbo) yol.
+        # Desteklenmeyen bir kod SESSIZCE yok sayilmiyor -- yok sayilsaydi
+        # kullanici Turkce secip Ingilizce fonetik duyar ve sebebini hicbir
+        # yerden goremezdi.
+        language = str(cfg.get("language") or "").strip().lower()
+        if language and language not in _SUPPORTED_LANGUAGES:
+            logger.warning(
+                "[Chatterbox] desteklenmeyen dil %r yok sayildi; desteklenenler: %s",
+                language,
+                ", ".join(sorted(_SUPPORTED_LANGUAGES)),
+            )
+            language = ""
+
         result = engine_host.request(
             SIDECAR_NAME,
-            _SETUP.replace("DEVICE", repr(device)),
+            _SETUP.replace("DEVICE", repr(device)).replace("LANG_ID", repr(language)),
             {
                 "cfg_weight": _num("cfg_weight"),
                 "exaggeration": _num("exaggeration"),

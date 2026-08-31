@@ -83,6 +83,63 @@ function resolveCheckoutHead(activeRoot: string | null | undefined, opts: { exec
   }
 }
 
+// FOOL-SEAM: runtime-version
+//
+// "Farkli commit" ile "ESKI commit" ayni sey degil.
+//
+// Surum kapisi once yalnizca ``rev-parse HEAD`` ile pin'i karsilastiriyordu ve
+// her farki onarilacak bir hata sayiyordu. Olculecek sonucu su: runtime
+// uygulamadan ILERIDE oldugu anda -- kullanici ``fool update`` calistirdi, ya
+// da dal, paketin derlendigi commit'ten sonra ilerledi -- karar her acilista
+// ``stale`` kaliyor. Onarim ise mevcut bir klonu pakete GERI CEKMIYOR
+// (``pinCommit = !existingCheckout``, bilerek: eski bir paket guncel bir
+// kurulumu dusurmemeli), yani ikinci turda karar degismiyor. Net etki:
+// kullanici HER ACILISTA yukleyicinin tam turunu odemeye devam ederdi -- tam
+// olarak 0.21.3'te kapatilan "ilk acilis on dakika kurulum yapti" sinifi.
+//
+// Dogru soru: runtime, uygulamanin kodunu ICERIYOR mu?
+//
+//     git merge-base --is-ancestor <pin> HEAD
+//
+// Cikis 0 ise pin runtime'in gecmisinde -- runtime yeni ya da esit, onaracak
+// bir sey yok. Cikis 1 ise runtime o kodu hic gormemis: gercekten geride.
+// Baska her cikis (git yok, klon bozuk, pin bu depoda yok) BILINMIYOR demek ve
+// iddia edilmiyor -- ``null`` donuyor.
+function checkoutContainsCommit(
+  activeRoot: string | null | undefined,
+  commit: unknown,
+  opts: { execGit?: ExecGitFn } = {}
+): boolean | null {
+  if (!activeRoot || !isPinnedCommit(commit)) {
+    return null
+  }
+
+  const run: ExecGitFn =
+    opts.execGit ||
+    ((args, cwd) =>
+      execFileSync('git', args, {
+        cwd,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 15_000,
+        ...hiddenWindowsChildOptions()
+      }).trim())
+
+  try {
+    run(
+      ['-c', 'windows.appendAtomically=false', 'merge-base', '--is-ancestor', String(commit), 'HEAD'],
+      activeRoot
+    )
+
+    return true
+  } catch (err) {
+    // Cikis 1 = "atasi degil" -- KESIN bir cevap ve `false` demek dogru.
+    // Baska her sey (128 = bilinmeyen revizyon/bozuk klon, ENOENT = git yok)
+    // bir cevap DEGIL: `null` donuyor ve kapi iddiasiz kaliyor.
+    return (err as { status?: number })?.status === 1 ? false : null
+  }
+}
+
 /** Prefer a real pin already written by install.ps1's bootstrap-marker stage. */
 function readExistingPinnedCommit(activeRoot: string | null | undefined): string | null {
   if (!activeRoot) {
@@ -177,6 +234,45 @@ function resolveLocalInstallScript(sourceRepoRoot) {
   }
 
   const candidate = path.join(sourceRepoRoot, 'scripts', installScriptName())
+
+  try {
+    fs.accessSync(candidate, fs.constants.R_OK)
+
+    return candidate
+  } catch {
+    return null
+  }
+}
+
+// FOOL-SEAM: bundled-installer
+//
+// Paketlenen uygulama KENDI kurulum betigini tasiyor.
+//
+// Olculen hata: paketlenmis bir yapida bu betik GitHub'dan, install-stamp'teki
+// commit'ten indiriliyordu. Sonucu su oldu -- kurulum betigindeki duzeltmeler
+// (sandbox korumasi, PATH korumasi) yerelde yazilmis olmasina ragmen CALISMADI,
+// cunku calisan dosya agdan gelen ESKI surumdu:
+//
+//     [bootstrap] fetching install.ps1 for b08e32ec1aae from GitHub
+//     [OK] Added to user PATH: ...\Temp\hermes-desktop-fresh-install-...\bin
+//     [OK] Set FOOL_HOME=...\Temp\hermes-desktop-fresh-install-...
+//
+// Yani sandbox, kullanicinin KALICI ortamini yeniden zehirledi -- duzeltmesi
+// depoda dururken.
+//
+// Iki ayri sorun ayni koke bagli:
+//   1. Bir surumun davranisi, o surumun icindeki koda degil, agdaki bir
+//      dosyaya bagliydi.
+//   2. Internet yoksa ya da GitHub erisilmezse kurulum hic baslamiyordu.
+//
+// Betik artik ``extraResources`` ile pakete giriyor ve DERLEME anindaki agacla
+// ayni: surumle betik tanim geregi es. Indirme yalnizca geri dusus.
+function resolveBundledInstallScript() {
+  if (!process.resourcesPath) {
+    return null
+  }
+
+  const candidate = path.join(process.resourcesPath, installScriptName())
 
   try {
     fs.accessSync(candidate, fs.constants.R_OK)
@@ -332,7 +428,18 @@ async function resolveInstallScript({
     return { path: localScript, source: 'local', kind: installScriptKind() }
   }
 
-  // 2. Packaged path: download from GitHub at the install stamp's ref.
+  // 2. Paketlenmis yapi: uygulamanin KENDI tasidigi betik (bkz.
+  //    ``resolveBundledInstallScript``). Agdan gelenden once geliyor cunku
+  //    surumle tanim geregi es -- ve internet gerektirmiyor.
+  const bundled = resolveBundledInstallScript()
+
+  if (bundled) {
+    emit({ type: 'log', line: `[bootstrap] using bundled ${installScriptName()} at ${bundled}` })
+
+    return { path: bundled, source: 'bundled', kind: installScriptKind() }
+  }
+
+  // 3. Geri dusus: download from GitHub at the install stamp's ref.
   // Non-git fallback builds carry an all-zero commit; treat that as an
   // unpinned branch ref instead of trying to fetch a non-existent SHA.
   const installRef = installRefForStamp(installStamp)
@@ -1035,6 +1142,7 @@ export {
   buildPinArgs,
   buildPosixPinArgs,
   cachedScriptPath,
+  checkoutContainsCommit,
   hasExistingGitCheckout,
   installedAgentInstallScript,
   installRefForStamp,

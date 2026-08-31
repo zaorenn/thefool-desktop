@@ -178,8 +178,23 @@ export interface VoicePreview {
   audio_base64: string
 }
 
+/** ``/api/fool/voice/language`` cevabi. */
+export interface LanguageSettings {
+  /** Cevabin YAZILDIGI dil, ya da ``auto`` (kullanicinin diline uy). */
+  reply_language: string
+  /** SESLENDIRILEN dil, ya da ``same`` (cevabin dilinde konus). */
+  speech_language: string
+  languages?: { code: string; name: string }[]
+}
+
 export const voiceApi = {
   cancel: (jobId: string) => call<{ cancelled: boolean }>('/api/fool/voice/cancel', { job_id: jobId }),
+  /** Cevap dili + konusma dili, ve secilebilir diller. */
+  language: () => call<LanguageSettings>('/api/fool/voice/language'),
+  /** Yalnizca DEGISENI gonder: iki alani birden gondermek, bir acilir listeyi
+   *  degistirirken digerini sessizce sifirlardi. */
+  setLanguage: (patch: { reply_language?: string; speech_language?: string }) =>
+    call<{ ok: boolean } & LanguageSettings>('/api/fool/voice/language', patch),
   catalog: () => call<VoiceCatalog>('/api/fool/voice/catalog'),
   install: (entryId: string, device: 'cpu' | 'cuda') =>
     call<VoiceJob>('/api/fool/voice/install', { device, entry_id: entryId }),

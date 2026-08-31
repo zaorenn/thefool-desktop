@@ -60,7 +60,7 @@ import {
   resolveLinuxPasswordStore
 } from './bootstrap-platform'
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
-import { runBootstrap } from './bootstrap-runner'
+import { checkoutContainsCommit, resolveCheckoutHead, runBootstrap } from './bootstrap-runner'
 import { applyConnectionChange, resolveTerminalConnection } from './connection-apply'
 import {
   apiRequestRegistryConnectionId,
@@ -264,6 +264,13 @@ import {
 } from './remote-liveness'
 import { missingRendererAssets } from './renderer-bundle'
 import { attachRendererConsoleCapture, formatRendererBoundaryReport } from './renderer-log'
+import {
+  chooseRuntimeRoot,
+  describeMigration,
+  RUNTIME_DIR_NAME,
+  runtimeRootAfterMigration
+} from './runtime-root'
+import { classifyRuntimeVersion, describeRuntimeVersion, needsRepair } from './runtime-version'
 import {
   buildSessionWindowUrl,
   chatWindowWebPreferences,
@@ -696,7 +703,112 @@ if (INSTALL_STAMP) {
 // FOOL_DESKTOP_USER_DATA_DIR (used by test:desktop:fresh) puts the sandbox
 // FOOL_HOME beneath the throwaway userData dir so a fresh-install run never
 // touches the user's real ~/.fool / %LOCALAPPDATA%\fool.
+// FOOL-SEAM: home-repair
+//
+// Yapilandirilmis bir ev KOR KORUNE kabul edilemez.
+//
+// Olculen hasar: masaustunun `test:desktop:fresh` sinavi `%TEMP%` altindaki bir
+// sandbox eviyle `install.ps1` calistirdi ve o gecici yol KULLANICI kapsamli
+// `FOOL_HOME`a yazildi. Test bitti, klasor silindi, deger kaldi. Uygulama o
+// gunden sonra HER acilista var olmayan bir dizine girdi:
+//
+//   * oturum gecmisi yok      * profil yok        * ses klonu yok
+//   * "hicbir TTS motoru kurulu degil"            * modeller bastan iniyor
+//
+// Kullanicinin bildirdigi: "girlfriend gitmis, ses klonlarim gitmis, butun
+// sohbetlerim gitmis." Hicbiri silinmemisti -- ama onun icin farki yoktu.
+//
+// Yazma tarafi artik korunuyor (`install.ps1`), ama BOZULMUS makineler
+// disarida duruyor ve yeni surumu kurmak onlari kendiliginden iyilestirmeli.
+// Bu yuzden okuma tarafi da soruyor: bu ev GERCEK olabilir mi?
+//
+// Reddedilen iki hal ve sebepleri:
+//
+//   1. `%TEMP%` altinda -- gecici bir dizin kalici bir ev OLAMAZ. Var olsa
+//      bile: isletim sistemi onu istedigi an siler.
+//   2. Yok VE varsayilan ev var -- yapilandirma bir hayaleti gosteriyor,
+//      oysa gercek veri duruyor.
+//
+// Sessizce duzeltmiyoruz: her iki durumda da NE oldugu gunluge yaziliyor,
+// yoksa kullanici "verilerim neden geri geldi" sorusunu da cevaplayamaz.
+function looksLikeDiscardedHome(home: string): null | string {
+  let resolved: string
+
+  try {
+    resolved = path.resolve(home)
+  } catch {
+    return 'cozulemeyen yol'
+  }
+
+  try {
+    const temp = path.resolve(os.tmpdir())
+
+    if (
+      resolved.toLowerCase() === temp.toLowerCase() ||
+      resolved.toLowerCase().startsWith(temp.toLowerCase() + path.sep)
+    ) {
+      return `gecici dizin altinda (${temp})`
+    }
+  } catch {
+    // Cozulemeyen bir temp icin IDDIA YOK: yanlis tarafa dusmek, gercek bir
+    // evi reddetmek olurdu.
+  }
+
+  if (!directoryExists(resolved) && directoryExists(defaultHermesHome())) {
+    return 'dizin yok, varsayilan ev ise duruyor'
+  }
+
+  return null
+}
+
+/** Yapilandirma olmasaydi kullanilacak ev. */
+function defaultHermesHome(): string {
+  if (IS_WINDOWS && process.env.LOCALAPPDATA) {
+    const localappdata = path.join(process.env.LOCALAPPDATA, 'fool')
+    const legacy = path.join(app.getPath('home'), '.fool')
+
+    if (!directoryExists(localappdata) && directoryExists(legacy)) {
+      return legacy
+    }
+
+    return localappdata
+  }
+
+  return path.join(app.getPath('home'), '.fool')
+}
+
+/** Yapilandirilmis evi kabul et -- ya da onu reddedip varsayilana don. */
+function acceptConfiguredHome(raw: string, source: string): string {
+  const home = normalizeHermesHomeRoot(raw)
+  const reason = looksLikeDiscardedHome(home)
+
+  if (reason === null) {
+    return home
+  }
+
+  const fallback = defaultHermesHome()
+
+  console.warn(
+    `[fool] [home] ${source} FOOL_HOME=${home} yok sayildi (${reason}); ` +
+      `veri dizini: ${fallback}`
+  )
+
+  return fallback
+}
+
 function resolveHermesHome() {
+  // ORTAM DEGISKENI dogrulanmiyor -- bilerek.
+  //
+  // Ilk yazimda bu da kapidan geciriliyordu ve OLCULDU: masaustunun kendi
+  // `test:desktop:fresh` sinavi `%TEMP%` altinda bir sandbox evi kuruyor ve
+  // uygulamayi `FOOL_HOME` ile baslatiyor. Kapi o evi reddetti, uygulama
+  // GERCEK eve dustu ve sinav artik hicbir sey sinamiyordu.
+  //
+  // Ayrim su: hasar KALICILASMIS bir degerden geldi (kullanici kapsamli
+  // registry). Test bitti, klasor silindi, deger kaldi ve her acilisi
+  // zehirledi. Bir surecin o an verdigi ortam degiskeni ise bu launch'a
+  // ozel, bilincli bir secim -- ve gecici bir dizini kasten gostermek
+  // (sandbox, CI, tasinabilir kurulum) mesru bir kullanim.
   if (process.env.FOOL_HOME) {
     return normalizeHermesHomeRoot(process.env.FOOL_HOME)
   }
@@ -715,7 +827,7 @@ function resolveHermesHome() {
     const fromRegistry = readWindowsUserEnvVar('FOOL_HOME')
 
     if (fromRegistry) {
-      return normalizeHermesHomeRoot(fromRegistry)
+      return acceptConfiguredHome(fromRegistry, 'kullanici kapsamli')
     }
   }
 
@@ -748,10 +860,62 @@ function pathWithHermesManagedNode(...entries) {
   return [...managed, ...entries, process.env.PATH].filter(Boolean).join(path.delimiter)
 }
 
+// FOOL-SEAM: runtime-dir-name
+//
+// Runtime dizini ``fool-agent`` -- ``hermes-agent`` DEGIL.
+//
+// Istenen: "hermes kalintisi kalmasin, hermes kurulu bile olsa fool ayri bir
+// uygulama olarak calissin." Veri dizini zaten ayriydi
+// (``%LOCALAPPDATA%\fool`` ile ``...\hermes`` farkli kokler), ama runtime'in
+// klasoru hala eski adi tasiyordu ve kullanici onu tam da burada goruyordu::
+//
+//     > where.exe fool
+//     C:\Users\...\AppData\Local\fool\hermes-agent\bin\fool.exe
+//
+// Goc YENIDEN ADLANDIRMA: klon gigabaytlarca ve icinde venv var; kopyalamak
+// diski ikiye katlar ve yarida kesilirse iki yarim kopya birakir. Yeniden
+// adlandirma tek islem -- ya olur ya olmaz.
+//
+// Basarisiz olursa ESKI adla calismaya devam ediliyor: ad bir kolaylik,
+// calismanin sarti degil. Kilitli bir dosya yuzunden uygulamanin acilmamasi
+// kabul edilemez.
+// Goc bir kez olur, ama DOGRULAMA her acilista kosar (bkz. ensureRuntime
+// icindeki ``runtimeSelfCheckDone``). Burada bir "az once tasindi" bayragi
+// TUTULMUYOR: ilk yazimda vardi ve olculen bosluk suydu -- goc bir onceki
+// acilista yapilmis, launcher o sirada kirilmis, ve bayrak artik kapali
+// oldugu icin bir sonraki acilista kimse bakmamisti. Kirik komut oylece kaldi.
+const RUNTIME_ROOT_NAME = (() => {
+  const choice = chooseRuntimeRoot(name => directoryExists(path.join(FOOL_HOME, name)))
+
+  if (choice.migrateFrom === null) {
+    return choice.name
+  }
+
+  let migrated = false
+
+  try {
+    fs.renameSync(
+      path.join(FOOL_HOME, choice.migrateFrom),
+      path.join(FOOL_HOME, RUNTIME_DIR_NAME)
+    )
+    migrated = true
+  } catch (err) {
+    console.warn(`[fool] [runtime] dizin tasinamadi: ${err && (err as Error).message}`)
+  }
+
+  const note = describeMigration(choice, migrated)
+
+  if (note) {
+    console.log(`[fool] [runtime] ${note}`)
+  }
+
+  return runtimeRootAfterMigration(choice, migrated)
+})()
+
 // ACTIVE_HERMES_ROOT — the canonical mutable The Fool install. Same path
 // install.ps1 / install.sh use, so a desktop-only user and a CLI-only user end
 // up with identical layouts and can share one install.
-const ACTIVE_HERMES_ROOT = path.join(FOOL_HOME, 'hermes-agent')
+const ACTIVE_HERMES_ROOT = path.join(FOOL_HOME, RUNTIME_ROOT_NAME)
 // VENV_ROOT — venv lives inside the repo, exactly like install.ps1 does it.
 const VENV_ROOT = path.join(ACTIVE_HERMES_ROOT, 'venv')
 // BOOTSTRAP_COMPLETE_MARKER — written by the first-launch bootstrap runner
@@ -1283,6 +1447,22 @@ let bootstrapRepairRequested = false
 // looping the user through a destructive venv reinstall.
 let bootstrapRepairAttempt = 0
 const MAX_BOOTSTRAP_REPAIR_SOFT_ATTEMPTS = 3
+// FOOL-SEAM: runtime-version
+//
+// Surum uyusmazligi icin onarim SURECTE BIR KEZ deneniyor. Onarim commit'i
+// duzeltemezse (pin cekilemedi, ag yok, klon kilitli) ikinci tur ayni kararla
+// ayni yere gelir ve kullanici sonsuz bir kurulum dongusunde kalirdi.
+let runtimeVersionRepairAttempted = false
+// FOOL-SEAM: runtime-dir-name
+//
+// Calisma zamani DOGRULAMASI icin AYRI bir bayrak.
+//
+// Ilk yazimda ikisi ayni bayragi paylasiyordu ve olculen bosluk su: surum
+// onarimi tetiklendigi acilista launcher dogrulamasi HIC kosmuyordu -- cunku
+// bayrak zaten kalkmisti. Oysa tam o acilis en riskli olan: yukleyici az once
+// klonu ve venv'i kimildatti. Iki soru ayri: "kod guncel mi" ile "komut
+// calisiyor mu" ayni sey degil ve biri digerini susturmamali.
+let runtimeSelfCheckDone = false
 let connectionConfigCache = null
 let connectionConfigCacheMtime = null
 let connectionRegistryCache = null
@@ -4106,8 +4286,30 @@ function readJson(filePath) {
 //     completedAt:  "<ISO 8601>",
 //     desktopVersion: "<app.getVersion()>"  // for forensics
 //   }
+// Yeniden adlandirmadan ONCEKI ad. Bu dosyayi tasiyan gercek kurulumlar var:
+// isaret 2026-08-18'de `.hermes-bootstrap-complete` olarak yazildi, urun
+// `fool` adini alinca YAZAN taraf yeni ada gecti ama OKUYAN taraf eski
+// dosyalari hic gormedi.
+//
+// Olculen sonuc (kullanicinin makinesi): isaret diskte DURUYOR, gecerli ve
+// schemaVersion'i dogru -- ama okuyucu baska bir ada baktigi icin "isaret
+// yok" sayiliyordu. `hermes-agent/bin` de bulunmayinca kurulum "yarim" diye
+// siniflaniyor ve uygulama HER acilista ilk kurulum akisina giriyordu:
+//
+//   [bootstrap] ... is a half-finished install (no launcher in bin/, no
+//   bootstrap marker); running first-run setup instead of launching it.
+//
+// Kullaniciya gorunen: zaten kurulu olan ses motorlarinin bastan indirilmeye
+// baslamasi ve kurulumun takilmasi.
+const LEGACY_BOOTSTRAP_COMPLETE_MARKER = path.join(
+  ACTIVE_HERMES_ROOT,
+  '.hermes-bootstrap-complete'
+)
+
 function readBootstrapMarker() {
-  return readJson(BOOTSTRAP_COMPLETE_MARKER)
+  // Yeni ad kazanir; eski ad yalnizca yeni yoksa okunur. Boylece bir kez
+  // yeniden yazildiginda eski dosya artik hicbir seyi etkilemiyor.
+  return readJson(BOOTSTRAP_COMPLETE_MARKER) ?? readJson(LEGACY_BOOTSTRAP_COMPLETE_MARKER)
 }
 
 // Marker-independent: is the canonical install at ACTIVE_HERMES_ROOT actually
@@ -4171,6 +4373,60 @@ function writeBootstrapMarker(payload) {
   writeFileAtomic(BOOTSTRAP_COMPLETE_MARKER, JSON.stringify(merged, null, 2) + '\n', 'utf8')
 
   return merged
+}
+
+// FOOL-SEAM: runtime-version
+//
+// Basarisiz bir surum onarimi HER ACILISTA tekrarlanamaz.
+//
+// Onarim yolu ``bootstrapRepairRequested`` uzerinden yukleyicinin tam turunu
+// kosuyor. Onarim isini yapamazsa (ag yok, klon kilitli, pin bu dalda degil)
+// bir sonraki acilis ayni kararla ayni yere gelir: kullanici acar, dakikalarca
+// kurulum izler, uygulama yine ayni runtime'la baslar. Surec ici bayrak
+// ozyinelemeyi kesiyor ama acilislar arasini kesmiyordu.
+//
+// Damga ``ACTIVE_HERMES_ROOT`` ICINDE duruyor -- bootstrap isaretiyle ayni
+// gerekce: klonu silip bastan baslayan biri bu karari da silmis olmali.
+const RUNTIME_REPAIR_ATTEMPT_FILE = '.fool-runtime-repair.json'
+const RUNTIME_REPAIR_ATTEMPT_MARKER = path.join(ACTIVE_HERMES_ROOT, RUNTIME_REPAIR_ATTEMPT_FILE)
+
+/** Damganin kimligi: onarimin denendigi ``(HEAD, pin)`` cifti. */
+function runtimeRepairKey(runtimeHead, pinnedCommit) {
+  return `${String(runtimeHead || '').trim().toLowerCase()}->${String(pinnedCommit || '').trim().toLowerCase()}`
+}
+
+/** Bu cift icin onarim daha once denendi ve ise yaramadi mi? */
+function runtimeRepairAlreadyAttempted(runtimeHead, pinnedCommit) {
+  const marker = readJson(RUNTIME_REPAIR_ATTEMPT_MARKER)
+
+  return Boolean(marker && marker.key === runtimeRepairKey(runtimeHead, pinnedCommit))
+}
+
+/** Denemeyi ONCEDEN yaz: onarimin ortasinda kapanan uygulama da tekrarlamamali. */
+function rememberRuntimeRepairAttempt(runtimeHead, pinnedCommit) {
+  try {
+    fs.mkdirSync(path.dirname(RUNTIME_REPAIR_ATTEMPT_MARKER), { recursive: true })
+    writeFileAtomic(
+      RUNTIME_REPAIR_ATTEMPT_MARKER,
+      JSON.stringify(
+        {
+          schemaVersion: 1,
+          key: runtimeRepairKey(runtimeHead, pinnedCommit),
+          runtimeHead: runtimeHead || null,
+          pinnedCommit: pinnedCommit || null,
+          attemptedAt: new Date().toISOString(),
+          desktopVersion: app.getVersion()
+        },
+        null,
+        2
+      ) + '\n',
+      'utf8'
+    )
+  } catch (err) {
+    // Damga yazilamazsa onarim YINE DE denenir: kotu durum "bir kez fazla
+    // kurulum", iyi durum "hic acilmayan uygulama" degil.
+    rememberLog(`[runtime] onarim damgasi yazilamadi: ${err && (err as Error).message}`)
+  }
 }
 
 function resolveWebDist() {
@@ -4743,6 +4999,90 @@ async function ensureRuntime(backend) {
     )
   }
 
+  // FOOL-SEAM: runtime-version
+  //
+  // Runtime KURULU UYGULAMAYLA ayni surumde mi?
+  //
+  // Olculen hata: kullanici yeni surumu ikinci bir makineye kurdu. Kurulum
+  // tamamlandi, ``fool.exe`` yerindeydi, ``FOOL_HOME`` dogruydu -- ve uygulama
+  // yine "background stopped" dedi, terminalde ``fool`` yazinca "Hermes Agent"
+  // acildi. Yeni installer ESKI bir runtime'in ustune kurulmus ve onu
+  // guncellememisti.
+  //
+  // Sebep, buraya kadar sorulan uc sorunun hicbirinin surumle ilgili
+  // olmamasi: kaynak dosyalar yerinde mi, Git Bash var mi, venv var mi.
+  // Ucu de YILLAR oncesine ait bir klonda gecer. Yani "hazir" karari kodun
+  // guncelligi hakkinda hicbir sey soylemiyordu.
+  //
+  // Hata ustelik SESSIZ: kullanici yeni surumu kurdugunu biliyor, uygulama
+  // "hazir" diyor, koşan kod eski. Belirti (durmus backend, yanlis marka)
+  // sebebi hic gostermiyor.
+  //
+  // Karsilastirilamayan durumda ONARIM YOK: bilmedigimiz bir sey hakkinda
+  // "yanlis" demek, calisan bir kurulumu sebepsiz yeniden kurmak olurdu.
+  //
+  // ILERIDE olan runtime da onarilmiyor. Kapinin ilk hali her farki ``stale``
+  // sayiyordu ve sonucu su olurdu: kullanici ``fool update`` calistirdiginda --
+  // ya da dal, paketin derlendigi commit'ten sonra ilerlediginde -- runtime
+  // pin'den farkli olur, onarim mevcut klonu pakete GERI CEKMEZ (bilerek), ve
+  // karar her acilista ayni kalir. Net etki: her acilista yukleyicinin tam
+  // turu. ``checkoutContainsCommit`` dogru soruyu soruyor: runtime
+  // uygulamanin kodunu ICERIYOR mu?
+  const runtimeHead = resolveCheckoutHead(ACTIVE_HERMES_ROOT)
+  const pinnedCommit = INSTALL_STAMP && INSTALL_STAMP.commit
+  const runtimeHasPin = checkoutContainsCommit(ACTIVE_HERMES_ROOT, pinnedCommit)
+  const versionState = classifyRuntimeVersion(runtimeHead, pinnedCommit, runtimeHasPin)
+
+  // ``rememberLog`` KULLANILIYOR, ``console.log`` degil: olculdu, console
+  // ciktisi ``desktop.log``a dusmuyor ve karar gorunmez kaliyordu -- oysa bu
+  // dosyanin butun amaci sessiz olmamak.
+  rememberLog(`[runtime] ${describeRuntimeVersion(versionState, runtimeHead, pinnedCommit)}`)
+
+  // AYNI onarim IKINCI KEZ denenmiyor -- ve bu kural SURECI ASIYOR.
+  //
+  // Surec ici bayrak (``runtimeVersionRepairAttempted``) sonsuz ozyinelemeyi
+  // kesiyordu ama ACILISLAR ARASINI kesmiyordu: onarim commit'i duzeltemezse
+  // (ag yok, klon kilitli, pin bu dalda degil) bir sonraki acilis ayni kararla
+  // ayni yere gelir ve kullanici HER ACILISTA yukleyicinin tam turunu oder --
+  // 0.21.3'te kapatilan "ilk acilis on dakika kurulum yapti" sinifinin
+  // aynisi, yalnizca her seferinde.
+  //
+  // Damga ayni ``(HEAD, pin)`` cifti icin tutuluyor. Ciftin herhangi bir yani
+  // degisirse -- yeni surum kuruldu, ya da runtime kimildadi -- durum yeni
+  // demektir ve yeniden denenmeye deger.
+  const repairAlreadyTried = runtimeRepairAlreadyAttempted(runtimeHead, pinnedCommit)
+
+  if (needsRepair(versionState) && !runtimeVersionRepairAttempted && !repairAlreadyTried) {
+    runtimeVersionRepairAttempted = true
+    rememberRuntimeRepairAttempt(runtimeHead, pinnedCommit)
+
+    // ``bootstrapRepairRequested`` mevcut ve TEST EDILMIS yol: kullanilabilir
+    // gorunen runtime'i atlayip yukleyiciyi yeniden kosuyor. install.ps1
+    // sabitlenen commit'e cekiyor ve bagimliliklari o surume gore kuruyor.
+    bootstrapRepairRequested = true
+
+    updateBootProgress({
+      phase: 'runtime.repair',
+      message: 'Updating The Fool runtime to match this version',
+      progress: 40,
+      running: true,
+      error: null
+    })
+
+    return ensureRuntime(resolveHermesBackend(backend.args))
+  }
+
+  if (needsRepair(versionState)) {
+    rememberLog(
+      repairAlreadyTried
+        ? '[runtime] surum uyusmazligi bir onceki acilista da onarilamamisti; yukleyici ' +
+            'yeniden kosulmuyor (her acilista kurulum yapmamak icin). Zorlamak icin ' +
+            `${path.join(ACTIVE_HERMES_ROOT, RUNTIME_REPAIR_ATTEMPT_FILE)} dosyasini silin.`
+        : '[runtime] surum uyusmazligi onarimdan sonra da suruyor; eski runtime ile devam ' +
+            'ediliyor (dongude kalmamak icin bir kez deneniyor)'
+    )
+  }
+
   const venvPython = getVenvPython(VENV_ROOT)
 
   if (!fileExists(venvPython)) {
@@ -4756,6 +5096,82 @@ async function ensureRuntime(backend) {
     throw new Error(
       `The Fool venv missing at ${VENV_ROOT}. Re-run the desktop installer or ` + '`scripts/install.ps1` to rebuild it.'
     )
+  }
+
+  // FOOL-SEAM: runtime-dir-name
+  //
+  // Goc yapildiysa venv'in SAG CIKTIGINI dogrula.
+  //
+  // Windows'ta bir venv'in konsol betikleri (``Scripts\*.exe``) icine MUTLAK
+  // yol gomuyor. Ust dizinin adi degisince o yollar artik var olmayan bir
+  // yeri gosteriyor; dosya yerinde duruyor ama calismiyor. Yalnizca
+  // ``fileExists`` bakmak bunu kaciriyordu.
+  //
+  // Kirilmissa yukleyici venv'i YENI yolda yeniden kuruyor. Bu, gocun
+  // kullaniciyi bozuk bir kuruluma birakmamasinin tek garantisi.
+  // HER ACILISTA sinaniyor -- yalnizca gocun yapildigi acilista DEGIL.
+  //
+  // Ilk yazimda kontrol "az once goc edildi" bayraginin arkasindaydi ve
+  // olculen sonuc su oldu: goc bir onceki acilista yapilmisti, launcher o
+  // sirada kirilmisti, ve bir sonraki acilista kapi kapali oldugu icin kimse
+  // bakmadi. Kirik komut oylece kaldi.
+  //
+  // Istenen zaten daha genisti: "her release sonrasi ilk acilista kesin
+  // kontrol yapilacak, eksik ya da yanlis her sey duzeltilecek." Bir kerelik
+  // goc kontrolu bunu karsilamiyor -- launcher baska sebeplerle de kirilabilir
+  // (elle tasima, yarim guncelleme, silinmis venv betigi).
+  //
+  // Maliyet acilista tek bir ``--version`` cagrisi; dogruluk garantisi icin
+  // kabul edilebilir.
+  if (!runtimeSelfCheckDone) {
+    runtimeSelfCheckDone = true
+
+    // LAUNCHER da sinaniyor -- venv python'i YETMIYOR.
+    //
+    // Olculdu: goc sonrasi ``canImportHermesCli(venvPython)`` GECTI ama
+    // terminaldeki komut kirildi::
+    //
+    //     > fool --version
+    //     error: uv trampoline failed to canonicalize script path
+    //
+    // Sebep: venv'in python'i kendi konumuna GORE cozuluyor, o yuzden
+    // yeniden adlandirmadan etkilenmiyor. Ama ``bin\fool.exe`` bir uv
+    // trampoline'i ve icine venv betiginin MUTLAK yolunu gomuyor -- ust
+    // dizin adi degisince o yol artik yok.
+    //
+    // Yalnizca python'i sinamak bunu kaciriyordu: masaustu calisiyor
+    // (python'i dogrudan cagiriyor), kullanicinin terminali calismiyor.
+    const migratedLauncher = path.join(
+      ACTIVE_HERMES_ROOT,
+      'bin',
+      IS_WINDOWS ? 'fool.exe' : 'fool'
+    )
+    const launcherOk = !fileExists(migratedLauncher) || verifyHermesCli(migratedLauncher)
+
+    if (!canImportHermesCli(venvPython) || !launcherOk) {
+      // Surum onarimi da isaretleniyor: yeniden kurulum AYNI yukleyiciyi
+      // kosuyor, yani ozyinelemede surum kapisinin ikinci kez ayni turu
+      // istemesi tamamen bosa is olurdu.
+      runtimeVersionRepairAttempted = true
+      bootstrapRepairRequested = true
+
+      rememberLog(
+        '[runtime] calisma zamani dogrulanamadi (venv ya da fool komutu kirik); ' +
+          'yeniden kuruluyor'
+      )
+
+      updateBootProgress({
+        phase: 'runtime.repair',
+        message: 'Rebuilding the runtime after moving it',
+        progress: 40,
+        running: true,
+        error: null
+      })
+
+      return ensureRuntime(resolveHermesBackend(backend.args))
+    }
+
+    rememberLog('[runtime] dogrulandi: venv ve fool komutu calisiyor')
   }
 
   backend.command = getVenvPython(VENV_ROOT)

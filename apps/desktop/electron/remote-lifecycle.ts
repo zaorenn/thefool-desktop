@@ -32,7 +32,29 @@ const LOCKFILE_SCHEMA_VERSION = 2
 // an old running dashboard unsafe to reattach to (token handling, readiness/spawn
 // args, served-token reconciliation). A mismatch forces a clean respawn.
 const PROTOCOL_VERSION = 1
-const READY_RE = /^HERMES_(?:BACKEND|DASHBOARD)_READY port=(\d+)/m
+// FOOL-SEAM: ready-token
+//
+// UZAK arka uc da ayni sozlesmeyi kullaniyor -- ve BU KOPYA atlanmisti.
+//
+// Olculdu (deponun kendi testi, `electron/remote-lifecycle.test.ts`):
+//
+//     READY_RE.exec('FOOL_BACKEND_READY port=4321')  ->  undefined
+//
+// Backend `FOOL_BACKEND_READY port=<n>` yaziyor (bkz. `fool_cli/web_server.py`
+// ready_token). Bu desen `HERMES_` ariyordu, yani uzak arka uc sorunsuz
+// baslasa bile masaustu portu HIC gormuyor ve her SSH baglantisi su hatayla
+// olen bir bekleyise giriyordu:
+//
+//     Timed out waiting for the remote dashboard to announce its port (…ms).
+//
+// `backend-ready.ts` ayni hatadan zamaninda kurtarilmisti; koruma testi
+// YALNIZCA o dosyaya bakiyordu ve ikinci kopya gorunmedi. Guard artik butun
+// agaci tariyor (`tests/fool/test_branding.py`).
+//
+// ESKI token da kabul ediliyor: guncellenememis (agi olmayan, kilitli) bir
+// uzak kurulum hala baglanabilmeli. Yeni token'i tanimak sart, eskisini
+// reddetmek degil.
+const READY_RE = /^(?:FOOL|HERMES)_(?:BACKEND|DASHBOARD)_READY port=(\d+)/m
 const REMOTE_LOCK_DIR = '~/.fool/desktop-ssh'
 const SUPPORTED_REMOTE_OS = new Set(['Linux', 'Darwin'])
 const DEFAULT_READY_TIMEOUT_MS = 45_000
@@ -163,7 +185,7 @@ async function locateHermes(ssh, remoteHermesPath) {
     const err: any = new Error(
       `The Fool path you set is not an executable on the remote host: "${remoteHermesPath}". ` +
         'Check the path (it must be the full path to the `fool` binary on the remote, e.g. ' +
-        '~/hermes-agent/.venv/bin/fool), or clear it to auto-detect.'
+        '~/.fool/fool-agent/venv/bin/fool), or clear it to auto-detect.'
     )
 
     err.kind = 'fool-not-found'
@@ -186,6 +208,10 @@ async function locateHermes(ssh, remoteHermesPath) {
   // command locations (scripts/install.sh) — per-user, root/FHS, legacy venv.
   candidates.push('~/.local/bin/fool')
   candidates.push('/usr/local/bin/fool')
+  // FOOL-SEAM: runtime-dir-name
+  // Runtime dizini ``fool-agent`` adini aldi. YENI ad once deneniyor, eski ad
+  // aday listesinde KALIYOR: goc edememis bir uzak kurulum hala bulunmali.
+  candidates.push('~/.fool/fool-agent/venv/bin/fool')
   candidates.push('~/.fool/hermes-agent/venv/bin/fool')
 
   for (const candidate of candidates) {
@@ -200,7 +226,8 @@ async function locateHermes(ssh, remoteHermesPath) {
 
   const err: any = new Error(
     'The Fool is not installed on the remote host (could not find a `fool` executable). ' +
-      'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
+      'Install it on the remote with:  ' +
+      'curl -fsSL https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh | bash  ' +
       '— or set the Fool path explicitly in the SSH connection settings.'
   )
 

@@ -22,8 +22,8 @@ from fool.argparse_brand import install as _install_fool_argparse_branding
 
 _install_fool_argparse_branding()
 
-__version__ = "0.21.3"
-__release_date__ = "2026-08-29"
+__version__ = "0.21.8"
+__release_date__ = "2026-08-31"
 
 
 def _ensure_utf8():

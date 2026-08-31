@@ -5413,8 +5413,97 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
         consecutive_failures = 0
         max_consecutive_failures = 3
 
+        # FOOL-SEAM: speech-language
+        #
+        # BIR ADIM ONDEN ceviri: cumle N seslendirilirken cumle N+1 ceviriliyor.
+        #
+        # Olculen hata: konusma dili ayarliyken her cumle once cevriliyor SONRA
+        # sentezleniyordu -- ikisi sirali. Ceviri cumle basina 2,4-9,7 sn
+        # ekliyordu ve kullanicinin bildirdigi sey aynen su: "ses cok gec
+        # olusturuluyor, es zamanli konusma hissi vermiyor".
+        #
+        # Sentez zaten saniyenin altinda (olculdu: isinmis Chatterbox turbo
+        # 0,72-0,89 sn/cumle), yani ceviri o surenin ARKASINA saklanabiliyor.
+        # Ilk cumle yine bekliyor -- saklanacak bir sey yok -- ama sonrakiler
+        # onbellekten aninda geliyor.
+        def _sentences_translated():
+            """Cumleleri verirken BIR SONRAKININ cevirisini arka planda baslat."""
+            try:
+                from tools.tts_tool import prefetch_speech_translation
+            except Exception:  # pragma: no cover — on-yukleme yoksa sirali calis
+                yield from _sentences()
+                return
+
+            # ILK CUMLE GECIKTIRILMIYOR.
+            #
+            # Ilk yazimda "bu cumleyi kuyruga koy, bir oncekini ver" kalibi
+            # kullanildi ve ilk cumle IKINCISI gelene kadar bekliyordu --
+            # yani en onemli olcuyu (ilk cumle gecikmesi) bozuyordu.
+            #
+            # Dogru ayrisma: ayri bir is parcacigi cumleleri gelir gelmez
+            # cekiyor ve her birinin cevirisini kuyruga atiyor; tuketici
+            # kuyruktan okuyor. Ilk cumle aninda geciyor, sonrakiler tuketici
+            # mesgulken cevriliyor.
+            pool = concurrent.futures.ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="tts-xlate"
+            )
+            ready: queue.Queue = queue.Queue()
+            # TUKETICI GITTIGINDE uretici de DURMALI.
+            #
+            # Ilk yazimda boyle bir bayrak yoktu ve olculen iki sonucu vardi.
+            # Kullanici sozu kestiginde tuketici ``return`` ediyor,
+            # ``finally`` havuzu kapatiyor -- ama besleyici is parcacigi
+            # calismaya devam ediyor:
+            #
+            #   1. Bir sonraki cumlede ``pool.submit`` "cannot schedule new
+            #      futures after shutdown" atiyor. Kimse yakalamiyor, yani her
+            #      araya girmede gunluge bir is parcacigi geri izlemesi
+            #      dusuyor -- gercek hatalari ortecek kadar gurultulu.
+            #   2. ``_sentences()`` sonuna kadar tuketiliyor: kullanici
+            #      konusmayi kesmis olsa bile akis pompalanmaya devam ediyor.
+            done = threading.Event()
+
+            def _drain() -> None:
+                try:
+                    for sentence in _sentences():
+                        if done.is_set():
+                            return
+
+                        try:
+                            pool.submit(
+                                prefetch_speech_translation,
+                                sentence,
+                                _tts_cfg_for_pauses,
+                            )
+                        except RuntimeError:
+                            # Havuz TAM BU ANDA kapandi (yaris). On-yukleme bir
+                            # hizlandirma: kaybi, cevirinin sirasi geldiginde
+                            # normal yoldan yapilmasi.
+                            return
+
+                        ready.put(sentence)
+                finally:
+                    ready.put(None)
+
+            threading.Thread(target=_drain, daemon=True, name="tts-sentences").start()
+
+            try:
+                while True:
+                    sentence = ready.get()
+                    if sentence is None:
+                        return
+
+                    yield sentence
+            finally:
+                # SIRA ONEMLI: once besleyiciye dur denir, sonra havuz
+                # kapatilir. Tersi, tam da yukarida anlatilan yarisi acardi.
+                done.set()
+                # ``wait=False``: kapanis sirasinda yarim kalan bir ceviriyi
+                # beklemek, kullanici sozu kestiginde turu uzatirdi.
+                pool.shutdown(wait=False)
+
         try:
-            for sentence in _sentences():
+            for sentence in _sentences_translated():
                 # Araya girme SENTEZDEN ONCE de kontrol ediliyor.
                 #
                 # Eski hali yalnizca uretilen parcalar ARASINDA bakiyordu ve

@@ -214,6 +214,13 @@ EXPECTED_SEAMS = {
     "main-window-only-publisher",
     "os-text-encoding",
     "engine-namespaced-config",
+    "ipv4-loopback",
+    "bundled-installer",
+    "runtime-version",
+    "runtime-dir-name",
+    "home-repair",
+    "speech-language",
+    "language-mode",
     "plugin-tts-config",
     "resmi-rapor",
     "accent-override",
@@ -715,11 +722,39 @@ def test_backend_ready_token_matches_on_both_sides() -> None:
     ``HERMES_`` bir env değişkeni değil, desenin parçası.
     """
     py = (REPO_ROOT / "fool_cli/web_server.py").read_text(encoding="utf-8")
-    ts = (REPO_ROOT / "apps/desktop/electron/backend-ready.ts").read_text(encoding="utf-8")
 
     assert '"FOOL_BACKEND_READY"' in py, "backend farkli bir token yaziyor"
-    assert "FOOL_(?:BACKEND|DASHBOARD)_READY" in ts, "masaustu farkli bir token ariyor"
-    assert "HERMES_(?:BACKEND" not in ts, "eski token regex'i geri gelmis"
+
+    # TEK BIR DOSYAYA bakmak yetmiyordu -- olculdu.
+    #
+    # Bu muhafiz uzun sure yalnizca ``backend-ready.ts``e bakiyordu ve YESILDI.
+    # Oysa aynı desenin IKINCI bir kopyasi ``remote-lifecycle.ts``te duruyordu
+    # ve orada ``HERMES_`` kalmisti: uzak (SSH) arka uc sorunsuz basliyor,
+    # portunu duyuruyor, masaustu duymuyor ve her baglanti
+    # "Timed out waiting for the remote dashboard to announce its port" ile
+    # oluyordu. Deponun kendi testi bunu yakalamisti; muhafiz gormedi.
+    #
+    # Artik dosya adi degil DESEN araniyor: masaustunun hangi dosyasinda
+    # olursa olsun, yeni token'i tanimayan bir hazir-olma deseni hata.
+    electron = REPO_ROOT / "apps/desktop/electron"
+    ready_files = [
+        path
+        for path in sorted(electron.rglob("*.ts"))
+        if not path.name.endswith(".test.ts")
+        and "_READY port=" in path.read_text(encoding="utf-8")
+    ]
+
+    assert ready_files, "hazir-olma desenini tasiyan hicbir dosya bulunamadi"
+
+    for path in ready_files:
+        source = path.read_text(encoding="utf-8")
+        pattern = re.search(r"/\^[^\n]*_READY port=\(\\d\+\)/[gm]+", source)
+
+        assert pattern, f"{path.name}: hazir-olma deseni okunamadi"
+        assert "FOOL" in pattern.group(0), (
+            f"{path.name}: masaustu FOOL_ token'ini tanimiyor -- "
+            "backend portunu duyurur, bu taraf duymaz"
+        )
 
 
 def test_installer_publishes_the_fool_cli_launchers() -> None:

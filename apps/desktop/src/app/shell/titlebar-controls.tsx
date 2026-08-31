@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, type MouseEvent, type ReactNode, useEffect, useState } from 'react'
+import { type ComponentProps, type MouseEvent, type ReactNode, useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { hudTargetSessionId } from '@/app/hud/handoff'
@@ -7,6 +7,7 @@ import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { resetLayoutTree } from '@/components/pane-shell/tree/store'
 import { Button } from '@/components/ui/button'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
+import { LanguageControls } from '@/fool/language-controls'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { formatModifierToken } from '@/lib/keybinds/combo'
@@ -103,6 +104,20 @@ function useModifierHeld(): boolean {
 }
 
 export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }: TitlebarControlsProps) {
+  // Arka uc dil uclarini bilmiyorsa kontrol HIC cizilmiyor.
+  const [languageControlsAvailable, setLanguageControlsAvailable] = useState(true)
+
+  // ``useCallback`` SART, kolaylik degil.
+  //
+  // ``LanguageControls`` bu islevi ilk okuma etkisinin bagimlilik listesinde
+  // tasiyor. Satir ici bir ok islevi her cizimde yeni bir kimlik uretiyor ve
+  // bu bilesen SIK ciziliyor: asagidaki ``useModifierHeld`` her Ctrl/Alt
+  // basisinda ve birakisinda durum guncelliyor. Olculen sonuc, kullanici
+  // Ctrl'ye basili tuttugu surece her cizimde bir
+  // ``GET /api/fool/voice/language`` -- baslik cubugunda tutulan bir tusun
+  // arka uca istek yagdirmasi.
+  const hideLanguageControls = useCallback(() => setLanguageControlsAvailable(false), [])
+
   const { t } = useI18n()
   const navigate = useNavigate()
   const location = useLocation()
@@ -274,6 +289,20 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         aria-label={t.shell.appControls}
         className={cn(titlebarToolClusterClass, 'right-(--titlebar-tools-right) top-(--titlebar-controls-top)')}
       >
+        {/*
+          Cevap dili + konusma dili -- SAG UST.
+
+          Istenen: "illa modele soyleyip degistirmemize gerek kalmasin". Ikisi
+          ayri ayar: biri ekranda okunan dil, digeri hoparlorden cikan dil.
+
+          Arka uc ulasilamadiginda (masaustu koprusu yok, eski bir arka uc)
+          kendini gizliyor -- bos bir acilir liste, olmayan bir ayari VARMIS
+          gibi gosterirdi.
+        */}
+        {languageControlsAvailable && (
+          <LanguageControls onUnavailable={hideLanguageControls} />
+        )}
+
         {visibleSystemTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}

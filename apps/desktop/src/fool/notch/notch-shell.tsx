@@ -478,7 +478,30 @@ export function NotchShell() {
     // calisiyor -- odaklanmamis bir pencere hicbir tus olayi almiyor ve
     // "bir kez calisip oluyor" hatasi tam olarak buydu.
     const stopForwarded = window.hermesDesktop?.notch?.onPushToTalk?.(event => {
-      const key = { code: pttCode, repeat: event.repeat } as KeyboardEvent
+      // İletilen tuş GERÇEK bir ``KeyboardEvent`` DEĞİL: IPC'den düz bir
+      // nesne olarak geliyor. ``onDown`` basılı tutuşun başka kısayolları
+      // tetiklememesi için ``preventDefault()`` çağırıyor -- ve düz nesnede o
+      // işlev yok.
+      //
+      // Ölçülen kırıklık (kullanıcının günlüğünden)::
+      //
+      //     [renderer console:notch] Uncaught Error:
+      //     e.preventDefault is not a function
+      //
+      // İstisna ``preventDefault`` satırında atılıyor, yani hemen ardından
+      // gelen ``voice.begin()`` HİÇ çalışmıyor: mikrofon açılmıyor ve çentik
+      // ölü görünüyor. Kullanıcının bildirdiği "bir iki sağ Ctrl'den sonra
+      // bir daha açılmıyor" tam olarak bu -- ilk cevap ana pencerede
+      // çizilince odak oraya geçiyor ve tuş ARTIK iletilen yoldan geliyor.
+      //
+      // ``preventDefault`` burada no-op: iletilen olayın yutulacak bir
+      // varsayılan davranışı zaten yok (bu pencere odakta değil, tuşu alan
+      // pencere kendi tarafında hallediyor).
+      const key = {
+        code: pttCode,
+        preventDefault: () => {},
+        repeat: event.repeat
+      } as unknown as KeyboardEvent
 
       if (event.type === 'down') {
         onDown(key)

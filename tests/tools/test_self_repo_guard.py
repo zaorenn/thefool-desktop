@@ -55,11 +55,11 @@ class TestBlocksMutationsInSourceRepo:
         assert hit is True
 
     def test_dash_c_targeting_repo_from_outside(self, repo, tmp_path):
-        hit, _ = _detect(f"git -C {repo} checkout pr-51020", tmp_path, repo)
+        hit, _ = _detect(f'git -C "{repo}" checkout pr-51020', tmp_path, repo)
         assert hit is True
 
     def test_cd_into_repo_then_checkout(self, repo, tmp_path):
-        hit, _ = _detect(f"cd {repo} && git checkout pr-51020", tmp_path, repo)
+        hit, _ = _detect(f'cd "{repo}" && git checkout pr-51020', tmp_path, repo)
         assert hit is True
 
     def test_relative_cd_into_repo(self, repo):
@@ -105,12 +105,14 @@ class TestBlocksMutationsInSourceRepo:
         assert hit is True
 
     def test_explicit_work_tree_targeting_repo(self, repo, tmp_path):
-        command = f"git --git-dir={repo / '.git'} --work-tree={repo} checkout main"
+        git_dir = repo / ".git"
+        command = f'git --git-dir="{git_dir}" --work-tree="{repo}" checkout main'
         hit, _ = _detect(command, tmp_path, repo)
         assert hit is True
 
     def test_git_environment_targeting_repo(self, repo, tmp_path):
-        command = f"GIT_DIR={repo / '.git'} GIT_WORK_TREE={repo} git checkout main"
+        git_dir = repo / ".git"
+        command = f'GIT_DIR="{git_dir}" GIT_WORK_TREE="{repo}" git checkout main'
         hit, _ = _detect(command, tmp_path, repo)
         assert hit is True
 
@@ -148,9 +150,61 @@ class TestBlocksMutationsInSourceRepo:
         assert hit is True
 
     def test_tilde_dash_c_path(self, repo, monkeypatch, tmp_path):
+        # ``expanduser`` Windows'ta ``HOME``u DEGIL ``USERPROFILE``i okuyor
+        # (``HOME`` yalnizca POSIX'te birincil). Yalnizca ``HOME`` yazmak,
+        # ``~`` genislemesinin gercek kullanici dizinine cozuldugu ve testin
+        # depoyu hic isaret etmedigi bir hale dusuruyordu.
         monkeypatch.setenv("HOME", str(repo.parent))
+        monkeypatch.setenv("USERPROFILE", str(repo.parent))
         hit, _ = _detect("git -C ~/hermes-agent checkout main", tmp_path, repo)
         assert hit is True
+
+
+class TestQuotedNativePaths:
+    r"""TIRNAK ICINDEKI ters bolu KORUNUR -- ve muhafiz onu gormeliydi.
+
+    Olculen acik: kelime cozumleyici (``tools/approval.py``) cift tirnak
+    icindeki her ``\X``ten bolusu atiyordu. bash bunu YAPMIYOR -- yalnizca
+    ``$``, backtick, ``"``, ``\`` ve yeni satirdan once kacis sayiyor::
+
+        $ printf '%s' "C:\repo"
+        C:\repo
+
+    Sonuc: Windows yolu ``C:repo``ya donusuyor, kaynak koku ile eslesmiyor ve
+    muhafiz ACIK KALIYOR. Yani ajanin terminalinde
+
+        git -C "C:\thefool-desktop" reset --hard HEAD~1
+
+    calisan checkout'u gercekten yeniden yaziyor ve hicbir sey onu durdurmuyor.
+    Tek tirnak da ayni sonuca farkli sebeple ulasiyordu: ilk tur boluyu dogru
+    KORUYOR, ikinci tur artik tirnaksiz olan degeri gorup yiyordu.
+
+    Ciplak (tirnaksiz) hali bilerek DISARIDA: bash orada boluleri gercekten
+    yiyor, yani komut zaten depoyu hedeflemiyor -- engellememek dogru.
+    """
+
+    @pytest.mark.parametrize(
+        "template",
+        [
+            'git -C "{root}" checkout pr-1',
+            "git -C {q}{root}{q} checkout pr-1".format(q=chr(39), root="{root}"),
+            'cd "{root}" && git reset --hard HEAD~1',
+            'git --work-tree="{root}" --git-dir="{root}/.git" checkout main',
+            'git worktree remove "{root}"',
+        ],
+    )
+    def test_quoted_path_is_blocked(self, repo, tmp_path, template):
+        hit, _ = _detect(template.format(root=repo), tmp_path, repo)
+        assert hit is True, "tirnakli yerli yol muhafizi atlatiyor"
+
+    def test_unquoted_backslash_path_is_not_a_false_positive(self, repo, tmp_path):
+        # Ciplak hali bash'te bolulerini kaybediyor, yani depoya hic ulasmiyor.
+        # Burayi engellemek yanlis pozitif olurdu.
+        if "\\" not in str(repo):
+            pytest.skip("yerli yolda ters bolu yok (POSIX)")
+
+        hit, _ = _detect(f"git -C {repo} checkout pr-1", tmp_path, repo)
+        assert hit is False
 
 
 class TestAllowsSafeCommands:
@@ -192,15 +246,15 @@ class TestAllowsSafeCommands:
         assert hit is False
 
     def test_dash_c_redirects_out_of_repo(self, repo, tmp_path):
-        hit, _ = _detect(f"git -C {tmp_path} checkout main", repo, repo)
+        hit, _ = _detect(f'git -C "{tmp_path}" checkout main', repo, repo)
         assert hit is False
 
     def test_cd_out_of_repo_then_checkout(self, repo, tmp_path):
-        hit, _ = _detect(f"cd {tmp_path} && git checkout main", repo, repo)
+        hit, _ = _detect(f'cd "{tmp_path}" && git checkout main', repo, repo)
         assert hit is False
 
     def test_mentioning_repo_path_without_targeting_it(self, repo, tmp_path):
-        hit, _ = _detect(f"echo {repo} && git checkout main", tmp_path, repo)
+        hit, _ = _detect(f'echo "{repo}" && git checkout main', tmp_path, repo)
         assert hit is False
 
     def test_checkout_as_grep_pattern_not_git(self, repo):
@@ -235,17 +289,17 @@ class TestAllowsSafeCommands:
         assert hit is False
 
     def test_subshell_cd_does_not_leak(self, repo):
-        command = f"(cd {repo} && git status); git checkout main"
+        command = f'(cd "{repo}" && git status); git checkout main'
         hit, _ = _detect(command, repo.parent, repo)
         assert hit is False
 
     def test_pipeline_cd_does_not_leak(self, repo):
-        command = f"cd {repo} | cat; git checkout main"
+        command = f'cd "{repo}" | cat; git checkout main'
         hit, _ = _detect(command, repo.parent, repo)
         assert hit is False
 
     def test_successful_cd_or_branch_does_not_run(self, repo):
-        command = f"cd {repo} || git checkout main"
+        command = f'cd "{repo}" || git checkout main'
         hit, _ = _detect(command, repo.parent, repo)
         assert hit is False
 
@@ -282,16 +336,17 @@ class TestWorktreeTargetingSourceRoot:
 
     @pytest.mark.parametrize("action", ["remove", "remove -f", "remove --force"])
     def test_blocks_absolute_target_from_outside(self, repo, tmp_path, action):
-        hit, _ = _detect(f"git worktree {action} {repo}", tmp_path, repo)
+        hit, _ = _detect(f'git worktree {action} "{repo}"', tmp_path, repo)
         assert hit is True
 
     def test_blocks_move_of_root_from_outside(self, repo, tmp_path):
-        command = f"git worktree move {repo} {tmp_path / 'moved'}"
+        dest = tmp_path / "moved"
+        command = f'git worktree move "{repo}" "{dest}"'
         hit, _ = _detect(command, tmp_path, repo)
         assert hit is True
 
     def test_blocks_dash_c_worktree_remove(self, repo, tmp_path):
-        hit, _ = _detect(f"git -C {tmp_path} worktree remove {repo}", tmp_path, repo)
+        hit, _ = _detect(f'git -C "{tmp_path}" worktree remove "{repo}"', tmp_path, repo)
         assert hit is True
 
     def test_blocks_parent_relative_target_from_subdirectory(self, repo):
@@ -375,7 +430,11 @@ class TestBlockMessageGuidance:
         assert "Delete the clone" in msg
 
     def test_scratch_hint_honors_hermes_home(self, repo, monkeypatch):
-        monkeypatch.setenv("FOOL_HOME", "/custom/hermes-home")
+        home = str(Path("/custom/hermes-home").resolve())
+        monkeypatch.setenv("FOOL_HOME", home)
         hit, msg = _detect("git rebase origin/main", repo, repo)
         assert hit is True
-        assert "/custom/hermes-home/scratch" in msg
+        # Ipucu YERLI ayracla yaziliyor -- Windows'ta ``\``, POSIX'te ``/``.
+        # Ikisi de dogru: kullaniciya gosterilen bir yol, o platformun kendi
+        # bicimiyle okunmali.
+        assert str(Path(home) / "scratch") in msg

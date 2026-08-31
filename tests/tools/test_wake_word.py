@@ -35,8 +35,15 @@ def test_config_defaults_and_clamping():
     # Invalid input falls back to the configured default, not a hardcoded 0.5.
     assert ww._sensitivity({"sensitivity": "nope"}) == ww._DEFAULTS["sensitivity"]
     assert ww._sensitivity({}) == ww._DEFAULTS["sensitivity"]
+    # Açık değer olduğu gibi geçiyor -- marka ile ilgisi yok.
     assert ww.wake_phrase({"phrase": "hey hermes"}) == "hey hermes"
-    assert ww.wake_phrase({}) == "hey hermes"
+    # VARSAYILAN ise yapılandırmadan geliyor. Sabit yazmak, marka dönüşümünden
+    # sonra ürünün doğru ("hey fool") testin yanlış olduğu bir kırmızıya
+    # dönüşmüştü: ölçüldü, ``config_defaults`` "hey fool" diyor.
+    from fool_cli.config_defaults import DEFAULT_CONFIG
+
+    assert ww.wake_phrase({}) == DEFAULT_CONFIG["wake_word"]["phrase"]
+    assert ww.wake_phrase({}) == "hey fool"
 
 
 def test_wake_surface_enabled_gate():

@@ -1987,7 +1987,24 @@ def _strip_shell_word_syntax(word: str) -> str:
     while i < len(word):
         ch = word[i]
         if quote:
-            if ch == "\\" and quote == '"' and i + 1 < len(word):
+            # ÇİFT TIRNAK İÇİNDE ters bölü YALNIZCA birkaç karakterden önce
+            # kaçıştır. bash'in kuralı bu ve fark ölçülebilir::
+            #
+            #     $ printf '%s\n' "C:\thefool-desktop"
+            #     C:\thefool-desktop          <- ters bölüler DURUYOR
+            #
+            # Eski hâl her ``\X``ten bölüyü atıyordu, yani Windows yolları
+            # ``C:thefooldesktop``a dönüşüyordu. Sonuç sessiz ve tehlikeli:
+            # yol tabanlı KORUMALAR (self-repo guard, onay kapıları) gerçek
+            # yolla eşleşemiyor ve AÇIK KALIYOR -- ``git -C "C:\repo" reset
+            # --hard`` bash'te depoyu gerçekten yeniden yazarken muhafız
+            # hiçbir şey görmüyordu.
+            if (
+                ch == "\\"
+                and quote == '"'
+                and i + 1 < len(word)
+                and word[i + 1] in ('"', chr(92), "$", "`", chr(10))
+            ):
                 chars.append(word[i + 1])
                 i += 2
                 continue
@@ -2024,6 +2041,19 @@ def _deobfuscate_shell_word_for_detection(word: str) -> str:
         deobfuscated = _replace_simple_shell_expansions(deobfuscated)
         deobfuscated = _strip_shell_word_syntax(deobfuscated)
         if deobfuscated == previous:
+            break
+        # İKİNCİ TUR yalnızca hâlâ kabuk sözdizimi VARSA.
+        #
+        # Tur, ``"'g'i't'"`` gibi iç içe gizlemeleri açmak için var. Ama ilk tur
+        # bittiğinde geriye tırnak/genişletme kalmamışsa ikinci tur yalnızca
+        # ZARAR verebilir: tek tırnak ters bölüyü doğru şekilde KORUYOR
+        # (``'C:\repo'`` -> ``C:\repo``), ikinci tur ise artık tırnaksız olan
+        # o değeri görüp bölüleri kaçış sanıp yiyordu (-> ``C:repo``).
+        #
+        # Ölçülen sonuç, tek tırnaklı Windows yolları için de yol tabanlı
+        # korumaların açık kalmasıydı -- çift tırnaklıyla aynı sınıf, farklı
+        # sebep.
+        if not any(marker in deobfuscated for marker in ("'", '"', "$", "`")):
             break
     return deobfuscated
 

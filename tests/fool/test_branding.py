@@ -757,6 +757,37 @@ def test_backend_ready_token_matches_on_both_sides() -> None:
         )
 
 
+def test_update_check_asks_OUR_repo_how_far_behind_you_are() -> None:
+    """FOOL-SEAM: update-origin — yanlış depo = sayı hiç gelmez.
+
+    ``_github_compare_behind`` iki SHA'yı GitHub'ın compare API'sine soruyor.
+    Marka dönüşümü ``_OFFICIAL_REPO_CANONICAL``i yeni depoya taşımış ama bu
+    URL'i ``nousresearch/hermes-agent`` olarak bırakmıştı. Bizim
+    commit'lerimiz o depoda YOK: istek 404 dönüyor, işlev ``None`` veriyor ve
+    banner "kaç commit geridesin" sorusunu ASLA cevaplayamıyordu.
+
+    Sessiz bozulma: hata görünmüyor, yalnızca bilgi hiç gelmiyor -- ve sığ
+    klonlarda (yükleyicinin kurduğu her kurulum) bu TEK sayım yolu.
+    """
+    import inspect
+
+    from fool_cli import banner
+
+    source = inspect.getsource(banner._github_compare_behind)
+
+    assert "_OFFICIAL_REPO_CANONICAL" in source, (
+        "depo adi gomulmemeli -- sabitten turetilmeli, yoksa bir sonraki "
+        "yeniden adlandirma ayni sessiz kirilmayi tekrar uretir"
+    )
+
+    host, slug = banner._OFFICIAL_REPO_CANONICAL.split("/", 1)
+
+    assert slug == "zaorenn/thefool-desktop"
+    assert f"https://api.{host}/repos/{slug}/compare/" == (
+        f"https://api.github.com/repos/zaorenn/thefool-desktop/compare/"
+    )
+
+
 def test_installer_publishes_the_fool_cli_launchers() -> None:
     """FOOL-SEAM: cli-launchers — yanlış ad = terminalde hiçbir şey.
 

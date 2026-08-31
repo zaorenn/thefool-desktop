@@ -28,16 +28,21 @@ import { test } from 'vitest'
 
 const MAIN = readFileSync(join(__dirname, 'main.ts'), 'utf8')
 
-test('gecici dizin altindaki ev REDDEDILIYOR', () => {
-  // Geçici bir dizin kalıcı bir ev olamaz: var olsa bile işletim sistemi onu
-  // istediği an siler.
-  assert.ok(MAIN.includes('looksLikeDiscardedHome'))
-  assert.ok(MAIN.includes('os.tmpdir()'))
-  assert.ok(MAIN.includes('gecici dizin altinda'))
-})
+// Kararın KENDİSİ artık ``home-gate.test.ts``te davranış olarak sınanıyor:
+// dosya sistemi enjekte ediliyor, "%TEMP% altında mı", "birim erişilebilir mi",
+// "varsayılan ev duruyor mu" sorularının hepsi gerçekten koşuyor. Buradaki
+// testlerin işi daha dar ve hâlâ gerekli: kapının ``main.ts``e GERÇEKTEN
+// bağlandığını ve doğru tarafa uygulandığını tutmak. Saf bir modül, kimse
+// çağırmıyorsa hiçbir şeyi korumaz.
 
-test('var olmayan ev, varsayilan ev DURURKEN reddediliyor', () => {
-  assert.ok(MAIN.includes('dizin yok, varsayilan ev ise duruyor'))
+test('kapi main.ts icinde GERCEKTEN cagriliyor', () => {
+  assert.ok(MAIN.includes("from './home-gate'"))
+  assert.ok(MAIN.includes('looksLikeDiscardedHomePure(home, {'))
+  // Gerçek dosya sistemi bağlanıyor -- enjeksiyon noktası test için var, ama
+  // üretimde gerçek olanı taşımalı.
+  assert.ok(MAIN.includes('directoryExists,'))
+  assert.ok(MAIN.includes('defaultHome: defaultHermesHome'))
+  assert.ok(MAIN.includes('os.tmpdir()'))
 })
 
 test('KALICILASMIS deger kapidan geciyor, ortam degiskeni GECMIYOR', () => {
@@ -75,12 +80,16 @@ test('GECERLI bir ev hala kabul ediliyor', () => {
   assert.ok(gate.includes('return home'))
 })
 
-test('cozulemeyen temp icin sandbox IDDIA EDILMIYOR', () => {
-  // Yanlış tarafa düşmek gerçek bir evi reddetmek olurdu.
-  const fn = MAIN.slice(
-    MAIN.indexOf('function looksLikeDiscardedHome'),
-    MAIN.indexOf('function defaultHermesHome')
+test('main.ts cozulemeyen bir tmpdir ile COKMUYOR', () => {
+  // ``os.tmpdir()`` fırlatabiliyor. Enjekte edilen köprü bunu yutup ``null``
+  // döndürmeli: kapı o kuralı atlar, uygulama açılır. Fırlatan bir köprü
+  // burada açılışı komple durdururdu.
+  const bridge = MAIN.slice(
+    MAIN.indexOf('looksLikeDiscardedHomePure(home, {'),
+    MAIN.indexOf('/** Yapilandirma olmasaydi kullanilacak ev. */')
   )
 
-  assert.ok(fn.includes('IDDIA YOK'))
+  assert.ok(bridge.includes('return os.tmpdir()'))
+  assert.ok(bridge.includes('} catch {'))
+  assert.ok(bridge.includes('return null'))
 })

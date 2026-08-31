@@ -208,10 +208,19 @@ def _github_compare_behind(current_rev: str, target_rev: str) -> Optional[int]:
     """
     if not (_is_full_sha(current_rev) and _is_full_sha(target_rev)):
         return None
-    url = (
-        "https://api.github.com/repos/nousresearch/hermes-agent/"
-        f"compare/{current_rev}...{target_rev}"
-    )
+    # FOOL-SEAM: update-origin
+    #
+    # Depo adı BURADAN türetiliyor, gömülü DEĞİL.
+    #
+    # Marka dönüşümü ``_OFFICIAL_REPO_CANONICAL``i (hemen yukarıda) yeni depoya
+    # taşımış ama bu URL'i ``nousresearch/hermes-agent`` olarak bırakmıştı.
+    # Bizim commit'lerimiz o depoda yok: karşılaştırma 404 dönüyor, işlev
+    # ``None`` veriyor ve banner kullanıcıya kaç commit geride olduğunu ASLA
+    # söyleyemiyordu -- her seferinde sayısız "güncelleme var" satırına
+    # düşüyordu. Sessiz bozulma: bir hata görünmüyor, yalnızca bilgi hiç
+    # gelmiyor.
+    host, slug = _OFFICIAL_REPO_CANONICAL.split("/", 1)
+    url = f"https://api.{host}/repos/{slug}/compare/{current_rev}...{target_rev}"
     try:
         import urllib.request
 
@@ -574,8 +583,9 @@ _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 def get_latest_release_tag(repo_dir: Optional[Path] = None) -> Optional[tuple]:
     """Return ``(tag, release_url)`` for the latest git tag, or None.
 
-    Local-only — runs ``git describe --tags --abbrev=0`` against the Fool checkout. Cached per-process. Release URL always points at the
-    canonical NousResearch/hermes-agent repo (forks don't get a link).
+    Local-only — runs ``git describe --tags --abbrev=0`` against the Fool
+    checkout. Cached per-process. The release URL always points at the canonical
+    repo (``_RELEASE_URL_BASE``); forks don't get a link.
     """
     global _latest_release_cache
     if _latest_release_cache is not None:

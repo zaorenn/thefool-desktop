@@ -113,3 +113,49 @@ def test_yedekleme_depo_klonunu_DISLIYOR_kullanici_verisini_dislamiyor() -> None
 
     for owned in ("memories", "voices", "profiles", "sessions"):
         assert owned not in excluded, f"{owned} yedekten dislanmis"
+
+
+# ---------------------------------------------------------------------------
+# İndirilen model ağırlıkları
+# ---------------------------------------------------------------------------
+
+
+def test_model_agirliklari_FOOL_HOME_DISINDA_duruyor() -> None:
+    """İstenen: "indirdiği modeller silinemez."
+
+    Ağırlıklar HuggingFace'in kendi önbelleğinde (``~/.cache/huggingface/hub``)
+    duruyor -- yani ``FOOL_HOME``un tamamen dışında. Hiçbir kurulum/güncelleme
+    yolu oraya dokunmuyor, ve dokunamaz: ``install.ps1``in sildiği tek dizin
+    ``$InstallDir`` (depo klonu), masaüstününki de geçici dosyalar.
+
+    Bu test o ayrımın KAZARA olmadığını tutuyor. Önbellek bir gün ``FOOL_HOME``
+    altına taşınırsa buradan geçmez ve taşıyan kişi onu ``OWNED`` olarak
+    sınıflandırmak zorunda kalır -- gigabaytlarca indirmeyi "yeniden üretilir"
+    saymak, kullanıcı için silmekle aynı şey.
+    """
+    import inspect
+
+    from fool import voice_models
+
+    source = inspect.getsource(voice_models._weights_present)
+
+    assert '".cache"' in source and '"huggingface"' in source, (
+        "agirlik onbellegi artik baska bir yerde -- FOOL_HOME altina mi tasindi?"
+    )
+    assert "get_hermes_home" not in source, (
+        "agirliklar FOOL_HOME altina tasinmis: user_data.py'de OWNED olarak "
+        "siniflandirilmadan bu gecmemeli"
+    )
+
+
+def test_sidecar_ORTAMLARI_agirlik_TASIMIYOR() -> None:
+    """``sidecars`` REPLACEABLE -- ama yalnızca pip ortamı olduğu için.
+
+    Motor ortamı silinirse ``pip install`` ile geri gelir. Ağırlıklar orada
+    OLSAYDI aynı silme gigabaytlarca indirmeyi de götürürdü ve sınıflandırma
+    yanlış olurdu.
+    """
+    from fool import sidecar, user_data
+
+    assert user_data.is_owned(sidecar._SIDECAR_DIRNAME) is False
+    assert sidecar._SIDECAR_DIRNAME == "sidecars"

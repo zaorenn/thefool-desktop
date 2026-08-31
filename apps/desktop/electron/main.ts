@@ -197,6 +197,7 @@ import {
   tightenSecretFileMode,
   writeSecretFileAtomic
 } from './hardening'
+import { looksLikeDiscardedHome as looksLikeDiscardedHomePure } from './home-gate'
 import { cursorPointInWindow } from './hud-cursor'
 import { snapHudBounds } from './hud-snap'
 import { createHudSnapShortcut } from './hud-snap-shortcut'
@@ -731,34 +732,26 @@ if (INSTALL_STAMP) {
 //
 // Sessizce duzeltmiyoruz: her iki durumda da NE oldugu gunluge yaziliyor,
 // yoksa kullanici "verilerim neden geri geldi" sorusunu da cevaplayamaz.
+// Karar KENDI DOSYASINDA (``home-gate.ts``): dosya sistemi enjekte ediliyor,
+// yani "``%TEMP%`` altinda mi", "birim erisilebilir mi", "varsayilan ev duruyor
+// mu" sorularinin hepsi gercekten sinanabiliyor. Burada kalmis olsaydi -- ve
+// bir sure kaldi -- uygulamadaki en pahali yanlis cevabin verildigi yer
+// yalnizca KAYNAK OKUYAN testlerle korunuyor olurdu.
 function looksLikeDiscardedHome(home: string): null | string {
-  let resolved: string
-
-  try {
-    resolved = path.resolve(home)
-  } catch {
-    return 'cozulemeyen yol'
-  }
-
-  try {
-    const temp = path.resolve(os.tmpdir())
-
-    if (
-      resolved.toLowerCase() === temp.toLowerCase() ||
-      resolved.toLowerCase().startsWith(temp.toLowerCase() + path.sep)
-    ) {
-      return `gecici dizin altinda (${temp})`
+  return looksLikeDiscardedHomePure(home, {
+    defaultHome: defaultHermesHome,
+    directoryExists,
+    resolve: p => path.resolve(p),
+    rootOf: p => path.parse(p).root,
+    sep: path.sep,
+    tempDir: () => {
+      try {
+        return os.tmpdir()
+      } catch {
+        return null
+      }
     }
-  } catch {
-    // Cozulemeyen bir temp icin IDDIA YOK: yanlis tarafa dusmek, gercek bir
-    // evi reddetmek olurdu.
-  }
-
-  if (!directoryExists(resolved) && directoryExists(defaultHermesHome())) {
-    return 'dizin yok, varsayilan ev ise duruyor'
-  }
-
-  return null
+  })
 }
 
 /** Yapilandirma olmasaydi kullanilacak ev. */
@@ -5146,6 +5139,7 @@ async function ensureRuntime(backend) {
       'bin',
       IS_WINDOWS ? 'fool.exe' : 'fool'
     )
+
     const launcherOk = !fileExists(migratedLauncher) || verifyHermesCli(migratedLauncher)
 
     if (!canImportHermesCli(venvPython) || !launcherOk) {

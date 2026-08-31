@@ -17,10 +17,15 @@ seçimi yüzünden sohbet de, oturumlar da gidiyordu.
 from __future__ import annotations
 
 import os
+import sys
 
 import pytest
 
-from tools.tts_tool import _point_espeak_at_bundled_data
+from tools.tts_tool import (
+    _ascii_safe_path,
+    _point_espeak_at_bundled_data,
+    _refuse_piper_on_unreadable_espeak_path,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -68,3 +73,68 @@ def test_piper_ice_aktarilirken_CAGIRILIYOR() -> None:
     body = source[source.index("def _import_piper"):]
 
     assert body.index("_point_espeak_at_bundled_data()") < body.index("from piper import PiperVoice")
+
+
+# ---------------------------------------------------------------------------
+# ASCII olmayan yol: espeak-ng dosyayı açamıyor ve SÜRECİ öldürüyor
+# ---------------------------------------------------------------------------
+
+
+def test_TURKCE_kullanici_adi_kisa_yola_cevriliyor(tmp_path) -> None:
+    r"""Ölçülen hata (kullanıcının laptopu, kullanıcı adı ``Birhan Oğurlu``)::
+
+        Error processing file '...piper\espeak-ng-data\phontab':
+          Illegal byte sequence.
+        The Fool backend exited (1)
+
+    Yol DOĞRU, dosya YERİNDE -- taşınamayan şey ``ğ``. espeak-ng bir C
+    kütüphanesi; yolu bayt olarak alıyor ve kod sayfası dönüşümü karakteri
+    bozuyor (günlükte ``Birhan Oï¿½urlu``).
+
+    Windows'un 8.3 kısa adı saf ASCII ve aynı dizini gösteriyor.
+    """
+    if sys.platform != "win32":
+        pytest.skip("8.3 kisa yol yalnizca Windows'ta var")
+
+    turkish = tmp_path / "Birhan Oğurlu"
+    turkish.mkdir()
+    (turkish / "phontab").write_text("x", encoding="utf-8")
+
+    safe = _ascii_safe_path(str(turkish))
+
+    assert safe.isascii(), "yol hala ASCII degil -- espeak yine acamaz"
+    assert os.path.isfile(os.path.join(safe, "phontab")), "kisa yol ayni dizini gostermiyor"
+
+
+def test_ASCII_yola_dokunulmuyor() -> None:
+    """Çevirinin bedeli var (kısa adlar okunaksız); sorunu olmayan makinede
+    ödenmemeli."""
+    plain = os.path.join(os.sep, "ascii", "path")
+
+    assert _ascii_safe_path(plain) == plain
+
+
+def test_cevrilemeyen_yolda_piper_YUKLENMIYOR(monkeypatch) -> None:
+    """Bir motorun başarısızlığı ÜRÜNÜ düşürmemeli.
+
+    espeak-ng veri yüklemesi başarısız olduğunda C tarafında ``exit()``
+    çağırıyor -- hiçbir ``try/except`` yakalayamaz, arka uç komple ölür.
+    Kullanıcının gördüğü: on saniyede bir kapanan uygulama, ECONNRESET,
+    "gateway checking -> offline", %1'de donan indirmeler.
+
+    Karar bu yüzden YÜKLEMEDEN ÖNCE veriliyor ve sıradan bir Python hatası
+    olarak yükseliyor: ses çalışmaz, ama sohbet ve oturumlar ayakta kalır.
+    """
+    if sys.platform != "win32":
+        pytest.skip("kapi Windows'a ozel")
+
+    monkeypatch.setenv("ESPEAK_DATA_PATH", os.path.join("C:", "Birhan Oğurlu", "espeak"))
+
+    with pytest.raises(RuntimeError, match="non-ASCII"):
+        _refuse_piper_on_unreadable_espeak_path()
+
+
+def test_ASCII_yolda_kapi_ACIK(monkeypatch) -> None:
+    monkeypatch.setenv("ESPEAK_DATA_PATH", os.path.join(os.sep, "ascii", "espeak"))
+
+    _refuse_piper_on_unreadable_espeak_path()

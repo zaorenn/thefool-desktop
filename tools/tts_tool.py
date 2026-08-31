@@ -201,9 +201,112 @@ def _import_piper():
     Voice models (.onnx + .onnx.json) are downloaded on first use.
     """
     _point_espeak_at_bundled_data()
+    _refuse_piper_on_unreadable_espeak_path()
 
     from piper import PiperVoice
     return PiperVoice
+
+
+def _refuse_piper_on_unreadable_espeak_path() -> None:
+    r"""espeak-ng yolu açılamayacaksa Piper'ı HİÇ YÜKLEME.
+
+    Bu bir kolaylık değil, sürecin hayatta kalma şartı. espeak-ng veri
+    yüklemesi başarısız olduğunda C tarafında ``exit()`` çağırıyor: hiçbir
+    Python ``try/except`` onu yakalayamaz, arka uç komple ölür. Ölçülen sonuç
+    on saniyede bir kapanan bir uygulamaydı -- ``read ECONNRESET``,
+    "gateway checking -> offline", %1'de donan indirmeler ve kaybolan
+    sohbetler; hepsi tek bir okunamayan dosya yüzünden.
+
+    O yüzden karar YÜKLEMEDEN ÖNCE veriliyor: yol ASCII değilse (ve kısa yola
+    da çevrilemediyse) burada SIRADAN bir Python hatası yükseliyor. Onu
+    çağıran taraf zaten yakalıyor ve "TTS chunk failed" olarak raporluyor --
+    yani ses çalışmıyor ama sohbet, oturumlar ve geri kalan her şey ayakta
+    kalıyor.
+
+    Bir motorun başarısızlığı ürünü düşürmemeli; en fazla o motoru düşürmeli.
+    """
+    import os
+    import sys
+
+    if sys.platform != "win32":
+        return
+
+    data_path = os.environ.get("ESPEAK_DATA_PATH", "")
+
+    if not data_path or data_path.isascii():
+        return
+
+    raise RuntimeError(
+        "Piper cannot run from this path: espeak-ng reads it as bytes and "
+        f"cannot open non-ASCII directories ({data_path!r}). Windows short "
+        "(8.3) names are disabled on this volume, so there is no ASCII form "
+        "to hand it. Pick another TTS engine in Settings -> Voice, or "
+        "reinstall The Fool under a path with no non-ASCII characters."
+    )
+
+
+def _ascii_safe_path(path: str) -> str:
+    r"""ASCII OLMAYAN bir yolu espeak-ng'nin açabileceği bir biçime çevir.
+
+    Ölçülen hata (kullanıcının laptopu, Windows kullanıcı adı ``Birhan
+    Oğurlu``)::
+
+        Error processing file '...\fool-agent\venv\Lib\site-packages\
+          piper\espeak-ng-data\phontab': Illegal byte sequence.
+        The Fool backend exited (1)
+
+    Yol DOĞRU ve dosya YERİNDE -- taşınamayan şey ``ğ``. espeak-ng bir C
+    kütüphanesi ve yolu bayt olarak alıyor; Windows'ta kod sayfası dönüşümü
+    karakteri bozuyor (günlükte ``Birhan Oï¿½urlu`` olarak görünüyor) ve
+    ``EILSEQ`` dönüyor.
+
+    Bunun neden ölümcül olduğu ayrı bir mesele: espeak-ng veri yüklemesi
+    başarısız olduğunda C tarafında ``exit()`` çağırıyor. Hiçbir Python
+    ``try/except`` bunu yakalayamaz -- BÜTÜN arka uç ölüyor. Kullanıcının
+    gördüğü: on saniyede bir kapanan uygulama, ``read ECONNRESET``,
+    "gateway checking -> offline", ve %1'de donan indirmeler. Hepsi tek bir
+    okunamayan dosya yüzünden.
+
+    Çözüm Windows'un kendi 8.3 KISA YOLU: ``C:\Users\BIRHAN~1\...`` saf
+    ASCII ve aynı dosyayı gösteriyor. Kısa ad üretimi bazı birimlerde kapalı
+    olabilir; o zaman ÖZGÜN yol dönüyor -- elimizde daha iyisi yok ve yanlış
+    bir yol vermek durumu kötüleştirirdi.
+
+    ASCII olan yollara DOKUNULMUYOR: çevirinin bir bedeli var (kısa adlar
+    okunaksız) ve sorunu olmayan makinede ödenmesi gereksiz.
+    """
+    import os
+    import sys
+
+    if sys.platform != "win32" or path.isascii():
+        return path
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        get_short = ctypes.windll.kernel32.GetShortPathNameW
+        get_short.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+        get_short.restype = wintypes.DWORD
+
+        needed = get_short(path, None, 0)
+        if not needed:
+            return path
+
+        buf = ctypes.create_unicode_buffer(needed)
+        if not get_short(path, buf, needed):
+            return path
+
+        short = buf.value
+
+        # Kısa ad üretimi kapalıysa Windows AYNI yolu geri veriyor. ASCII
+        # olmayan bir sonucu kabul etmek hiçbir şey çözmezdi.
+        if short and short.isascii() and os.path.isfile(os.path.join(short, "phontab")):
+            return short
+    except Exception:  # noqa: BLE001 - kisa yol alinamadi; ozgun yol kalir
+        pass
+
+    return path
 
 
 def _point_espeak_at_bundled_data() -> None:
@@ -242,7 +345,7 @@ def _point_espeak_at_bundled_data() -> None:
         # kurulmuş bir klasörü göstermek, hiçbir şey göstermemekle aynı hata
         # mesajını verirdi.
         if os.path.isfile(os.path.join(bundled, "phontab")):
-            os.environ["ESPEAK_DATA_PATH"] = bundled
+            os.environ["ESPEAK_DATA_PATH"] = _ascii_safe_path(bundled)
     except Exception:  # noqa: BLE001
         # Yol gösterilemedi: Piper yine de kendi yolunu deneyecek. Burada
         # yükselmek, sesi hiç denemeden kapatmak olurdu.

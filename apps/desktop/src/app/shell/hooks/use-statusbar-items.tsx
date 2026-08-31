@@ -345,7 +345,27 @@ export function useStatusbarItems({
   ])
 
   const backendVersionItem = useMemo<StatusbarItem | null>(() => {
-    if (connection?.mode !== 'remote') {
+    // YEREL kurulumda da gosteriliyor -- ama YALNIZCA ayrismissa.
+    //
+    // Once yalnizca uzak modda ciziliyordu, yani yerel bir kurulumda
+    // calisma zamaninin (Python tarafinin) surumu HIC gorunmuyordu. Oysa
+    // davranisi belirleyen odur: masaustu 0.21.11 olabilirken checkout
+    // 0.21.3'te kalmis olabiliyor ve kullanici tek bir sayi goruyor.
+    //
+    // Kullanicinin sorusu birebir buydu: "kac farkli surum var, tek surum
+    // olacak, backend'de de uygulamada da ayni surum kullanilacak."
+    //
+    // Ikisi AYNIYSA tek rozet kaliyor: iki ayni sayiyi yan yana gostermek de
+    // ayni belirsizligi uretirdi. Ayristiginda ise bu GERCEK bir sorun --
+    // surum kapisinin duzeltmesi gereken hal -- ve gorunmesi gerekiyor.
+    const backendVersion = statusSnapshot?.version
+    const localMismatch =
+      connection?.mode !== 'remote' &&
+      Boolean(backendVersion) &&
+      Boolean(desktopVersion?.appVersion) &&
+      backendVersion !== desktopVersion?.appVersion
+
+    if (connection?.mode !== 'remote' && !localMismatch) {
       return null
     }
 
@@ -364,7 +384,11 @@ export function useStatusbarItems({
     })
 
     return {
-      className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
+      className: localMismatch
+        ? 'text-destructive hover:text-destructive'
+        : status.hasUpdate
+          ? 'text-primary hover:text-primary'
+          : undefined,
       hidden: status.unknown,
       icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
       id: 'version-backend',
@@ -377,6 +401,7 @@ export function useStatusbarItems({
     }
   }, [
     connection?.mode,
+    desktopVersion?.appVersion,
     statusSnapshot?.version,
     backendUpdateStatus?.behind,
     backendUpdateStatus?.updateAvailable,

@@ -214,6 +214,7 @@ EXPECTED_SEAMS = {
     "main-window-only-publisher",
     "os-text-encoding",
     "engine-namespaced-config",
+    "espeak-ascii-path",
     "ipv4-loopback",
     "bundled-installer",
     "runtime-version",

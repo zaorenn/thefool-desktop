@@ -42,14 +42,37 @@ def test_paketteki_veri_yolu_AYARLANIYOR() -> None:
     assert os.path.isfile(os.path.join(path, "phontab"))
 
 
-def test_KULLANICININ_ayari_ezilmiyor(monkeypatch, tmp_path) -> None:
+def test_KULLANICININ_CALISAN_ayari_ezilmiyor(monkeypatch, tmp_path) -> None:
     """Kendi espeak kurulumunu gösteren birinin kararını geri almak,
-    düzeltilen hatanın aynası olurdu."""
+    düzeltilen hatanın aynası olurdu -- ama gösterdiği yer ÇALIŞIYORSA.
+
+    ``phontab`` konuyor: gerçek bir espeak veri dizininde o dosya vardır.
+    """
+    (tmp_path / "phontab").write_text("x", encoding="utf-8")
     monkeypatch.setenv("ESPEAK_DATA_PATH", str(tmp_path))
 
     _point_espeak_at_bundled_data()
 
     assert os.environ["ESPEAK_DATA_PATH"] == str(tmp_path)
+
+
+def test_GECERSIZ_ayar_duzeltiliyor(monkeypatch, tmp_path) -> None:
+    """Çalışmayan bir yola "kullanıcı öyle istedi" diye sadık kalmak,
+    uygulamayı on saniyede bir kapatmak demek.
+
+    Bir yol geçersizleşebiliyor: venv yeniden kuruldu, kurulum taşındı, ya da
+    kullanıcı geçici bir çözüm olarak kalıcı bir ortam değişkeni yazdı ve o yol
+    sonradan kayboldu. espeak-ng veri yüklemesi başarısız olunca C tarafında
+    ``exit()`` çağırıyor -- yani bedeli bütün arka uç.
+    """
+    monkeypatch.setenv("ESPEAK_DATA_PATH", str(tmp_path / "yok-boyle-bir-yer"))
+
+    _point_espeak_at_bundled_data()
+
+    resolved = os.environ["ESPEAK_DATA_PATH"]
+
+    assert resolved != str(tmp_path / "yok-boyle-bir-yer"), "gecersiz yol korunmus"
+    assert os.path.isfile(os.path.join(resolved, "phontab")), "duzeltilen yol da calismiyor"
 
 
 def test_YARIM_klasor_gosterilmiyor(monkeypatch, tmp_path) -> None:

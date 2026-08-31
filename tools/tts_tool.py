@@ -333,7 +333,24 @@ def _point_espeak_at_bundled_data() -> None:
     """
     import os
 
-    if os.environ.get("ESPEAK_DATA_PATH"):
+    # AYARLI bir degere KORU KORUNE guvenilmiyor.
+    #
+    # Kullanicinin kendi espeak kurulumunu gostermesi mesru ve o karar
+    # eziliyor DEGIL -- ama gosterdigi yer GERCEKTEN calisiyorsa. Bir yol
+    # gecersizlesebiliyor: venv yeniden kuruldu, kurulum tasindi, ya da
+    # (bu oturumda oldugu gibi) kullanici gecici bir cozum olarak kalici bir
+    # ortam degiskeni yazdi ve o yol sonradan kayboldu.
+    #
+    # Gecersiz bir yola guvenmenin bedeli agir: espeak-ng veri yuklemesi
+    # basarisiz olunca C tarafinda ``exit()`` cagiriyor ve BUTUN arka uc
+    # oluyor. Yani "kullaniciya saygi" adina calismayan bir yolu korumak,
+    # uygulamayi on saniyede bir kapatmak demek.
+    #
+    # ``phontab`` sinaniyor: klasorun var olmasi yetmiyor, ICINDE espeak'in
+    # aradigi dosya olmali.
+    configured = os.environ.get("ESPEAK_DATA_PATH")
+
+    if configured and os.path.isfile(os.path.join(configured, "phontab")):
         return
 
     try:

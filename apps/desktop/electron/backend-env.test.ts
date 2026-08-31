@@ -189,3 +189,103 @@ test('Windows PATH casing and delimiter are preserved without POSIX sane entries
 test('appendUniquePathEntries drops empty entries and keeps first occurrence', () => {
   assert.equal(appendUniquePathEntries([':/a::/b', ['/a', '/c']], { delimiter: ':' }), '/a:/b:/c')
 })
+
+// ---------------------------------------------------------------------------
+// ESPEAK_DATA_PATH — bir ses motorunun arka ucu ÖLDÜRMESİNİ engelleyen kapı
+// ---------------------------------------------------------------------------
+
+test('ASCII olmayan bir yolda espeak ASCII kisa yolu aliyor', () => {
+  // Ölçülen hata (kullanıcının laptopu, Windows hesabı ``Birhan Oğurlu``):
+  //
+  //     Error processing file '.../piper/espeak-ng-data/phontab':
+  //       Illegal byte sequence.
+  //     The Fool backend exited (1)
+  //
+  // Yol doğru, dosya yerinde -- taşınamayan şey ``ğ``. espeak-ng bir C
+  // kütüphanesi, yolu bayt olarak alıyor. Veri yüklemesi başarısız olduğunda
+  // C tarafında ``exit()`` çağırıyor: hiçbir Python try/except yakalayamaz,
+  // arka uç komple ölür. Kullanıcının gördüğü on saniyede bir "backend
+  // stopped" idi.
+  //
+  // Bu karar BURADA (paketin içinde) veriliyor, Python tarafında değil: Python
+  // düzeltmesi runtime checkout'unda yaşıyor ve oraya ancak yükleyici
+  // koştuktan sonra ulaşıyor. Buradaki satır kurulur kurulmaz geçerli.
+  const env = buildDesktopBackendEnv({
+    hermesHome: 'C:/Users/Birhan Oğurlu/AppData/Local/fool',
+    venvRoot: 'C:/Users/Birhan Oğurlu/AppData/Local/fool/fool-agent/venv',
+    currentEnv: {},
+    platform: 'win32',
+    pathModule: path.win32,
+    // Gerçek dosya sistemi yok: ``phontab`` VAR sayılıyor.
+    fs: { existsSync: () => true },
+    shortPath: () => 'C:/Users/BIRHAN~1/AppData/Local/fool/fool-agent/venv/Lib/site-packages/piper/espeak-ng-data'
+  })
+
+  assert.ok(env.ESPEAK_DATA_PATH, 'espeak yolu hic verilmemis')
+  assert.ok(
+    [...env.ESPEAK_DATA_PATH].every(ch => ch.charCodeAt(0) < 128),
+    'espeak hala ASCII olmayan bir yol aliyor'
+  )
+})
+
+test('ASCII bir yola DOKUNULMUYOR', () => {
+  // Kısa adlar okunaksız; sorunu olmayan makinede bu bedeli ödemek gereksiz.
+  let shortAsked = false
+
+  const env = buildDesktopBackendEnv({
+    hermesHome: 'C:/Users/dev/AppData/Local/fool',
+    venvRoot: 'C:/Users/dev/AppData/Local/fool/fool-agent/venv',
+    currentEnv: {},
+    platform: 'win32',
+    pathModule: path.win32,
+    fs: { existsSync: () => true },
+    shortPath: () => {
+      shortAsked = true
+
+      return null
+    }
+  })
+
+  assert.equal(shortAsked, false, 'ASCII yol icin kisa ad istenmemeli')
+  assert.match(env.ESPEAK_DATA_PATH, /espeak-ng-data$/)
+})
+
+test('KULLANICININ ayari eziliyor DEGIL', () => {
+  const env = buildDesktopBackendEnv({
+    hermesHome: 'C:/Users/dev/AppData/Local/fool',
+    venvRoot: 'C:/Users/dev/AppData/Local/fool/fool-agent/venv',
+    currentEnv: { ESPEAK_DATA_PATH: 'D:/my-espeak' },
+    platform: 'win32',
+    pathModule: path.win32,
+    fs: { existsSync: () => true }
+  })
+
+  assert.equal(env.ESPEAK_DATA_PATH, undefined, 'kullanicinin degeri korunmali (spread ile gelmemeli)')
+})
+
+test('veri YOKSA hicbir sey iddia edilmiyor', () => {
+  // Yarım bir kurulumu göstermek, hiçbir şey göstermemekle aynı hatayı verirdi.
+  const env = buildDesktopBackendEnv({
+    hermesHome: 'C:/Users/dev/AppData/Local/fool',
+    venvRoot: 'C:/Users/dev/AppData/Local/fool/fool-agent/venv',
+    currentEnv: {},
+    platform: 'win32',
+    pathModule: path.win32,
+    fs: { existsSync: () => false }
+  })
+
+  assert.equal(env.ESPEAK_DATA_PATH, undefined)
+})
+
+test('POSIX ETKILENMIYOR', () => {
+  const env = buildDesktopBackendEnv({
+    hermesHome: '/home/u/.fool',
+    venvRoot: '/home/u/.fool/fool-agent/venv',
+    currentEnv: {},
+    platform: 'linux',
+    pathModule: path.posix,
+    fs: { existsSync: () => true }
+  })
+
+  assert.equal(env.ESPEAK_DATA_PATH, undefined)
+})

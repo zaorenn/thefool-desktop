@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
 import path from 'node:path'
 
 // Match the POSIX fallback surface used by the Python terminal environment.
@@ -118,14 +120,107 @@ function normalizeHermesHomeRoot(hermesHome, { pathModule = pathModuleForPlatfor
   return resolved
 }
 
+// FOOL-SEAM: espeak-ascii-path
+//
+// espeak-ng'ye ASCII OLMAYAN bir yol verilirse ARKA UC TAMAMEN OLUYOR.
+//
+// Olculen hata (kullanicinin laptopu, Windows hesabi ``Birhan Oğurlu``)::
+//
+//     Error processing file '...\piper\espeak-ng-data\phontab':
+//       Illegal byte sequence.
+//     The Fool backend exited (1)
+//
+// Yol DOGRU, dosya YERINDE. Tasinamayan sey ``ğ``: espeak-ng bir C
+// kutuphanesi, yolu bayt olarak aliyor ve kod sayfasi donusumu karakteri
+// bozuyor. Olumcul olmasinin sebebi ayri -- espeak-ng veri yuklemesi
+// basarisiz olunca C tarafinda ``exit()`` cagiriyor, yani hicbir Python
+// ``try/except`` yakalayamiyor.
+//
+// Kullanicinin gordugu: acilir acilmaz "backend stopped", read-aloud'da
+// ECONNREFUSED, gateway "checking" -> offline, %1'de donan indirmeler, ve
+// Ayarlar'da BOS bir ses bolumu (motor listesini sunan arka uc olu).
+//
+// NEDEN BURADA, Python tarafinda degil
+// ------------------------------------
+// Python duzeltmesi runtime checkout'unda yasiyor ve oraya ancak yukleyici
+// kostuktan sonra ulasiyor. Bu satir ise PAKETIN ICINDE: kullanici yeni
+// surumu kurar kurmaz, runtime hala eski olsa bile gecerli. Python tarafi
+// ``ESPEAK_DATA_PATH`` zaten ayarliysa ona DOKUNMUYOR, yani iki taraf
+// catismiyor -- burasi kazaniyor ve dogrusunu veriyor.
+/** Yol saf ASCII mi? espeak-ng baytla calisiyor; digerini acamiyor. */
+function isAsciiPath(value) {
+  for (const ch of String(value)) {
+    if (ch.charCodeAt(0) > 127) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function espeakDataEnv(
+  venvRoot,
+  { platform = process.platform, pathModule = path, fs: fsImpl = fs, shortPath = shortPathSync }: any = {}
+) {
+  if (!venvRoot || platform !== 'win32') {
+    return {}
+  }
+
+  const data = pathModule.join(venvRoot, 'Lib', 'site-packages', 'piper', 'espeak-ng-data')
+
+  try {
+    // ``phontab`` sinaniyor, klasorun kendisi degil: yarim bir kurulumu
+    // gostermek hicbir sey gostermemekle ayni hatayi verirdi.
+    if (!fsImpl.existsSync(pathModule.join(data, 'phontab'))) {
+      return {}
+    }
+  } catch {
+    return {}
+  }
+
+  // ASCII ise oldugu gibi: kisa adlar okunaksiz ve sorunu olmayan makinede
+  // bu bedeli odemek gereksiz.
+  // eslint-disable-next-line no-control-regex
+  if (isAsciiPath(data)) {
+    return { ESPEAK_DATA_PATH: data }
+  }
+
+  const short = shortPath(data)
+
+  // Kisa ad uretimi birimde kapali olabilir; o zaman elimizde daha iyisi yok.
+  // Yanlis bir yol vermek yerine hic vermiyoruz -- Python tarafindaki kapi
+  // o durumu yakalayip Piper'i hic yuklemiyor.
+  // eslint-disable-next-line no-control-regex
+  return short && isAsciiPath(short) ? { ESPEAK_DATA_PATH: short } : {}
+}
+
+/** Windows 8.3 kisa yolu; alinamazsa ``null``. */
+function shortPathSync(target) {
+  try {
+    const out = execFileSync(
+      'cmd.exe',
+      ['/d', '/c', 'for %I in ("' + target + '") do @echo %~sI'],
+      { encoding: 'utf8', windowsHide: true, timeout: 5000 }
+    )
+
+    const line = String(out || '').trim().split('\n').pop()
+
+    return line || null
+  } catch {
+    return null
+  }
+}
+
 function buildDesktopBackendEnv({
   hermesHome,
   pythonPathEntries = [],
   venvRoot,
   currentEnv = process.env,
   platform = process.platform,
-  pathModule = pathModuleForPlatform(platform)
-}: any = {}) {
+  pathModule = pathModuleForPlatform(platform),
+  fs: fsImpl = fs,
+  shortPath = shortPathSync
+}: any = {}): Record<string, string> {
   const delimiter = delimiterForPlatform(platform)
   const currentPythonPath = currentEnv?.PYTHONPATH || ''
   const key = pathEnvKey(currentEnv, platform)
@@ -145,7 +240,11 @@ function buildDesktopBackendEnv({
       currentPath: currentPathValue(currentEnv, platform),
       platform,
       pathModule
-    })
+    }),
+    // Kullanicinin acikca ayarladigi deger EZILMIYOR.
+    ...(currentEnv?.ESPEAK_DATA_PATH
+      ? {}
+      : espeakDataEnv(venvRoot, { platform, pathModule, fs: fsImpl, shortPath }))
   }
 }
 

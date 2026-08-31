@@ -22,7 +22,7 @@ from fool.argparse_brand import install as _install_fool_argparse_branding
 
 _install_fool_argparse_branding()
 
-__version__ = "0.21.10"
+__version__ = "0.21.11"
 __release_date__ = "2026-08-31"
 
 

@@ -15,8 +15,13 @@ npx PID — on timeout.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+from tests.conftest import pretend_os_name
 
 from tools.browser_tool import (
     AGENT_BROWSER_NPX_SPEC,
@@ -123,14 +128,23 @@ def test_merges_extended_path_so_managed_only_npx_can_find_sibling_node():
     assert kwargs["env"]["PATH"] == "/opt/hermes/node/bin:/usr/bin"
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason=(
+        "GERCEK bir POSIX ana makinesi gerekiyor: simulasyon sirasinda urun kodu "
+        "``Path(...)`` kuruyor ve ``os.name`` yamaliyken Windows'ta ``PosixPath`` "
+        "uretilip ``UnsupportedOperation`` atiliyor. Taklit edilemeyen sey "
+        "``pathlib``in somut sinif secimi -- ve ``signal.SIGKILL`` Windows'ta hic yok."
+    ),
+)
 def test_runs_in_its_own_process_group_on_posix(monkeypatch):
-    monkeypatch.setattr("os.name", "posix")
-    with patch("tools.browser_tool._resolve_npx_bin", return_value="/usr/bin/npx"), \
-         patch("subprocess.Popen", return_value=_mock_proc()) as mock_popen:
-        warm_agent_browser_npx_cache()
+    with pretend_os_name("posix"):
+        with patch("tools.browser_tool._resolve_npx_bin", return_value="/usr/bin/npx"), \
+             patch("subprocess.Popen", return_value=_mock_proc()) as mock_popen:
+            warm_agent_browser_npx_cache()
 
-    _args, kwargs = mock_popen.call_args
-    assert kwargs.get("start_new_session") is True
+        _args, kwargs = mock_popen.call_args
+        assert kwargs.get("start_new_session") is True
 
 
 def test_uses_new_process_group_creationflag_on_windows_instead_of_start_new_session():
@@ -217,33 +231,44 @@ def test_returns_false_instead_of_raising_on_unexpected_communicate_exception():
 
 
 class TestKillProcessTree:
+    @pytest.mark.skipif(
+        os.name == "nt",
+        reason=(
+            "GERCEK bir POSIX ana makinesi gerekiyor: simulasyon sirasinda urun kodu "
+            "``Path(...)`` kuruyor ve ``os.name`` yamaliyken Windows'ta ``PosixPath`` "
+            "uretilip ``UnsupportedOperation`` atiliyor. Taklit edilemeyen sey "
+            "``pathlib``in somut sinif secimi -- ve ``signal.SIGKILL`` Windows'ta hic yok."
+        ),
+    )
     def test_posix_kills_process_group_term_then_kill(self, monkeypatch):
         import signal
 
         proc = MagicMock()
         proc.pid = 999
-        monkeypatch.setattr("os.name", "posix")
-        monkeypatch.setattr("os.getpgid", lambda pid: 999)
-        killpg_calls = []
-        monkeypatch.setattr(
-            "os.killpg", lambda pgid, sig: killpg_calls.append((pgid, sig))
-        )
+        with pretend_os_name("posix"):
+            monkeypatch.setattr("os.getpgid", lambda pid: 999, raising=False)
+            killpg_calls = []
+            monkeypatch.setattr(
+                "os.killpg",
+                lambda pgid, sig: killpg_calls.append((pgid, sig)),
+                raising=False,
+            )
 
-        _kill_process_tree(proc)
+            _kill_process_tree(proc)
 
-        assert killpg_calls == [(999, signal.SIGTERM), (999, signal.SIGKILL)]
+            assert killpg_calls == [(999, signal.SIGTERM), (999, signal.SIGKILL)]
 
     def test_posix_missing_process_returns_silently(self, monkeypatch):
         proc = MagicMock()
         proc.pid = 999
-        monkeypatch.setattr("os.name", "posix")
+        with pretend_os_name("posix"):
 
-        def _raise(pid):
-            raise ProcessLookupError()
+            def _raise(pid):
+                raise ProcessLookupError()
 
-        monkeypatch.setattr("os.getpgid", _raise)
+            monkeypatch.setattr("os.getpgid", _raise, raising=False)
 
-        _kill_process_tree(proc)  # must not raise
+            _kill_process_tree(proc)  # must not raise
 
     def test_posix_missing_killpg_attribute_falls_back_to_proc_kill(self, monkeypatch):
         """Some POSIX-like environments may lack os.killpg entirely (the
@@ -257,12 +282,12 @@ class TestKillProcessTree:
 
         proc = MagicMock()
         proc.pid = 999
-        monkeypatch.setattr("os.name", "posix")
-        monkeypatch.delattr(os_module, "killpg", raising=False)
+        with pretend_os_name("posix"):
+            monkeypatch.delattr(os_module, "killpg", raising=False)
 
-        _kill_process_tree(proc)
+            _kill_process_tree(proc)
 
-        proc.kill.assert_called_once()
+            proc.kill.assert_called_once()
 
     def test_posix_missing_killpg_fallback_proc_kill_failure_does_not_raise(self, monkeypatch):
         import os as os_module
@@ -270,10 +295,10 @@ class TestKillProcessTree:
         proc = MagicMock()
         proc.pid = 999
         proc.kill.side_effect = OSError("already reaped")
-        monkeypatch.setattr("os.name", "posix")
-        monkeypatch.delattr(os_module, "killpg", raising=False)
+        with pretend_os_name("posix"):
+            monkeypatch.delattr(os_module, "killpg", raising=False)
 
-        _kill_process_tree(proc)  # must not raise
+            _kill_process_tree(proc)  # must not raise
 
     def test_posix_sigterm_permission_denied_does_not_attempt_sigkill(self, monkeypatch):
         """If SIGTERM itself is rejected (e.g. a stale pgid reused by an
@@ -283,34 +308,34 @@ class TestKillProcessTree:
 
         proc = MagicMock()
         proc.pid = 999
-        monkeypatch.setattr("os.name", "posix")
-        monkeypatch.setattr("os.getpgid", lambda pid: 999)
-        killpg_calls = []
+        with pretend_os_name("posix"):
+            monkeypatch.setattr("os.getpgid", lambda pid: 999, raising=False)
+            killpg_calls = []
 
-        def fake_killpg(pgid, sig):
-            killpg_calls.append((pgid, sig))
-            raise PermissionError()
+            def fake_killpg(pgid, sig):
+                killpg_calls.append((pgid, sig))
+                raise PermissionError()
 
-        monkeypatch.setattr("os.killpg", fake_killpg)
+            monkeypatch.setattr("os.killpg", fake_killpg, raising=False)
 
-        _kill_process_tree(proc)  # must not raise
+            _kill_process_tree(proc)  # must not raise
 
-        assert killpg_calls == [(999, signal.SIGTERM)]
+            assert killpg_calls == [(999, signal.SIGTERM)]
 
     def test_windows_uses_taskkill_with_tree_and_force_flags(self, monkeypatch):
         proc = MagicMock()
         proc.pid = 4321
-        monkeypatch.setattr("os.name", "nt")
-        with patch("subprocess.run") as mock_run:
-            _kill_process_tree(proc)
+        with pretend_os_name("nt"):
+            with patch("subprocess.run") as mock_run:
+                _kill_process_tree(proc)
 
-        mock_run.assert_called_once()
-        cmd = mock_run.call_args.args[0]
-        assert cmd == ["taskkill", "/PID", "4321", "/T", "/F"]
+            mock_run.assert_called_once()
+            cmd = mock_run.call_args.args[0]
+            assert cmd == ["taskkill", "/PID", "4321", "/T", "/F"]
 
     def test_windows_taskkill_failure_does_not_raise(self, monkeypatch):
         proc = MagicMock()
         proc.pid = 4321
-        monkeypatch.setattr("os.name", "nt")
-        with patch("subprocess.run", side_effect=OSError("taskkill missing")):
-            _kill_process_tree(proc)  # must not raise
+        with pretend_os_name("nt"):
+            with patch("subprocess.run", side_effect=OSError("taskkill missing")):
+                _kill_process_tree(proc)  # must not raise

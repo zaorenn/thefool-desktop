@@ -8,6 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+# ``acp`` is an OPTIONAL extra (``pip install -e '.[acp]'``). Without this
+# guard the bare import raises at COLLECTION time, which pytest reports as an
+# error rather than a skip -- and under ``-x`` it aborts the entire run before
+# any other test executes. An optional dependency must not be able to take the
+# whole suite down.
+pytest.importorskip("acp", reason="optional [acp] extra is not installed")
+
 import acp
 from acp.schema import AgentPlanUpdate
 

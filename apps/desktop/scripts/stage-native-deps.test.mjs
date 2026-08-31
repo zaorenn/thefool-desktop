@@ -539,7 +539,14 @@ test('darwin staging ships the Swift helper executable and the rewritten windows
 
     stageGetWindowsInto(srcRoot, destRoot, { platform: 'darwin' })
 
-    assert.equal(fs.statSync(join(destRoot, 'main')).mode & 0o777, 0o755)
+    // Calistirilabilirlik bir POSIX kavrami: Windows'ta ``chmod 0o755`` yok
+    // sayiliyor ve maske 0o666 donuyor. Asil sozlesme dosyanin STAGE EDILMESI;
+    // izin biti yalnizca POSIX'te dogrulanabilir -- ve macOS/Linux paketleri
+    // zaten orada uretiliyor.
+    assert.ok(fs.existsSync(join(destRoot, 'main')), 'Swift helper must be staged')
+    if (process.platform !== 'win32') {
+      assert.equal(fs.statSync(join(destRoot, 'main')).mode & 0o777, 0o755)
+    }
     const staged = fs.readFileSync(join(destRoot, 'lib', 'windows.js'), 'utf8')
     assert.match(staged, /Rewritten by stage-native-deps\.mjs/)
     assert.ok(!staged.includes('node-pre-gyp'), 'pre-gyp loader must not survive staging')

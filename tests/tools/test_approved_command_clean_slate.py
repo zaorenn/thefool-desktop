@@ -18,6 +18,7 @@ during a retry backoff) must still SIGINT the command (exit 130); non-approved
 commands keep current interrupt behavior.
 """
 import json
+import pathlib
 import threading
 import time
 
@@ -44,6 +45,23 @@ def _isolate(tmp_path, monkeypatch):
     yield
     with _lock:
         _interrupted_threads.clear()
+
+
+def _shell_path(path) -> str:
+    r"""Bir yolu KABUK icin yaz: POSIX ayraclari, tirnak icinde.
+
+    Ters bolu bir kabukta KACIS karakteri. Windows'ta ``C:\Users\...``
+    yolunu ``touch {sentinel}`` icine gomdugumuzde bash ters bolulari yiyor ve
+    komut ``C:UserssarhenAppData...`` adinda bir dosyayi KABUGUN CALISMA
+    DIZININDE olusturuyordu -- yani depo kokunde. Olculen sonuc iki yonlu:
+    sinav bekledigi dosyayi hic gormuyor (dusuyor) ve her kosuda depoya bir
+    coplukdosya birakiyor.
+
+    ``as_posix()`` + tirnak ikisini birden bitiriyor: Git Bash ``C:/Users/...``
+    bicimini sorunsuz cozuyor, bosluklu yollar da tirnak sayesinde tek parca
+    kaliyor.
+    """
+    return "'" + pathlib.Path(path).as_posix() + "'"
 
 
 def _wait_for_sentinel(sentinel, timeout=10.0):
@@ -94,7 +112,7 @@ def test_approved_command_genuine_interrupt_after_start_still_kills(tmp_path):
 
     def worker():
         holder["result"] = tt.terminal_tool(
-            command=f"touch {sentinel}; sleep 5; echo DONE", force=True
+            command=f"touch {_shell_path(sentinel)}; sleep 5; echo DONE", force=True
         )
 
     t = threading.Thread(target=worker, daemon=True)
@@ -125,7 +143,7 @@ def test_approved_note_enriched_not_misleading_on_interrupt(monkeypatch, tmp_pat
     holder = {}
 
     def worker():
-        holder["result"] = tt.terminal_tool(command=f"touch {sentinel}; sleep 5; echo DONE")
+        holder["result"] = tt.terminal_tool(command=f"touch {_shell_path(sentinel)}; sleep 5; echo DONE")
 
     t = threading.Thread(target=worker, daemon=True)
     t.start()

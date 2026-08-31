@@ -1,8 +1,22 @@
 import assert from 'node:assert/strict'
+import path from 'node:path'
 
 import { test } from 'vitest'
 
 import { collectSshConfigHosts, parseSshConfigHosts, parseSshConfigIncludes, parseSshGOutput } from './ssh-config'
+
+// ``collectSshConfigHosts`` resolves Include tokens with ``path.join``, so every
+// path it hands to ``readFile``/``globSync`` carries the RUNNING platform's
+// separator. Fixtures keyed on POSIX paths therefore matched nothing on
+// Windows: three tests permanently red, and an Include walker with zero live
+// coverage on the platform most of this product's users run.
+//
+// Normalizing at the fixture boundary keeps the subject intact -- what is under
+// test is the WALK (recursion, cycle-breaking, glob expansion), not which slash
+// the OS spells paths with.
+const toPosix = (value: string) => value.split(path.sep).join('/')
+
+const readFrom = (files: Record<string, string>) => (p: string) => files[toPosix(p)] ?? null
 
 test('parseSshConfigHosts keeps literal aliases and drops wildcard/negated patterns', () => {
   const cfg = [
@@ -36,7 +50,7 @@ test('collectSshConfigHosts follows Include directives (read-only)', () => {
 
   const hosts = collectSshConfigHosts('/home/u/.ssh/config', {
     homeDir: '/home/u',
-    readFile: p => files[p] ?? null
+    readFile: readFrom(files)
   })
 
   assert.deepEqual(hosts.sort(), ['deep', 'home-abs', 'main', 'work-box'].sort())
@@ -54,7 +68,7 @@ test('collectSshConfigHosts does not loop on a self-include cycle', () => {
 
   const hosts = collectSshConfigHosts('/home/u/.ssh/config', {
     homeDir: '/home/u',
-    readFile: p => files[p] ?? null
+    readFile: readFrom(files)
   })
 
   assert.deepEqual(hosts.sort(), ['a', 'b'])
@@ -69,9 +83,11 @@ test('collectSshConfigHosts expands globbed includes via injected globSync', () 
 
   const hosts = collectSshConfigHosts('/home/u/.ssh/config', {
     homeDir: '/home/u',
-    readFile: p => files[p] ?? null,
+    readFile: readFrom(files),
     globSync: pattern =>
-      pattern.endsWith('config.d/*') ? ['/home/u/.ssh/config.d/10-work', '/home/u/.ssh/config.d/20-home'] : [pattern]
+      toPosix(pattern).endsWith('config.d/*')
+        ? ['/home/u/.ssh/config.d/10-work', '/home/u/.ssh/config.d/20-home']
+        : [pattern]
   })
 
   assert.deepEqual(hosts.sort(), ['home', 'root', 'work'].sort())

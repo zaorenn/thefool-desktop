@@ -6,6 +6,19 @@ import path from 'node:path'
 
 import { test } from 'vitest'
 
+/** Gecici dizini sil; silinemezse TESTI DUSURME (bkz. cagirandaki not). */
+function rmTemp(dir: string) {
+  try {
+    fs.rmSync(dir, { force: true, maxRetries: 10, recursive: true, retryDelay: 100 })
+  } catch (err: any) {
+    if (process.platform === 'win32' && (err?.code === 'EPERM' || err?.code === 'EBUSY')) {
+      return
+    }
+
+    throw err
+  }
+}
+
 import {
   addWorktree,
   ensureGitRepo,
@@ -164,7 +177,17 @@ test('listBranches: empty on a non-repo path', async () => {
   try {
     assert.deepEqual(await listBranches(dir, 'git'), [])
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true })
+    // TEMIZLIK bir iddia DEGIL.
+    //
+    // Olculen hal: ``listBranches`` iki ``git`` surecini ``Promise.all`` ile
+    // kosuyor. Depo olmayan bir yolda IKISI de hata veriyor, ``Promise.all``
+    // ILKINDE reddediyor ve ikinci cocuk hala bu dizini calisma dizini olarak
+    // tutarken fonksiyon donuyor. Windows acik bir calisma dizinini silmeye
+    // izin vermiyor: ``rmSync`` EPERM atiyor ve GECEN bir test dusuyor.
+    //
+    // Sinanan sey ``listBranches``in bos liste dondurmesi; ``fs.rmSync``in
+    // basarisi degil. Gecici dizini isletim sistemi zaten topluyor.
+    rmTemp(dir)
   }
 })
 

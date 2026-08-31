@@ -88,7 +88,7 @@ test('falls back to the default for malformed / non-positive overrides', () => {
 test('resolves with the announced port', async () => {
   const child = makeFakeChild()
   const p = waitForDashboardPort(child, 1000)
-  child.stdout.emit('data', 'noise before\nHERMES_DASHBOARD_READY port=54321\n')
+  child.stdout.emit('data', 'noise before\nFOOL_DASHBOARD_READY port=54321\n')
   assert.equal(await p, 54321)
 })
 

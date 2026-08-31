@@ -21,6 +21,7 @@ test runner at ``scripts/run_tests.sh``.
 
 import asyncio
 import atexit
+import contextlib
 import os
 import shutil
 import sqlite3
@@ -1737,3 +1738,44 @@ def _moa_caches_isolated():
     yield
     moa._preset_cache.clear()
     moa._runtime_cache.clear()
+
+
+# ---------------------------------------------------------------------------
+# os.name simülasyonu — pytest OTURUMUNU düşürmeden
+# ---------------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def pretend_os_name(value: str):
+    """``os.name``i geçici olarak değiştir ve TEST GÖVDESİ İÇİNDE geri al.
+
+    Neden ``monkeypatch.setattr("os.name", ...)`` KULLANILAMAZ
+    ----------------------------------------------------------
+    ``monkeypatch`` geri almayı TEARDOWN'a bırakıyor. Arada pytest'in kendi
+    raporlama adımı var ve bir test düştüğünde o adım geri izlemeyi
+    biçimlendirirken ``pathlib`` yolları kuruyor. ``Path`` somut sınıfını
+    ``os.name``e göre seçiyor::
+
+        cls = WindowsPath if os.name == 'nt' else PosixPath
+
+    Yama hâlâ yürürlükteyken bu, Windows'ta ``PosixPath`` (ya da Linux'ta
+    ``WindowsPath``) üretiyor ve ``UnsupportedOperation`` atıyor.
+
+    Sonuç bir test hatası DEĞİL, ``INTERNALERROR``: pytest oturumu komple
+    duruyor ve geri kalan binlerce test hiç koşmuyor.
+
+    Ölçüldü: ``tests/tools`` içinde düşen tek bir test bu yamayı tutuyordu ve
+    tüm koşu iptal oldu -- yani bir dosyadaki tek bir hata, suitin tamamını
+    görünmez yapabiliyordu.
+
+    Bu bağlam yöneticisi ``finally`` ile gövde içinde geri alıyor, yani
+    raporlama adımına yama hiç ulaşmıyor. Kapsam her iki yönde de geçerli:
+    POSIX'i taklit etmek Windows'ta, Windows'u taklit etmek Linux'ta aynı
+    tuzağı kuruyor.
+    """
+    original = os.name
+    os.name = value
+    try:
+        yield
+    finally:
+        os.name = original

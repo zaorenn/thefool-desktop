@@ -141,7 +141,7 @@ test('resolveVenvHermesCommand: returns the resolved python backend descriptor w
 test('resolveVenvHermesCommand: is case-insensitive on fool.exe and the Scripts dir name', () => {
   const deps = makeDeps()
 
-  assert.ok(resolveVenvHermesCommand('/root/venv/Scripts/THE FOOL.EXE', [], deps))
+  assert.ok(resolveVenvHermesCommand('/root/venv/Scripts/FOOL.EXE', [], deps))
   assert.ok(resolveVenvHermesCommand('/root/venv/SCRIPTS/fool.exe', [], deps))
 })
 
@@ -168,13 +168,19 @@ test('getVenvSitePackagesEntries: returns empty on Windows when site-packages do
 })
 
 test('getVenvSitePackagesEntries: reads pyvenv.cfg version on POSIX and resolves lib/pythonX.Y/site-packages', () => {
+  // ``isWindows: false`` POSIX DALINI seçiyor, ama o dalın içindeki
+  // ``path.join`` yine ÇALIŞAN platformun ayracını kullanıyor. Ayraç duyarlı
+  // bir sahte ``directoryExists`` bu testi yalnızca POSIX'te geçirilebilir
+  // kılıyordu -- ve Windows'ta kırmızı kalan bir sınav hiçbir şey korumaz.
+  const posix = (value: string) => value.split(path.sep).join('/')
+
   const result = getVenvSitePackagesEntries('/venv', {
     isWindows: false,
-    directoryExists: p => p === '/venv/lib/python3.12/site-packages',
+    directoryExists: p => posix(p) === '/venv/lib/python3.12/site-packages',
     readFile: () => 'version_info = 3.12.1\n'
   })
 
-  assert.deepEqual(result, ['/venv/lib/python3.12/site-packages'])
+  assert.deepEqual(result.map(posix), ['/venv/lib/python3.12/site-packages'])
 })
 
 test('getVenvSitePackagesEntries: returns empty on POSIX when pyvenv.cfg is missing', () => {

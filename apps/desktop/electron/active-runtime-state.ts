@@ -58,7 +58,7 @@ export function classifyActiveRuntime(
 
   // YARIM kalmış kurulum: çalıştırılabilir ama BİTMEMİŞ.
   //
-  // Ölçülen hâl (kullanıcının ikinci makinesi): ``%LOCALAPPDATA%ool``
+  // Ölçülen hâl (kullanıcının ikinci makinesi): ``%LOCALAPPDATA%\fool``
   // kalıntısı Denetim Masası'ndan kaldırmaya rağmen duruyor, ``fool_cli`` içe
   // aktarılabiliyor -- yani "kullanılabilir" -- ama ``fool`` komutu PATH'te yok,
   // yapılandırma yazılmamış, kurulum hiç bitmemiş. Eski kural bunu görüp

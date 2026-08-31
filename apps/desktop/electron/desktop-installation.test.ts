@@ -38,7 +38,14 @@ test('loadOrCreateInstallationId persists and reuses one installation ID', () =>
       loadOrCreateInstallationId(filePath, () => ID_B),
       ID_A
     )
-    assert.equal(fs.statSync(filePath).mode & 0o777, 0o600)
+    // POSIX mode bitleri Windows'ta yok: ``chmod`` orada yalnizca salt-okunur
+    // bayragini ceviriyor ve maske her zaman 0o666 donuyor. Kimlik dosyasi
+    // kullanicinin profil dizininde duruyor ve orayi Windows kendi ACL'siyle
+    // zaten kilitliyor. Kalici olarak kirmizi bir sinav, icindeki gercek
+    // hatalari da gorunmez yapiyor -- iddia platforma gore daraltiliyor.
+    if (process.platform !== 'win32') {
+      assert.equal(fs.statSync(filePath).mode & 0o777, 0o600)
+    }
   }))
 
 test('loadOrCreateInstallationId tightens an existing identity file', () =>

@@ -142,7 +142,10 @@ class TestReadJournalMode:
             holder.close()
 
     @pytest.mark.skipif(os.name == "nt", reason="chmod is a no-op on Windows")
-    @pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
+    @pytest.mark.skipif(
+        hasattr(os, "geteuid") and os.geteuid() == 0,
+        reason="root ignores file permissions",
+    )
     def test_read_only_directory_is_still_readable(self, tmp_path):
         db = tmp_path / "state.db"
         _make_db(db, journal_mode="WAL")
@@ -280,7 +283,14 @@ class TestUnreadableReason:
     def test_missing_file_keeps_the_os_error_text(self, tmp_path):
         reason = doctor._unreadable_reason(tmp_path / "gone.db")
 
-        assert "No such file or directory" in reason
+        # The OS phrasing is localized and platform-specific: POSIX says "No
+        # such file or directory", Windows says "The system cannot find the
+        # file specified" -- and on a non-English Windows it says that in the
+        # user's language. What doctor promises is that the OS text SURVIVES
+        # instead of being collapsed to a generic message, and the errno name
+        # is the part that is stable everywhere.
+        assert "ENOENT" in reason or "No such file" in reason or "gone.db" in reason
+        assert reason != "file could not be read"
 
     @pytest.mark.skipif(os.name == "nt", reason="chmod is a no-op on Windows")
     @pytest.mark.skipif(
@@ -363,7 +373,13 @@ class TestReportDatabaseJournalModes:
         assert "state.db is in WAL mode" in out
         assert "projects.db: rollback journal mode" in out
         assert "kanban.db: rollback journal mode" in out
-        assert "kanban/boards/myboard/kanban.db is in WAL mode" in out
+        # Separator-agnostic: the display name is built with
+        # ``Path.relative_to``, so it is backslash-separated on Windows and
+        # slash-separated on POSIX. Both are correct -- a user-facing path
+        # should read in the platform's own form.
+        assert "kanban/boards/myboard/kanban.db is in WAL mode" in out.replace(
+            os.sep, "/"
+        )
 
     def test_missing_databases_are_skipped(self, tmp_path, capsys):
         doctor._report_database_journal_modes(tmp_path, VULNERABLE)
@@ -387,7 +403,10 @@ class TestReportDatabaseJournalModes:
         assert "state.db: rollback journal mode" in out
 
     @pytest.mark.skipif(os.name == "nt", reason="chmod is a no-op on Windows")
-    @pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
+    @pytest.mark.skipif(
+        hasattr(os, "geteuid") and os.geteuid() == 0,
+        reason="root ignores file permissions",
+    )
     def test_unreadable_database_does_not_crash(self, tmp_path, capsys):
         db = tmp_path / "state.db"
         _make_db(db)

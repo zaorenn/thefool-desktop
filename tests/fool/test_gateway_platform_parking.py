@@ -23,6 +23,7 @@ from __future__ import annotations
 import pytest
 
 from gateway.restart import GATEWAY_FATAL_CONFIG_EXIT_CODE, _fatal_platform_exit_honored
+from tests.conftest import pretend_os_name
 
 
 @pytest.fixture(autouse=True)
@@ -38,52 +39,52 @@ def _no_override(monkeypatch):
 def test_windows_sozlesmeyi_UYGULAMIYOR(monkeypatch) -> None:
     """Ölümcül çıkışın tek anlamı denetleyicinin durması. Durmuyorsa o çıkış
     ürünü kapatıp yerine bir yeniden başlatma döngüsü koyuyor."""
-    monkeypatch.setattr("os.name", "nt")
+    with pretend_os_name("nt"):
 
-    assert _fatal_platform_exit_honored() is False
+        assert _fatal_platform_exit_honored() is False
 
 
 def test_posix_sozlesmeyi_UYGULUYOR(monkeypatch) -> None:
     """Tasarım niyeti korunuyor: systemd/s6 altında eski davranış aynen
     geçerli -- operatör yapılandırmayı düzeltene kadar gateway kalkmıyor."""
-    monkeypatch.setattr("os.name", "posix")
+    with pretend_os_name("posix"):
 
-    assert _fatal_platform_exit_honored() is True
+        assert _fatal_platform_exit_honored() is True
 
 
 @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on"])
 def test_dagitim_eski_davranisi_GERI_ALABILIYOR(monkeypatch, value) -> None:
     """Kendi denetleyicisinin sözleşmeyi uyguladığını bilen bir dağıtım
     kaçış kapısına sahip olmalı."""
-    monkeypatch.setattr("os.name", "nt")
-    monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", value)
+    with pretend_os_name("nt"):
+        monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", value)
 
-    assert _fatal_platform_exit_honored() is True
+        assert _fatal_platform_exit_honored() is True
 
 
 @pytest.mark.parametrize("value", ["0", "false", "no", "off", "OFF"])
 def test_POSIX_ta_da_kapatilabiliyor(monkeypatch, value) -> None:
     """Ters yön: konteyner içinde koşan bir gateway'in denetleyicisi 78'i
     onurlandırmıyor olabilir."""
-    monkeypatch.setattr("os.name", "posix")
-    monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", value)
+    with pretend_os_name("posix"):
+        monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", value)
 
-    assert _fatal_platform_exit_honored() is False
+        assert _fatal_platform_exit_honored() is False
 
 
 def test_ANLAMSIZ_deger_platform_varsayilanina_dusuyor(monkeypatch) -> None:
     """Yazım hatası olan bir ayar, sessizce ters davranışa yol açmamalı."""
-    monkeypatch.setattr("os.name", "nt")
-    monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", "belki")
+    with pretend_os_name("nt"):
+        monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", "belki")
 
-    assert _fatal_platform_exit_honored() is False
+        assert _fatal_platform_exit_honored() is False
 
 
 def test_bos_deger_yok_sayiliyor(monkeypatch) -> None:
-    monkeypatch.setattr("os.name", "posix")
-    monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", "   ")
+    with pretend_os_name("posix"):
+        monkeypatch.setenv("FOOL_GATEWAY_FATAL_CONFIG_EXIT", "   ")
 
-    assert _fatal_platform_exit_honored() is True
+        assert _fatal_platform_exit_honored() is True
 
 
 # ---------------------------------------------------------------------------

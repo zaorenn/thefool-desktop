@@ -107,12 +107,15 @@ describe('VoiceSettings', () => {
     expect(screen.queryByText('In use')).toBeNull()
   })
 
-  it('kurulu OLMAYAN oge icin CPU dugmesi cikarir', async () => {
+  it('kurulu OLMAYAN oge icin KURULUM dugmesi cikarir', async () => {
     catalog.mockResolvedValue(reply([item({ engine_installed: false, installed: false })]))
 
     render(<VoiceSettings />)
 
-    expect(await screen.findByText('CPU')).toBeTruthy()
+    // Dugme KURULUM oldugunu soylemeli. Once yalnizca 'CPU' yaziyordu ve ona
+    // basmak gigabaytlarca indirme baslatiyordu -- bir cihaz secici gibi duran
+    // tek eylem dugmesi.
+    expect(await screen.findByText(/Install \(CPU\)/)).toBeTruthy()
     expect(screen.queryByText('In use')).toBeNull()
   })
 
@@ -125,8 +128,8 @@ describe('VoiceSettings', () => {
 
     render(<VoiceSettings />)
 
-    await screen.findByText('CPU')
-    expect(screen.queryByText('CUDA')).toBeNull()
+    await screen.findByText(/Install \(CPU\)/)
+    expect(screen.queryByText(/Install \(CUDA\)/)).toBeNull()
   })
 
   it('CUDA dugmesi kart VARKEN cikar', async () => {
@@ -136,7 +139,7 @@ describe('VoiceSettings', () => {
 
     render(<VoiceSettings />)
 
-    expect(await screen.findByText('CUDA')).toBeTruthy()
+    expect(await screen.findByText(/Install \(CUDA\)/)).toBeTruthy()
   })
 
   it('sunucuda SUREN kurulumu panel acilir acilmaz gosterir', async () => {

@@ -21,7 +21,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ListRow, ListRowSkeleton, Pill, SettingsContent, SettingsSection } from '@/app/settings/primitives'
 import { Button } from '@/components/ui/button'
 import { triggerHaptic } from '@/lib/haptics'
-import { Cpu, Download, Info, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
+import { Download, Info, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
 import { DEFAULT_PTT_CODE, formatPttCode, isBindableCode } from './notch/ptt-binding'
@@ -163,6 +163,20 @@ function VoiceRow({
       </Button>
     )
   } else {
+    // KURULU DEGIL: dugmeler "kur" demeli, "cpu/cuda" degil.
+    //
+    // Onceki hali yalnizca ``CPU`` ve ``CUDA`` yaziyordu ve bunlara basmak
+    // kurulumu BASLATIYORDU. Kullanicinin bildirdigi: "modelleri indirmek icin
+    // buton yok, cpu ya da cuda tuslarina basinca indirme basliyor, bu sacma."
+    // Haksiz degil -- o iki dugme bir CIHAZ SECICI gibi duruyor, oysa
+    // gigabaytlarca indirmeyi baslatan tek eylem onlar.
+    //
+    // Mekanizma aynen duruyor (cihaz hala hangi paketin inecegini belirliyor);
+    // degisen sey dugmenin NE YAPTIGINI soylemesi ve BOYUTU onceden gostermesi.
+    // ``VoiceRow`` hem TTS hem STT satirlarinda kullaniliyor, yani duzeltme
+    // katalogun tamamini kapsiyor.
+    const sizeSuffix = item.size_label ? ` · ${item.size_label}` : ''
+
     action = (
       <div className="flex gap-2">
         <Button
@@ -171,10 +185,11 @@ function VoiceRow({
             onInstall(item.id, 'cpu')
           }}
           size="sm"
+          title={`Download and install ${item.label} for CPU${sizeSuffix}`}
           variant="outline"
         >
-          <Cpu className="mr-1 size-3.5" />
-          CPU
+          <Download className="mr-1 size-3.5" />
+          Install (CPU){sizeSuffix}
         </Button>
         {/* CUDA düğmesi yalnızca GERÇEKTEN kullanılabilir olduğunda çıkıyor.
             Kartı olmayan birine sunmak, sessizce CPU'ya düşen bir kurulum
@@ -186,9 +201,10 @@ function VoiceRow({
               onInstall(item.id, 'cuda')
             }}
             size="sm"
+            title={`Download and install ${item.label} for CUDA${sizeSuffix}`}
           >
             <Zap className="mr-1 size-3.5" />
-            CUDA
+            Install (CUDA){sizeSuffix}
           </Button>
         )}
       </div>

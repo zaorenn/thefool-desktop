@@ -254,6 +254,29 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         ),
         size_label="~63 MB",
         recommended=True,
+        #: SEÇİLEBİLİR sesler -- ve bu liste bir DİL listesi.
+        #:
+        #: Piper'ın sağlayıcısı zaten herhangi bir ses adını kabul edip ilk
+        #: kullanımda indiriyor (``_resolve_piper_voice_path`` ->
+        #: ``piper.download_voices``). Yani motor 40+ dili destekliyordu; ama
+        #: katalog TEK bir İngilizce ses bağlıyor ve ``voices`` boştu, yani
+        #: arayüzde seçilecek hiçbir şey yoktu.
+        #:
+        #: Ölçülen sonuç: Türkçe konuşmak isteyen kullanıcı için CPU'da hızlı
+        #: çalışan bir seçenek VARDI ama ulaşılamıyordu -- motor İngilizce sesle
+        #: Türkçe metni okuyup anlaşılmaz bir şey üretiyordu.
+        #:
+        #: İndirme ilk kullanımda ve ses BAŞINA oluyor; her biri ~63 MB.
+        voices=(
+            ("tr_TR-dfki-medium", "Türkçe - dfki (orta kalite, ~63 MB)"),
+            ("en_US-lessac-medium", "English (US) - lessac (~63 MB)"),
+            ("en_GB-alba-medium", "English (GB) - alba (~63 MB)"),
+            ("de_DE-thorsten-medium", "Deutsch - thorsten (~63 MB)"),
+            ("fr_FR-siwis-medium", "Français - siwis (~63 MB)"),
+            ("es_ES-davefx-medium", "Español - davefx (~63 MB)"),
+            ("it_IT-riccardo-x_low", "Italiano - riccardo (~20 MB)"),
+            ("ru_RU-dmitri-medium", "Русский - dmitri (~63 MB)"),
+        ),
     ),
     VoiceEntry(
         id="kokoro",
@@ -908,13 +931,41 @@ def available_voices(e: VoiceEntry) -> list[dict[str, str]]:
     patlardi -- panelin tam kacinmasi gereken sey.
     """
     if e.id == "piper":
+        # KATALOG + DİSK, yalnızca disk değil.
+        #
+        # Eski hâl listeyi SADECE diskten üretiyordu ve gerekçesi şuydu:
+        # "inmemiş bir sesi sunmak seçildiğinde çalışma anında patlardı."
+        # O gerekçe Piper için DOĞRU DEĞİL -- sağlayıcı inmemiş bir sesi ilk
+        # kullanımda kendisi indiriyor
+        # (``tools/tts_tool.py::_resolve_piper_voice_path``, Case 3).
+        #
+        # Ölçülen sonuç kısır bir döngüydü: Türkçe ses inmediği için listede
+        # görünmüyor, listede görünmediği için seçilemiyor, seçilemediği için
+        # inmiyor. Piper CPU'da gerçek zamandan hızlı çalışan tek seçenekti ve
+        # Türkçe konuşmak isteyen kullanıcı ona hiç ulaşamıyordu.
+        #
+        # Etiket İNMİŞ Mİ bilgisini taşıyor: kullanıcı 63 MB'lık bir indirmeye
+        # girdiğini seçmeden önce bilmeli.
         try:
-            return [
-                {"id": f.stem, "label": f.stem}
-                for f in sorted(voice_dir().glob("*.onnx"))
-            ]
+            on_disk = {f.stem for f in voice_dir().glob("*.onnx")}
         except OSError:
-            return []
+            on_disk = set()
+
+        rows = [
+            {
+                "id": vid,
+                "label": desc if vid in on_disk else f"{desc} — indirilecek",
+            }
+            for vid, desc in e.voices
+        ]
+
+        known = {vid for vid, _ in e.voices}
+        rows.extend(
+            {"id": name, "label": name}
+            for name in sorted(on_disk - known)
+        )
+
+        return rows
     return [{"id": vid, "label": desc} for vid, desc in e.voices]
 
 

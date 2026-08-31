@@ -788,6 +788,72 @@ def test_update_check_asks_OUR_repo_how_far_behind_you_are() -> None:
     )
 
 
+def test_terminal_logo_does_not_SPELL_hermes() -> None:
+    """FOOL-SEAM: wordmark — çizim, dize değil; tarama onu göremiyor.
+
+    Harfler ``█`` karakterinden çiziliyor, yani söz-markasının içinde "Hermes"
+    DİZESİ hiç geçmiyor. Yeniden adlandırma aracı değişken adını
+    ``FOOL_AGENT_LOGO`` yaptı ve testler yeşil kaldı -- ama çizim
+    "HERMES-AGENT" yazmaya devam etti, altındaki şekil de Caduceus'tu:
+    Hermes'in asası. ``fool`` yazan herkesin gördüğü İLK ekran buydu.
+
+    ``cli.py`` bir noktada elle düzeltildi, ``fool_cli/banner.py``
+    düzeltilmedi -- ve CANLI olan ikincisiydi.
+
+    Bu test çizimi ÇÖZÜYOR: her harf sütununun dolu/boş desenini okuyup
+    baş harfleri çıkarıyor. Böylece "içinde Hermes yazmıyor" iddiası gerçekten
+    sınanabiliyor.
+    """
+    import re
+
+    from fool_cli import banner
+
+    rows = [
+        re.sub(r"\[[^\]]*\]", "", line)
+        for line in banner.FOOL_AGENT_LOGO.splitlines()
+    ]
+    rows = [r for r in rows if r.strip()]
+
+    assert rows, "soz-markasi bos"
+
+    # Blok harfler ``█`` ve kutu cizgilerinden olusuyor. "HERMES" yazan bir
+    # marka ilk satirinda H'nin iki dik sutununu tasir: ``██╗  ██╗``.
+    first = rows[0]
+
+    assert not first.startswith("██╗  ██╗"), (
+        "soz-markasi HERMES ile basliyor -- cizim geri gelmis"
+    )
+    assert first.startswith("████████╗██╗  ██╗███████╗"), (
+        "soz-markasi THE ile baslamiyor; beklenen 'THE FOOL'"
+    )
+
+    # Caduceus braille ile ciziliydi; Fool isareti kutu cizgileriyle.
+    assert "⣿" not in banner.FOOL_CADUCEUS, "Caduceus (Hermes'in asasi) geri gelmis"
+
+
+def test_terminal_logo_has_only_ONE_copy() -> None:
+    """İki kopya bir kez ayrıştı ve canlı olan yanlış kaldı.
+
+    ``cli.py`` ile ``fool_cli/banner.py`` aynı çizimi ayrı ayrı taşıyordu.
+    Biri elle düzeltilince diğeri geride kaldı -- ve düzeltilmeyen taraf
+    kullanıcının gördüğü taraftı. Artık ikisi de ``fool/brand_art.py``den
+    içe aktarıyor: ayrışacak ikinci bir yer yok.
+    """
+    from fool import brand_art
+    from fool_cli import banner
+
+    assert banner.FOOL_AGENT_LOGO is brand_art.WORDMARK
+    assert banner.FOOL_CADUCEUS is brand_art.MARK
+
+    for path in ("cli.py", "fool_cli/banner.py"):
+        source = (REPO_ROOT / path).read_text(encoding="utf-8")
+
+        assert "from fool.brand_art import" in source, f"{path}: cizim tek kaynaktan gelmiyor"
+        assert '████' not in source.split("from fool.brand_art import")[0][-2000:], (
+            f"{path}: yerel bir cizim kopyasi geri gelmis"
+        )
+
+
 def test_installer_publishes_the_fool_cli_launchers() -> None:
     """FOOL-SEAM: cli-launchers — yanlış ad = terminalde hiçbir şey.
 
@@ -1023,39 +1089,33 @@ def test_pyproject_extras_kendine_referans_verir():
 
 
 def test_cli_acilis_logosu_THE_FOOL_yazar():
-    """Acilis logosu ASCII CIZIM: icinde "Hermes" DIZESI gecmez.
+    """Açılış logosu ASCII ÇİZİM: içinde "Hermes" DİZESİ geçmez.
 
-    Bu yuzden marka denetimi onu goremez. Gercekte yasandi: yeniden adlandirma
-    araci degisken adini ``FOOL_AGENT_LOGO`` yapti, cizim ise blok
+    Bu yüzden marka denetimi onu göremiyor. Gerçekte yaşandı: yeniden
+    adlandırma aracı değişken adını ``FOOL_AGENT_LOGO`` yaptı, çizim ise blok
     karakterlerle "HERMES-AGENT" yazmaya devam etti -- ve yeni kuran herkesin
-    gordugu ILK ekran buydu. Yanindaki sembol de Caduceus'tu: Hermes'in asasi.
+    gördüğü İLK ekran buydu. Yanındaki sembol de Caduceus'tu: Hermes'in asası.
 
-    Bir upstream birlestirmesi bu blogu geri getirirse test dusmeli.
+    Bu test bir kez daha yaşandı, çünkü YALNIZCA ``cli.py``ye bakıyordu.
+    Çizimin ikinci bir kopyası ``fool_cli/banner.py``de duruyordu ve CANLI
+    olan oydu: ``cli.py`` düzeltilince test yeşile döndü, kullanıcı hâlâ
+    HERMES-AGENT görüyordu. Artık çizim tek kaynakta ve test kaynağı sınıyor.
     """
-    import re
+    from fool import brand_art
 
-    source = (Path(__file__).resolve().parents[2] / "cli.py").read_text(encoding="utf-8")
+    art = brand_art.WORDMARK
 
-    logo = re.search(r'FOOL_AGENT_LOGO = """(.*?)"""', source, re.S)
-    assert logo, "acilis logosu bulunamadi"
-
-    art = logo.group(1)
-
-    # Upstream'in altin paleti: geri donusun en net isareti.
+    # Upstream'in altın paleti: geri dönüşün en net işareti.
     for gold in ("#FFD700", "#FFBF00", "#CD7F32", "#B8860B"):
         assert gold not in art, f"logo upstream'in altin paletine donmus ({gold})"
 
-    # "HERMES" harflerinin ANSI Shadow bicimindeki imzasi: 'H' harfi
-    # ``██║  ██║`` deseniyle basliyor. "THE FOOL" ise ``████████╗`` (T) ile.
+    # "HERMES" harflerinin ANSI Shadow biçimindeki imzası: 'H' harfi
+    # ``██║  ██║`` deseniyle başlıyor. "THE FOOL" ise ``████████╗`` (T) ile.
     first_line = art.strip().split(chr(10))[0]
+
     assert "████████╗" in first_line, "logo artik THE FOOL ile baslamiyor"
 
-    caduceus = re.search(r'FOOL_CADUCEUS = """(.*?)"""', source, re.S)
-    assert caduceus, "sol panel isareti bulunamadi"
-    for gold in ("#FFD700", "#FFBF00", "#CD7F32", "#B8860B"):
-        assert gold not in caduceus.group(1), "sol panel isareti altin palete donmus"
-
-
+    assert "⣿" not in brand_art.MARK, "Caduceus (Hermes'in asasi) geri gelmis"
 def test_whatsapp_uzak_kullaniciya_makineyi_actirmaz() -> None:
     """WhatsApp'tan gelen mesajlar makineyi KONTROL edememeli.
 

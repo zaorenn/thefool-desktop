@@ -3066,16 +3066,46 @@ def _check_piper_available() -> bool:
         return False
 
 
-def _get_piper_voices_dir() -> Path:
-    """Return the directory where Hermes caches Piper voice models.
-
-    Resolves to ``~/.hermes/cache/piper-voices/`` under the active
-    FOOL_HOME so voice downloads follow profile boundaries.
-    """
+#: Sağlayıcının ESKİDEN indirdiği yer. Yalnızca OKUNUYOR (aşağıya bak).
+def _legacy_piper_voices_dir() -> Path:
     from fool_constants import get_hermes_dir
-    root = Path(get_hermes_dir("cache/piper-voices", "piper_voices_cache"))
+
+    return Path(get_hermes_dir("cache/piper-voices", "piper_voices_cache"))
+
+
+def _get_piper_voices_dir() -> Path:
+    """Piper seslerinin indiği dizin — panelin kurduğu dizinle AYNI.
+
+    Ölçülen hata: iki taraf iki ayrı yere bakıyordu.
+
+        panel kurar   ->  <FOOL_HOME>/voices/
+        sağlayıcı okur ->  <FOOL_HOME>/cache/piper-voices/
+
+    Sonuç iki kat kötü. Kullanıcı panelden Piper'ı kuruyor, 63 MB iniyor ve
+    ``voices/`` altına yazılıyor; ilk konuşmada sağlayıcı orada değil BAŞKA bir
+    dizine bakıyor, bulamıyor ve AYNI 63 MB'ı ikinci kez indiriyor. Panelin ses
+    listesi de ``voices/``i tarıyordu, yani sağlayıcının hiç kullanmadığı bir
+    dosyayı listeliyordu.
+
+    Üstüne: ``cache/`` veri sözleşmesinde SİLİNEBİLİR sınıfta
+    (``fool/user_data.py``), ``voices/`` ise korunuyor. Yani bir temizlik
+    sağlayıcının sesini siliyor ve indirme her seferinde baştan başlıyordu --
+    kullanıcının bildirdiği "her güncellemede yeniden iniyor" tam olarak bu.
+
+    Artık tek dizin var ve o KORUNAN dizin. Eski konum ``_resolve`` içinde
+    hâlâ okunuyor: oraya inmiş bir sesi yeniden indirmek anlamsız olurdu.
+    """
+    root = voice_dir_for_piper()
     root.mkdir(parents=True, exist_ok=True)
+
     return root
+
+
+def voice_dir_for_piper() -> Path:
+    """Panelin kullandığı ses dizini -- tek kaynak."""
+    from fool.voice_models import voice_dir
+
+    return Path(voice_dir())
 
 
 def _resolve_piper_voice_path(voice: str, download_dir: Path) -> str:
@@ -3100,6 +3130,17 @@ def _resolve_piper_voice_path(voice: str, download_dir: Path) -> str:
     cached = download_dir / f"{voice}.onnx"
     if cached.exists() and (download_dir / f"{voice}.onnx.json").exists():
         return str(cached)
+
+    # ESKI konum da okunuyor: sağlayıcı bir dönem ``cache/piper-voices/``
+    # altına iniyordu. Oraya inmiş bir sesi yeniden indirmek, kullanıcıya
+    # sebepsiz 63 MB daha ödetmek olurdu.
+    try:
+        legacy = _legacy_piper_voices_dir()
+        legacy_onnx = legacy / f"{voice}.onnx"
+        if legacy_onnx.exists() and (legacy / f"{voice}.onnx.json").exists():
+            return str(legacy_onnx)
+    except Exception:  # pragma: no cover — eski konum okunamazsa indirmeye geç
+        pass
 
     # Case 3: download the voice. piper ships a download helper module.
     import sys as _sys

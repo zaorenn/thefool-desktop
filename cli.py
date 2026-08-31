@@ -4485,42 +4485,9 @@ class ChatConsole:
         """
         yield self
 
-# ASCII Art - THE FOOL wordmark.
-#
-# DIKKAT: harfler ``█`` karakterinden ciziliyor, yani icinde "Hermes"
-# DIZESI GECMIYOR. Marka denetimi bu yuzden onu goremez: yeniden
-# adlandirma araci degisken adini FOOL_AGENT_LOGO yapti ama CIZIM
-# "HERMES-AGENT" yazmaya devam etti ve yeni kuran herkesin gordugu ilk
-# ekran buydu. Bu blok elle tutulmak zorunda.
-FOOL_AGENT_LOGO = """[bold #E8365A]████████╗██╗  ██╗███████╗    ███████╗ ██████╗  ██████╗ ██╗
-[bold #E8365A]╚══██╔══╝██║  ██║██╔════╝    ██╔════╝██╔═══██╗██╔═══██╗██║
-[#D01A3F]   ██║   ███████║█████╗      █████╗  ██║   ██║██║   ██║██║
-[#D01A3F]   ██║   ██╔══██║██╔══╝      ██╔══╝  ██║   ██║██║   ██║██║
-[#8E1129]   ██║   ██║  ██║███████╗    ██║     ╚██████╔╝╚██████╔╝███████╗
-[#8E1129]   ╚═╝   ╚═╝  ╚═╝╚══════╝    ╚═╝      ╚═════╝  ╚═════╝ ╚══════╝[/]"""
-
-# ASCII Art - The Fool'un isareti (sol panele sigan kompakt bicim).
-#
-# Onceki cizim Caduceus'tu: Hermes'in asasi. Marka degisiminde en gozden
-# kacan sey, cunku hicbir metin taramasi bir sembolu yakalayamaz.
-FOOL_CADUCEUS = """[#8E1129]        ╱╲
-[#8E1129]       ╱  ╲
-[#D01A3F]      ╱ ╱╲ ╲
-[#D01A3F]     ╱ ╱  ╲ ╲
-[#E8365A]    ╱ ╱ ╱╲ ╲ ╲
-[#E8365A]   ╱ ╱ ╱  ╲ ╲ ╲
-[#E8365A]  ╱ ╱ ╱ ╱╲ ╲ ╲ ╲
-[#D01A3F] ╱ ╱ ╱ ╱  ╲ ╲ ╲ ╲
-[#D01A3F]╱ ╱ ╱ ╱ ╱╲ ╲ ╲ ╲ ╲
-[#8E1129]╲ ╲ ╲ ╲ ╲╱ ╱ ╱ ╱ ╱
-[#8E1129] ╲ ╲ ╲ ╲  ╱ ╱ ╱ ╱
-[#D01A3F]  ╲ ╲ ╲ ╲╱ ╱ ╱ ╱
-[#D01A3F]   ╲ ╲ ╲  ╱ ╱ ╱
-[#E8365A]    ╲ ╲ ╲╱ ╱ ╱
-[#E8365A]     ╲ ╲  ╱ ╱
-[#E8365A]      ╲ ╲╱ ╱
-[#D01A3F]       ╲  ╱
-[#8E1129]        ╲╱[/]"""
+# Cizim TEK KAYNAKTAN (bkz. ``fool/brand_art.py``): iki kopya bir kez
+# ayristi ve canli olan yanlis kaldi.
+from fool.brand_art import MARK as FOOL_CADUCEUS, WORDMARK as FOOL_AGENT_LOGO
 
 
 

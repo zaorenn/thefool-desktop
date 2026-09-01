@@ -234,6 +234,16 @@ export function HudShell() {
     }
 
     measure()
+
+    // The poll exists only for the edge-aware layout: the DOM has no
+    // window-move event, so the flip has to be sampled. With
+    // HUD_THREAD_ALWAYS_BELOW on, `measure` returns before reading anything —
+    // so the interval was waking 3.3x/s forever, in an always-on-top window,
+    // to re-set the same value. Nothing observes it; don't arm it.
+    if (HUD_THREAD_ALWAYS_BELOW) {
+      return
+    }
+
     const timer = setInterval(measure, 300)
     window.addEventListener('resize', measure)
 

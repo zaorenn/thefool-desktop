@@ -1,6 +1,15 @@
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react'
 
-/** Clamp to the same mins the window was created with (spawnHudWindow). */
+/**
+ * Clamp to the same mins the window was created with (spawnHudWindow).
+ *
+ * This is a second copy and cannot be shared: main is compiled with `src`
+ * excluded (tsconfig.electron.json), so it cannot import from here. A comment
+ * saying "same as" is exactly how the two drift, so `hud-window-size.test.ts`
+ * holds them together instead — if they diverge the user keeps dragging the
+ * handle smaller, the window stops, and the handle slides out from under the
+ * cursor.
+ */
 const HUD_MIN_WIDTH = 380
 const HUD_MIN_HEIGHT = 160
 

@@ -12027,11 +12027,24 @@ function broadcastHudState(open) {
   }
 }
 
+// HUD penceresinin EN KUCUK olculeri.
+//
+// Uc yerde ayri ayri yaziliydi: burasi, ``fool:hud:set-bounds`` kelepcesi ve
+// renderer'in kose tutamagi (``src/app/hud/resize-handle.ts``). Ilk ikisi ayni
+// dosyada oldugu icin tek sabite indi; renderer ``src/``te ve ana surec oradan
+// ice aktaramiyor (``tsconfig.electron.json`` ``src``i disliyor), o yuzden
+// ucuncu kopyayi bir MUHAFIZ tutuyor: ``src/app/hud/hud-window-size.test.ts``.
+//
+// Ayrisirlarsa kullanici tutamagi kucultmeye devam eder, pencere durur ve
+// tutamak imlecin altindan kayar.
+const HUD_MIN_WIDTH = 380
+const HUD_MIN_HEIGHT = 160
+
 function spawnHudWindow(sessionId, profile) {
   const win = new BrowserWindow({
     ...hudBounds(),
-    minWidth: 380,
-    minHeight: 160,
+    minWidth: HUD_MIN_WIDTH,
+    minHeight: HUD_MIN_HEIGHT,
     title: HUD_WINDOW_TITLE,
     frame: false,
     transparent: true,
@@ -13221,8 +13234,8 @@ ipcMain.on('fool:hud:set-bounds', (event, bounds) => {
   }
 
   const win = hudWindow
-  const width = Math.max(380, Math.round(Number(bounds.width)))
-  const height = Math.max(160, Math.round(Number(bounds.height)))
+  const width = Math.max(HUD_MIN_WIDTH, Math.round(Number(bounds.width)))
+  const height = Math.max(HUD_MIN_HEIGHT, Math.round(Number(bounds.height)))
   const [curW, curH] = win.getSize()
   const resizing = width !== curW || height !== curH
 

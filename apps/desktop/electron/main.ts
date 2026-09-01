@@ -321,6 +321,7 @@ import {
   scanVenvBlockers,
   stopSafeVenvBlockers
 } from './venv-blocker-scan'
+import { venvRootForPython } from './venv-root'
 import { fetchMarketplaceThemes, searchMarketplaceThemes } from './vscode-marketplace'
 import { createWakeIndicatorWindowController } from './wake-indicator-window'
 import { readWindowBelow } from './window-below'
@@ -4638,7 +4639,31 @@ function createPythonBackend(root, label, backendArgs, options: any = {}) {
     return null
   }
 
-  const venvRoot = path.join(root, 'venv')
+  // ``venvRoot`` SECILEN yorumlayicidan TURETILIYOR, sabit ``venv``ten degil.
+  //
+  // Olculen kirilma: ``findPythonForRoot`` once ``.venv``e bakiyor (uv'nin ve
+  // her gelistirici klonunun duzeni), ama burasi ``venvRoot``u kosulsuz
+  // ``<root>/venv`` diye yaziyordu. Yani ``.venv``li bir klonda yorumlayici
+  // dogru secilirken ORTAM var olmayan bir dizine gore kuruluyordu.
+  //
+  // En kotu sonucu espeak: ``espeakDataEnv`` ``<venvRoot>/Lib/site-packages/
+  // piper/espeak-ng-data/phontab``i bulamayip {} donuyor, yani
+  // ``ESPEAK_DATA_PATH`` HIC ayarlanmiyor. Python tarafindaki kapi da
+  // (``_refuse_piper_on_unreadable_espeak_path``) o degiskeni okuyor ve bos
+  // gorunce geri donuyor -- Piper yukleniyor, espeak-ng ASCII olmayan kendi
+  // yolunu acamiyor ve C tarafinda ``exit()`` cagiriyor. Hicbir Python
+  // ``try/except`` yakalayamaz: arka uc komple oluyor. Tam olarak
+  // ``backend-env.ts::espeakDataEnv``in onlemek icin yazildigi hata, yalnizca
+  // ``.venv`` duzeninde geri gelmis hali.
+  //
+  // Ad iki yerde ayri yazildigi surece yine ayrisir; tek dogru kaynak
+  // yorumlayicinin KENDI yeri.
+  const venvRoot = venvRootForPython(python, root, {
+    basename: target => path.basename(target),
+    dirname: target => path.dirname(target),
+    join: (...segments) => path.join(...segments)
+  })
+
   const venvPython = getVenvPython(venvRoot)
   const command = IS_WINDOWS && fileExists(venvPython) ? venvPython : python
 

@@ -1295,12 +1295,27 @@ app.setName(APP_NAME)
 // Windows toast notifications silently no-op unless an AppUserModelID is set:
 // `new Notification().show()` returns without error and nothing appears. The
 // AUMID must match the installed Start Menu shortcut's AUMID, which
-// electron-builder derives from the build `appId` (com.nousresearch.fool) —
-// keep this string in sync with package.json `build.appId`. macOS/Linux don't
-// need this, so gate it on Windows. (Fixes: desktop approval/turn notifications
-// never firing on Windows.)
+// electron-builder derives from the build `appId`. macOS/Linux don't need this,
+// so gate it on Windows. (Fixes: desktop approval/turn notifications never
+// firing on Windows.)
+//
+// Bu deger ONCEDEN `com.nousresearch.fool` idi ve build `appId` `com.fool.desktop`.
+// Ustteki yorum "keep this string in sync" diyordu -- iki kopya ayrismisti ve
+// hangisinin canli oldugu gorunmuyordu. Olculen sonuc: NSIS kurulumu Baslat
+// menusu kisayolunu `appId` ile damgaliyor, uygulama ise baska bir kimlik
+// bildiriyordu; Windows bildirimi calisan surece BAGLAYAMIYOR ve tiklama
+// uygulamayi degil, kayitli yolu acan genel bir geri donuse dusuyordu.
+//
+// `appId` KAZANIYOR cunku tek degistiremedigimiz taraf o: NSIS'in yazdigi
+// kisayol damgasi uygulama kodundan degistirilemiyor. Diger kurulum yollari
+// (`scripts/install.ps1`, `fool_cli`) ayni dizeyi damgaliyor.
+//
+// "Ayni tutun" yorumu yetmedigi olculdugu icin artik bir MUHAFIZ tutuyor:
+// `tests/fool/test_windows_notification_identity.py`.
+const WINDOWS_APP_USER_MODEL_ID = 'com.fool.desktop'
+
 if (IS_WINDOWS) {
-  app.setAppUserModelId('com.nousresearch.fool')
+  app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID)
 }
 
 // Seed the native About panel with the live Fool version. This is refreshed

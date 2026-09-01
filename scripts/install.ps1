@@ -4253,6 +4253,106 @@ function Install-Desktop {
     New-DesktopShortcuts -TargetExe $desktopExe
 }
 
+# Uygulamanin Windows bildirim kimligi.
+#
+# ``apps/desktop/package.json`` icindeki ``build.appId`` ile AYNI olmak
+# ZORUNDA: NSIS kurulumu Baslat menusu kisayolunu o dizeyle damgaliyor ve
+# ``main.ts`` ayni dizeyi ``setAppUserModelId`` ile bildiriyor. Ucu birden
+# tutmayinca Windows toast'i calisan surece baglayamiyor -- tiklama uygulamayi
+# degil, kayitli yolu acan genel bir geri donuse dusuyor.
+#
+# Muhafiz: ``tests/fool/test_windows_notification_identity.py``.
+$script:FoolAumid = 'com.fool.desktop'
+
+function Set-ShortcutAumid {
+    <#
+    .SYNOPSIS
+    Kisayola System.AppUserModel.ID damgala.
+
+    .DESCRIPTION
+    ``WScript.Shell`` BUNU YAPAMIYOR: AUMID kisayolun ozellik deposunda
+    yasiyor ve oraya yalnizca ``IPropertyStore`` ile yazilabiliyor. Bu yuzden
+    kisa bir P/Invoke katmani gerekiyor.
+
+    En iyi caba: damga tutmazsa kurulum BOZULMAMALI -- kisayol yine calisiyor,
+    yalnizca bildirim tiklamasi eski davranisa duser.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Lnk,
+        [Parameter(Mandatory = $true)][string]$Aumid
+    )
+
+    try {
+        if (-not ('FoolLnk' -as [type])) {
+            Add-Type -Language CSharp -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class FoolLnk {
+  [StructLayout(LayoutKind.Sequential, Pack = 4)]
+  public struct PropertyKey { public Guid fmtid; public uint pid; }
+
+  [StructLayout(LayoutKind.Sequential)]
+  public struct PropVariant { public ushort vt; public ushort r1, r2, r3; public IntPtr p; public IntPtr p2; }
+
+  [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+  class ShellLink { }
+
+  [ComImport, Guid("0000010b-0000-0000-C000-000000000046"),
+   InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IPersistFile {
+    void GetClassID(out Guid pClassID);
+    [PreserveSig] int IsDirty();
+    void Load([MarshalAs(UnmanagedType.LPWStr)] string f, uint mode);
+    void Save([MarshalAs(UnmanagedType.LPWStr)] string f, [MarshalAs(UnmanagedType.Bool)] bool remember);
+    void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string f);
+    void GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string f);
+  }
+
+  [ComImport, Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99"),
+   InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IPropertyStore {
+    void GetCount(out uint c);
+    void GetAt(uint i, out PropertyKey k);
+    void GetValue(ref PropertyKey k, out PropVariant v);
+    void SetValue(ref PropertyKey k, ref PropVariant v);
+    void Commit();
+  }
+
+  [DllImport("ole32.dll")]
+  static extern int PropVariantClear(ref PropVariant v);
+
+  public static void SetAumid(string lnk, string aumid) {
+    object o = new ShellLink();
+    ((IPersistFile)o).Load(lnk, 2 /* STGM_READWRITE */);
+
+    var store = (IPropertyStore)o;
+    // System.AppUserModel.ID
+    var key = new PropertyKey {
+      fmtid = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), pid = 5
+    };
+
+    // PROPVARIANT ELDE kuruluyor: propsys.dll'in InitPropVariantFromString'i
+    // her Windows'ta disa aktarilmis DEGIL (olculdu: "entry point not found")
+    // -- o bir baslik satir ici yardimcisi ve yaptigi is bu iki alan.
+    var v = new PropVariant { vt = 31 /* VT_LPWSTR */, p = Marshal.StringToCoTaskMemUni(aumid) };
+    store.SetValue(ref key, ref v);
+    store.Commit();
+    PropVariantClear(ref v);
+
+    ((IPersistFile)o).Save(lnk, true);
+    Marshal.ReleaseComObject(o);
+  }
+}
+'@
+        }
+
+        [FoolLnk]::SetAumid($Lnk, $Aumid)
+    } catch {
+        Write-Warn "Could not stamp notification id on $Lnk : $($_.Exception.Message)"
+    }
+}
+
 function New-DesktopShortcuts {
     param([Parameter(Mandatory = $true)][string]$TargetExe)
 
@@ -4292,6 +4392,9 @@ function New-DesktopShortcuts {
                 $sc.IconLocation = $iconLocation
                 $sc.Description = 'The Fool'
                 $sc.Save()
+                # Windows bildirimlerinin uygulamaya BAGLANABILMESI icin
+                # kisayolun AppUserModelID'si uygulamaninkiyle ayni olmali.
+                Set-ShortcutAumid -Lnk $lnkPath -Aumid $script:FoolAumid
                 Write-Success "Shortcut created: $lnkPath"
             } catch {
                 Write-Warn "Could not create shortcut $lnkPath : $($_.Exception.Message)"

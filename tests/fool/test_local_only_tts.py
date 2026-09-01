@@ -119,3 +119,73 @@ def test_none_mesaji_nasil_duzeltilecegini_soyluyor(tmp_path) -> None:
 
     assert "Settings > Text to speech" in payload["error"]
     assert "allow_cloud_fallback" in payload["error"]
+
+
+# ---------------------------------------------------------------------------
+# Katalogdaki her ses AYRI AYRI inebilmeli
+# ---------------------------------------------------------------------------
+
+#: ``lang_REGION-konusmaci-kalite`` -- Rhasspy'nin ses adlandirmasi. Piper'in
+#: indirme yardimcisi HF yolunu bu addan turetiyor, yani bicimi bozuk bir
+#: kimlik CALISMA ANINDA "voice download failed" oluyor.
+_PIPER_VOICE_ID = __import__("re").compile(r"^[a-z]{2}_[A-Z]{2}-[a-z0-9_]+-(x_low|low|medium|high)$")
+
+
+def test_katalogdaki_piper_seslerinin_KIMLIGI_gecerli() -> None:
+    """Seçilebilen bir ses inebilmeli.
+
+    Kullanıcının kuralı: "yüklü olmayan bir şey zaten seçilememeli." Piper'da
+    seçim indirmeyi tetikliyor, yani kural şuna dönüşüyor: listelenen her ses
+    GERÇEKTEN indirilebilir olmalı. Yanlış yazılmış tek bir kimlik, kullanıcının
+    seçip hiçbir şey duymadığı bir satır demek.
+
+    Ağ İSTENMİYOR: biçim burada tutuluyor, varlık ise
+    ``test_piper_sesleri_UPSTREAMDE_var`` ile (integration).
+    """
+    from fool.voice_models import CATALOG
+
+    piper = [e for e in CATALOG if e.id == "piper"][0]
+
+    assert piper.voices, "piper icin secilebilir ses yok"
+
+    for vid, label in piper.voices:
+        assert _PIPER_VOICE_ID.match(vid), f"gecersiz piper ses kimligi: {vid!r}"
+        assert label.strip(), f"{vid}: etiket bos"
+
+
+def test_TURKCE_ses_katalogda() -> None:
+    """CPU'da gerçek zamandan hızlı çalışan tek seçenek Piper; Türkçe konuşan
+    kullanıcı ona ulaşabilmeli."""
+    from fool.voice_models import CATALOG
+
+    piper = [e for e in CATALOG if e.id == "piper"][0]
+    ids = [vid for vid, _ in piper.voices]
+
+    assert any(vid.startswith("tr_TR-") for vid in ids), f"Turkce ses yok: {ids}"
+
+
+@pytest.mark.integration
+def test_piper_sesleri_UPSTREAMDE_var() -> None:
+    """Her kimlik Rhasspy deposunda ``.onnx`` + ``.onnx.json`` olarak var mı?
+
+    İkisi birden şart: Piper ikisini de arıyor, biri eksikse çalışma anında
+    anlaşılmaz bir hata veriyor.
+    """
+    import urllib.request
+
+    from fool.voice_models import CATALOG
+
+    base = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+    piper = [e for e in CATALOG if e.id == "piper"][0]
+
+    for vid, _ in piper.voices:
+        lang_region = vid.split("-", 1)[0]
+        lang = lang_region.split("_", 1)[0]
+        speaker, quality = vid.split("-")[1], vid.split("-")[-1]
+
+        for ext in ("onnx", "onnx.json"):
+            url = f"{base}/{lang}/{lang_region}/{speaker}/{quality}/{vid}.{ext}"
+            req = urllib.request.Request(url, method="HEAD")
+
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                assert resp.status == 200, f"{vid}: {ext} bulunamadi ({url})"

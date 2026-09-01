@@ -5889,6 +5889,30 @@ class SessionDB(SessionSearchMixin, SessionSchemaMixin, SessionPortabilityMixin)
         except Exception:
             return False
 
+    def update_session_source(self, session_id: str, source: str) -> bool:
+        """Oturumun ``source`` alanını değiştir (masaüstündeki Chat/Cowork kipi).
+
+        ``source`` yalnızca bir etiket değil: ağ geçidi onu okuyup oturumun
+        araç kapsamını seçiyor (``tui_gateway.server._session_source`` ->
+        ``platform_override`` -> ``fool.session_scope.scope_toolsets``). Yani
+        burada yazılan değer, o oturumun modelin eline hangi araçları
+        vereceğini belirliyor.
+
+        ``False`` = satır yok. Henüz kaydedilmemiş bir taslak için doğru
+        davranış bu: canlı oturum çağıran tarafta zaten güncelleniyor ve satır
+        ilk yazıldığında kipi devralıyor.
+        """
+        if not session_id or not source:
+            return False
+
+        def _do(conn):
+            cur = conn.execute(
+                "UPDATE sessions SET source = ? WHERE id = ?", (source, session_id)
+            )
+            return cur.rowcount > 0
+
+        return bool(self._execute_write(_do))
+
     def update_session_cwd(
         self,
         session_id: str,

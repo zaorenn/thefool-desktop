@@ -983,6 +983,73 @@ def _(rid, params: dict) -> dict:
     return _ok(rid, {"cwd": resolved, "branch": branch, "git_repo_root": root})
 
 
+@method("session.mode")
+def _(rid, params: dict) -> dict:
+    """Bir oturumun KİPİNİ değiştir: ``chat`` (okur) ya da ``cowork`` (yapar).
+
+    Kip, oturumun ``source`` alanında yaşıyor. Yeni bir tesisat DEĞİL: ağ
+    geçidi zaten ``_session_source(session)`` -> ``platform_override`` ->
+    ``fool.session_scope.scope_toolsets`` zincirini koşuyor, yani ``source``ü
+    ``chat`` olan bir oturum kendiliğinden okuyan araç kümesini alıyor.
+
+    NEDEN AJANI DÜŞÜRÜYORUZ
+    -----------------------
+    Araç şemaları donmuş sistem promptunun parçası ve prompt önbelleği onun
+    üzerine kurulu (bkz. ``fool/session_scope.py``: "kapsam bir oturum
+    özelliği, tur özelliği değil"). Kümeyi değiştirip aynı ajanı sürdürmek,
+    modele bir turda sahip OLMADIĞI araçları göstermek olurdu -- daha kötüsü,
+    çağırabileceğini sanması. O yüzden canlı ajan bırakılıyor ve bir sonraki
+    tur onu yeni kümeyle yeniden kuruyor.
+
+    Bedeli TEK bir tur: değişimden sonraki ilk cevap önbelleksiz geliyor,
+    sonrası yine hızlı. Kullanıcı arayüzde bunu onaylıyor.
+    """
+    target = str(params.get("session_key") or "").strip()
+    if not target:
+        return _err(rid, 4007, "session_key required")
+
+    from fool.session_scope import CHAT
+
+    wanted = str(params.get("mode") or "").strip().lower()
+    # ``cowork`` masaüstünün NORMAL kapsamı: ``scope_toolsets`` onu tanımıyor
+    # ve ``None`` dönüyor, yani olağan platform çözümlemesi geçerli kalıyor.
+    # Kip adını olduğu gibi ``source``a yazmak, o çözümlemeyi bozardı.
+    if wanted not in {CHAT, "cowork"}:
+        return _err(rid, 4018, f"unknown mode: {wanted or '(empty)'}")
+
+    source = CHAT if wanted == CHAT else "desktop"
+
+    with _profile_db(params) as db:
+        if db is None:
+            return _db_unavailable_error(rid, code=5007)
+        if not db.get_session(target):
+            # Henüz yazılmamış bir taslak: canlı oturum aşağıda yine
+            # güncelleniyor ve satır ilk yazıldığında kipi devralıyor.
+            pass
+        else:
+            try:
+                db.update_session_source(target, source)
+            except AttributeError:
+                # Eski bir şema: satır güncellenemiyor ama CANLI oturumun
+                # kipi yine de değişiyor. Sessizce başarısız olmaktansa
+                # kısmi çalışmak daha iyi -- kullanıcı değişimi bu oturumda
+                # görüyor, yeniden başlatınca eski kipe dönüyor.
+                pass
+            except Exception as e:
+                return _err(rid, 5007, f"mode change failed: {e}")
+
+    # CANLI oturum: kaynağı yaz ve ajanı BIRAK ki sonraki tur yeni kümeyle
+    # kurulsun.
+    with _sessions_lock:
+        for sess in list(_sessions.values()):
+            if sess.get("session_key") == target:
+                sess["source"] = source
+                sess["agent"] = None
+                break
+
+    return _ok(rid, {"mode": wanted, "source": source})
+
+
 @method("session.active_list")
 def _(rid, params: dict) -> dict:
     """Return live TUI sessions in this gateway process.

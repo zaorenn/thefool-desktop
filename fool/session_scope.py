@@ -114,6 +114,26 @@ FRIEND_TOOLSETS = (
 )
 
 
+#: Masaüstündeki Chat kipi (Chat/Cowork anahtarının "Chat" tarafı).
+CHAT = "chat"
+
+#: Chat kipinin araçları.
+#:
+#: TEK BİR BİLEŞİK küme -- komşularının aksine (``COMPANION_TOOLSETS`` ve
+#: ``FRIEND_TOOLSETS`` birer takım listesi). Sebep somut: Chat'in "oku ama
+#: yazma" sınırı mevcut takımların hiçbiriyle çizilemiyor. ``file`` takımı
+#: karışık (``read_file``/``search_files`` okuyor, ``write_file``/``patch``
+#: yazıyor) ve yarısını almak ancak araç ADIYLA mümkün -- takım adıyla değil.
+#: Bileşik ``toolsets.py``de tanımlı ve ``tests/fool/test_chat_toolset.py``
+#: yazan hiçbir aracın sızmadığını orada tutuyor.
+#:
+#: Çentikten FARKI: ``companion`` sesle konuşan uzak kullanıcı,
+#: ``chat`` ise sahibinin kendi klavyesi. Sahibi dosyasını OKUTABİLMELİ ve
+#: geçmişini aratabilmeli; uzak kullanıcı ikisini de yapamamalı. Aynı sabite
+#: çıkarılmamasının sebebi de bu -- ayrı sorular, ayrı cevaplar.
+CHAT_TOOLSETS = ("chat",)
+
+
 def is_companion_surface(surface: object) -> bool:
     """Bu yüzey sesli arkadaş mı?"""
     if not isinstance(surface, str):
@@ -137,4 +157,6 @@ def scope_toolsets(scope: object) -> list[str] | None:
         return list(COMPANION_TOOLSETS)
     if key == FRIEND:
         return list(FRIEND_TOOLSETS)
+    if key == CHAT:
+        return list(CHAT_TOOLSETS)
     return None

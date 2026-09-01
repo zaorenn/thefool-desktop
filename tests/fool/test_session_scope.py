@@ -339,3 +339,82 @@ def test_arkadas_ile_JARVIS_arasindaki_fark_MAKINEYE_ERISIM() -> None:
         assert extra not in EARNED_TOOLSETS, (
             f"arkadas kapsami kazanilmasi gereken bir takim aliyor: {extra}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Chat kipi: sahibinin klavyesi, ama OKUYAN eller
+# ---------------------------------------------------------------------------
+#
+# Masaüstündeki Chat/Cowork anahtarının "Chat" tarafı. ``companion``dan farkı
+# kimin konuştuğu: orada uzak bir kullanıcı, burada makinenin sahibi. Sahibi
+# dosyasını okutabilmeli ve geçmişini aratabilmeli; ama Chat'te "şunu düzelt"
+# demek düzeltilmiş bir dosya getirmemeli -- o Cowork'ün işi.
+
+
+def test_chat_kapsami_cozumleniyor() -> None:
+    assert ss.scope_toolsets("chat") == list(ss.CHAT_TOOLSETS)
+
+
+def test_chat_kapsami_MAKINEYE_dokunmuyor() -> None:
+    tools: set[str] = set()
+    for name in ss.CHAT_TOOLSETS:
+        tools |= set(resolve_toolset(name))
+
+    for forbidden in ("terminal", "process", "execute_code", "write_file", "patch", "computer_use"):
+        assert forbidden not in tools, f"Chat kapsamina yazan arac sizmis: {forbidden}"
+
+
+def test_chat_kapsami_OKUYABILIYOR() -> None:
+    """Read-only, "araçsız" demek değil.
+
+    Sahibi kendi makinesinde: dosyasını okutabilmeli ve geçmişini
+    aratabilmeli. Boş bir kümenin de yukarıdaki testten geçeceğini unutma.
+    """
+    tools: set[str] = set()
+    for name in ss.CHAT_TOOLSETS:
+        tools |= set(resolve_toolset(name))
+
+    for needed in ("read_file", "search_files", "web_search", "session_search"):
+        assert needed in tools, f"Chat kapsaminda okuma araci eksik: {needed}"
+
+
+def test_chat_ARKADAS_kapsamlarindan_farkli() -> None:
+    """Üçü de ayrı sorular.
+
+    ``companion`` uzak ve tanınmayan kullanıcı; ``friend`` sahibinin sesli
+    penceresi; ``chat`` sahibinin klavyesi. Aynı sabite çıkarmak, birini
+    değiştirip diğerini unutmanın kapısı olurdu.
+    """
+    def resolved(names):
+        out: set[str] = set()
+        for name in names:
+            out |= set(resolve_toolset(name))
+        return out
+
+    chat = resolved(ss.CHAT_TOOLSETS)
+
+    assert chat != resolved(ss.COMPANION_TOOLSETS)
+    assert chat != resolved(ss.FRIEND_TOOLSETS)
+    # Sahibinin klavyesi geçmişini görebilir; uzak kullanıcı göremez.
+    assert "session_search" in chat
+    assert "session_search" not in resolved(ss.COMPANION_TOOLSETS)
+
+
+def test_gateway_chat_kapsamini_UYGULUYOR() -> None:
+    """Asıl bağlantı. Oturumun ``source``u ``chat`` ise ağ geçidi bu kümeyi
+    veriyor -- yeni bir tesisat değil, var olan ``_session_source`` ->
+    ``platform_override`` -> ``scope_toolsets`` zinciri."""
+    from tui_gateway.server import _load_enabled_toolsets
+
+    assert _load_enabled_toolsets("chat") == list(ss.CHAT_TOOLSETS)
+
+
+def test_gateway_chat_kapsaminda_TERMINAL_vermiyor() -> None:
+    from tui_gateway.server import _load_enabled_toolsets
+
+    tools: set[str] = set()
+    for name in _load_enabled_toolsets("chat") or []:
+        tools |= set(resolve_toolset(name))
+
+    assert "terminal" not in tools
+    assert "write_file" not in tools

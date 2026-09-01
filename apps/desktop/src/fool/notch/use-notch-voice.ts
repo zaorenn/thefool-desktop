@@ -176,7 +176,27 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   //
   // ``ref`` DEĞİL state: değeri akan mesajlardan türüyor, yani reaktif. Ref'e
   // aynalamak bir render geç kalır ve aynı baloncuk iki kez seslendirilebilir.
-  const [lastSpokenId, setLastSpokenId] = useState<null | string>(null)
+  /**
+   * AÇILIŞTA var olan mesajlar SESLENDİRİLMİŞ sayılıyor.
+   *
+   * Ölçülen kırıklık: burası ``null`` başlıyordu, yani
+   * ``collectUnspokenTurnSpeech`` çentik açılır açılmaz sohbetin SON cevabını
+   * "henüz seslendirilmemiş" sayıyor, onu okuyor ve ekrana yazıyordu.
+   * Kullanıcının gördüğü: çentik açık sohbetteki eski mesajı gösteriyor --
+   * "bu kısıma sadece modelin anlık olarak seslendirdiği cevap gelmeli."
+   *
+   * Geçmişi okumak zaten yanlış: çentik bir sohbet penceresi değil, O ANIN
+   * sesi. Açılışta duran her şey geçmiştir.
+   *
+   * MOUNT anında bir kez okunuyor (state başlatıcı), efektle değil: bir efekt
+   * mesajlar her değiştiğinde koşar ve HENÜZ SESLENDİRİLMEMİŞ yeni bir cevabı
+   * da "geçmiş" diye işaretleyip sesi tamamen susturabilirdi.
+   */
+  const [lastSpokenId, setLastSpokenId] = useState<null | string>(() => {
+    const initial = $messages.get()
+
+    return initial[initial.length - 1]?.id ?? null
+  })
   // Bir kaydın atılacağını işaretler. `commit` ve `cancel` yarışabiliyor
   // (tuş bırakma ile odak kaybı aynı anda gelebilir); ilk gelen kazanır.
   const discardRef = useRef(false)

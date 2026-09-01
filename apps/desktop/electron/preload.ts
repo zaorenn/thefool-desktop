@@ -115,6 +115,10 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     // iletmeyi buna gore suzuyor; sabit ``ControlRight`` ile kullanicinin
     // yeniden bagladigi tus odak disinda hic ulasmiyordu.
     setPushToTalk: (code: string) => ipcRenderer.invoke('fool:notch:set-ptt', code),
+    // Tikla-gecir kapisi. Centik VARSAYILAN olarak gecirgen (ekranin ust
+    // kenarini yutmamali) ve yalnizca imlec tiklanabilir bir parcanin
+    // uzerindeyken katilasiyor.
+    setIgnoreMouse: (ignore: boolean) => ipcRenderer.send('fool:notch:ignore-mouse', ignore),
     // Bas-konus tusu BASKA penceremizden iletildi: centik odakta olmasa da
     // calissin (bkz. ``installPushToTalkForwarding``).
     onPushToTalk: (callback: (event: ForwardedPtt) => void) => {

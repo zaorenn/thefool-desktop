@@ -13214,6 +13214,16 @@ ipcMain.handle('fool:hud:vibrancy', (_event, on) => {
 // rectangle is a faded-out band over whatever the user is actually working in.
 // `forward` keeps mousemove flowing so the renderer can re-arm when the cursor
 // reaches the bar.
+// Centigin tikla-gecir kapisi. VARSAYILAN gecirgen: centik ekranin en ust
+// kenarinda duruyor ve orada tarayici sekmeleri, menu cubugu ve pencere
+// dugmeleri var -- onlari yutmak kabul edilemez. Renderer yalnizca imlec
+// tiklanabilir bir parcanin uzerindeyken katilastiriyor.
+ipcMain.on('fool:notch:ignore-mouse', (event, ignore) => {
+  if (notchWindow && !notchWindow.isDestroyed() && event.sender === notchWindow.webContents) {
+    notchWindow.setIgnoreMouseEvents(Boolean(ignore), { forward: true })
+  }
+})
+
 ipcMain.on('fool:hud:ignore-mouse', (_event, ignore) => {
   if (hudWindow && !hudWindow.isDestroyed()) {
     hudWindow.setIgnoreMouseEvents(Boolean(ignore), { forward: true })
@@ -13351,6 +13361,16 @@ function spawnNotchWindow() {
   // fare hareketini gormeye devam ediyor, yani uzerine gelince solup kaybolma
   // davranisi calisiyor. Notch'un tiklanacak bir parcasi zaten yok; klavyeyle
   // suruluyor.
+  //
+  // BASLANGIC durumu: gecirgen. Renderer imlec tiklanabilir bir parcanin
+  // uzerine geldiginde ``fool:notch:ignore-mouse`` ile katilastiriyor
+  // (``src/fool/notch/click-through.ts``).
+  //
+  // ONCEDEN burada birakiliyordu ve BIR DAHA HIC kapanmiyordu: centikteki PTT
+  // dugmesi ciziliyor, hover efekti veriyor, ipucu gosteriyor -- ve tiklaninca
+  // hicbir sey olmuyordu. Yanindaki yorum ``pointerEvents: 'auto'`` ile bunun
+  // cozuldugunu soyluyordu; cozmuyor, cunku o SAYFA duzeyinde bir ozellik ve
+  // tiklama sayfaya hic ulasmiyor.
   win.setIgnoreMouseEvents(true, { forward: true })
 
   wireWindowReveal(win, {

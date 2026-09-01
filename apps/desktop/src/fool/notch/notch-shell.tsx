@@ -26,6 +26,7 @@ import { Mic } from '@/lib/icons'
 
 import { voiceApi } from '../voice-api'
 
+import { NOTCH_INTERACTIVE_ATTR, useNotchClickThrough } from './click-through'
 import {
   MAX_IDLE_ROUNDS,
   nextIdleRounds,
@@ -381,6 +382,11 @@ export function NotchShell() {
   // gibi bir kombo dizesi olabiliyor ve ham hali arayuz metni degil --
   // kullaniciya hangi tuslara basacagini soylemiyor.
   const pttLabel = formatPttBindingLabel(parsePttBinding(pttCode))
+
+  // Tikla-gecir kapisi. Centik VARSAYILAN olarak gecirgen -- ekranin en ust
+  // kenarinda duruyor ve oradaki sekmeleri, menuyu, pencere dugmelerini
+  // yutmamali. Yalnizca imlec isaretli bir parcanin uzerindeyken katilasiyor.
+  useNotchClickThrough()
   // Dinleme kipi Friend penceresiyle ORTAK: iki yuzey ayni mikrofonu
   // kullaniyor ve kipi ayri tutmak kullaniciya iki ayri hakikat sunardi.
   const listenMode = useStore($listenMode)
@@ -602,15 +608,21 @@ export function NotchShell() {
                     surekli acik olmasi konusmayi bozuyor ve o an panele
                     gitmek akisi kesiyordu.
 
-                    ``pointerEvents`` ACIKCA geri veriliyor: bu kutunun ust
-                    katmani tiklamalari gecirmiyor (centik tikla-gec olsun
-                    diye) ve dugme onsuz olu kalirdi. */}
+                    IKI kapi birden aciliyor ve ikisi de sart:
+
+                      * ``pointerEvents: 'auto'`` -- SAYFA katmani. Ust kutu
+                        tiklamalari gecirmiyor (centik tikla-gec olsun diye).
+                      * ``data-notch-interactive`` -- ISLETIM SISTEMI katmani.
+                        Pencerenin kendisi tikla-gecir ve tiklama sayfaya HIC
+                        ulasmiyor; bu isaret olmadan ``pointerEvents`` tek
+                        basina hicbir sey yapmiyordu ve dugme OLUYDU. */}
                 <button
                   className={`rounded-full px-2 py-0.5 text-[0.6rem] font-medium transition-colors ${
                     listenMode === 'push-to-talk'
                       ? 'bg-(--theme-primary) text-white'
                       : 'bg-white/10 text-(--ui-text-tertiary) hover:bg-white/20'
                   }`}
+                  {...{ [NOTCH_INTERACTIVE_ATTR]: '' }}
                   onClick={() => toggleListenMode()}
                   style={{ pointerEvents: 'auto' }}
                   title={listenModeHint(listenMode, pttLabel)}

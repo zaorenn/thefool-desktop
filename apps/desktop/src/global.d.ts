@@ -121,6 +121,8 @@ declare global {
         takeListenRequest: () => Promise<null | { mode?: string }>
         /** Kullanicinin sectigi bas-konus tusunun FIZIKSEL kodu ana surece. */
         setPushToTalk: (code: string) => Promise<{ ok: boolean }>
+        /** Tikla-gecir kapisi: ``true`` = fareyi altta kalana devret. */
+        setIgnoreMouse: (ignore: boolean) => void
         /** Iletilen tus: DEGISTIRICILER de tasiniyor, yoksa kombo baglamalar
          *  odak disinda hic eslesmezdi. */
         onPushToTalk: (

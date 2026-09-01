@@ -3820,6 +3820,18 @@ def _apply_speech_language(
     """
     target = _speech_language(tts_config)
     if not target:
+        # AYARSIZ ve metin Ingilizce degilse: motor tek dilli modeli yukleyip
+        # Turkceyi Ingilizce fonetigiyle okuyor (``Merhaba`` -> ``Mehabal``).
+        # Ses cikiyor, hata yok -- kullanici yalnizca bozuk telaffuz duyuyor ve
+        # sebebi hicbir yerde gorunmuyor. Panelde BIR KEZ soyleniyor.
+        #
+        # Ilk kurulumda SORULMUYOR (kullanicinin karari): Ingilizce konusan
+        # kimse bu ayari gormek zorunda degil. Uyari, sorun gercekten ortaya
+        # ciktigi anda ve tam cozuldugu yerde beliriyor.
+        from fool import speech_language_hint
+
+        speech_language_hint.note(text)
+
         return text, tts_config
 
     # ZATEN O DILDEYSE CEVIRI YOK.

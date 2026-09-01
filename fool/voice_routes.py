@@ -129,12 +129,30 @@ async def voice_catalog() -> dict[str, Any]:
         "voice_dir": str(voice_models.voice_dir()),
         "active": voice_models.active_providers(),
         "cuda_available": await asyncio.to_thread(voice_models._cuda_available),
+        # Konusma dili ayarsizken yabanci dil seslendirildiyse panel bunu
+        # SOYLESIN. Ilk kurulumda sorulmuyor; uyari sorun gercekten ortaya
+        # ciktigi anda ve tam cozuldugu yerde cikiyor.
+        "speech_language_hint": _speech_language_hint(),
         # Secili motor OLCULMUS olarak yavassa panel bunu soylesin.
         # Olculdu: kyutai cumle basina 2,52 sn, kokoro 0,20 sn. Kullanici
         # "cevaplar nerdeyse realtime olmali" istedi ama en yavas motorda
         # kalmisti ve bunu hicbir yerden goremiyordu.
         "slow_engine": _slow_engine_hint(),
     }
+
+
+def _speech_language_hint() -> dict[str, Any] | None:
+    """Konusma dili uyarisi (``None`` = yok).
+
+    Hata YUTULUYOR: bir uyari ugruna katalogu dusurmek, kullanicinin ses
+    panelini tumden kaybetmesi olurdu -- ``_slow_engine_hint`` ile ayni gerekce.
+    """
+    try:
+        from fool import speech_language_hint
+
+        return speech_language_hint.pending()
+    except Exception:
+        return None
 
 
 def _slow_engine_hint() -> dict[str, Any] | None:
@@ -340,6 +358,20 @@ async def voice_language_set(body: LanguageBody) -> dict[str, Any]:
         "reply_language": reply or language_mode.AUTO,
         "speech_language": speech or language_mode.SAME,
     }
+
+
+@router.post("/api/fool/voice/speech-language-hint/dismiss")
+async def voice_speech_language_hint_dismiss() -> dict[str, Any]:
+    """Kullanici uyariyi kapatti -- bir daha gosterme.
+
+    Kalici: oturum icinde tutmak, panel her acildiginda uyariyi geri getirir ve
+    kapatma dugmesini anlamsiz kilardi.
+    """
+    from fool import speech_language_hint
+
+    speech_language_hint.dismiss()
+
+    return {"ok": True}
 
 
 @router.post("/api/fool/voice/knob")

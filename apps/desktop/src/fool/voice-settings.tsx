@@ -797,6 +797,25 @@ export function VoiceSettings() {
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
   const [jobs, setJobs] = useState<Record<string, VoiceJob>>({})
   const [loading, setLoading] = useState(true)
+
+  // Kapatma ANINDA gizleniyor, katalogun yeniden yuklenmesi BEKLENMIYOR:
+  // katalog cagrisi dokuz motorun CUDA sondasini calistiriyor (olculdu: ilk
+  // acilista ~6 sn) ve o sure boyunca uyari ekranda kalirdi -- kullanici
+  // dugmenin calismadigini dusunurdu.
+  const dismissSpeechHint = useCallback(async () => {
+    triggerHaptic()
+    setCatalog(previous => (previous ? { ...previous, speech_language_hint: null } : previous))
+
+    // Hata YUTULUYOR: kapatma bir kolaylik ve basarisiz olsa bile kullanici
+    // uyariyi bir daha gormek zorunda degil (bir sonraki acilista donerse
+    // yeniden kapatabilir).
+    try {
+      await voiceApi.dismissSpeechLanguageHint()
+    } catch {
+      // sessiz
+    }
+  }, [])
+
   // Katalogu yeniden cekmek icin sayac. Bir "reload" geri cagrimi yerine bunu
   // kullanmak, iptal bayragini efektin KENDI kapanisinda tutmayi mumkun
   // kiliyor; ref'e alinmis bir bayrak bir render geç kalir ve bayat okur.
@@ -1022,6 +1041,23 @@ export function VoiceSettings() {
         {catalog?.slow_engine && (
           <div className="mb-2 rounded-md border border-(--theme-warm)/40 bg-(--theme-warm)/10 px-3 py-2 text-xs text-(--text-secondary)">
             {catalog.slow_engine.message}
+          </div>
+        )}
+        {/* Konusma dili AYARSIZKEN yabanci dil seslendirildi.
+            Tek dilli bir motor Turkceyi Ingilizce fonetigiyle okuyor
+            (Merhaba -> Mehabal): ses cikiyor, hata yok, kullanici yalnizca
+            bozuk telaffuz duyuyor ve sebebi hicbir yerde gorunmuyor.
+            Ilk kurulumda SORULMUYOR (kullanicinin karari): Ingilizce konusan
+            kimse bu ayari gormek zorunda degil. Uyari sorun gercekten ortaya
+            ciktigi anda beliriyor.
+            KAPATILABILIR ve kapatma KALICI: kapatilamayan bir uyari, sorunu
+            bilerek gormezden gelen kullaniciya kalici bir gurultu olurdu. */}
+        {catalog?.speech_language_hint && (
+          <div className="mb-2 flex items-start gap-2 rounded-md border border-(--theme-warm)/40 bg-(--theme-warm)/10 px-3 py-2 text-xs text-(--text-secondary)">
+            <span className="flex-1">{catalog.speech_language_hint.message}</span>
+            <Button onClick={() => void dismissSpeechHint()} size="sm" variant="ghost">
+              Dismiss
+            </Button>
           </div>
         )}
         {tts.map(item => (

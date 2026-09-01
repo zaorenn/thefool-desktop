@@ -105,6 +105,20 @@ export interface VoiceClone {
   path: string
 }
 
+/**
+ * Konusma dili AYARSIZKEN yabanci dil seslendirildi.
+ *
+ * Tek dilli bir motor Turkceyi Ingilizce fonetigiyle okuyor (``Merhaba`` ->
+ * ``Mehabal``): ses cikiyor, hata yok, kullanici yalnizca bozuk telaffuz
+ * duyuyor. Ilk kurulumda SORULMUYOR -- uyari sorun gercekten ortaya ciktigi
+ * anda beliriyor.
+ */
+export interface SpeechLanguageHint {
+  /** Gozlenen isaretin adi (``turkish``, ``cyrillic``, ...) -- dil TAHMINI degil. */
+  signal: string
+  message: string
+}
+
 /** Secili motor OLCULMUS olarak yavassa gosterilecek ipucu. */
 export interface SlowEngineHint {
   alternative: string
@@ -120,6 +134,8 @@ export interface VoiceCatalog {
   items: VoiceItem[]
   /** ``null`` = secili motor yeterince hizli ya da hic olculmemis. */
   slow_engine?: null | SlowEngineHint
+  /** ``null`` = konusma dili ayarli, uyari kapatilmis ya da hic gerekmedi. */
+  speech_language_hint?: null | SpeechLanguageHint
   voice_dir: string
 }
 
@@ -196,6 +212,10 @@ export const voiceApi = {
   setLanguage: (patch: { reply_language?: string; speech_language?: string }) =>
     call<{ ok: boolean } & LanguageSettings>('/api/fool/voice/language', patch),
   catalog: () => call<VoiceCatalog>('/api/fool/voice/catalog'),
+  /** Konusma dili uyarisini KALICI olarak kapat. Oturum icinde tutmak, panel
+   *  her acildiginda uyariyi geri getirir ve dugmeyi anlamsiz kilardi. */
+  dismissSpeechLanguageHint: () =>
+    call<{ ok: boolean }>('/api/fool/voice/speech-language-hint/dismiss', {}),
   install: (entryId: string, device: 'cpu' | 'cuda') =>
     call<VoiceJob>('/api/fool/voice/install', { device, entry_id: entryId }),
   job: (jobId: string) => call<VoiceJob>(`/api/fool/voice/job/${jobId}`),

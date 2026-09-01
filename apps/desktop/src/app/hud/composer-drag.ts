@@ -59,7 +59,7 @@ export function useHudComposerDrag(enabled: boolean) {
   }, [])
 
   const onPointerDown = useCallback(
-    (event: ReactPointerEvent<HTMLElement>) => {
+    (event: ReactPointerEvent<HTMLElement>, immediate = false) => {
       if (!enabled || event.button !== 0) {
         return
       }
@@ -80,6 +80,27 @@ export function useHudComposerDrag(enabled: boolean) {
 
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current)
+      }
+
+      // TUTAMAKTAN baslayan surukleme BEKLEMIYOR.
+      //
+      // Uzun basma, tikla-gecir penceresinde metin secimiyle surukleme
+      // arasinda ayrim yapmanin tek yoluydu -- barin HER YERI basilabilir
+      // oldugu surece. Ama gorunur bir tutamagin uzerinde o belirsizlik yok:
+      // orasi yalnizca surukleme icin var.
+      //
+      // Neden gerekti: 140 ms basili tutmayi bilmeyen kullanici HUD'u hic
+      // tasiyamiyordu. Yeniden boyutlandirmanin sorunsuz calismasi da bunu
+      // gosteriyor -- onun gorunur bir kosesi var. Gorunmez bir hareket,
+      // olmayan bir ozelliktir.
+      if (immediate) {
+        stateRef.current.armed = true
+        setGrabbing(true)
+        triggerHaptic('selection')
+        target.setPointerCapture(event.pointerId)
+        event.preventDefault()
+
+        return
       }
 
       timerRef.current = window.setTimeout(() => {
@@ -172,5 +193,11 @@ export function useHudComposerDrag(enabled: boolean) {
 
   useEffect(() => reset, [reset])
 
-  return { grabbing, onPointerDown }
+  /** Gorunur tutamak: basar basmaz suruklemeye baslar. */
+  const onGripPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLElement>) => onPointerDown(event, true),
+    [onPointerDown]
+  )
+
+  return { grabbing, onGripPointerDown, onPointerDown }
 }

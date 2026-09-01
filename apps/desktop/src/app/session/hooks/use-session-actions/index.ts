@@ -10,6 +10,7 @@ import { type ChatMessage, preserveLocalAssistantErrors, toChatMessages } from '
 import { isMissingRpcMethod } from '@/lib/gateway-rpc'
 import { recoverInFlightTurnJournal } from '@/lib/inflight-turn-journal'
 import { setSessionYolo } from '@/lib/yolo-session'
+import { newSessionSource } from '@/store/chat-mode'
 import { normalizeChoices, setClarifyRequest } from '@/store/clarify'
 import { migrateSessionDraft } from '@/store/composer'
 import { clearQueuedPrompts, migrateQueuedPrompts } from '@/store/composer-queue'
@@ -194,7 +195,12 @@ async function desktopSessionCreateParams(cwd: string): Promise<Record<string, u
 
   return {
     cols: 96,
-    source: 'desktop',
+    // Chat/Cowork kipi. ``source`` yalnizca bir etiket degil: ag gecidi onu
+    // okuyup oturumun arac kapsamini seciyor (bkz. ``store/chat-mode.ts``).
+    // ONCEDEN sabit ``'desktop'`` yaziliyordu, yani Chat kipiyle yeni bir
+    // sohbete BASLAMANIN yolu yoktu -- ancak Cowork'te acip sonra
+    // cevirebiliyordun.
+    source: newSessionSource(),
     ...(cwd && { cwd }),
     ...(profile ? { profile } : {}),
     ...(selection.model

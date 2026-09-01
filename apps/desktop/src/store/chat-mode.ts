@@ -29,6 +29,7 @@
 
 import { computed } from 'nanostores'
 
+import { persistentAtom } from '@/lib/persisted'
 import { activeGateway, ensureActiveGatewayOpen } from '@/store/gateway'
 import { $selectedStoredSessionId, $sessions, sessionMatchesStoredId, setSessions } from '@/store/session'
 
@@ -64,9 +65,37 @@ export function modeOfSession(storedSessionId: null | string): ChatMode {
   return modeOfSource(found?.source)
 }
 
-/** Şu an açık olan sohbetin kipi. */
+/**
+ * YENİ sohbetler hangi kipte açılsın?
+ *
+ * Neden ayrı bir tercih
+ * ---------------------
+ * Kip bir oturum özelliği, ama kullanıcı henüz oturum AÇMADAN da seçebilmeli:
+ * "yeni bir sessiondayken ya da hiçbir session açık değilken de değişilip yeni
+ * sessionları ordan da açabilmeliyiz."
+ *
+ * İlk yazımda anahtar açık oturum yoksa hiçbir şey yapmıyordu -- yani Chat
+ * kipiyle yeni bir sohbete BAŞLAMANIN yolu yoktu, ancak Cowork'te açıp sonra
+ * çevirebiliyordun. Tam tersi olmalı: yeni sohbet ucuz, çevirmek pahalı.
+ *
+ * Kalıcı: kullanıcı Chat'te çalışıyorsa uygulamayı kapatıp açınca oraya
+ * dönmeli.
+ */
+export const $newChatMode = persistentAtom<ChatMode>('fool.desktop.chat.newSessionMode', 'cowork', {
+  decode: raw => (raw === 'chat' ? 'chat' : 'cowork'),
+  encode: value => value
+})
+
+/**
+ * Şu an geçerli kip: açık sohbetin kipi, sohbet yoksa YENİ sohbet tercihi.
+ *
+ * Sohbet yokken ``cowork`` varsaymak, kullanıcının seçtiği Chat kipini
+ * anahtarda göstermemek olurdu -- seçim yapılmış ama görünmüyor.
+ */
 export function activeMode(): ChatMode {
-  return modeOfSession($selectedStoredSessionId.get())
+  const selected = $selectedStoredSessionId.get()
+
+  return selected ? modeOfSession(selected) : $newChatMode.get()
 }
 
 /**
@@ -80,10 +109,12 @@ export function activeMode(): ChatMode {
  * görünürlük kapısı, bir sıfırlama değil.
  */
 export const $chatSimpleSidebar = computed(
-  [$selectedStoredSessionId, $sessions],
-  (selected, sessions): boolean => {
+  [$selectedStoredSessionId, $sessions, $newChatMode],
+  (selected, sessions, newMode): boolean => {
+    // Sohbet YOKKEN de sadeleşiyor: kullanıcı Chat kipini seçtiyse kenar
+    // çubuğu onu göstermeli, ilk mesajı beklemeden.
     if (!selected) {
-      return false
+      return newMode === 'chat'
     }
 
     const found = sessions.find(session => sessionMatchesStoredId(session, selected))
@@ -91,6 +122,11 @@ export const $chatSimpleSidebar = computed(
     return modeOfSource(found?.source) === 'chat'
   }
 )
+
+/** Yeni bir oturumun ``source``u -- ``session.create``e giden değer. */
+export function newSessionSource(): string {
+  return $newChatMode.get() === 'chat' ? CHAT_SOURCE : COWORK_SOURCE
+}
 
 /**
  * Bir oturumun kipini DEĞİŞTİR.

@@ -136,18 +136,26 @@ describe('dikisler', () => {
     expect(switcher).toContain('setSessionMode')
   })
 
-  it('ses rozeti HER KIPTE durum cubugunda', () => {
-    // Kullanicinin istegi: "stt ve tts secimleri de evrensel olsun, hem cowork
-    // hem chatte". Kipe bagli olmamali.
-    const bar = read('..', 'app', 'shell', 'hooks', 'use-statusbar-items.tsx')
+  it('ses hapi COMPOSERDA ve her kipte', () => {
+    // Ilk yazimda durum cubuguna koydum ve kullanici bulamadi: "ekranimda
+    // herhangi bir yerde yok". Baktigi yer composer -- model secimini de
+    // oradan yapiyor. Kipe bagli DEGIL: "hem cowork hem chatte".
+    const controls = read('..', 'app', 'chat', 'composer', 'controls.tsx')
 
-    expect(bar).toContain('useVoiceEngineStatusbarItem()')
-    expect(bar).not.toContain('chatSimple')
+    expect(controls).toContain('<VoicePill')
+    expect(controls).not.toContain('chatSimple')
   })
 
-  it('KURULU olmayan motor secilemiyor', () => {
-    const badge = read('..', 'fool', 'voice-engine-statusbar.tsx')
+  it('CALISMAYAN motor ve sesleri secilemiyor', () => {
+    // Kullanicinin kurali: "kesinlikle calistigi emin olunmayan ses tipleri
+    // calisiyormus gibi secim acik olmamali."
+    const pill = read('..', 'fool', 'voice-pill.tsx')
 
-    expect(badge).toContain('disabled: !row.usable')
+    expect(pill).toContain('blockedReason')
+    // Kapi ``installed`` degil ``usable``: paket yerinde ama motor ice
+    // aktarilamiyorsa secim sessizce calismayan bir motora gecmek olurdu.
+    expect(pill).toContain('item.usable')
+    // Sesler yalnizca CALISAN motordan.
+    expect(pill).toContain('!blockedReason(activeTts)')
   })
 })

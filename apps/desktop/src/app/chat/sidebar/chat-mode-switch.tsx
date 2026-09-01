@@ -22,7 +22,7 @@ import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { triggerHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
-import { type ChatMode, modeOfSession, setSessionMode } from '@/store/chat-mode'
+import { $newChatMode, type ChatMode, modeOfSession, setSessionMode } from '@/store/chat-mode'
 import { notifyError } from '@/store/notifications'
 import { $selectedStoredSessionId, $sessions } from '@/store/session'
 
@@ -46,7 +46,11 @@ export function ChatModeSwitch() {
   // kip değiştikten sonra anahtar eski hâlinde kalırdı.
   useStore($sessions)
 
-  const mode = modeOfSession(selected)
+  const newChatMode = useStore($newChatMode)
+  // Acik sohbet varsa ONUN kipi; yoksa yeni sohbet tercihi. Sohbet yokken
+  // ``cowork`` varsaymak, kullanicinin sectigi kipi anahtarda gostermemek
+  // olurdu -- secim yapilmis ama gorunmuyor.
+  const mode = selected ? modeOfSession(selected) : newChatMode
   const [pending, setPending] = useState<ChatMode | null>(null)
 
   const request = (next: ChatMode) => {
@@ -56,9 +60,12 @@ export function ChatModeSwitch() {
       return
     }
 
-    // Açık bir sohbet yoksa onaylanacak bir bedel de yok: kip bir sonraki
-    // sohbette zaten geçerli olacak.
+    // Acik sohbet YOKSA onaylanacak bir bedel de yok: yeniden kurulacak bir
+    // ajan yok, tercih bir sonraki sohbette gecerli olacak. Burada da diyalog
+    // gostermek, bedeli olmayan bir secim icin kullaniciyi durdurmak olurdu.
     if (!selected) {
+      $newChatMode.set(next)
+
       return
     }
 
@@ -107,6 +114,10 @@ export function ChatModeSwitch() {
 
           try {
             await setSessionMode(selected, pending)
+            // Yeni sohbetler de TAKIP etsin. Aksi halde anahtar "sifirlaniyor"
+            // gibi gorunurdu: bu sohbeti Chat yaparsin, yeni sohbet acarsin ve
+            // anahtar Cowork'e donmus olur.
+            $newChatMode.set(pending)
           } catch (error) {
             // Depo değişikliği zaten geri aldı; kullanıcıya SÖYLENİYOR --
             // sessizce eski kipte kalmak, Chat sandığı bir sohbette modele

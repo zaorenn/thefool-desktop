@@ -107,7 +107,11 @@ export function ChatBar({
   onTranscribeAudio
 }: ChatBarProps) {
   const hudMode = useStore($hudMode)
-  const { grabbing: hudGrabbing, onPointerDown: onHudDragPointerDown } = useHudComposerDrag(hudMode)
+  const {
+    grabbing: hudGrabbing,
+    onGripPointerDown: onHudGripPointerDown,
+    onPointerDown: onHudDragPointerDown
+  } = useHudComposerDrag(hudMode)
 
   // Typed stop phrase during an active voice conversation ends it — same
   // semantics as SAYING "stop" (voice-stop-word.ts) or clicking the pill's
@@ -1220,6 +1224,25 @@ export function ChatBar({
             }}
             ref={composerRef}
           >
+            {/* HUD'un TASIMA TUTAMAGI.
+                Barin her yerinden uzun basarak da tasinabiliyor, ama gorunmez
+                bir hareket olmayan bir ozelliktir: kullanici HUD'u hic
+                tasiyamadigini bildirdi, ve yeniden boyutlandirmanin sorunsuz
+                calismasi sebebi gosteriyor -- onun gorunur bir kosesi var.
+                Tutamaktan baslayan surukleme beklemiyor; belirsizlik yok,
+                cunku orasi yalnizca bunun icin. */}
+            {hudMode && (
+              <span
+                aria-hidden
+                className="absolute -top-0.5 left-1/2 z-10 flex h-3 w-9 -translate-x-1/2 cursor-grab items-center justify-center opacity-0 transition-opacity group-hover/composer:opacity-100 active:cursor-grabbing"
+                data-hud-grip
+                onPointerDown={onHudGripPointerDown}
+                style={{ pointerEvents: 'auto' }}
+                title="Drag to move"
+              >
+                <span className="h-[3px] w-7 rounded-full bg-(--ui-text-tertiary)" />
+              </span>
+            )}
             {isHelpHint && <HelpHint />}
             {trigger && !argStageEmpty && (
               <ComposerTriggerPopover

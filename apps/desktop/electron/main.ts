@@ -11839,7 +11839,17 @@ let hudProfile = null
 // moves or resizes the HUD, hud-state.json wins (same pattern as the main
 // window's window-state.json).
 const HUD_WIDTH = 620
-const HUD_HEIGHT = 320
+// Pencere CUBUGA yakin aciliyor.
+//
+// Eskiden 320'ydi ve cubuk ~56px: yani taze bir HUD ekranda ~264px BOS,
+// saydam ama gorunur bir dikdortgen birakiyordu. Kullanicinin bildirdigi:
+// "mesajlar gozukmuyorken rahatsiz edici."
+//
+// Bant (transkript) bu pencerenin icinde yasiyor, yani yer TAMAMEN
+// kaldirilamaz -- ama varsayilan olarak ayirmak da gerekmiyor: kullanici
+// kosesinden buyutebiliyor ve sectigi olcu hatirlaniyor (``readHudState``).
+// Kucuk baslayip buyutmek, buyuk baslayip her seferinde kucultmekten iyi.
+const HUD_HEIGHT = 200
 const HUD_BOTTOM_MARGIN = 72
 const HUD_STATE_PATH = path.join(app.getPath('userData'), 'hud-state.json')
 

@@ -434,6 +434,40 @@ TOOLSETS = {
         "includes": ["web", "vision", "image_gen"]
     },
 
+    # Chat kipi — masaüstündeki Chat/Cowork anahtarının "Chat" tarafı.
+    #
+    # Neden ayrı bir küme
+    # -------------------
+    # İstenen: "chat kısmında agentic özellikler yerine aşırı hızlı sohbet
+    # edilebilecek bir yer olsun." Hızın geldiği yer istemin kendisi: ``coding``
+    # kümesi 31 araç şeması gönderiyor ve bunların tamamı her turda modele
+    # gidiyor. Burası 8 araç.
+    #
+    # ``safe`` YETMİYOR ve o yüzden kopyalanmadı: adı güven veriyor ama içinde
+    # ``image_generate`` var (üretiyor, okumuyor) ve dosya okuma ile geçmiş
+    # araması hiç yok -- yani hem fazlası hem eksiği var.
+    #
+    # Neden ``file`` bütün olarak alınmıyor
+    # -------------------------------------
+    # O küme karışık: ``read_file``/``search_files`` okuyor ama
+    # ``write_file``/``patch`` yazıyor. Tek tek listelemek, kümenin yarısını
+    # almanın tek yolu -- ve ``file``a ileride yazan bir araç eklenirse buraya
+    # sessizce sızmamasını da sağlıyor.
+    #
+    # ``memory`` BİLEREK içeride ve tek istisna
+    # -----------------------------------------
+    # Teknik olarak yazıyor, ama sisteme değil kendi not defterine. Kullanıcının
+    # kararı: hafızasız bir sohbet her seferinde sıfırdan başlar ve "hızlı
+    # sohbet" tam da tekrar anlatmak zorunda kalmamak demek.
+    #
+    # ``clarify`` de içeride: soru soramayan bir sohbet, anlamadığında tahmin
+    # etmek zorunda kalır.
+    "chat": {
+        "description": "Fast conversation — reads, does not change anything",
+        "tools": ["read_file", "search_files", "clarify", "memory"],
+        "includes": ["web", "vision", "session_search"]
+    },
+
     # Coding posture (base Hermes — CLI/TUI/desktop/ACP). Auto-selected in a
     # code workspace; see agent/coding_context.py. Keeps everything you reach
     # for while pairing on code and drops the rest (messaging, tts, image_gen,

@@ -43,7 +43,7 @@ import { voiceApi } from '../voice-api'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 import { $voiceWarm } from '../voice-warm'
 
-import { $voiceSessionId, waitForVoiceSessionOrOpen } from './active-session'
+import { $voiceSessionId, requestVoiceSubmit, waitForVoiceSessionOrOpen } from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -258,6 +258,38 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
     await requestGateway('session.interrupt', { session_id: sessionId })
   }, [requestGateway])
 
+  //
+  // ÖN ISITMA: oturum, kullanıcı KONUŞMAYA BAŞLARKEN çözülüyor.
+  //
+  // Ölçülen kırıklık: akış sırayla koşuyordu -- kayıt biter, yazıya dökülür
+  // (saniyeler), SONRA oturum çözülür ve oturum yoksa ana pencereden bir tane
+  // istenip 12 saniyeye kadar beklenirdi. Kullanıcının gördüğü: "transcribing
+  // biter bitmez modele cevap gitmiyor, arada bir boşluk var" -- ve o boşlukta
+  // ana pencere yeni bir sohbet açtığı için başka bir oturumun mesajı bir an
+  // görünüp kayboluyordu.
+  //
+  // Oysa oturumu açmak için konuşmanın BİTMESİNİ beklemek gerekmiyor: kullanıcı
+  // konuşurken açılabilir. Yazıya dökme bittiğinde oturum çoktan hazır oluyor
+  // ve boşluk kapanıyor.
+  const sessionPromiseRef = useRef<null | Promise<string>>(null)
+
+  /** Oturumu ŞİMDİ istemeye başla (beklemeden). Konuşma başlarken çağrılıyor. */
+  const prewarmSession = useCallback(() => {
+    if (!sessionPromiseRef.current) {
+      // Hata YUTULUYOR: burası ateşle-unut. Gerçek hata ``resolveSessionId``
+      // beklerken yeniden yüzeye çıkıyor.
+      sessionPromiseRef.current = waitForVoiceSessionOrOpen().catch(() => '')
+    }
+  }, [])
+
+  const resolveSessionId = useCallback(async () => {
+    // Ön ısıtma varsa ONU bekle -- ikinci bir istek ikinci bir oturum açardı.
+    const pending = sessionPromiseRef.current ?? waitForVoiceSessionOrOpen()
+    sessionPromiseRef.current = null
+
+    return pending
+  }, [])
+
   const begin = useCallback((activation: BeginActivation = 'key') => {
     // Motor ISINMADAN bas-konus acilmiyor.
     //
@@ -279,6 +311,8 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
     }
 
     setError(null)
+    // Oturumu ŞİMDİ açtırmaya başla: kullanıcı konuşurken hazır olsun.
+    prewarmSession()
     discardRef.current = false
     // Tuşa basmak açık bir niyet: sesle başlamış bir yakalama varsa devral.
     // Kapıyı ilk gelene bırakmak tuşu sessizce yutardı — mikrofon açılmaz,
@@ -371,7 +405,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
         setStatus('idle')
         setError(cause instanceof Error ? cause.message : String(cause))
       })
-  }, [haltTurn, mic])
+  }, [haltTurn, mic, prewarmSession])
 
   /**
    * Notch kapandı — mikrofonu bırak ama SOHBETİ BİTİRME.
@@ -409,7 +443,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // Oturum YOKSA ana pencereden bir tane ISTIYOR (bkz. ``active-session.ts``).
   // Eskiden burasi bos donuyordu ve kullanici, ekranda acik bir sohbet olmadigi
   // icin, konustugu cumleyi kaybediyordu.
-  const resolveSessionId = useCallback(async () => waitForVoiceSessionOrOpen(), [])
+
 
 
   // Yazıya dök ve gönder. İKİ giriş yolu paylaşıyor: tuşla biten kayıt ve
@@ -465,22 +499,18 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
       // bellekteki oturumu. Saklanani gondermek ag gecidinde hicbir seye
       // denk gelmiyor ve mesaj sessizce kayboluyor -- ilk yazimda tam bu
       // oldu, kullanici "soyledigim seyler modele gitmiyor" dedi.
-      const sessionId = await resolveSessionId()
-
-      if (!sessionId) {
-        // Sessizce yutmak, kullanicinin konusup hicbir sey olmadigini
-        // gormesi olurdu -- ve deposunda tam olarak bu vardi: sifir mesajli
-        // oturumlar.
-        //
-        // Mesaj NE YAPILACAGINI soyluyor. Onceki hali ("Could not open a
-        // voice session") sebebi de caresi de vermiyordu: oturumu ana pencere
-        // aciyor, centik yalnizca onu okuyor. Kullanici centige bakip
-        // bekleyebilirdi.
-        setError('Could not open a chat to talk into — try the main window')
-        setStatus('idle')
-
-        return
-      }
+      // OTURUM COZUMLEMESI BURADAN KALKTI ve gecikmenin asil kaynagi oydu.
+      //
+      // Burada ``waitForVoiceSessionOrOpen()`` bekleniyordu: acik oturum yoksa
+      // ana pencereden bir tane isteniyor ve 12 SANIYEYE kadar bekleniyordu --
+      // konusma bittikten SONRA. Kullanicinin gordugu "transcribing biter
+      // bitmez modele cevap gitmiyor, arada bir bosluk var" buydu, ve o boslukta
+      // yeni bir sohbet acildigi icin baska bir oturumun mesaji bir an gorunup
+      // kayboluyordu.
+      //
+      // Artik gerek yok: gonderimi ana pencere yapiyor ve o, oturumu zaten
+      // kendi acan taraf (``createBackendSessionForSend`` gonderim yolunun
+      // icinde). Centik yalnizca metni yaziyor.
 
       // Sozunu KESTIYSE model bunu ogrenmeli.
       //
@@ -491,17 +521,21 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
       // kesilmedigi bir anda "sozunu kestim" diye isaretlenirdi.
       const interrupted = takeVoicePlaybackInterrupted()
 
-      await requestGateway('prompt.submit', {
-        session_id: sessionId,
-        ...(interrupted ? { interrupted } : {}),
-        // Notch'tan konuşuldu: kullanıcı başka bir uygulamaya bakıyor.
-        // HUD ile aynı ipucu, ağ geçidi bunu tur başına bağlam olarak
-        // kullanıyor.
-        surface: 'hud',
-        text
-      })
+      // ANA PENCERE gonderiyor, centik degil.
+      //
+      // Burada ``prompt.submit`` vardi ve composer'in gonderim boru hattini
+      // atliyordu: o boru hatti gonderir gondermez ekrana IYIMSER bir kullanici
+      // balonu koyuyor, centikten konusunca o balon hic cizilmiyordu. Mesaj
+      // gercekten gidiyordu (gunlukte ``tui prompt accepted``) ama ekranda
+      // hicbir sey olmuyor ve model dusunurken (olculdu: 172,9 sn) uygulama
+      // olu gorunuyordu.
+      //
+      // Istenen: "centik ayni akisin birebir aynisi, sadece atanan tus ile
+      // bas-konus hali olmali." Artik centik metni YAZIYOR, gonderimi ana
+      // pencere yapiyor (``use-voice-submit-requests``).
+      requestVoiceSubmit(text, interrupted)
     },
-    [haltTurn, requestGateway, resolveSessionId]
+    [haltTurn]
   )
 
   const commit = useCallback(() => {

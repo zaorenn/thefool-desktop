@@ -94,6 +94,7 @@ konuşmaz -- sessiz sınıf: hata yok, yalnızca hiçbir şey olmuyor.
 | `setup-voice-intro` | `apps/desktop/src/components/assistant-ui/thread/index.tsx` | Yerel model kendiliğinden bulunduğunda karşılama ekranı hiç görünmez ve ses kurulumu ulaşılamaz kalır |
 | `notch-profile` | `apps/desktop/electron/main.ts` | Çentik birincil arka uca bağlanır; başka bir profildeki açık sohbeti göremez ve "No chat is open yet" der |
 | `notch-opens-session` | `apps/desktop/src/app/contrib/wiring.tsx` | Açık sohbet yokken çentik konuşulanı atıp "önce pencerede bir sohbet aç" der |
+| `notch-submits-through-main` | `apps/desktop/src/app/contrib/wiring.tsx` | Çentik kendi `prompt.submit`ini atar, composer'ın iyimser kullanıcı balonu hiç çizilmez ve konuşan kişi ekranda hiçbir şey görmez |
 | `default-memory` | `plugins/memory/__init__.py` | Taze kurulum hafızasız çalışır; kullanıcı bunu ancak "neden hatırlamıyorsun" diye sorunca öğrenir |
 | `shared-window-values` | `apps/desktop/electron/{main,preload}.ts`, `apps/desktop/src/fool/cross-window-atom.ts` | Paketlenmiş sürümde çentik ana pencerenin değerlerini hiç görmez (`file://` ayrı localStorage) |
 | `voice-stop-bridge` | `apps/desktop/src/main.tsx` | Çentikten araya girmek sesi durdurmaz; ses başka bir pencerede çalmaya devam eder |

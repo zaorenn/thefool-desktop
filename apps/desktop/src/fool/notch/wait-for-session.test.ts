@@ -75,18 +75,30 @@ describe('centik bekleyen cozucuyu kullaniyor', () => {
     expect(resolver.slice(0, 200)).not.toContain('$voiceSessionId.get()')
   })
 
-  it('hata mesaji NE YAPILACAGINI soyluyor', async () => {
+  it('GONDERIM yolu artik oturum BEKLEMIYOR', async () => {
     const { readFileSync } = await import('node:fs')
     const { join } = await import('node:path')
 
     const source = readFileSync(join(import.meta.dirname, 'use-notch-voice.ts'), 'utf8')
 
-    // Eski hali sebebi de caresi de vermiyordu.
+    // Centik ARTIK gondermiyor: metni yaziyor, gonderimi ana pencere yapiyor
+    // (``use-voice-submit-requests``). Istenen buydu -- "centik ayni akisin
+    // birebir aynisi, sadece atanan tus ile bas-konus hali."
+    expect(source.includes('requestVoiceSubmit(text, interrupted)')).toBe(true)
+    // Kendi ``prompt.submit``i kalmadi: o, composer'in IYIMSER kullanici
+    // balonunu atliyordu ve kullanici konustugunda ekranda hicbir sey
+    // olmuyordu.
+    expect(source.includes("requestGateway('prompt.submit'")).toBe(false)
+
+    // Gonderimden ONCE oturum beklenmiyor. Beklenirdi ve gecikmenin asil
+    // kaynagi oydu: acik oturum yoksa 12 saniyeye kadar bir tane acilmasi
+    // bekleniyordu -- konusma bittikten SONRA.
+    const submit = source.slice(source.indexOf('const submitAudio'))
+
+    expect(submit.slice(0, submit.indexOf('requestVoiceSubmit'))).not.toContain('await resolveSessionId()')
+
+    // Eski, sebebi de caresi de vermeyen mesajlar geri gelmemeli.
     expect(source.includes('Could not open a voice session')).toBe(false)
-    // "Once pencerede bir sohbet ac" ARTIK bir care degil: centik oturumu
-    // kendisi actiriyor. Mesaj yalnizca o da basarisiz olursa cikiyor ve
-    // hala nereye bakilacagini soyluyor.
     expect(source.includes('open one in the main window')).toBe(false)
-    expect(source.includes('try the main window')).toBe(true)
   })
 })

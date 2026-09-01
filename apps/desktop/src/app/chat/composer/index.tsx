@@ -1234,13 +1234,13 @@ export function ChatBar({
             {hudMode && (
               <span
                 aria-hidden
-                className="absolute -top-0.5 left-1/2 z-10 flex h-3 w-9 -translate-x-1/2 cursor-grab items-center justify-center opacity-0 transition-opacity group-hover/composer:opacity-100 active:cursor-grabbing"
+                className="absolute left-1/2 top-1 z-20 flex h-4 w-10 -translate-x-1/2 cursor-grab items-center justify-center rounded-full opacity-50 transition-opacity hover:opacity-100 active:cursor-grabbing"
                 data-hud-grip
                 onPointerDown={onHudGripPointerDown}
                 style={{ pointerEvents: 'auto' }}
                 title="Drag to move"
               >
-                <span className="h-[3px] w-7 rounded-full bg-(--ui-text-tertiary)" />
+                <span className="h-[3px] w-7 rounded-full bg-(--ui-text-secondary)" />
               </span>
             )}
             {isHelpHint && <HelpHint />}

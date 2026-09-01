@@ -26,6 +26,7 @@ import { FloatingPet } from '@/components/pet/floating-pet'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
 import { useVoiceSessionRequests } from '@/fool/notch/use-voice-session-requests'
+import { useVoiceSubmitRequests } from '@/fool/notch/use-voice-submit-requests'
 import { isNotchWindow } from '@/fool/notch/window'
 import { getLatestSessionMessages } from '@/hermes'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
@@ -498,6 +499,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // isteyen taraf centik.
   useVoiceSessionRequests(createBackendSessionForSend)
 
+
   // Swapping the live gateway to another profile must re-pull that profile's
   // global model + active-profile pill (both are nanostores — the blanket
   // invalidateQueries on swap doesn't touch them).
@@ -642,6 +644,17 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // SAME submit machinery the normal composer uses (current chat / picked
   // session / new session), and it hears gateway truth from this window.
   useQuickEntryBridge({ startFreshSessionDraft, submitText })
+  // FOOL-SEAM: notch-submits-through-main
+  //
+  // Centik ag gecidine DOGRUDAN ``prompt.submit`` atiyordu ve composer'in
+  // gonderim boru hattini atliyordu -- yani IYIMSER kullanici balonu hic
+  // cizilmiyordu. Kullanici konusuyor, mesaj gidiyor, ekranda hicbir sey
+  // olmuyor ve model dusunurken uygulama olu gorunuyordu.
+  //
+  // Artik centik bir GIRDI AYGITI: metni yaziyor, gonderimi BURASI yapiyor.
+  // Quick Entry ayni karari coktan vermisti: "One submit pipeline, no bespoke
+  // RPC."
+  useVoiceSubmitRequests(submitText)
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })

@@ -35,7 +35,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/compon
 import { cn } from '@/lib/utils'
 import { notifyError } from '@/store/notifications'
 
-import { voiceApi, type VoiceCatalog, type VoiceItem } from './voice-api'
+import { voiceApi, type VoiceCatalog, type VoiceClone, type VoiceItem } from './voice-api'
 
 const ROW =
   'flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-[0.78rem] transition-colors'
@@ -57,6 +57,11 @@ function blockedReason(item: VoiceItem): string {
 export function VoicePill({ disabled }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false)
   const [catalog, setCatalog] = useState<null | VoiceCatalog>(null)
+  // KLONLAR ayrı bir uçtan geliyor (``/voice/clones``) ve ilk yazımda hiç
+  // okunmuyordu: kullanıcının beş klonu varken hap yalnızca "Built-in voice"
+  // gösteriyordu. Katalogdaki ``voices`` motorun GÖMÜLÜ sesleri; klonlar
+  // kullanıcının kendi kaydettikleri ve asıl kullandığı şey onlar.
+  const [clones, setClones] = useState<VoiceClone[]>([])
   const [busy, setBusy] = useState(false)
 
   // TEMBEL: katalog çağrısı dokuz motorun CUDA sondasını çalıştırıyor
@@ -69,10 +74,21 @@ export function VoicePill({ disabled }: { disabled?: boolean }) {
 
     let alive = true
 
-    voiceApi
-      .catalog()
-      .then(next => alive && setCatalog(next))
-      .catch(() => alive && setCatalog(null))
+    void Promise.allSettled([voiceApi.catalog(), voiceApi.clones()]).then(([cat, cl]) => {
+      if (!alive) {
+        return
+      }
+
+      if (cat.status === 'fulfilled') {
+        setCatalog(cat.value)
+      }
+
+      // Klonlar DÜŞERSE motor listesi yine çiziliyor: bir listenin
+      // gelmemesi diğerini de kaybettirmemeli.
+      if (cl.status === 'fulfilled') {
+        setClones(cl.value.clones ?? [])
+      }
+    })
 
     return () => {
       alive = false
@@ -80,10 +96,14 @@ export function VoicePill({ disabled }: { disabled?: boolean }) {
   }, [catalog, open])
 
   const refresh = useCallback(async () => {
-    try {
-      setCatalog(await voiceApi.catalog())
-    } catch {
-      // Sessiz: seçim zaten uygulandı, yalnızca liste tazelenemedi.
+    const [cat, cl] = await Promise.allSettled([voiceApi.catalog(), voiceApi.clones()])
+
+    if (cat.status === 'fulfilled') {
+      setCatalog(cat.value)
+    }
+
+    if (cl.status === 'fulfilled') {
+      setClones(cl.value.clones ?? [])
     }
   }, [])
 
@@ -140,6 +160,10 @@ export function VoicePill({ disabled }: { disabled?: boolean }) {
   // kullanıcının kuralını doğrudan çiğnerdi.
   const voices = activeTts && !blockedReason(activeTts) ? activeTts.voices : []
 
+  // Klonlar da ayni kapidan geciyor: calismayan bir motorun klonlarini
+  // secilebilir gostermek, kullanicinin kuralini ciğnerdi.
+  const cloneRows = activeTts && !blockedReason(activeTts) ? clones : []
+
   return (
     <DropdownMenu onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger asChild>
@@ -178,32 +202,54 @@ export function VoicePill({ disabled }: { disabled?: boolean }) {
           <div className="px-2.5 pb-1 pt-1.5 text-[0.62rem] font-medium uppercase tracking-wider text-(--ui-text-tertiary)">
             Voice
           </div>
-          {voices.length === 0 ? (
-            <div className="px-2.5 py-1.5 text-[0.72rem] text-(--ui-text-tertiary)">
-              {activeTts ? 'This engine has one voice.' : 'Pick an engine first.'}
-            </div>
+          {!activeTts ? (
+            <div className="px-2.5 py-1.5 text-[0.72rem] text-(--ui-text-tertiary)">Pick an engine first.</div>
+          ) : voices.length === 0 && cloneRows.length === 0 ? (
+            <div className="px-2.5 py-1.5 text-[0.72rem] text-(--ui-text-tertiary)">This engine has one voice.</div>
           ) : (
-            voices.map(voice => (
-              <button
-                className={cn(
-                  ROW,
-                  activeTts?.voice === voice.id && 'bg-accent/50 font-medium',
-                  'hover:bg-accent/40'
-                )}
-                disabled={busy}
-                key={voice.id}
-                onClick={() =>
-                  void pick(
-                    () => voiceApi.setVoice(activeTts!.id, voice.id),
-                    `Could not switch to ${voice.label}`
-                  )
-                }
-                type="button"
-              >
-                <span className="truncate">{voice.label}</span>
-                {activeTts?.voice === voice.id ? <span className="shrink-0 text-(--theme-primary)">✓</span> : null}
-              </button>
-            ))
+            <>
+              {voices.map(voice => (
+                <button
+                  className={cn(ROW, activeTts.voice === voice.id && 'bg-accent/50 font-medium', 'hover:bg-accent/40')}
+                  disabled={busy}
+                  key={voice.id}
+                  onClick={() =>
+                    void pick(() => voiceApi.setVoice(activeTts.id, voice.id), `Could not switch to ${voice.label}`)
+                  }
+                  type="button"
+                >
+                  <span className="truncate">{voice.label}</span>
+                  {activeTts.voice === voice.id ? <span className="shrink-0 text-(--theme-primary)">✓</span> : null}
+                </button>
+              ))}
+
+              {/* KLONLAR. Kullanicinin kendi kaydettikleri, ve pratikte asil
+                  kullandigi sesler. Ilk yazimda hic okunmuyorlardi: bes klonu
+                  varken hap yalnizca "Built-in voice" gosteriyordu. */}
+              {cloneRows.length > 0 && (
+                <div className="mt-1 border-t border-(--ui-stroke-quaternary) px-2.5 pb-1 pt-2 text-[0.62rem] font-medium uppercase tracking-wider text-(--ui-text-tertiary)">
+                  Cloned
+                </div>
+              )}
+              {cloneRows.map(clone => (
+                <button
+                  className={cn(ROW, activeTts.voice === clone.id && 'bg-accent/50 font-medium', 'hover:bg-accent/40')}
+                  disabled={busy}
+                  key={clone.id}
+                  onClick={() =>
+                    void pick(
+                      () => voiceApi.selectClone(activeTts.id, clone.id),
+                      `Could not switch to ${clone.label}`
+                    )
+                  }
+                  title={clone.label}
+                  type="button"
+                >
+                  <span className="truncate">{clone.label}</span>
+                  {activeTts.voice === clone.id ? <span className="shrink-0 text-(--theme-primary)">✓</span> : null}
+                </button>
+              ))}
+            </>
           )}
         </div>
       </DropdownMenuContent>

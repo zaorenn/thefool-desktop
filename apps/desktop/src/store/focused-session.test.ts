@@ -59,25 +59,37 @@ describe('canli (ag gecidi) oturum', () => {
     expect(focusedRuntimeSessionId()).toBe('runtime-tile')
   })
 
-  it('kutucuk HENUZ baslamadiysa BOS -- oncekinin kimligi DEGIL', () => {
-    // En sinsi hali bu: bir onceki oturumun kimligini vermek, sesi sessizce
-    // yanlis sohbete gondermek olurdu. Bos donmek centigin "once bir oturum
-    // ac" yolunu tetikliyor.
+  it('kutucuk HENUZ baslamadiysa CALISMA ALANINA dusuyor', () => {
+    // Once bos donuyordu ve o, centigi "yeni oturum ac" yoluna sokuyordu:
+    // kullanicinin ekranda ACIK bir sohbeti dururken mesaj bambaska bir yere
+    // gidiyordu. Kullanicinin kurali: "kullanici halihazirda bir session
+    // penceresindeyse o sessiona gitmeli mesaj."
     $activeSessionId.set('runtime-main')
     $sessionTiles.set([{ storedSessionId: 'stored-tile' }])
     activeComposer.mockReturnValue('tile:stored-tile')
 
-    expect(focusedRuntimeSessionId()).toBe('')
+    expect(focusedRuntimeSessionId()).toBe('runtime-main')
   })
 
-  it('TANINMAYAN kutucuk da BOS donuyor', () => {
+  it('TANINMAYAN kutucuk da calisma alanina dusuyor', () => {
     $activeSessionId.set('runtime-main')
     activeComposer.mockReturnValue('tile:hic-yok')
 
-    expect(focusedRuntimeSessionId()).toBe('')
+    expect(focusedRuntimeSessionId()).toBe('runtime-main')
   })
 
-  it('hic canli oturum yoksa BOS', () => {
+  it('CANLI kutucuk calisma alanini EZIYOR', () => {
+    // Dusme yalnizca son care: odaktaki kutucuk canliysa mesaj ONA gider.
+    $activeSessionId.set('runtime-main')
+    $sessionTiles.set([{ runtimeId: 'runtime-tile', storedSessionId: 'stored-tile' }])
+    activeComposer.mockReturnValue('tile:stored-tile')
+
+    expect(focusedRuntimeSessionId()).toBe('runtime-tile')
+  })
+
+  it('hicbir yerde canli oturum yoksa BOS', () => {
+    // Yalnizca burada bos: gercekten gidilecek bir oturum yok ve centik
+    // "once bir tane ac" yolunu haklı olarak tetikliyor.
     expect(focusedRuntimeSessionId()).toBe('')
   })
 })

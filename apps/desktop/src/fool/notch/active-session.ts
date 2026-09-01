@@ -127,3 +127,71 @@ export async function waitForVoiceSessionOrOpen(
 
   return waitForVoiceSession(openTimeoutMs)
 }
+
+
+/**
+ * "Şunu GÖNDER" — çentikten ana pencereye.
+ *
+ * Neden çentik kendisi göndermiyor
+ * --------------------------------
+ * Gönderiyordu, ve ölçülen bedeli şuydu: çentik ağ geçidine DOĞRUDAN
+ * ``prompt.submit`` atıyordu, yani composer'ın gönderim boru hattını
+ * atlıyordu. O boru hattı gönderir göndermez ekrana İYİMSER bir kullanıcı
+ * balonu koyuyor (``use-prompt-actions/submit.ts::optimisticId``). Çentikten
+ * konuşunca o balon hiç çizilmiyordu: kullanıcı konuşuyor, mesaj gerçekten
+ * gidiyor, ama ekranda HİÇBİR ŞEY olmuyor ve model düşünürken (ölçüldü: tek
+ * turda 172,9 sn) uygulama tamamen ölü görünüyor.
+ *
+ * Kullanıcının bildirdiği: "dediklerim algılandığı anda söylediklerim sohbete
+ * aktarılmıyor... uygulamanın tüm amacının işlevsiz olmasına sebep oluyor."
+ *
+ * Ve istediği: "çentik aynı akışın birebir aynısı, sadece atanan tuş ile
+ * bas-konuş hâli olmalı."
+ *
+ * Bu yüzden çentik artık bir GİRDİ AYGITI: metni yazıyor, gönderimi ana
+ * pencere yapıyor -- iyimser balonu, oturum hedeflemesi, araya girme mandalı
+ * ve geri kalan her şeyle birlikte. Quick Entry penceresi aynı kararı çoktan
+ * vermişti: "One submit pipeline, no bespoke RPC."
+ *
+ * Değer bir SAYAÇ taşıyor (``id``): aynı cümleyi iki kez söylemek ayırt
+ * edilebilmeli, yoksa ikincisi "değişmedi" sayılıp yutulurdu.
+ */
+export interface VoiceSubmitRequest {
+  id: string
+  text: string
+  /** Model sözünü kesti mi? Ana pencere bunu tura iliştiriyor. */
+  interrupted?: boolean
+}
+
+export const $voiceSubmitWanted = sharedAtom<string>('fool.desktop.voice.submitWanted', '', {
+  decode: raw => raw,
+  encode: value => value
+})
+
+/** Ana pencereden bu metni GÖNDERMESİNİ iste. */
+export function requestVoiceSubmit(text: string, interrupted?: boolean): void {
+  const payload: VoiceSubmitRequest = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    text,
+    ...(interrupted ? { interrupted } : {})
+  }
+
+  $voiceSubmitWanted.set(JSON.stringify(payload))
+}
+
+/** İsteği çöz. Bozuk değer ``null`` -- yarım bir yazı gönderim tetiklememeli. */
+export function parseVoiceSubmit(raw: unknown): null | VoiceSubmitRequest {
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as VoiceSubmitRequest
+
+    return parsed && typeof parsed.id === 'string' && typeof parsed.text === 'string' && parsed.text.trim()
+      ? parsed
+      : null
+  } catch {
+    return null
+  }
+}

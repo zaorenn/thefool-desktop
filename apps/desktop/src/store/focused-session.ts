@@ -78,8 +78,22 @@ export function focusedRuntimeSessionId(): string {
     const storedSessionId = target.slice(TILE_PREFIX.length)
     const tile = $sessionTiles.get().find(item => item.storedSessionId === storedSessionId)
 
-    // Kutucuk var ama HENÜZ devam ettirilmemiş: canlı oturumu yok.
-    return tile?.runtimeId ?? ''
+    if (tile?.runtimeId) {
+      return tile.runtimeId
+    }
+
+    // Kutucuğun canlı oturumu YOKSA burada BOŞ DÖNMÜYORUZ, çalışma alanına
+    // düşüyoruz.
+    //
+    // Ölçülen kırıklık: boş dönmek çentiği "yeni oturum aç" yoluna sokuyordu
+    // ve kullanıcının ekranda AÇIK bir sohbeti dururken mesaj bambaşka bir
+    // yere gidiyordu -- bildirdiği tam olarak buydu: "bambaşka bir sessiondaki
+    // mesaj anlık gözüktü, sohbete düşmedi bile."
+    //
+    // Kullanıcının kuralı: "kullanıcı hâlihazırda bir session penceresindeyse
+    // o sessiona gitmeli mesaj." Odaktaki kutucuk henüz canlı değilse, ekranda
+    // canlı olan şey çalışma alanının sohbetidir; ona gitmek, hiçbir yere
+    // gitmemekten de yeni bir oturum açmaktan da doğru.
   }
 
   return $activeSessionId.get() ?? ''

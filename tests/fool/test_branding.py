@@ -251,6 +251,7 @@ EXPECTED_SEAMS = {
     "setup-voice-intro",
     "notch-profile",
     "notch-opens-session",
+    "notch-submits-through-main",
     "default-memory",
     "shared-window-values",
     "voice-stop-bridge",

@@ -119,6 +119,35 @@ function Waveform({ active, level }: { active: boolean; level: number }) {
   )
 }
 
+/**
+ * Çentiğin tek metin satırı.
+ *
+ * Model konuşurken metin BÜYÜYOR ve kutu sabit kalıyor: yeni gelen cümle
+ * görünsün diye her yazımda dibe kaydırılıyor. Kaydırma yalnızca ``speaking``
+ * iken: kullanıcının kendi cümlesi tek seferde geliyor, onu kaydırmak
+ * gereksiz bir sıçrama olurdu.
+ */
+function NotchText({ speaking, text }: { speaking: boolean; text: string }) {
+  const ref = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (speaking && ref.current) {
+      ref.current.scrollTop = ref.current.scrollHeight
+    }
+  }, [speaking, text])
+
+  return (
+    <div
+      className={`max-h-16 w-full overflow-y-auto px-1 text-[0.78rem] leading-snug ${
+        speaking ? 'text-left text-(--ui-text-primary)' : 'text-center text-(--ui-text-secondary)'
+      }`}
+      ref={ref}
+    >
+      {text}
+    </div>
+  )
+}
+
 export function NotchShell() {
   // Uygulamanin global govde arkaplani bu pencerede de boyaniyor: notch'un
   // kendisi solsa bile arkasinda 460x220'lik opak bir dikdortgen kaliyordu
@@ -632,39 +661,28 @@ export function NotchShell() {
                 </button>
               </div>
 
-              {/* Yazıya dökülen metin: kullanıcı ne anlaşıldığını GÖRMELİ.
-                  Görmezse yanlış anlaşılmayı ancak cevaptan fark eder. */}
-              {voice.transcript && voice.status !== 'listening' && (
-                <div className="line-clamp-2 max-w-full text-center text-[0.78rem] text-(--ui-text-secondary)">
-                  {voice.transcript}
-                </div>
-              )}
+              {/* TEK SATIR, SIRAYLA -- ikisi birden DEĞİL.
+                  İstenen sıra birebir şu: konuşma bitince gönderilen metin;
+                  model cevap vermeye başlayınca onun cevabı; cevap uzunsa
+                  model konuşurken aşağı akması; bitince kullanıcı yeni bir şey
+                  söyleyene kadar öylece kalması.
 
-              {/* MODELIN CEVABI.
-                  Kanca ``reply``i bastan beri tutuyordu ve model konustukca
-                  cumle cumle guncelliyordu (``onSentence``), ama burada HIC
-                  cizilmiyordu: centik senin ne dedigini gosteriyor, modelin ne
-                  cevapladigini hic gostermiyordu.
+                  Önce ikisi AYNI ANDA çiziliyordu ve çentik iki satırlık bir
+                  kayıt defterine dönüyordu -- kullanıcının gördüğü karmaşa
+                  buydu. Kural artık tek cümle: cevap varsa cevap, yoksa
+                  söylenen.
 
-                  Sessiz degil, KULLANILAMAZ bir bosluk: ses kacinca (gurultu,
-                  kulaklik cikmis, ses kapali, hoparlor baska cihazda) turdan
-                  geriye hicbir sey kalmiyor -- kullanici modelin cevap verip
-                  vermedigini bile bilemiyor. Bir sesli arayuzun metni,
-                  duyulmayan her cevabin tek kaydi.
+                  ``reply`` yeni turda temizleniyor (``setReply('')``), yani
+                  sıra kendiliğinden doğru işliyor: gönderilen metin görünür,
+                  cevap akmaya başlayınca yerini alır, tur bitince orada kalır.
 
-                  Konusanin KIM oldugu ayirt ediliyor: ikisi de ayni boyda ve
-                  ayni renkte olsaydi, iki satir tek bir paragraf gibi okunur
-                  ve kullanici kendi cumlesini modelinkiyle karistirirdi.
-                  Cevap daha parlak ve sola yaslı; yazıya dökülen metin sönük
-                  ve ortalı.
-
-                  ``line-clamp-3``: centik bir pencere degil, bir serit --
-                  buyuyerek ekrani kaplamasi tam da kacinilan sey. Uzun
-                  cevaplar zaten sesli geliyor ve tamami ana pencerede. */}
-              {voice.reply && (
-                <div className="line-clamp-3 max-w-full text-left text-[0.78rem] leading-snug text-(--ui-text-primary)">
-                  {voice.reply}
-                </div>
+                  AKAN metin: sabit yükseklikli, kendi içinde kayan bir kutu.
+                  ``line-clamp`` kesiyordu ve model konuşurken metnin gerisi
+                  hiç görünmüyordu; çentiğin büyüyerek ekranı kaplaması ise tam
+                  da kaçınılan şey. İkisinin ortası: şerit sabit kalıyor, metin
+                  içinde akıyor. */}
+              {(voice.reply || (voice.transcript && voice.status !== 'listening')) && (
+                <NotchText speaking={Boolean(voice.reply)} text={voice.reply || voice.transcript} />
               )}
 
               {voice.error && (

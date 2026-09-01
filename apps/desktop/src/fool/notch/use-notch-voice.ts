@@ -472,7 +472,34 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   const submitAudio = useCallback(
     async (audio: Blob) => {
       const dataUrl = await blobToDataUrl(audio)
-      const result = await transcribeAudio(dataUrl, audio.type)
+
+      // KENDI SINIRI: bas-konus klibi kisa, bekleme de kisa olmali.
+      //
+      // Olculdu (``hermes.ts``): yaziya dokme isteginin zaman asimi TABANI
+      // 180 SANIYE (tavan 600). O sure uzun bir bulut kaydi icin makul, iki
+      // saniyelik bir bas-konus klibi icin felaket: motor mesgulse -- ornegin
+      // suren bir tur arkasinda kuyruga girmisse -- centik uc dakika boyunca
+      // "Transcribing..." yazip sessiz kaliyor. Kullanicinin bildirdigi
+      // "transcribingde takili kaldi" bu.
+      //
+      // Paylasilan sabit DEGISTIRILMEDI: ayni deger besteci diktesini de
+      // besliyor ve orada uzun kayit normal. Sinir yalnizca bu yuzeyde.
+      const TRANSCRIBE_LIMIT_MS = 45_000
+
+      const result = await Promise.race([
+        transcribeAudio(dataUrl, audio.type),
+        new Promise<never>((_resolve, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Transcription is taking too long — the engine may be busy with the current answer'
+                )
+              ),
+            TRANSCRIBE_LIMIT_MS
+          )
+        )
+      ])
       const text = (result.transcript ?? '').trim()
 
       if (!text) {

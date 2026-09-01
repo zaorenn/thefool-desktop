@@ -27,7 +27,7 @@ const HOOK = read('use-notch-voice.ts')
 
 describe('centik modelin cevabini gosteriyor', () => {
   it('kanca cevabi TUTUYOR ve disari veriyor', () => {
-    // Onkosul. Bu koparsa asagidaki cizim testinin dayanagi kalmaz.
+    // Onkosul. Bu koparsa asagidaki cizim testlerinin dayanagi kalmaz.
     expect(HOOK).toContain('reply: string')
     expect(HOOK).toContain('setReply')
   })
@@ -39,35 +39,50 @@ describe('centik modelin cevabini gosteriyor', () => {
     expect(HOOK).toContain('onSentence: sentence => setReply(sentence)')
   })
 
-  it('arayuz cevabi CIZIYOR', () => {
-    // Regresyonun kendisi: burasi eskiden hicbir yerde ``voice.reply``
-    // gecmiyordu.
-    expect(SHELL).toContain('{voice.reply}')
+  it('TEK satir cizilyor, ikisi birden DEGIL', () => {
+    // Istenen sira birebir su: konusma bitince gonderilen metin; model cevap
+    // vermeye baslayinca onun cevabi; bitince kullanici yeni bir sey soyleyene
+    // kadar oyle kalmasi.
+    //
+    // Once ikisi AYNI ANDA ciziliyordu ve centik iki satirlik bir kayit
+    // defterine donuyordu.
+    expect(SHELL).toContain('voice.reply || voice.transcript')
+    // Ayri ayri cizen eski hali geri gelirse burasi duser.
+    expect(SHELL).not.toContain('{voice.transcript}')
+  })
+
+  it('CEVAP varsa cevap kazaniyor', () => {
+    // ``reply`` yeni turda temizleniyor, yani sira kendiliginden dogru
+    // isliyor: gonderilen metin gorunur, cevap akmaya baslayinca yerini alir.
+    expect(HOOK).toContain("setReply('')")
+    expect(SHELL).toContain('speaking={Boolean(voice.reply)}')
   })
 
   it('KONUSAN ayirt ediliyor', () => {
-    // Ikisi de ayni renkte ve ayni hizada olsaydi, iki satir tek bir paragraf
-    // gibi okunur ve kullanici kendi cumlesini modelinkiyle karistirirdi.
-    const transcript = SHELL.slice(SHELL.indexOf('{voice.transcript}') - 400, SHELL.indexOf('{voice.transcript}'))
-    const reply = SHELL.slice(SHELL.indexOf('{voice.reply}') - 300, SHELL.indexOf('{voice.reply}'))
+    // Ikisi de ayni renkte ve hizada olsaydi, kullanici kendi cumlesini
+    // modelinkiyle karistirirdi.
+    const text = SHELL.slice(SHELL.indexOf('function NotchText'))
 
-    expect(transcript).toContain('--ui-text-secondary')
-    expect(reply).toContain('--ui-text-primary')
-    expect(transcript).toContain('text-center')
-    expect(reply).toContain('text-left')
+    expect(text.slice(0, 900)).toContain('--ui-text-primary')
+    expect(text.slice(0, 900)).toContain('--ui-text-secondary')
+    expect(text.slice(0, 900)).toContain('text-left')
+    expect(text.slice(0, 900)).toContain('text-center')
   })
 
-  it('cevap centigi BUYUTMUYOR', () => {
-    // Centik bir pencere degil, bir serit. Sinirsiz metin onu ekrani kaplayan
-    // bir panele cevirirdi -- tam da kacinilan sey. Uzun cevaplar zaten sesli
-    // geliyor ve tamami ana pencerede.
-    const reply = SHELL.slice(SHELL.indexOf('{voice.reply}') - 300, SHELL.indexOf('{voice.reply}'))
+  it('uzun cevap AKIYOR, kesilmiyor', () => {
+    // ``line-clamp`` kesiyordu ve model konusurken metnin gerisi hic
+    // gorunmuyordu. Centigin buyuyerek ekrani kaplamasi ise tam da kacinilan
+    // sey -- ikisinin ortasi: serit sabit, metin icinde akiyor.
+    const text = SHELL.slice(SHELL.indexOf('function NotchText'))
 
-    expect(reply).toMatch(/line-clamp-\d/)
+    expect(text.slice(0, 900)).toContain('overflow-y-auto')
+    expect(text.slice(0, 900)).toMatch(/max-h-\d+/)
+    // Dibe kaydirma: yeni gelen cumle gorunsun.
+    expect(text.slice(0, 900)).toContain('scrollTop = ref.current.scrollHeight')
   })
 
-  it('cevap YOKKEN bos satir cizilmiyor', () => {
+  it('SOYLENECEK bir sey yokken satir cizilmiyor', () => {
     // Kosulsuz cizmek, her turun basinda bos bir seride yer acardi.
-    expect(SHELL).toContain('{voice.reply && (')
+    expect(SHELL).toContain('{(voice.reply || (voice.transcript')
   })
 })

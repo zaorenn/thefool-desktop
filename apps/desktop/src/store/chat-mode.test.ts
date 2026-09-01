@@ -17,6 +17,7 @@ import { $selectedStoredSessionId, $sessions } from '@/store/session'
 
 import {
   $chatSimpleSidebar,
+  $newChatMode,
   CHAT_SOURCE,
   COWORK_SOURCE,
   modeOfSession,
@@ -29,6 +30,7 @@ const session = (id: string, source: null | string) =>
 beforeEach(() => {
   $sessions.set([])
   $selectedStoredSessionId.set(null)
+  $newChatMode.set('cowork')
 })
 
 describe('kaynaktan kip', () => {
@@ -55,9 +57,27 @@ describe('oturumdan kip', () => {
     expect(modeOfSession('s2')).toBe('cowork')
   })
 
-  it('BILINMEYEN oturum Cowork', () => {
-    expect(modeOfSession('yok')).toBe('cowork')
-    expect(modeOfSession(null)).toBe('cowork')
+  it('HENUZ LISTEDE OLMAYAN oturum yeni sohbet tercihini izliyor', () => {
+    // Olculen kiriklik: kullanici Chat kipinde yeni sohbet ekranindayken
+    // centikten konusuyor, ana pencere oturumu olusturuyor ve secim ona
+    // geciyor -- ama ``$sessions`` henuz tazelenmemis oluyor. Liste onu
+    // tanimadigi icin anahtar bir anda Cowork'e atliyordu.
+    $newChatMode.set('chat')
+
+    expect(modeOfSession('henuz-yok')).toBe('chat')
+    expect(modeOfSession(null)).toBe('chat')
+
+    $newChatMode.set('cowork')
+
+    expect(modeOfSession('henuz-yok')).toBe('cowork')
+  })
+
+  it('BILINEN oturumun kaynagi kazaniyor', () => {
+    // Dusme yalnizca liste onu gorene kadar gecerli.
+    $newChatMode.set('chat')
+    $sessions.set([session('s1', COWORK_SOURCE)])
+
+    expect(modeOfSession('s1')).toBe('cowork')
   })
 })
 
@@ -76,10 +96,22 @@ describe('kenar cubugu sadelesmesi', () => {
     expect($chatSimpleSidebar.get()).toBe(false)
   })
 
-  it('HIC sohbet acik degilse KAPALI', () => {
-    // Bos bir uygulamada kenar cubugunu sadelestirmek, kullanicinin
-    // projelerini hicbir sebep gostermeden gizlemek olurdu.
+  it('HIC sohbet acik degilse yeni sohbet tercihini izliyor', () => {
     expect($chatSimpleSidebar.get()).toBe(false)
+
+    $newChatMode.set('chat')
+
+    // Kullanici Chat kipini sectiyse kenar cubugu onu GOSTERMELI, ilk mesaji
+    // beklemeden.
+    expect($chatSimpleSidebar.get()).toBe(true)
+  })
+
+  it('YENI olusan oturumda Cowork tarafina ATLAMIYOR', () => {
+    // Liste henuz tazelenmemisken kenar cubugu bir an acilip kapaniyordu.
+    $newChatMode.set('chat')
+    $selectedStoredSessionId.set('henuz-listede-yok')
+
+    expect($chatSimpleSidebar.get()).toBe(true)
   })
 
   it('sohbet degisince TAKIP ediyor', () => {

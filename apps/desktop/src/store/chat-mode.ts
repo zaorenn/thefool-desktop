@@ -53,18 +53,6 @@ export function modeOfSource(source: null | string | undefined): ChatMode {
   return (source ?? '').trim().toLowerCase() === CHAT_SOURCE ? 'chat' : 'cowork'
 }
 
-/** Bu saklanan oturumun kipi. Bilinmeyen oturum ``cowork`` sayılıyor --
- *  kısıtlamayı VARSAYMAK, kullanıcının aracını sessizce elinden almak olurdu. */
-export function modeOfSession(storedSessionId: null | string): ChatMode {
-  if (!storedSessionId) {
-    return 'cowork'
-  }
-
-  const found = $sessions.get().find(session => sessionMatchesStoredId(session, storedSessionId))
-
-  return modeOfSource(found?.source)
-}
-
 /**
  * YENİ sohbetler hangi kipte açılsın?
  *
@@ -85,6 +73,34 @@ export const $newChatMode = persistentAtom<ChatMode>('fool.desktop.chat.newSessi
   decode: raw => (raw === 'chat' ? 'chat' : 'cowork'),
   encode: value => value
 })
+
+/**
+ * Bu saklanan oturumun kipi.
+ *
+ * HENÜZ LİSTEDE OLMAYAN oturum, yeni sohbet tercihine düşüyor -- ``cowork``
+ * varsayılmıyor.
+ *
+ * Ölçülen kırıklık: kullanıcı Chat kipinde yeni sohbet ekranındayken çentikten
+ * konuşuyor, ana pencere oturumu oluşturuyor ve seçim ona geçiyor -- ama
+ * ``$sessions`` listesi henüz tazelenmemiş oluyor. Liste onu tanımadığı için
+ * anahtar bir anda Cowork'e atlıyordu. Kullanıcının bildirdiği: "chat modunda
+ * new session ekranında notchu çalıştırdım, ekran cowork'e geldi."
+ *
+ * Bilinen bir oturumun kaynağı hâlâ kazanıyor: düşme yalnızca liste onu
+ * görene kadar geçerli, ve o aralıkta doğru cevap zaten "az önce hangi kipte
+ * açtıysak o".
+ */
+export function modeOfSession(storedSessionId: null | string): ChatMode {
+  if (!storedSessionId) {
+    return $newChatMode.get()
+  }
+
+  const found = $sessions.get().find(session => sessionMatchesStoredId(session, storedSessionId))
+
+  return found ? modeOfSource(found.source) : $newChatMode.get()
+}
+
+
 
 /**
  * Şu an geçerli kip: açık sohbetin kipi, sohbet yoksa YENİ sohbet tercihi.
@@ -119,7 +135,9 @@ export const $chatSimpleSidebar = computed(
 
     const found = sessions.find(session => sessionMatchesStoredId(session, selected))
 
-    return modeOfSource(found?.source) === 'chat'
+    // Liste henüz tazelenmemişse yeni sohbet tercihine düş: aksi hâlde
+    // kenar çubuğu, oturum oluşur oluşmaz bir an Cowork'e açılırdı.
+    return found ? modeOfSource(found.source) === 'chat' : newMode === 'chat'
   }
 )
 

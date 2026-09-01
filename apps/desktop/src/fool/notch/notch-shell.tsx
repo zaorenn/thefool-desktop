@@ -623,8 +623,35 @@ export function NotchShell() {
               {/* Yazıya dökülen metin: kullanıcı ne anlaşıldığını GÖRMELİ.
                   Görmezse yanlış anlaşılmayı ancak cevaptan fark eder. */}
               {voice.transcript && voice.status !== 'listening' && (
-                <div className="line-clamp-2 max-w-full text-center text-[0.78rem] text-(--ui-text-primary)">
+                <div className="line-clamp-2 max-w-full text-center text-[0.78rem] text-(--ui-text-secondary)">
                   {voice.transcript}
+                </div>
+              )}
+
+              {/* MODELIN CEVABI.
+                  Kanca ``reply``i bastan beri tutuyordu ve model konustukca
+                  cumle cumle guncelliyordu (``onSentence``), ama burada HIC
+                  cizilmiyordu: centik senin ne dedigini gosteriyor, modelin ne
+                  cevapladigini hic gostermiyordu.
+
+                  Sessiz degil, KULLANILAMAZ bir bosluk: ses kacinca (gurultu,
+                  kulaklik cikmis, ses kapali, hoparlor baska cihazda) turdan
+                  geriye hicbir sey kalmiyor -- kullanici modelin cevap verip
+                  vermedigini bile bilemiyor. Bir sesli arayuzun metni,
+                  duyulmayan her cevabin tek kaydi.
+
+                  Konusanin KIM oldugu ayirt ediliyor: ikisi de ayni boyda ve
+                  ayni renkte olsaydi, iki satir tek bir paragraf gibi okunur
+                  ve kullanici kendi cumlesini modelinkiyle karistirirdi.
+                  Cevap daha parlak ve sola yaslı; yazıya dökülen metin sönük
+                  ve ortalı.
+
+                  ``line-clamp-3``: centik bir pencere degil, bir serit --
+                  buyuyerek ekrani kaplamasi tam da kacinilan sey. Uzun
+                  cevaplar zaten sesli geliyor ve tamami ana pencerede. */}
+              {voice.reply && (
+                <div className="line-clamp-3 max-w-full text-left text-[0.78rem] leading-snug text-(--ui-text-primary)">
+                  {voice.reply}
                 </div>
               )}
 

@@ -59,6 +59,7 @@ import {
   modeForActivation
 } from './hands-free'
 import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
+import { $listenMode } from './listen-mode'
 import { createPttSpeechState, observeLevel } from './ptt-speech'
 import {
   createFillerState,
@@ -148,6 +149,8 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // Akan mesajlar: abonelik efekt icine gomulmuyor -- kod tabaninin kurali
   // reaktif degeri dogrudan okumak (ref'e aynalamak bir render geç kalir).
   const messages = useStore($messages)
+  // Dinleme kipi: bas-konusta ses ile araya girme kapali (asagi bak).
+  const listenMode = useStore($listenMode)
   // Mikrofon hata metinleri uygulamada ZATEN çevrili duruyor; sabit yazmak
   // notch'u tek dile çivilerdi.
   const { handle: mic, level } = useMicRecorder(t.notifications.voice)
@@ -197,6 +200,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
 
     return initial[initial.length - 1]?.id ?? null
   })
+
   // Bir kaydın atılacağını işaretler. `commit` ve `cancel` yarışabiliyor
   // (tuş bırakma ile odak kaybı aynı anda gelebilir); ilk gelen kazanır.
   const discardRef = useRef(false)
@@ -500,6 +504,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
           )
         )
       ])
+
       const text = (result.transcript ?? '').trim()
 
       if (!text) {
@@ -878,7 +883,21 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // İzleyici ÖN KAYIT tutuyor: tetiklendiği anda yeni bir kaydedici açmak
   // "dur, aslında—" cümlesinin ilk hecelerini yer. Bu yüzden yakalanan ses
   // doğrudan gönderim yoluna veriliyor, kullanıcıdan tekrar istenmiyor.
-  const monitorActive = shouldMonitorBargeIn(status) || capturing
+  // BAS-KONUS kipinde SES ile araya girme YOK.
+  //
+  // Olculen kiriklik: izleyici dinleme kipine BAKMADAN calisiyordu -- model
+  // dusunurken ya da konusurken mikrofonu dinliyor ve ses algilayinca tusa
+  // basilmadan yakalayip gonderiyordu. Kullanicinin bildirdigi: "notch acikken
+  // basmadan konusursak bile algiliyor."
+  //
+  // Kural onun koydugu ve dogrusu da bu: "notch direkt olarak conversation
+  // modu olmamali, conversation modunun bas-konus hali olmali." Bas-konusta
+  // TEK giris tustur; kesmek de tusla olur.
+  //
+  // ``capturing`` KALIYOR: eller serbest kipte baslamis bir yakalama surerken
+  // izleyici kapanirsa cumlenin gerisi kaybolur.
+  const handsFree = listenMode === 'hands-free'
+  const monitorActive = (handsFree && shouldMonitorBargeIn(status)) || capturing
 
   // Buradaki ref'ler reaktif bir degerin AYNASI degil: ``statusRef`` render
   // sirasinda yaziliyor (efekt icinde degil) ve ``bargeRef`` / ``streamRef``

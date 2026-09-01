@@ -33,7 +33,7 @@ import {
 } from './hands-free'
 import { $listenMode, listenModeHint, toggleListenMode } from './listen-mode'
 import { NotchPet } from './notch-pet'
-import { formatPttCode } from './ptt-binding'
+import { formatPttBindingLabel, parsePttBinding } from './ptt-binding'
 import { $pttCode } from './ptt-store'
 import {
   createPushToTalkState,
@@ -377,6 +377,10 @@ export function NotchShell() {
   // bazi kullanicilar onu IME degistirmeye baglamis. O makinelerde bas-konus
   // hic calismiyordu ve sebebi gorunmuyordu.
   const pttCode = useStore($pttCode)
+  // Etiket AYRISTIRILARAK uretiliyor: ``pttCode`` artik ``Shift+ControlRight``
+  // gibi bir kombo dizesi olabiliyor ve ham hali arayuz metni degil --
+  // kullaniciya hangi tuslara basacagini soylemiyor.
+  const pttLabel = formatPttBindingLabel(parsePttBinding(pttCode))
   // Dinleme kipi Friend penceresiyle ORTAK: iki yuzey ayni mikrofonu
   // kullaniyor ve kipi ayri tutmak kullaniciya iki ayri hakikat sunardi.
   const listenMode = useStore($listenMode)
@@ -497,10 +501,20 @@ export function NotchShell() {
       // ``preventDefault`` burada no-op: iletilen olayın yutulacak bir
       // varsayılan davranışı zaten yok (bu pencere odakta değil, tuşu alan
       // pencere kendi tarafında hallediyor).
+      //
+      // ``code`` AYRISTIRILIYOR: ``pttCode`` artik ``Shift+ControlRight`` gibi
+      // bir KOMBO dizesi olabiliyor ve onu oldugu gibi ``code`` diye vermek
+      // hicbir olayla eslesmeyen bir tus uretirdi -- bas-konus odak disinda
+      // sessizce olurdu. Degistiriciler GERCEK olaydan geliyor (ana surec
+      // ilettiği icin), varsayimdan degil.
       const key = {
-        code: pttCode,
+        altKey: event.altKey,
+        code: parsePttBinding(pttCode).code,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
         preventDefault: () => {},
-        repeat: event.repeat
+        repeat: event.repeat,
+        shiftKey: event.shiftKey
       } as unknown as KeyboardEvent
 
       if (event.type === 'down') {
@@ -579,7 +593,7 @@ export function NotchShell() {
               <div className="flex items-center gap-2">
                 <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
                   {voice.status === 'idle' && paused
-                    ? pausedLabel(formatPttCode(pttCode))
+                    ? pausedLabel(pttLabel)
                     : LABEL[voice.status]}
                 </div>
 
@@ -599,7 +613,7 @@ export function NotchShell() {
                   }`}
                   onClick={() => toggleListenMode()}
                   style={{ pointerEvents: 'auto' }}
-                  title={listenModeHint(listenMode, formatPttCode(pttCode))}
+                  title={listenModeHint(listenMode, pttLabel)}
                   type="button"
                 >
                   PTT

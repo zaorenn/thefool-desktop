@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { bindingMatches, parsePttBinding } from '@/fool/notch/ptt-binding'
 import { $pttCode } from '@/fool/notch/ptt-store'
 import { useI18n } from '@/i18n'
 import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
@@ -306,8 +307,13 @@ export function useComposerVoice({
       return
     }
 
+    // Saklanan deger bir KOMBO olabilir (``Shift+ControlRight``): duz dize
+    // karsilastirmasi onu hicbir olayla eslestiremezdi -- kullanici ayardan
+    // komboyu kaydeder, centikte calisir, burada sessizce olurdu.
+    const binding = parsePttBinding(pttCode)
+
     const onDown = (event: KeyboardEvent) => {
-      if (event.code !== pttCode || event.repeat) {
+      if (!bindingMatches(binding, event) || event.repeat) {
         return
       }
 
@@ -316,7 +322,10 @@ export function useComposerVoice({
     }
 
     const onUp = (event: KeyboardEvent) => {
-      if (event.code !== pttCode) {
+      // Birakmada YALNIZCA ``code``: kullanici Shift'i once birakirsa
+      // ``ControlRight``in keyup'i ``shiftKey: false`` ile gelir ve tam
+      // eslesme istemek mikrofonu sonsuza kadar acik birakirdi.
+      if (event.code !== binding.code) {
         return
       }
 

@@ -11256,7 +11256,14 @@ async function startHermes() {
  */
 function installPushToTalkForwarding(win) {
   win.webContents.on('before-input-event', (_event, input) => {
-    if (input.code !== 'ControlRight') {
+    // SUZGEC yalnizca fiziksel tus: tam eslesme (degistiriciler dahil)
+    // centikte ``bindingMatches`` ile yapiliyor.
+    //
+    // Burasi ONCEDEN ``'ControlRight'``e SABITLENMISTI. Kullanici tusu
+    // ayarlardan degistirdiginde centik odaktayken calisiyor, odak ana
+    // pencereye gectigi anda oluyordu -- ve odak ilk cevap cizilir cizilmez
+    // oraya geciyor. "Ayar bir tur calisti sonra bozuldu" bu.
+    if (input.code !== pushToTalkCode) {
       return
     }
 
@@ -11268,10 +11275,27 @@ function installPushToTalkForwarding(win) {
 
     target.webContents.send('fool:notch:ptt', {
       repeat: Boolean(input.isAutoRepeat),
-      type: input.type === 'keyUp' ? 'up' : 'down'
+      type: input.type === 'keyUp' ? 'up' : 'down',
+      // Degistiriciler de gidiyor: ``Shift+ControlRight`` gibi bir baglama
+      // bunlar olmadan odak disinda HIC eslesmezdi.
+      altKey: Boolean(input.alt),
+      ctrlKey: Boolean(input.control),
+      metaKey: Boolean(input.meta),
+      shiftKey: Boolean(input.shift)
     })
   })
 }
+
+/**
+ * Kullanicinin sectigi bas-konus tusunun FIZIKSEL kodu.
+ *
+ * Ana surec baglamayi AYRISTIRMIYOR: ``Shift+ControlRight`` gibi bir dizeyi
+ * cozmek ``src/fool/notch/ptt-binding.ts``in isi ve ana surec oradan ice
+ * aktaramiyor (``tsconfig.electron.json`` ``src``i disliyor). Ikinci bir
+ * ayristirici yazmak, ayrismasi an meselesi olan bir kopya olurdu -- o yuzden
+ * renderer COZULMUS kodu gonderiyor ve burasi yalnizca suzgec.
+ */
+let pushToTalkCode = 'ControlRight'
 
 /** Bu adres UYGULAMANIN KENDİ renderer'ı mı?
  *
@@ -13379,6 +13403,20 @@ ipcMain.handle('fool:notch:set-shortcut', async (_event, accelerator) => {
   // ``taken``: istenen tus baska bir uygulamada. Sessizce baska bir tusa
   // dusup "tamam" demek, kullanicinin ayarinin yok sayildigini gizlerdi.
   return { ok: Boolean(applied), shortcut: applied, taken: Boolean(wanted && applied !== wanted) }
+})
+
+// Renderer bas-konus tusunu bildirdi (montajda ve her degisimde). Ana surec
+// iletmeyi buna gore suzuyor.
+ipcMain.handle('fool:notch:set-ptt', async (_event, code) => {
+  const wanted = typeof code === 'string' ? code.trim() : ''
+
+  // BOS deger yok sayiliyor: suzgeci bosaltmak bas-konusu odak disinda
+  // tamamen oldururdu ve sebebi hicbir yerde gorunmezdi.
+  if (wanted) {
+    pushToTalkCode = wanted
+  }
+
+  return { ok: Boolean(wanted) }
 })
 
 ipcMain.handle('fool:notch:close', async () => {

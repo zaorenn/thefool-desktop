@@ -1,5 +1,21 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
+/**
+ * Ana surecten iletilen bas-konus tusu.
+ *
+ * Degistiriciler kombo baglamalar icin SART: ``Shift+ControlRight`` bagliyken
+ * bayraklar tasinmazsa centik, odak disinda hic eslesme goremezdi.
+ */
+interface ForwardedPtt {
+  altKey?: boolean
+  ctrlKey?: boolean
+  metaKey?: boolean
+  repeat: boolean
+  shiftKey?: boolean
+  type: 'down' | 'up'
+}
+
+
 contextBridge.exposeInMainWorld('hermesDesktop', {
   getConnection: profile => ipcRenderer.invoke('fool:connection', profile),
   // Registry-scoped backend resolution: { connectionId, profile } → descriptor.
@@ -95,10 +111,14 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     // Montajda BEKLEYEN niyeti al (ve tuket). Yeni acilan pencerede
     // ``send`` renderer dinleyiciyi kurmadan geliyor ve mesaj dusuyor.
     takeListenRequest: () => ipcRenderer.invoke('fool:notch:take-intent'),
+    // Kullanicinin sectigi bas-konus tusunun FIZIKSEL kodu. Ana surec
+    // iletmeyi buna gore suzuyor; sabit ``ControlRight`` ile kullanicinin
+    // yeniden bagladigi tus odak disinda hic ulasmiyordu.
+    setPushToTalk: (code: string) => ipcRenderer.invoke('fool:notch:set-ptt', code),
     // Bas-konus tusu BASKA penceremizden iletildi: centik odakta olmasa da
     // calissin (bkz. ``installPushToTalkForwarding``).
-    onPushToTalk: (callback: (event: { repeat: boolean; type: 'down' | 'up' }) => void) => {
-      const listener = (_e: unknown, payload: { repeat: boolean; type: 'down' | 'up' }) =>
+    onPushToTalk: (callback: (event: ForwardedPtt) => void) => {
+      const listener = (_e: unknown, payload: ForwardedPtt) =>
         callback(payload)
 
       ipcRenderer.on('fool:notch:ptt', listener)

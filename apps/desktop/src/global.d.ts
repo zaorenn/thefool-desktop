@@ -119,7 +119,20 @@ declare global {
         /** Ana surec global kisayoldan dinlemeyi istedi. */
         onListenRequest: (callback: (request?: { mode?: string }) => void) => () => void
         takeListenRequest: () => Promise<null | { mode?: string }>
-        onPushToTalk: (callback: (event: { repeat: boolean; type: 'down' | 'up' }) => void) => () => void
+        /** Kullanicinin sectigi bas-konus tusunun FIZIKSEL kodu ana surece. */
+        setPushToTalk: (code: string) => Promise<{ ok: boolean }>
+        /** Iletilen tus: DEGISTIRICILER de tasiniyor, yoksa kombo baglamalar
+         *  odak disinda hic eslesmezdi. */
+        onPushToTalk: (
+          callback: (event: {
+            altKey?: boolean
+            ctrlKey?: boolean
+            metaKey?: boolean
+            repeat: boolean
+            shiftKey?: boolean
+            type: 'down' | 'up'
+          }) => void
+        ) => () => void
       }
       hud?: {
         open: (request?: { sessionId?: null | string; profile?: null | string }) => Promise<{ ok: boolean }>

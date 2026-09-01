@@ -24,7 +24,14 @@ import { triggerHaptic } from '@/lib/haptics'
 import { Download, Info, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
-import { DEFAULT_PTT_CODE, formatPttCode, isBindableCode } from './notch/ptt-binding'
+import {
+  createBindingCapture,
+  DEFAULT_PTT_CODE,
+  formatPttBinding,
+  formatPttBindingLabel,
+  parsePttBinding,
+  type PttBinding
+} from './notch/ptt-binding'
 import { $pttCode } from './notch/ptt-store'
 import {
   DEFAULT_NOTCH_SHORTCUT,
@@ -556,23 +563,43 @@ function CloneSection({
 }
 
 /**
- * Bas-konuş tuşunu yeniden bağla.
+ * Bas-konuş tuşunu yeniden bağla — KOMBO dahil.
  *
  * Varsayılan sağ Ctrl her makinede yok: bazı dizüstülerde fiziksel olarak
  * bulunmuyor, bazı kullanıcılar onu IME değiştirmeye ya da ekran okuyucuya
  * bağlamış. O makinelerde bas-konuş hiç çalışmıyordu ve sebebi görünmüyordu —
  * kullanıcı notch'u açık görüp konuşuyor, hiçbir şey olmuyor.
  *
+ * Tek tuş da yetmiyor: kullanıcı sağ Ctrl yerine ``KeyV`` seçtiğinde bu kez
+ * YAZARKEN mikrofon açılıyor. Bir değiştirici eklemek (``Shift + Sağ Ctrl``)
+ * çakışmayı bitiriyor, o yüzden yakalama komboyu da kabul ediyor.
+ *
  * Yakalama ``code`` okuyor, ``key`` değil: ``code`` fiziksel tuşu gösterir ve
  * klavye düzeninden etkilenmez.
  */
 function PushToTalkRow() {
-  const code = useStore($pttCode)
+  const stored = useStore($pttCode)
+  const binding = parsePttBinding(stored)
   const [capturing, setCapturing] = useState(false)
+  // Yakalama sürerken CANLI önizleme. Kullanıcı Shift'i basılı tutup bekliyor
+  // ve ekranda hiçbir şey değişmiyorsa, komboyu kurabildiğini bilemez.
+  const [preview, setPreview] = useState<null | PttBinding>(null)
 
   useEffect(() => {
     if (!capturing) {
+      setPreview(null)
+
       return
+    }
+
+    // Sıra mantığı ``ptt-binding.ts``te ve SAF: "bekleyen tek değiştirici"
+    // kuralı burada on satır olarak kalsaydı yalnızca metin taramasıyla
+    // korunabilirdi.
+    const capture = createBindingCapture()
+
+    const commit = (chosen: PttBinding) => {
+      $pttCode.set(formatPttBinding(chosen))
+      setCapturing(false)
     }
 
     const onKey = (event: KeyboardEvent) => {
@@ -585,36 +612,65 @@ function PushToTalkRow() {
         return
       }
 
-      if (!isBindableCode(event.code)) {
+      const seen = capture.down(event)
+
+      // ``null`` = bağlanamaz tuş. Yutmuyoruz: ``Tab`` yakalamanın içinde de
+      // kullanıcının kaçış yolu.
+      if (!seen) {
         return
       }
 
       event.preventDefault()
-      $pttCode.set(event.code)
-      setCapturing(false)
+      setPreview(seen.binding)
+
+      if (seen.complete) {
+        commit(seen.binding)
+      }
+    }
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      const done = capture.up(event)
+
+      if (!done) {
+        return
+      }
+
+      event.preventDefault()
+      commit(done)
     }
 
     window.addEventListener('keydown', onKey, true)
+    window.addEventListener('keyup', onKeyUp, true)
 
-    return () => window.removeEventListener('keydown', onKey, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('keyup', onKeyUp, true)
+    }
   }, [capturing])
+
+  // Yakalarken: bekleyen varsa onu göster ("Shift + …" gibi), yoksa davet.
+  const label = capturing
+    ? preview
+      ? `${formatPttBindingLabel(preview)} …`
+      : 'Press a key or combo…'
+    : formatPttBindingLabel(binding)
 
   return (
     <ListRow
       action={
         <div className="flex items-center gap-2">
-          <Pill>{capturing ? 'Press a key…' : formatPttCode(code)}</Pill>
+          <Pill>{label}</Pill>
           <Button onClick={() => { triggerHaptic(); setCapturing(previous => !previous) }} size="sm" variant="outline">
             {capturing ? 'Cancel' : 'Rebind'}
           </Button>
-          {code !== DEFAULT_PTT_CODE && (
+          {stored !== DEFAULT_PTT_CODE && (
             <Button onClick={() => { triggerHaptic(); $pttCode.set(DEFAULT_PTT_CODE) }} size="sm" variant="ghost">
               Reset
             </Button>
           )}
         </div>
       }
-      description="Hold this key while the notch session is open to talk. Escape cancels a rebind."
+      description="Hold this while the notch session is open to talk. Add a modifier (hold Shift, then press the key) to avoid clashing with typing. Escape cancels a rebind."
       title="Push to talk key"
     />
   )

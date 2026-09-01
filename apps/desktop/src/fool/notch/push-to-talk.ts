@@ -21,8 +21,16 @@
  *    düzeninden etkilenmez.
  */
 
-/** Bas-konuş için varsayılan fiziksel tuş: sağ Ctrl. */
-export const PUSH_TO_TALK_CODE = 'ControlRight'
+import { bindingMatches, DEFAULT_PTT_CODE, parsePttBinding } from './ptt-binding'
+
+/**
+ * Bas-konuş için varsayılan fiziksel tuş: sağ Ctrl.
+ *
+ * ``DEFAULT_PTT_CODE``ten TÜRETİLİYOR, ikinci bir sabit değil: iki yerde ayrı
+ * yazılan aynı varsayılan, biri değiştiğinde sessizce ayrışır ve hangisinin
+ * canlı olduğu görünmez.
+ */
+export const PUSH_TO_TALK_CODE = DEFAULT_PTT_CODE
 
 /** Bu süreden kısa basışlar yanlışlıkla dokunma sayılır ve gönderilmez. */
 export const MIN_HOLD_MS = 180
@@ -64,6 +72,14 @@ export interface KeyLike {
   code: string
   /** Tuş tekrarı mı? Basılı tutuş art arda keydown üretir. */
   repeat?: boolean
+  // Değiştiriciler kombo bağlamalar için (``Shift+ControlRight``). İSTEĞE
+  // BAĞLI: değiştiricisiz bir bağlamada hiç okunmuyorlar ve ``undefined``
+  // "basılı değil" sayılıyor -- ana süreçten iletilen sentetik olay bu
+  // alanları taşımadığında eşleşme sessizce bozulmasın diye.
+  altKey?: boolean
+  ctrlKey?: boolean
+  metaKey?: boolean
+  shiftKey?: boolean
 }
 
 /**
@@ -75,9 +91,9 @@ export function onKeyDown(
   state: PushToTalkState,
   event: KeyLike,
   now: number,
-  code: string = PUSH_TO_TALK_CODE
+  binding: string = PUSH_TO_TALK_CODE
 ): null | PushToTalkEvent {
-  if (event.code !== code || event.repeat) {
+  if (!bindingMatches(parsePttBinding(binding), event) || event.repeat) {
     return null
   }
 
@@ -102,9 +118,17 @@ export function onKeyUp(
   state: PushToTalkState,
   event: KeyLike,
   now: number,
-  code: string = PUSH_TO_TALK_CODE
+  binding: string = PUSH_TO_TALK_CODE
 ): null | PushToTalkEvent {
-  if (event.code !== code || state.heldSince === null) {
+  // BIRAKMA yalnizca ``code``a bakiyor -- degistiricilere DEGIL, ve bu bilerek.
+  //
+  // ``Shift+ControlRight`` bagliyken kullanici tuslari SIRAYLA birakiyor. Once
+  // Shift birakilirsa ControlRight'in ``keyup``i ``shiftKey: false`` ile
+  // geliyor: tam eslesme istemek o olayi ELERDI, ``heldSince`` takili kalirdi
+  // ve mikrofon sonsuza kadar acik kalirdi -- bu dosyanin var olma sebebi olan
+  // hatanin ta kendisi. Basis zaten tam eslesmeden gecti; birakmayi kacirmak
+  // hicbir seyi guvenli yapmiyor.
+  if (event.code !== parsePttBinding(binding).code || state.heldSince === null) {
     return null
   }
 

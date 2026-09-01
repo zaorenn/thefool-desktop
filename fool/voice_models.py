@@ -562,6 +562,24 @@ CATALOG: Final[tuple[VoiceEntry, ...]] = (
         dep_group="stt.faster_whisper",
         probe_module="faster_whisper",
         cuda_probe="ctranslate2",
+        #: Kendi AGIRLIGI olmadan "kurulu" gorunuyordu.
+        #:
+        #: Bu giris ``whisper-turbo`` ile AYNI ``probe_module``u paylasiyor
+        #: (ikisi de ``faster_whisper`` paketi). ``model_id`` yokken durum
+        #: yalnizca pakete bakiyordu: turbo kurulunca bu satir da "use"
+        #: gosteriyor, indirme dugmesi hic cikmiyordu -- kullanicinin
+        #: bildirdigi tam olarak bu. Secilince ise ``stt.local.model`` ``base``
+        #: oluyor ve ILK CUMLEDE 150 MB sessizce inmeye basliyor; kullanici
+        #: yalnizca "cok yavas" goruyor.
+        model_id="base",
+        #: ``warmup`` kurulumun agirliklari GERCEKTEN indirmesini sagliyor
+        #: (bkz. ``_run_warmup``). Olmazsa "Install" yalnizca paketi kurar ve
+        #: durum ``base`` inmedigi icin hala "kurulu degil" derdi -- dugme
+        #: basiliyor, hicbir sey degismiyor gibi gorunurdu.
+        warmup=(
+            "from faster_whisper import WhisperModel; "
+            "WhisperModel('base', device='cpu', compute_type='int8')"
+        ),
         devices=("cpu", "cuda"),
         size_label="~150 MB",
     ),
@@ -624,7 +642,11 @@ def status(entry_id: str) -> dict[str, Any]:
     # Isinmasi olan oge icin AGIRLIKLAR da inmis olmali. Yalnizca pakete
     # bakmak "kurulu" derdi ama ilk konusmada model sessizce inmeye baslar ve
     # kullanici sadece "cok yavas" gorur -- panelin tam kacinmasi gereken sey.
-    if e.warmup and e.model_id and not _weights_present(e.model_id):
+    # ``warmup`` KOSULU KALDIRILDI: bir girisin ``model_id``si varsa
+    # agirliklari da SORULUYOR. Eskiden ikisi birden gerekiyordu, yani
+    # ``warmup``i olmayan bir ``model_id`` sessizce kontrolsuz kaliyordu --
+    # ``faster-whisper`` tam olarak o bosluktan "kurulu" gorunuyordu.
+    if e.model_id and not _weights_present(e.model_id):
         engine_ok = False
     elif e.weights_repo and not _weights_present(e.weights_repo):
         # Paket kurulu olabilir ama AGIRLIKLAR inmemis. Bunu "kurulu" saymak,

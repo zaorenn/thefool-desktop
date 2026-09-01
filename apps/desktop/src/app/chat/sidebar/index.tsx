@@ -31,6 +31,7 @@ import { resolveProfileColor } from '@/lib/profile-color'
 import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
+import { $chatSimpleSidebar } from '@/store/chat-mode'
 import { $cronJobs } from '@/store/cron'
 import { $bindings } from '@/store/keybinds'
 import {
@@ -143,6 +144,7 @@ import {
 } from '../../routes'
 import type { SidebarNavItem } from '../../types'
 
+import { ChatModeSwitch } from './chat-mode-switch'
 import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarFilterMenu } from './filter-menu'
 import { SidebarLoadMoreRow } from './load-more-row'
@@ -342,6 +344,13 @@ export function ChatSidebar({
 
   const panesFlipped = useStore($panesFlipped)
   const grouping = useStore($sidebarGrouping)
+  // Chat kipinde kenar cubugu SOHBETLERE iniyor: projeler, zamanlanmis isler,
+  // pinler ve filtreler gizleniyor. Kullanicinin istegi "sadelessin -- sadece
+  // sohbetler"; Cowork'e gecince hepsi geri geliyor.
+  //
+  // Gizlenen bolumlerin DURUMU korunuyor (acik/kapali, siralama, filtreler):
+  // Chat'e girip cikmak kullanicinin duzenini sifirlamamali.
+  const chatSimple = useStore($chatSimpleSidebar)
   const ordering = useStore($sidebarOrdering)
   const statusFilter = useStore($sidebarStatusFilter)
   const projectFilter = useStore($sidebarProjectFilter)
@@ -358,7 +367,10 @@ export function ChatSidebar({
   // The active sort key as an id order. The flat list applies it within its
   // dividers; groups apply it to their own lanes.
   const sortOrderIds = useStore($sidebarSessionRankIds)
-  const agentsGrouped = grouping === 'project'
+  // Chat kipinde gruplama KAPALI: proje seritleri "sadece sohbetler"in tam
+  // tersi. Kullanicinin secimi ($sidebarGrouping) DEGISMIYOR -- yalnizca bu
+  // kipte uygulanmiyor, yani Cowork'e donunce eski duzen geri geliyor.
+  const agentsGrouped = grouping === 'project' && !chatSimple
   const pinnedSessionIds = useStore($pinnedSessionIds)
   const pinsOpen = useStore($sidebarPinsOpen)
   const agentsOpen = useStore($sidebarRecentsOpen)
@@ -1451,6 +1463,9 @@ export function ChatSidebar({
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
           <SidebarGroupContent>
+            {/* Chat / Cowork. Kenar cubugunun EN USTUNDE: hangi kipte
+                oldugun, listeye bakmadan once gorulmeli. */}
+            <ChatModeSwitch />
             <SidebarMenu className="gap-px">
               {[...SIDEBAR_NAV, ...contributedNav].map(item => {
                 const isInteractive = Boolean(item.action) || Boolean(item.route)
@@ -1594,7 +1609,7 @@ export function ChatSidebar({
               />
             )}
 
-            {!trimmedQuery && (
+            {!trimmedQuery && !chatSimple && (
               <SidebarSessionsSection
                 activeSessionId={activeSidebarSessionId}
                 contentClassName="flex flex-col gap-px rounded-lg pb-2 pt-1"
@@ -1753,7 +1768,7 @@ export function ChatSidebar({
                           </Tip>
                         ) : null}
                         <div className="grid size-6 place-items-center">
-                          <SidebarFilterMenu className={HEADER_NAV_BTN} />
+                          {!chatSimple && <SidebarFilterMenu className={HEADER_NAV_BTN} />}
                         </div>
                       </div>
                     )}
@@ -1849,7 +1864,7 @@ export function ChatSidebar({
                 )
               })}
 
-            {!trimmedQuery && !worktreeGroupingActive && cronJobs.length > 0 && (
+            {!trimmedQuery && !worktreeGroupingActive && !chatSimple && cronJobs.length > 0 && (
               <SidebarCronJobsSection
                 jobs={cronJobs}
                 label={s.cronJobs}

@@ -9,6 +9,7 @@ import { useContextBreakdown } from '@/app/shell/hooks/use-context-breakdown'
 import { $paneVisible, togglePaneVisible } from '@/components/pane-shell/tree/store'
 import { Codicon } from '@/components/ui/codicon'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
+import { useVoiceEngineStatusbarItem } from '@/fool/voice-engine-statusbar'
 import { useI18n } from '@/i18n'
 import { displayPath, pathLeaf } from '@/lib/display-path'
 import { Activity, AlertCircle, Clock, Command, FolderOpen, Globe, Hash, Loader2, Terminal } from '@/lib/icons'
@@ -264,6 +265,9 @@ export function useStatusbarItems({
   const contextBar = useMemo(() => contextBarLabel(gaugeUsage), [gaugeUsage])
 
   const approvalModeItem = useApprovalModeStatusbarItem(activeGatewayProfile, requestGateway)
+  // TTS/STT motorlari EVRENSEL: Chat de Cowork de ayni anahtari kullaniyor.
+  // Kurulum hala ses panelinde; burasi yalnizca DEGISTIRICI.
+  const voiceEngineItem = useVoiceEngineStatusbarItem()
 
   const gatewayMenuContent = useMemo(
     () => (close: () => void) => (
@@ -359,6 +363,7 @@ export function useStatusbarItems({
     // ayni belirsizligi uretirdi. Ayristiginda ise bu GERCEK bir sorun --
     // surum kapisinin duzeltmesi gereken hal -- ve gorunmesi gerekiyor.
     const backendVersion = statusSnapshot?.version
+
     const localMismatch =
       connection?.mode !== 'remote' &&
       Boolean(backendVersion) &&
@@ -608,6 +613,10 @@ export function useStatusbarItems({
         toggleLabel: copy.toggleApprovalMode
       },
       {
+        ...voiceEngineItem,
+        hidden: gatewayState !== 'open'
+      },
+      {
         actionId: 'view.showTerminal',
         className: `w-7 justify-center px-0${terminalShowing ? ' bg-accent/55 text-foreground' : ''}`,
         hidden: !chatOpen,
@@ -623,6 +632,7 @@ export function useStatusbarItems({
     ],
     [
       approvalModeItem,
+      voiceEngineItem,
       backendVersionItem,
       busy,
       chatOpen,

@@ -43,10 +43,47 @@ if (typeof window !== 'undefined') {
     // paylasilan atoma yaziyor ve ana pencerenin degerini EZIYOR -- kopru
     // kendi kendini bozuyordu. Sonucu kullanicinin gordugu sey: ses yine
     // yanlis oturuma gidiyor ve cevap bot panelinde cikiyor.
-    void import('@/store/session').then(({ $activeSessionId }) =>
-      import('@/fool/notch/active-session').then(({ $voiceSessionId }) =>
-        $activeSessionId.subscribe(id => $voiceSessionId.set(id ?? ''))
-      )
+    // ODAKTAKI yuzey yayinlaniyor, calisma alani bolmesi DEGIL.
+    //
+    // Onceden ``$activeSessionId`` oldugu gibi yayinlaniyordu ve o, calisma
+    // alani bolmesinin oturumu. Kullanici baska bir sekmeye/kutucuga gecince
+    // ses HALA eski oturuma gidiyordu; yeni acilmis, henuz baslamamis bir
+    // sohbette ise bir oncekinin kimligi yayinda kaliyor ve mesaj oraya
+    // dusuyordu. Kullanicinin bildirdigi: "notch her zaman odaktaki sessiona
+    // bagli olmali."
+    //
+    // HUD ayni tuzaga dusmus, ogrenmis ve kendi cozumleyicisini yazmisti
+    // (``app/hud/handoff.ts``). Ders kardesine gecmemisti; cevap artik
+    // ``store/focused-session.ts``te ve iki taraf da oradan okuyor.
+    void import('@/store/session').then(({ $activeSessionId, $selectedStoredSessionId }) =>
+      Promise.all([
+        import('@/fool/notch/active-session'),
+        import('@/store/focused-session'),
+        import('@/store/session-states')
+      ]).then(([{ $voiceSessionId }, { focusedRuntimeSessionId }, { $sessionTiles }]) => {
+        // Yalnizca DEGISIMDE yaziliyor: ayni degeri yeniden yayinlamak
+        // pencereler arasi atomu her odak olayinda dolduracakti.
+        const publish = () => {
+          const next = focusedRuntimeSessionId()
+
+          if ($voiceSessionId.get() !== next) {
+            $voiceSessionId.set(next)
+          }
+        }
+
+        // UC girdi de odagi degistirebiliyor ve ucu de dinleniyor:
+        //   * oturum atomlari -- sohbet acma/kapama, devam ettirme
+        //   * kutucuk dizisi   -- bir kutucuk canli oturumuna baglandiginda
+        //   * ``focusin``      -- sekme/kutucuk arasi gecis; besteci odak
+        //                         yolu bir atom DEGIL, o yuzden tek reaktif
+        //                         sinyal bu (bkz. ``markActiveComposer``).
+        $activeSessionId.subscribe(publish)
+        $selectedStoredSessionId.subscribe(publish)
+        $sessionTiles.subscribe(publish)
+        window.addEventListener('focusin', publish)
+
+        publish()
+      })
     )
   })
 }

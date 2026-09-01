@@ -18,17 +18,14 @@ import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 
 import { reloadPersistedDrafts, requestComposerDraftSync } from '@/store/composer'
+import { focusedSessionId } from '@/store/focused-session'
 import { reportHudSession, watchHudState } from '@/store/hud'
 import { $selectedStoredSessionId } from '@/store/session'
 import { focusOpenSession, sessionTileDelegate } from '@/store/session-states'
 import { isHudWindow } from '@/store/windows'
 
-import { getActiveComposer } from '../chat/composer/focus'
 import { openSession, type OpenSessionNavigate } from '../open-session'
 import { sessionRoute } from '../routes'
-
-/** Session tiles route on `tile:<storedSessionId>` (see session-tile.tsx). */
-const TILE_TARGET_PREFIX = 'tile:'
 
 /**
  * The conversation HUD mode should open on: whichever chat surface the user is
@@ -40,12 +37,15 @@ const TILE_TARGET_PREFIX = 'tile:'
  * already answers it for the focus bus, healing to the visible surface when its
  * cached claim is buried or gone, and a tile's routing key IS its stored
  * session id.
+ *
+ * The resolver itself now lives in `store/focused-session.ts`: the notch's
+ * voice bridge needs the same answer and did NOT have it — it published the
+ * workspace pane's session and sent speech to whatever chat the user had left
+ * behind. A lesson written in one module and not carried to its sibling is how
+ * that happened; one answer, two readers, is how it stops.
  */
 export function hudTargetSessionId(): null | string {
-  const target = getActiveComposer()
-  const tile = target.startsWith(TILE_TARGET_PREFIX) ? target.slice(TILE_TARGET_PREFIX.length) : null
-
-  return tile || $selectedStoredSessionId.get()
+  return focusedSessionId()
 }
 
 interface HudHandoffParams {

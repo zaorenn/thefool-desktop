@@ -4478,6 +4478,25 @@ def _gui_surface_toolsets(platform: str) -> set[str]:
 
 
 def _load_enabled_toolsets(platform: str | None = None) -> list[str] | None:
+    """Bu yuzeyin arac takimlari -- SESLENDIRME kurali uygulanmis hali.
+
+    Cozumlemenin kendisi ``_resolve_enabled_toolsets``te ve BIRDEN COK
+    ``return`` yolu var (kapsam beyaz listesi, ortam degiskeni, kodlama
+    durusu, yapilandirma, geri dusus). Kurali her birine ayri ayri serpmek,
+    bu depoda tekrar eden kaliba -- bir kolda ogrenilen dersin kardesine
+    tasinmamasina -- dogrudan davetiye olurdu; ``desktop`` kapsaminin
+    ``text_to_speech`` almasinin sebebi tam olarak buydu.
+    """
+    session_platform = platform or _resolve_session_platform()
+
+    from fool.session_scope import strip_self_voiced
+
+    return strip_self_voiced(
+        session_platform, _resolve_enabled_toolsets(session_platform)
+    )
+
+
+def _resolve_enabled_toolsets(platform: str | None = None) -> list[str] | None:
     session_platform = platform or _resolve_session_platform()
 
     # FOOL-SEAM: companion-scope

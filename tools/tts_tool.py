@@ -5351,7 +5351,10 @@ def set_language_mode_tool(
 
 registry.register(
     name="set_language_mode",
-    toolset="tts",
+    # ``tts`` DEGIL: kendi cevabini kendisi seslendiren yuzeyler
+    # ``text_to_speech``i almamali ama dil ayarini almali. ``tts`` bu takimi
+    # ICERIYOR, yani "tts" isteyen herkes ikisini de almaya devam ediyor.
+    toolset="speech_settings",
     schema=LANGUAGE_MODE_SCHEMA,
     handler=lambda args, **kw: set_language_mode_tool(
         reply_language=args.get("reply_language"),

@@ -227,10 +227,30 @@ TOOLSETS = {
         "includes": []
     },
     
+    # ``set_language_mode`` AYRI bir takimda ve ``tts`` onu ICERIYOR.
+    #
+    # Sebep: kendi cevabini KENDISI seslendiren yuzeyler (masaustu, arkadas,
+    # centik) ajana ``text_to_speech`` VERMEMELI -- yoksa cumle iki kez
+    # sesleniyor (bkz. ``fool/session_scope.py::SELF_VOICED_SCOPES``). Ama
+    # ayni yuzeylerin dil ayarina IHTIYACI var: "ses dilini japonca yap" bir
+    # sohbet cumlesi degil, bir ayar degisikligi ve arac olmadan model yalnizca
+    # "tamam" deyip hicbir seyi degistirmiyordu.
+    #
+    # Ikisi tek takimdayken secim "ikisi de ya da hicbiri"ydi. Ayirmak
+    # ucuncu bir secenek aciyor: seslendirmeyi dusur, ayari birak.
+    #
+    # ``tts`` bugunku davranisini AYNEN koruyor -- iceren takim iki araci da
+    # veriyor, yani mevcut hicbir cagiran etkilenmiyor.
+    "speech_settings": {
+        "description": "Speech/reply language settings (no synthesis)",
+        "tools": ["set_language_mode"],
+        "includes": []
+    },
+
     "tts": {
         "description": "Text-to-speech: convert text to audio with Edge TTS (free), ElevenLabs, OpenAI, or xAI",
         "tools": ["text_to_speech"],
-        "includes": []
+        "includes": ["speech_settings"]
     },
     
     "todo": {

@@ -160,3 +160,50 @@ def scope_toolsets(scope: object) -> list[str] | None:
     if key == CHAT:
         return list(CHAT_TOOLSETS)
     return None
+
+
+#: KENDİ cevabını KENDİSİ seslendiren kapsamlar.
+#:
+#: Yukarıdaki ``COMPANION_TOOLSETS`` notu bu hatayı zaten anlatıyor ve dersi
+#: iki komşuya (companion, friend) uygulamıştı. ``desktop`` ATLANMIŞTI ve
+#: ölçüldü: masaüstü kapsamının son araç listesinde ``text_to_speech`` duruyor.
+#: Kullanıcının bildirdiği: "bazen aynı cümleleri 2 kere speak aloud yapıyor."
+#:
+#: Bu depoda tekrar eden kalıbın ta kendisi -- bir modülde öğrenilen ders
+#: kardeşine taşınmıyor. O yüzden kural artık bir YORUM değil, tek bir yerde
+#: duran VERİ: masaüstünün her yüzeyi burada.
+SELF_VOICED_SCOPES = frozenset({"chat", "companion", "desktop", "friend", "hud", "notch"})
+
+#: Seslendiren yüzeyden düşürülen takım ve yerine konan.
+#:
+#: Takım toptan düşürülMÜYOR: ``tts`` iki araç taşıyor ve ikincisi
+#: ``set_language_mode`` -- "ses dilini japonca yap" isteğini gerçekten
+#: uygulayan araç. Onu da almak, düzeltilmiş bir hatayı sessizce geri kırmak
+#: olurdu (model "tamam" der, ayar değişmez). ``speech_settings`` tam olarak
+#: o aracı taşıyor, ``text_to_speech``i taşımıyor.
+SELF_VOICED_DROP = "tts"
+SELF_VOICED_KEEP = "speech_settings"
+
+
+def strip_self_voiced(scope: object, toolsets: list[str] | None) -> list[str] | None:
+    """Seslendiren yüzeyden sentez aracını düşür, dil ayarını bırak.
+
+    ``None`` aynen geçer: "kapsama özel kısıtlama yok" demek ve burada bir
+    şey uydurmak, çözümlemenin geri kalanını atlamak olurdu.
+
+    Kapsam seslendirmiyorsa liste DOKUNULMADAN döner -- WhatsApp/Telegram gibi
+    istemci tarafı sesi olmayan yüzeylerde "konuşmak" = ses dosyası üretmek ve
+    ``text_to_speech`` orada tek yol.
+    """
+    if toolsets is None:
+        return None
+
+    key = scope.strip().lower() if isinstance(scope, str) else ""
+    if key not in SELF_VOICED_SCOPES or SELF_VOICED_DROP not in toolsets:
+        return list(toolsets)
+
+    kept = [name for name in toolsets if name != SELF_VOICED_DROP]
+    if SELF_VOICED_KEEP not in kept:
+        kept.append(SELF_VOICED_KEEP)
+
+    return sorted(kept)

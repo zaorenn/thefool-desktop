@@ -50,6 +50,22 @@ const COLLAPSED_HEIGHT = 22
 const EXPANDED_WIDTH = 300
 const EXPANDED_HEIGHT = 92
 
+/**
+ * ALT YAZI kipi: çentik yatay olarak uzuyor.
+ *
+ * Kullanıcının kararı: "modelin cevabı için notch büyük şekilde açılmak
+ * yerine mikrofon simgesi kaybolsun ve notch yatay olarak genişlesin, alt yazı
+ * monitörün en üst kenarının tamamına kadar genişleyebilsin -- böylece modelin
+ * cevabı tamamen sığar çoğu zaman."
+ *
+ * Yükseklik BÜYÜMÜYOR, tam tersine kısalıyor: dikey büyüme ekranın tepesinden
+ * aşağı sarkan bir kutu demekti; istenen ince ve uzun bir şerit.
+ */
+const SUBTITLE_HEIGHT = 46
+
+/** Kenarlarda bırakılan pay -- şerit ekranın köşelerine yapışmasın. */
+const SUBTITLE_MARGIN = 24
+
 
 /** Tur bittikten sonra yazının ekranda kalma süresi. */
 const LINGER_MS = 6000
@@ -291,6 +307,30 @@ export function NotchShell() {
   }, [voice.status, voice.transcript])
 
   const expanded = voice.status !== 'idle' || lingering
+
+  /**
+   * ALT YAZI kipi: model konuşuyor ve söylediği ekranda akıyor.
+   *
+   * Mikrofon simgesi bu kipte GİZLENİYOR (kullanıcının kararı): konuşan model,
+   * dinleyen kullanıcı değil -- ve şeritte her piksel metne gidiyor.
+   */
+  const subtitleMode = Boolean(voice.reply)
+
+  // Şerit pencerenin enine yayılıyor. Pencere ekran genişliğinde açılıyor
+  // (``electron/fool-notch.ts``), ama BURADA ölçülüyor: kullanıcının
+  // yakınlaştırma ayarı yüzünden CSS pikseli fiziksel pikselden farklı ve
+  // pencere ölçüsünü sabit yazmak çentiği kenardan kesiyordu.
+  const [subtitleWidth, setSubtitleWidth] = useState(EXPANDED_WIDTH)
+
+  useEffect(() => {
+    const measure = () =>
+      setSubtitleWidth(Math.max(EXPANDED_WIDTH, window.innerWidth - SUBTITLE_MARGIN))
+
+    measure()
+    window.addEventListener('resize', measure)
+
+    return () => window.removeEventListener('resize', measure)
+  }, [])
 
 
   // Oturum açılınca konuşma tanımayı ISIT.
@@ -605,12 +645,14 @@ export function NotchShell() {
     <div className="flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>
       <motion.div
         animate={{
-          height: expanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+          height: subtitleMode ? SUBTITLE_HEIGHT : expanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
           // Genişlik pencereye göre KIRPILMAZ: kullanıcının yakınlaştırma
           // ayarı 110% iken pencere 460 fiziksel piksel ama yalnızca 418 CSS
           // pikseli; sabit 420 px istemek çentiği kenardan kesiyordu.
-          opacity: hovered ? 0 : expanded ? 1 : 0.72,
-          width: expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH
+          opacity: hovered ? 0 : expanded || subtitleMode ? 1 : 0.72,
+          // ALT YAZI kipinde ekranın enine yayılıyor: model konuşurken cevabın
+          // tamamı tek satıra sığsın diye.
+          width: subtitleMode ? subtitleWidth : expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH
         }}
         // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
         //
@@ -637,7 +679,27 @@ export function NotchShell() {
         transition={hovered ? { duration: 0.18 } : SPRING}
       >
         <AnimatePresence initial={false} mode="wait">
-          {expanded ? (
+          {/* ALT YAZI kipi: model konusurken serit yatay uzuyor ve icinde
+              YALNIZCA metin var.
+
+              Mikrofon, dalga formu ve kip dugmesi burada CIZILMIYOR --
+              kullanicinin karari: "mikrofon simgesi kaybolsun ve notch yatay
+              olarak genislesin". Ikisi de dogru: konusan model, dinleyen
+              kullanici degil; ve seritte her piksel metne gidiyor. */}
+          {subtitleMode ? (
+            <motion.div
+              animate={{ opacity: 1 }}
+              className="flex h-full items-center justify-center px-6"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              key="subtitle"
+              transition={{ duration: 0.12 }}
+            >
+              <div className="truncate text-center text-[0.82rem] leading-tight text-(--ui-text-primary)">
+                {voice.reply}
+              </div>
+            </motion.div>
+          ) : expanded ? (
             <motion.div
               animate={{ opacity: 1 }}
               className="flex h-full flex-col items-center justify-center gap-1 px-5"

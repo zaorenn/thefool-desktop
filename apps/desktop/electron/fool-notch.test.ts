@@ -26,12 +26,22 @@ describe('notchBounds', () => {
     expect(bounds.y).toBe(0)
   })
 
-  it('yatayda ortalar', () => {
+  it('ekranin TAMAMINI kapliyor', () => {
+    // Kullanicinin karari: alt yazi "monitorun en ust kenarinin tamamina
+    // kadar genisleyebilsin, boylece modelin cevabi tamamen sigar". Pencereyi
+    // tura gore buyutmek Windows'ta kare atlatiyor, o yuzden bastan genis.
     const bounds = notchBounds({ height: 1080, width: 1920, x: 0, y: 0 })
 
-    expect(bounds.x).toBe(Math.round((1920 - NOTCH_WINDOW_WIDTH) / 2))
-    expect(bounds.width).toBe(NOTCH_WINDOW_WIDTH)
+    expect(bounds.x).toBe(0)
+    expect(bounds.width).toBe(1920)
     expect(bounds.height).toBe(NOTCH_WINDOW_HEIGHT)
+  })
+
+  it('olcu okunamazsa SABIT genislige dusuyor', () => {
+    // Sifir genislikte bir pencere centigi tamamen gorunmez yapardi.
+    const bounds = notchBounds({ height: 0, width: 0, x: 0, y: 0 })
+
+    expect(bounds.width).toBe(NOTCH_WINDOW_WIDTH)
   })
 
   it('ikinci ekranın kendi başlangıcına göre ortalar', () => {
@@ -39,7 +49,7 @@ describe('notchBounds', () => {
     // notch'u yanlış monitöre koyardı.
     const bounds = notchBounds({ height: 1080, width: 1920, x: -1920, y: 0 })
 
-    expect(bounds.x).toBe(Math.round(-1920 + (1920 - NOTCH_WINDOW_WIDTH) / 2))
+    expect(bounds.x).toBe(-1920)
   })
 
   it('dikey ofseti olan ekranın üstüne oturur', () => {

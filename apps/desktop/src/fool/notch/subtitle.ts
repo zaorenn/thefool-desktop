@@ -20,8 +20,19 @@
  * Zone A: upstream bu dosyayı bilmiyor.
  */
 
-/** Ekranda tutulan en fazla kelime sayısı -- şeridi sabit tutan sınır. */
-export const SUBTITLE_TAIL_WORDS = 12
+/**
+ * Ekranda tutulan en fazla kelime sayısı.
+ *
+ * Şerit artık ekranın enine yayılıyor (bkz. ``notch-shell.tsx``
+ * ``SUBTITLE_MARGIN`` ve ``electron/fool-notch.ts``), o yüzden sınır dar bir
+ * kutuya göre değil o genişliğe göre seçildi -- kullanıcının beklentisi
+ * "modelin cevabı tamamen sığar çoğu zaman".
+ *
+ * Sınır yine de VAR: sınırsız bırakmak, uzun bir cevabın şeridi taşırıp
+ * ortadan kesilmesi demekti. Kuyruk gösterildiği için konuşulan yer her zaman
+ * görünüyor.
+ */
+export const SUBTITLE_TAIL_WORDS = 30
 
 /**
  * Cümlenin ``ratio`` kadarını KELİME sınırında aç.

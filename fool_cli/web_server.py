@@ -5115,6 +5115,16 @@ async def speak_text(payload: TTSSpeakRequest, profile: Optional[str] = None):
     if not text:
         raise HTTPException(status_code=400, detail="Text is required")
 
+    # AYNI cevabin kac kez sentezlendigini kayda gecir.
+    #
+    # Kullanicinin uc kez bildirdigi "speak aloud 2 kere calisiyor" hatasi
+    # kaynak okuyarak bulunamadi: hangi yuzeyin ne zaman konustugu hicbir
+    # yerde gorunmuyordu. Iki seslendirme ucu de artik ayni bicimde yaziyor,
+    # yani gunlukte tekrari saymak bir bakista mumkun.
+    _log.info(
+        "tts.speak(one-shot): chars=%d head=%r", len(text), text[:60]
+    )
+
     try:
         from tools.tts_tool import text_to_speech_tool
 
@@ -5599,10 +5609,21 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
     async def _pump_client():
         # Text frames feed synthesis; done ends the text; stop/disconnect
         # (or any unparseable frame) is barge-in.
+        #
+        # ILK metin kayda geciyor: ayni cevap iki AYRI akista sentezlenirse
+        # gunlukte iki "stream" satiri yan yana durur. Kullanicinin uc kez
+        # bildirdigi cift okuma, kaynak okuyarak bulunamadi cunku hangi
+        # yuzeyin ne zaman konustugu hicbir yerde gorunmuyordu.
+        first = True
         try:
             while True:
                 frame = json.loads(await ws.receive_text())
                 if frame.get("text"):
+                    if first:
+                        first = False
+                        _log.info(
+                            "tts.speak(stream): head=%r", str(frame["text"])[:60]
+                        )
                     text_q.put(str(frame["text"]))
                 if frame.get("stop"):
                     break

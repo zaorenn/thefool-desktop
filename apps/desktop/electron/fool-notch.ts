@@ -44,6 +44,19 @@ export const NOTCH_COLLAPSED_HEIGHT = 32
  *
  * Animasyon bu kutunun içinde olup bittiği için pencere hiç yeniden
  * boyutlanmıyor.
+ *
+ * GENİŞLİK ekranın tamamı. Kullanıcının kararı: "modelin cevabı için notch
+ * büyük şekilde açılmak yerine mikrofon simgesi kaybolsun ve notch yatay
+ * olarak genişlesin, alt yazı monitörün en üst kenarının tamamına kadar
+ * genişleyebilsin -- böylece modelin cevabı tamamen sığar."
+ *
+ * Pencereyi tura göre BÜYÜTMEK yerine baştan geniş açmak, yukarıdaki kararın
+ * doğrudan sonucu: ``setBounds`` ile büyütmek Windows'ta kare atlatıyor ve
+ * saydam kenarlar titriyor. Pencere saydam ve varsayılan olarak tıklama
+ * geçirgen (bkz. ``click-through.ts``), yani geniş olması altındaki hiçbir
+ * şeyi engellemiyor.
+ *
+ * ``NOTCH_WINDOW_WIDTH`` yalnızca ekran ölçüsü okunamadığında GERİ DÜŞÜŞ.
  */
 export const NOTCH_WINDOW_WIDTH = 460
 export const NOTCH_WINDOW_HEIGHT = 220
@@ -56,7 +69,10 @@ export const NOTCH_WINDOW_HEIGHT = 220
  * notch havada asılı kalır — macOS'taki çentik hissi tamamen kaybolur.
  */
 export function notchBounds(displayBounds: DisplayArea): NotchBounds {
-  const width = NOTCH_WINDOW_WIDTH
+  // Ekranın TAMAMI: alt yazı üst kenar boyunca uzayabilsin diye. Ölçü
+  // okunamazsa eski sabit genişliğe düşülüyor -- sıfır genişlikte bir pencere
+  // çentiği tamamen görünmez yapardı.
+  const width = displayBounds.width > 0 ? displayBounds.width : NOTCH_WINDOW_WIDTH
   const height = NOTCH_WINDOW_HEIGHT
 
   return {

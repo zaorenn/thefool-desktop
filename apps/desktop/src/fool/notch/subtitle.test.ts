@@ -56,17 +56,17 @@ describe('serit SABIT kaliyor', () => {
   })
 
   it('uzun metnin KUYRUGU gosteriliyor', () => {
-    const words = Array.from({ length: 30 }, (_, index) => `k${index}`)
+    const words = Array.from({ length: SUBTITLE_TAIL_WORDS + 10 }, (_, index) => `k${index}`)
     const tail = subtitleTail(words.join(' '))
 
     // Son kelime her zaman gorunur -- konusulan yer orasi.
-    expect(tail.endsWith('k29')).toBe(true)
+    expect(tail.endsWith(`k${SUBTITLE_TAIL_WORDS + 9}`)).toBe(true)
     expect(tail.split(/\s+/).length).toBeLessThanOrEqual(SUBTITLE_TAIL_WORDS + 1)
   })
 
   it('kesildigini SOYLUYOR', () => {
     // Elips olmadan cumle ortasindan basliyormus gibi okunurdu.
-    const words = Array.from({ length: 30 }, (_, index) => `k${index}`)
+    const words = Array.from({ length: SUBTITLE_TAIL_WORDS + 10 }, (_, index) => `k${index}`)
 
     expect(subtitleTail(words.join(' ')).startsWith('…')).toBe(true)
   })

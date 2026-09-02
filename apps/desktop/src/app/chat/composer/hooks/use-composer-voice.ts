@@ -64,7 +64,19 @@ export function useComposerVoice({
   // A tile's composer speaks ITS transcript, not the primary chat's.
   const { $messages } = useComposerScope()
   const [voiceConversationActive, setVoiceConversationActive] = useState(false)
-  const lastSpokenIdRef = useRef<string | null>(null)
+  /**
+   * Bu yüzeyin en son okuduğu cevap -- HANGİ OTURUMDA olduğuyla birlikte.
+   *
+   * Oturum da tutuluyor, çünkü işaretçi tek başına oturumlar arasında
+   * anlamsız: başka bir sohbetin kimliğiyle karşılaştırılan bir cevap her
+   * zaman "okunmamış" çıkar.
+   *
+   * Ölçülen hata: kullanıcının bildirdiği "bir yerden sonra yeni cevap yerine
+   * önceki cevabı okumaya başladı". Çentik bu dersi çoktan öğrenmişti
+   * (``use-notch-voice.ts`` montajda tohumluyor) ama besteci atlanmıştı --
+   * bu depoda tekrar eden kalıbın bir örneği daha.
+   */
+  const lastSpokenIdRef = useRef<null | { id: null | string; session: null | string }>(null)
   const ownsWakeIndicatorRef = useRef(false)
   const voiceStartRequest = useStore($voiceConversationStartRequest)
 
@@ -75,12 +87,43 @@ export function useComposerVoice({
     onTranscribeAudio
   })
 
+  /**
+   * İşaretçiyi bu OTURUM için hazırla ve döndür.
+   *
+   * Tohumlama bir EFEKT DEĞİL, okumanın kendisinde: atomdan ref'e efektle
+   * kopyalamak bir render geriden gelir (deponun lint kuralı da tam bunu
+   * yasaklıyor) ve o bir render, geçmişteki cevabın "okunmamış" görünmesine
+   * yetiyordu.
+   *
+   * Bir oturum AÇILDIĞINDA geçmişteki son cevap ekranda duruyor ve kullanıcı
+   * onu çoktan görmüş; sesli okumak, sohbeti açar açmaz eski bir cevabın
+   * konuşmaya başlaması demekti. Oturum DEĞİŞİNCE de yeniden tohumlanıyor --
+   * yoksa yeni oturumun geçmişindeki son cevap, eski oturumun işaretçisiyle
+   * karşılaştırılıp "okunmamış" çıkardı.
+   */
+  const spokenMarker = (): null | string => {
+    const current = lastSpokenIdRef.current
+
+    if (current && current.session === sessionId) {
+      return current.id
+    }
+
+    const messages = $messages.get()
+    const last = messages.findLast(m => m.role === 'assistant' && !m.hidden)
+    const seeded = last?.id ?? null
+
+    lastSpokenIdRef.current = { id: seeded, session: sessionId ?? null }
+
+    return seeded
+  }
+
   /** Auto-speak selector: the latest unspoken reply only — a backlog collapses to the newest. */
   const pendingResponse = () => {
+    const spoken = spokenMarker()
     const messages = $messages.get()
     const last = messages.findLast(m => m.role === 'assistant' && !m.hidden)
 
-    if (!last || last.id === lastSpokenIdRef.current) {
+    if (!last || last.id === spoken) {
       return null
     }
 
@@ -102,14 +145,14 @@ export function useComposerVoice({
    * in order — narration interims AND the final answer, not just whichever
    * bubble happens to be last. See `collectUnspokenTurnSpeech`.
    */
-  const pendingTurnResponse = () => collectUnspokenTurnSpeech($messages.get(), lastSpokenIdRef.current)
+  const pendingTurnResponse = () => collectUnspokenTurnSpeech($messages.get(), spokenMarker())
 
   const consumePendingResponse = () => {
     const messages = $messages.get()
     const last = messages.findLast(m => m.role === 'assistant' && !m.hidden)
 
     if (last) {
-      lastSpokenIdRef.current = last.id
+      lastSpokenIdRef.current = { id: last.id, session: sessionId ?? null }
     }
   }
 

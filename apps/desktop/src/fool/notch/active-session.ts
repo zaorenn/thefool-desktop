@@ -243,3 +243,36 @@ export function setWakeTurnActive(active: boolean): void {
 export function wakeTurnIsActive(raw: unknown): boolean {
   return raw === '1'
 }
+
+
+/**
+ * Çentiğin ses oturumu AÇIK mı — PENCERELER ARASI.
+ *
+ * Neden bir yarışı önceliğe çeviriyoruz
+ * -------------------------------------
+ * Cevabı kimin seslendireceği hakemle çözülüyor ve hakem doğru çalışıyor --
+ * ama KİMİN ÖNCE talep ettiği bir yarıştı. İki sonucu vardı:
+ *
+ *   * Besteci kazandığında çentik akış açmıyor, yani cümle ilerleyişini hiç
+ *     duymuyor ve ALT YAZI çıkmıyordu. Kullanıcının istediği "modelin
+ *     söyledikleri eş zamanlı, alt yazı geçer gibi" tam da o sinyale bağlı.
+ *   * Yarışın sonucu tura göre değişiyordu, yani davranış öngörülemezdi.
+ *
+ * Çentik AÇIKKEN sesin sahibi çentiktir: kullanıcı zaten ona bakıyor ve sesli
+ * yüzey o. Bunu yazılı bir öncelik yapmak, hakemi de gereksiz bir yarıştan
+ * kurtarıyor.
+ */
+export const $notchVoiceActive = sharedAtom<string>('fool.desktop.voice.notchActive', '', {
+  decode: raw => raw,
+  encode: value => value
+})
+
+/** Çentik oturumunun açık olup olmadığını yaz. */
+export function setNotchVoiceActive(active: boolean): void {
+  $notchVoiceActive.set(active ? '1' : '')
+}
+
+/** Çentik oturumu açık mı. */
+export function notchVoiceIsActive(): boolean {
+  return $notchVoiceActive.get() === '1'
+}

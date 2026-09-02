@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 
+import { notchVoiceIsActive } from '@/fool/notch/active-session'
 import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { turnSpeechKey } from '@/lib/chat-messages'
@@ -124,7 +125,50 @@ export function useAutoSpeakReplies({
     const speakLatest = () => {
       const { conversationActive, markSpoken, pendingReply } = latest.current
 
+      // Cevap KORUMALARDAN ONCE okunuyor.
+      //
+      // Olculen hata: asagidaki iki erken cikis da cevabi TUKETMEDEN
+      // donuyordu. Baska bir yuzey (centik) sesi devraldiginda burasi
+      // sessizce cekiliyor, ama o cevap bu yuzey icin "okunmamis" olarak
+      // kuyrukta kaliyordu. Centik oturumu bitince ve herhangi bir
+      // ``$messages`` tikinde -- kullanicinin YENI istem yazmasi da bir tik --
+      // ``pendingReply()`` hala ONCEKI cevabi donduruyor ve burasi onu
+      // okumaya basliyordu.
+      //
+      // Kullanicinin bildirdigi birebir: "bir yerden sonra yeni cevap yerine
+      // onceki cevabi okumaya basladi... yeni cevap gelene kadar onceki
+      // mesaji okumayi baslattigi icin yeni cevap geldiginde 2 ses ayni anda
+      // konusuyor gibi oluyordu."
+      //
+      // Hakem karari verdi ama KAYBEDEN tarafi kaydetmedi: cekilen yuzeyin
+      // de "bu cevap benden gecti" demesi gerekiyor.
+      const declineCurrent = () => {
+        const current = pendingReply()
+
+        if (current) {
+          rememberDeclined(declinedRef.current, current.id)
+        }
+      }
+
       if (conversationActive) {
+        // Konusma kipi bu cevabi kendisi okuyor.
+        declineCurrent()
+
+        return
+      }
+
+      // CENTIK acikken sesin sahibi centiktir.
+      //
+      // Yazili bir oncelik, cunku eskiden bu bir YARISTI: hangi yuzeyin once
+      // talep ettigi tura gore degisiyordu. Besteci kazandiginda centik akis
+      // acmiyor, cumle ilerleyisini hic duymuyor ve ALT YAZI cikmiyordu --
+      // kullanicinin istedigi "eszamanli, alt yazi gecer gibi" tam da o
+      // sinyale bagli.
+      if (notchVoiceIsActive()) {
+        streamRef.current?.session?.finish()
+        streamRef.current = null
+        declineCurrent()
+
         return
       }
 
@@ -163,6 +207,11 @@ export function useAutoSpeakReplies({
         // sessizce donmek onu yarim birakir ve hicbir sey bitirmezdi.
         streamRef.current?.session?.finish()
         streamRef.current = null
+
+        // Ve cevabi TUKET: devreden yuzey onu okuyor, burasi bir daha
+        // talep etmemeli. Bu satir olmadan cevap kuyrukta kaliyor ve sahiplik
+        // birakildigi anda ESKI bir cevap sesli okunuyordu.
+        declineCurrent()
 
         return
       }

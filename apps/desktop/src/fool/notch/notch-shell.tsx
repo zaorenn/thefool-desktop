@@ -26,6 +26,7 @@ import { Mic } from '@/lib/icons'
 
 import { voiceApi } from '../voice-api'
 
+import { setNotchVoiceActive } from './active-session'
 import { NOTCH_INTERACTIVE_ATTR, useNotchClickThrough } from './click-through'
 import {
   MAX_IDLE_ROUNDS,
@@ -172,6 +173,14 @@ export function NotchShell() {
   const [hovered, setHovered] = useState(false)
   // Oturum acik mi? Sag Ctrl yalnizca acikken dinliyor.
   const [sessionActive, setSessionActive] = useState(false)
+
+  // Oturum durumunu ANA PENCEREYE bildir: centik acikken sesin sahibi
+  // centiktir ve besteci susar. Gerekce ``active-session.ts::$notchVoiceActive``.
+  useEffect(() => {
+    setNotchVoiceActive(sessionActive)
+
+    return () => setNotchVoiceActive(false)
+  }, [sessionActive])
 
   // Kullanici "dur" dedi.
   //

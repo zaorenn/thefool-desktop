@@ -301,7 +301,8 @@ export function collectUnspokenTurnSpeech(
   return { id, pending, text: parts.join('\n\n') }
 }
 
-const normalizeWs = (value: string) => value.replace(/\s+/g, ' ').trim()
+/** Boşlukları sadeleştir -- iki metnin AYNI olup olmadığını sormak için. */
+export const normalizeWs = (value: string) => value.replace(/\s+/g, ' ').trim()
 
 /**
  * Merge the final assistant text into a message's parts.

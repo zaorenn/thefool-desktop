@@ -26,13 +26,13 @@ import { Mic } from '@/lib/icons'
 
 import { voiceApi } from '../voice-api'
 
-import { NOTCH_INTERACTIVE_ATTR, useNotchClickThrough } from './click-through'
+import { useNotchClickThrough } from './click-through'
 import {
   MAX_IDLE_ROUNDS,
   nextIdleRounds,
   shouldRearmListening
 } from './hands-free'
-import { $listenMode, listenModeHint, toggleListenMode } from './listen-mode'
+import { $listenMode } from './listen-mode'
 import { NotchEdgeWaves, NotchLiquid, useLiquidPhase } from './notch-liquid'
 import { formatPttBindingLabel, parsePttBinding } from './ptt-binding'
 import { $pttCode } from './ptt-store'
@@ -85,85 +85,6 @@ const LABEL: Record<NotchStatus, string> = {
 
 /** Eller serbest kip kendini susturdugunda gosterilen satir. */
 const pausedLabel = (key: string) => `Paused — press ${key} or say the wake word`
-
-/**
- * Canlı dalga formu.
- *
- * Çubuk sayısı sabit ve seviye SAĞDAN sola kaydırılıyor: yeni ses hep aynı
- * kenardan giriyor, böylece konuşmanın akış yönü gözle takip edilebiliyor.
- * Rastgele animasyon değil — gerçekten mikrofondan gelen seviyeyi çiziyor.
- */
-function Waveform({ active, level }: { active: boolean; level: number }) {
-  const [bars, setBars] = useState<number[]>(() => Array.from({ length: 28 }, () => 0))
-  const levelRef = useRef(level)
-
-  levelRef.current = level
-
-  useEffect(() => {
-    if (!active) {
-      setBars(previous => previous.map(() => 0))
-
-      return
-    }
-
-    // 24 fps yeterli: daha hızlısı gözle ayırt edilmiyor ama her karede bir
-    // React render'ı demek.
-    const timer = setInterval(() => {
-      setBars(previous => [...previous.slice(1), Math.min(1, levelRef.current)])
-    }, 42)
-
-    return () => clearInterval(timer)
-  }, [active])
-
-  return (
-    <div className="flex h-8 items-center justify-center gap-[3px]">
-      {bars.map((value, index) => (
-        <motion.span
-          animate={{
-            // Taban 3px: sessizlikte de ince bir çizgi kalsın, çubuklar
-            // tamamen kaybolup arayüz "bozulmuş" gibi görünmesin.
-            height: 3 + value * 26
-          }}
-          className="w-[3px] rounded-full bg-(--theme-primary)"
-          // Kayan pencere sabit uzunlukta ve cubugun KIMLIGI konumu:
-          // 3. cubuk her zaman 3. cubuk. Icerige gore anahtar vermek
-          // her karede tum listeyi yeniden monte ederdi.
-          key={`bar-${index}`}
-          transition={{ damping: 20, stiffness: 500, type: 'spring' }}
-        />
-      ))}
-    </div>
-  )
-}
-
-/**
- * Çentiğin tek metin satırı.
- *
- * Model konuşurken metin BÜYÜYOR ve kutu sabit kalıyor: yeni gelen cümle
- * görünsün diye her yazımda dibe kaydırılıyor. Kaydırma yalnızca ``speaking``
- * iken: kullanıcının kendi cümlesi tek seferde geliyor, onu kaydırmak
- * gereksiz bir sıçrama olurdu.
- */
-function NotchText({ speaking, text }: { speaking: boolean; text: string }) {
-  const ref = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (speaking && ref.current) {
-      ref.current.scrollTop = ref.current.scrollHeight
-    }
-  }, [speaking, text])
-
-  return (
-    <div
-      className={`max-h-16 w-full overflow-y-auto px-1 text-[0.78rem] leading-snug ${
-        speaking ? 'text-left text-(--ui-text-primary)' : 'text-center text-(--ui-text-secondary)'
-      }`}
-      ref={ref}
-    >
-      {text}
-    </div>
-  )
-}
 
 export function NotchShell() {
   // Uygulamanin global govde arkaplani bu pencerede de boyaniyor: notch'un
@@ -657,14 +578,18 @@ export function NotchShell() {
           // kutu, alt yazi icin ince bir serit. Kullanicinin karari: "asagiya
           // dogru kalin istemiyorum, ince ve uzun sekilde monitorun ustunde
           // olsun." Iki ayri sekil ayrica iki ayri animasyon gibi gorunuyordu.
-          height: expanded || subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT,
+          // GENISLEME yalnizca ALT YAZIYLA. Kullanicinin karari: "listening
+          // sirasinda notch bu ufak halde kalmali, mikrofon butonu gitmeli ...
+          // sadece alt yazidan alt yaziya genislemeli." Dinlerken genis serit
+          // acmak ekranin tepesini bos yere kapatiyordu.
+          height: subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT,
           // Genişlik pencereye göre KIRPILMAZ: kullanıcının yakınlaştırma
           // ayarı 110% iken pencere 460 fiziksel piksel ama yalnızca 418 CSS
           // pikseli; sabit 420 px istemek çentiği kenardan kesiyordu.
           opacity: hovered ? 0 : expanded || subtitleMode ? 1 : 0.72,
           // ALT YAZI kipinde ekranın enine yayılıyor: model konuşurken cevabın
           // tamamı tek satıra sığsın diye.
-          width: expanded || subtitleMode ? subtitleWidth : COLLAPSED_WIDTH
+          width: subtitleMode ? subtitleWidth : COLLAPSED_WIDTH
         }}
         // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
         //
@@ -711,85 +636,6 @@ export function NotchShell() {
                 {voice.reply}
               </div>
             </motion.div>
-          ) : expanded ? (
-            <motion.div
-              animate={{ opacity: 1 }}
-              // TEK SATIR: durum, kip dugmesi ve metin yan yana. Once dikey
-              // yiginlanip serit asagi dogru kalinlasiyordu -- kullanicinin
-              // istemedigi tam olarak buydu ("asagiya dogru kalin istemiyorum,
-              // ince ve uzun sekilde monitorun ustunde olsun").
-              className="flex h-full flex-row items-center justify-center gap-3 px-5"
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              key="expanded"
-              transition={{ duration: 0.12 }}
-            >
-              <Waveform active={voice.status === 'listening'} level={voice.level} />
-
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="whitespace-nowrap text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
-                  {voice.status === 'idle' && paused
-                    ? pausedLabel(pttLabel)
-                    : LABEL[voice.status]}
-                </div>
-
-                {/* Bas-konus anahtari. Ayarlara gitmeden buradan
-                    degistirilebiliyor: gurultulu bir ortamda mikrofonun
-                    surekli acik olmasi konusmayi bozuyor ve o an panele
-                    gitmek akisi kesiyordu.
-
-                    IKI kapi birden aciliyor ve ikisi de sart:
-
-                      * ``pointerEvents: 'auto'`` -- SAYFA katmani. Ust kutu
-                        tiklamalari gecirmiyor (centik tikla-gec olsun diye).
-                      * ``data-notch-interactive`` -- ISLETIM SISTEMI katmani.
-                        Pencerenin kendisi tikla-gecir ve tiklama sayfaya HIC
-                        ulasmiyor; bu isaret olmadan ``pointerEvents`` tek
-                        basina hicbir sey yapmiyordu ve dugme OLUYDU. */}
-                <button
-                  className={`rounded-full px-2 py-0.5 text-[0.6rem] font-medium transition-colors ${
-                    listenMode === 'push-to-talk'
-                      ? 'bg-(--theme-primary) text-white'
-                      : 'bg-white/10 text-(--ui-text-tertiary) hover:bg-white/20'
-                  }`}
-                  {...{ [NOTCH_INTERACTIVE_ATTR]: '' }}
-                  onClick={() => toggleListenMode()}
-                  style={{ pointerEvents: 'auto' }}
-                  title={listenModeHint(listenMode, pttLabel)}
-                  type="button"
-                >
-                  PTT
-                </button>
-              </div>
-
-              {/* TEK SATIR, SIRAYLA -- ikisi birden DEĞİL.
-                  İstenen sıra birebir şu: konuşma bitince gönderilen metin;
-                  model cevap vermeye başlayınca onun cevabı; cevap uzunsa
-                  model konuşurken aşağı akması; bitince kullanıcı yeni bir şey
-                  söyleyene kadar öylece kalması.
-
-                  Önce ikisi AYNI ANDA çiziliyordu ve çentik iki satırlık bir
-                  kayıt defterine dönüyordu -- kullanıcının gördüğü karmaşa
-                  buydu. Kural artık tek cümle: cevap varsa cevap, yoksa
-                  söylenen.
-
-                  ``reply`` yeni turda temizleniyor (``setReply('')``), yani
-                  sıra kendiliğinden doğru işliyor: gönderilen metin görünür,
-                  cevap akmaya başlayınca yerini alır, tur bitince orada kalır.
-
-                  AKAN metin: sabit yükseklikli, kendi içinde kayan bir kutu.
-                  ``line-clamp`` kesiyordu ve model konuşurken metnin gerisi
-                  hiç görünmüyordu; çentiğin büyüyerek ekranı kaplaması ise tam
-                  da kaçınılan şey. İkisinin ortası: şerit sabit kalıyor, metin
-                  içinde akıyor. */}
-              {(voice.reply || (voice.transcript && voice.status !== 'listening')) && (
-                <NotchText speaking={Boolean(voice.reply)} text={voice.reply || voice.transcript} />
-              )}
-
-              {voice.error && (
-                <div className="line-clamp-1 text-[0.7rem] text-(--theme-warm)">{voice.error}</div>
-              )}
-            </motion.div>
           ) : (
             <motion.div
               animate={{ opacity: 1 }}
@@ -802,9 +648,20 @@ export function NotchShell() {
               {/* Kapali halde METIN YOK. Kisayolu surekli yazmak centigi
                   genisletiyor ve ekranin tepesinde gereksiz yer kapliyordu;
                   kullanici onu zaten bir kez ogreniyor. Kisayol yalnizca
-                  uzerine gelindiginde ipucu olarak duruyor. */}
-              <Mic className="size-3 text-(--theme-primary)" />
-              <span className="h-1 w-1 rounded-full bg-(--theme-primary)/60" />
+                  uzerine gelindiginde ipucu olarak duruyor.
+
+                  ETKINKEN MIKROFON YOK: kullanicinin karari "listening
+                  sirasinda ... mikrofon butonu gitmeli". Geriye canli nokta
+                  kaliyor -- seviyeye gore nefes alan tek bir isaret. */}
+              {!expanded && <Mic className="size-3 text-(--theme-primary)" />}
+              <span
+                className="rounded-full bg-(--theme-primary) transition-all duration-150"
+                style={{
+                  height: expanded ? 5 + voice.level * 5 : 4,
+                  opacity: expanded ? 0.55 + voice.level * 0.45 : 0.6,
+                  width: expanded ? 5 + voice.level * 5 : 4
+                }}
+              />
             </motion.div>
           )}
         </AnimatePresence>

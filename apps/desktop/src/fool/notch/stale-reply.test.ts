@@ -83,7 +83,14 @@ describe('isaretci TOHUMLANIYOR', () => {
     // Tohumlanmadan, sohbeti acar acmaz gecmisteki son cevap konusmaya
     // baslardi.
     expect(COMPOSER).toContain('const spokenMarker = ()')
-    expect(COMPOSER).toContain('lastSpokenIdRef.current = { id: seeded, session: sessionId ?? null }')
+    expect(COMPOSER).toContain('id: seeded,')
+  })
+
+  it('METIN de tutuluyor -- kimlik yetmiyor', () => {
+    // Olculdu: ayni cevap iki FARKLI kimlikle geliyor (akis kimligi, sonra
+    // kalici arka uc kimligi). Kimlige dayanan her muhafaza o delikten
+    // geciyordu.
+    expect(COMPOSER).toContain('normalizeWs(text) === lastSpokenIdRef.current.text')
   })
 
   it('OTURUM da tutuluyor', () => {

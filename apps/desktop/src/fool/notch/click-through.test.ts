@@ -89,16 +89,15 @@ describe('dikisler bagli', () => {
     expect(handler.slice(0, 400)).toContain('event.sender === notchWindow.webContents')
   })
 
-  it('dugme ISARETLI', () => {
-    // Isaret olmadan ``pointerEvents: 'auto'`` tek basina hicbir sey yapmiyor.
-    const shell = read('notch-shell.tsx')
-    const at = shell.indexOf('toggleListenMode()')
-    // ``pointerEvents`` ``onClick``ten SONRA geliyor, o yuzden pencere iki
-    // yana da aciliyor.
-    const button = shell.slice(at - 300, at + 300)
+  it('ISARETLI ogeler icin kapi ACIK kaliyor', () => {
+    // Centikte SU AN isaretli bir oge yok: kip dugmesi kaldirildi, cunku
+    // dinleme hali kucuk kaliyor ve ona yer yok. Mekanizma yerinde duruyor ve
+    // bir dugme geri geldiginde calisacak -- kapi ISLETIM SISTEMI katmaninda
+    // ve ``pointerEvents`` tek basina hicbir sey yapmiyordu.
+    const module = readFileSync(join(__dirname, 'click-through.ts'), 'utf8')
 
-    expect(button).toContain('NOTCH_INTERACTIVE_ATTR')
-    expect(button).toContain("pointerEvents: 'auto'")
+    expect(module).toContain('NOTCH_INTERACTIVE_ATTR')
+    expect(module).toContain('setIgnoreMouseEvents')
   })
 
   it('kanca centige TAKILI', () => {

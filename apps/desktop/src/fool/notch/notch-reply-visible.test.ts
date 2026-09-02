@@ -47,50 +47,15 @@ describe('centik modelin cevabini gosteriyor', () => {
     expect(COMPOSER).toContain('setSpokenSubtitle(spokenSubtitle(sentence, ratio))')
   })
 
-  it('TEK satir cizilyor, ikisi birden DEGIL', () => {
-    // Istenen sira birebir su: konusma bitince gonderilen metin; model cevap
-    // vermeye baslayinca onun cevabi; bitince kullanici yeni bir sey soyleyene
-    // kadar oyle kalmasi.
-    //
-    // Once ikisi AYNI ANDA ciziliyordu ve centik iki satirlik bir kayit
-    // defterine donuyordu.
-    expect(SHELL).toContain('voice.reply || voice.transcript')
-    // Ayri ayri cizen eski hali geri gelirse burasi duser.
-    expect(SHELL).not.toContain('{voice.transcript}')
+  it('SERIT dogrudan metni ciziyor', () => {
+    // ``NotchText`` kaldirildi: dalga formu + durum + dugme yigini 22
+    // piksellik kucuk hale sigmiyordu ve zaten istenmiyordu. Serit artik tek
+    // is yapiyor -- konusulani yazmak.
+    expect(SHELL).toContain('{voice.reply}')
+    expect(SHELL).not.toContain('<NotchText')
   })
 
-  it('CEVAP varsa cevap kazaniyor', () => {
-    // ``reply`` yeni turda temizleniyor, yani sira kendiliginden dogru
-    // isliyor: gonderilen metin gorunur, cevap akmaya baslayinca yerini alir.
-    expect(HOOK).toContain("setSpokenSubtitle('')")
-    expect(SHELL).toContain('speaking={Boolean(voice.reply)}')
-  })
-
-  it('KONUSAN ayirt ediliyor', () => {
-    // Ikisi de ayni renkte ve hizada olsaydi, kullanici kendi cumlesini
-    // modelinkiyle karistirirdi.
-    const text = SHELL.slice(SHELL.indexOf('function NotchText'))
-
-    expect(text.slice(0, 900)).toContain('--ui-text-primary')
-    expect(text.slice(0, 900)).toContain('--ui-text-secondary')
-    expect(text.slice(0, 900)).toContain('text-left')
-    expect(text.slice(0, 900)).toContain('text-center')
-  })
-
-  it('uzun cevap AKIYOR, kesilmiyor', () => {
-    // ``line-clamp`` kesiyordu ve model konusurken metnin gerisi hic
-    // gorunmuyordu. Centigin buyuyerek ekrani kaplamasi ise tam da kacinilan
-    // sey -- ikisinin ortasi: serit sabit, metin icinde akiyor.
-    const text = SHELL.slice(SHELL.indexOf('function NotchText'))
-
-    expect(text.slice(0, 900)).toContain('overflow-y-auto')
-    expect(text.slice(0, 900)).toMatch(/max-h-\d+/)
-    // Dibe kaydirma: yeni gelen cumle gorunsun.
-    expect(text.slice(0, 900)).toContain('scrollTop = ref.current.scrollHeight')
-  })
-
-  it('SOYLENECEK bir sey yokken satir cizilmiyor', () => {
-    // Kosulsuz cizmek, her turun basinda bos bir seride yer acardi.
-    expect(SHELL).toContain('{(voice.reply || (voice.transcript')
+  it('SOYLENECEK bir sey yokken serit ACILMIYOR', () => {
+    expect(SHELL).toContain('const subtitleMode = Boolean(voice.reply)')
   })
 })

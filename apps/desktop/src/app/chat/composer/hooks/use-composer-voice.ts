@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { bindingMatches, parsePttBinding } from '@/fool/notch/ptt-binding'
 import { $pttCode } from '@/fool/notch/ptt-store'
 import { useI18n } from '@/i18n'
-import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { chatMessageText, collectUnspokenTurnSpeech, normalizeWs } from '@/lib/chat-messages'
 import { triggerHaptic } from '@/lib/haptics'
 import { clearWakeIndicator, syncWakeIndicatorWithVoice } from '@/lib/wake-indicator'
 import { $voiceConversationStartRequest, takeVoiceConversationStart } from '@/store/composer'
@@ -76,7 +76,12 @@ export function useComposerVoice({
    * (``use-notch-voice.ts`` montajda tohumluyor) ama besteci atlanmıştı --
    * bu depoda tekrar eden kalıbın bir örneği daha.
    */
-  const lastSpokenIdRef = useRef<null | { id: null | string; session: null | string }>(null)
+  const lastSpokenIdRef = useRef<null | {
+    id: null | string
+    session: null | string
+    /** Okunan METİN. Kimlik tek başına yetmiyor -- aşağıdaki nota bakın. */
+    text: string
+  }>(null)
   const ownsWakeIndicatorRef = useRef(false)
   const voiceStartRequest = useStore($voiceConversationStartRequest)
 
@@ -112,7 +117,11 @@ export function useComposerVoice({
     const last = messages.findLast(m => m.role === 'assistant' && !m.hidden)
     const seeded = last?.id ?? null
 
-    lastSpokenIdRef.current = { id: seeded, session: sessionId ?? null }
+    lastSpokenIdRef.current = {
+      id: seeded,
+      session: sessionId ?? null,
+      text: last ? normalizeWs(chatMessageText(last)) : ''
+    }
 
     return seeded
   }
@@ -130,6 +139,25 @@ export function useComposerVoice({
     const text = chatMessageText(last).trim()
 
     if (!text) {
+      return null
+    }
+
+    // KİMLİK YETMİYOR: aynı cevap iki FARKLI kimlikle geliyor.
+    //
+    // Ölçüldü, günlükten (aynı metin, aynı yüzey, 30 saniye arayla)::
+    //
+    //   mid=assistant-stream-1788389050001-1        <- akış sırasındaki kimlik
+    //   mid=1788389052.1867251-76-assistant         <- kalıcı arka uç kimliği
+    //
+    // Kalıcı satır yazılınca mesajın ``id``si değişiyor; akış kimliğini
+    // "okundu" diye işaretlemek, yeni kimlikle gelen AYNI cevabı okunmamış
+    // yapıyordu. Kullanıcının dört turdur bildirdiği "aynı cevabı 2 kere
+    // okuyor" tam olarak buydu -- ve kimliğe dayanan her muhafaza (talep
+    // anahtarı dahil) aynı delikten geçiyordu.
+    //
+    // İÇERİK kimlik şemasından bağımsız: aynı metni arka arkaya iki kez
+    // okumamak, kimlik nasıl değişirse değişsin doğru davranış.
+    if (lastSpokenIdRef.current && normalizeWs(text) === lastSpokenIdRef.current.text) {
       return null
     }
 
@@ -152,7 +180,11 @@ export function useComposerVoice({
     const last = messages.findLast(m => m.role === 'assistant' && !m.hidden)
 
     if (last) {
-      lastSpokenIdRef.current = { id: last.id, session: sessionId ?? null }
+      lastSpokenIdRef.current = {
+        id: last.id,
+        session: sessionId ?? null,
+        text: normalizeWs(chatMessageText(last))
+      }
     }
   }
 

@@ -114,17 +114,24 @@ describe('ust kenar dalgalari', () => {
   })
 })
 
-describe('serit INCE ve UZUN', () => {
-  it('tek bir aktif geometri var', () => {
-    // Kullanicinin karari: "asagiya dogru kalin istemiyorum, ince ve uzun
-    // sekilde monitorun ustunde olsun." Iki ayri sekil ayrica iki ayri
-    // animasyon gibi gorunuyordu.
-    expect(SHELL).toContain('height: expanded || subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT')
-    expect(SHELL).toContain('width: expanded || subtitleMode ? subtitleWidth : COLLAPSED_WIDTH')
+describe('genisleme YALNIZCA alt yaziyla', () => {
+  it('dinlerken KUCUK kaliyor', () => {
+    // Kullanicinin karari: "listening sirasinda notch bu ufak halde kalmali
+    // ... sadece alt yazidan alt yaziya genislemeli." Dinlerken genis serit
+    // acmak ekranin tepesini bos yere kapatiyordu.
+    expect(SHELL).toContain('height: subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT')
+    expect(SHELL).toContain('width: subtitleMode ? subtitleWidth : COLLAPSED_WIDTH')
   })
 
-  it('icerik TEK SATIR', () => {
-    expect(SHELL).toContain('flex h-full flex-row items-center justify-center gap-3 px-5')
-    expect(SHELL).not.toContain('flex h-full flex-col items-center justify-center gap-1 px-5')
+  it('ETKINKEN mikrofon simgesi YOK', () => {
+    // "mikrofon butonu gitmeli" -- geriye seviyeye gore nefes alan tek bir
+    // canli nokta kaliyor.
+    expect(SHELL).toContain('{!expanded && <Mic')
+  })
+
+  it('kalin orta hal KALDIRILDI', () => {
+    // 22 piksellik bir kutuya sigmayan dalga formu + durum + dugme yigini.
+    expect(SHELL).not.toContain('<Waveform')
+    expect(SHELL).not.toContain('<NotchText')
   })
 })

@@ -7,7 +7,7 @@ import { getGlobalModelInfo } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { isBusySessionModelSwitch } from '@/lib/gateway-rpc'
 import { manualPickRemoved, modelOptionsQueryKey } from '@/lib/model-options'
-import { notifyError } from '@/store/notifications'
+import { notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile } from '@/store/profile'
 import {
   $activeSessionId,
@@ -247,7 +247,24 @@ export function useModelControls({ queryClient, requestGateway }: ModelControlsO
         // model still running and repaint the old name over the user's choice —
         // the switch publishes session.info when it lands, and that is what
         // re-syncs every surface.
-        if (!result?.deferred) {
+        if (result?.deferred) {
+          // KULLANICIYA SOYLENIYOR.
+          //
+          // Davranis dogruydu ama SESSIZDI: secim kuyruga aliniyor, ekranda
+          // hicbir sey degismiyor ve kullanici tiklamaya devam ediyor.
+          // Bildirdigi buydu -- "modeller her zaman akici sekilde degismiyor,
+          // bazen defalarca tiklamak gerekiyor... ancak new sessiona
+          // gectigimde direkt etkili oluyor." Yeni oturumda tur olmadigi icin
+          // erteleme de yok.
+          //
+          // Uzun turlarda neredeyse HER tiklama tur ortasina denk geliyor
+          // (olculdu: tek tur 172,9 sn), yani bu yol istisna degil kural.
+          notify({
+            kind: 'info',
+            message: `${selection.model} will be used from your next message — the current turn keeps the model it started with.`,
+            title: 'Model switch queued'
+          })
+        } else {
           void queryClient.invalidateQueries({ queryKey: modelOptionsQueryKey(liveGatewayProfile, liveSessionId) })
 
           // FOOL-SEAM: single-model-residency

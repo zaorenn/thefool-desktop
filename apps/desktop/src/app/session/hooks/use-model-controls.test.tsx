@@ -20,6 +20,7 @@ import { useModelControls } from './use-model-controls'
 
 const setGlobalModel = vi.fn()
 const notifyError = vi.fn()
+const notify = vi.fn()
 const dropUnselectedModels = vi.fn()
 
 function deferred<T>() {
@@ -58,6 +59,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 vi.mock('@/store/notifications', () => ({
+  notify: (...args: unknown[]) => notify(...args),
   notifyError: (...args: Parameters<typeof notifyError>) => notifyError(...args)
 }))
 
@@ -96,6 +98,8 @@ describe('useModelControls', () => {
   afterEach(() => {
     cleanup()
     dropUnselectedModels.mockClear()
+    notify.mockClear()
+    notifyError.mockClear()
     vi.restoreAllMocks()
     $activeGatewayProfile.set('default')
     $activeSessionId.set(null)
@@ -300,6 +304,34 @@ describe('useModelControls', () => {
     expect($currentProvider.get()).toBe('xai')
     expect(invalidate).not.toHaveBeenCalled()
     expect(notifyError).not.toHaveBeenCalled()
+
+    // ERTELEME KULLANICIYA SOYLENIYOR.
+    //
+    // Davranis dogruydu ama sessizdi: secim kuyruga aliniyor, ekranda hicbir
+    // sey degismiyor ve kullanici tiklamaya devam ediyor. Bildirdigi buydu --
+    // "modeller her zaman akici sekilde degismiyor, bazen defalarca tiklamak
+    // gerekiyor." Uzun turlarda neredeyse her tiklama tur ortasina denk
+    // geliyor, yani bu yol istisna degil kural.
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(notify.mock.calls[0]?.[0]).toMatchObject({ kind: 'info' })
+    // Mesaj MODELIN ADINI ve NE ZAMAN gecerli olacagini soylemeli: "kuyruga
+    // alindi" tek basina kullanicinin ne bekleyecegini anlatmiyor.
+    expect(String((notify.mock.calls[0]?.[0] as { message?: string })?.message)).toContain('grok-4.5')
+    expect(String((notify.mock.calls[0]?.[0] as { message?: string })?.message)).toContain('next message')
+  })
+
+  it('HEMEN uygulanan secimde bildirim YOK', async () => {
+    // Erteleme yoksa soylenecek bir sey de yok: her model degisiminde bildirim
+    // gostermek gurultu olurdu.
+    $activeSessionId.set('session-1')
+    const requestGateway = vi.fn(async () => ({ key: 'model', value: 'grok-4.5' }) as never)
+    let controls!: Controls
+
+    render(<Harness onReady={value => (controls = value)} requestGateway={requestGateway} />)
+
+    await controls.selectModel({ model: 'grok-4.5', provider: 'xai' })
+
+    expect(notify).not.toHaveBeenCalled()
   })
 
   it('still refetches after a switch that applied immediately', async () => {

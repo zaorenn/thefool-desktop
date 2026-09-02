@@ -14530,6 +14530,350 @@ def _(rid, params: dict) -> dict:
     return _ok(rid, {"phrase": phrase, "provider": "sherpa"})
 
 
+# --- Uyandırma motorları: katalog, seçim, kurulum, sınama --------------------
+#
+# Kullanıcının iki isteği burada buluşuyor:
+#
+#   * "o ayarlardaki neyse o sözcük wake wordümüz olmalı" -- üç motorun üçü de
+#     anahtarını FARKLI yerden alıyor, o yüzden ekrana ``phrase`` alanını değil
+#     ``effective_wake_phrase``i veriyoruz.
+#   * "senin manuel kurup çalıştırdığın her bir ayrı şey uygulamadan doğrudan
+#     indirilebilir olmalı" -- paket tanımları ``tools/lazy_deps.py`` içinde
+#     zaten vardı; burası onları arayüze açan yüzey.
+
+
+def _effective_phrase_safe(cfg: dict | None = None) -> str:
+    """Motorun GERÇEKTEN dinlediği ifade; çözümlenemezse boş dize.
+
+    ``wake.status`` bir DURUM ucu: bir alanın hesaplanamaması yüzünden
+    tamamının hata dönmesi, ayarlar ekranını komple karartırdı.
+    """
+    try:
+        from tools.wake_word import effective_wake_phrase
+
+        return effective_wake_phrase(cfg)
+    except Exception:
+        logger.debug("effective wake phrase unavailable", exc_info=True)
+
+        return ""
+
+
+# --- Uyandırma SINAMASI -----------------------------------------------------
+#
+# Kullanıcının isteği: "wake word belirlediğimiz yerin yanında wake wordün
+# çalışıp çalışmadığını test edebileceğimiz bir test butonu."
+#
+# Sınama CANLI dinleyiciyi kullanıyor, ikinci bir mikrofon akışı AÇMIYOR: iki
+# giriş akışı aynı aygıtta platformlar arası güvenilir değil ve zaten
+# ``pause``/``resume`` mekanizmasının var olma sebebi bu.
+#
+# Sınama penceresi açıkken saptama TESTE gidiyor, çentiğe DEĞİL -- yoksa
+# kullanıcı "çalışıyor mu" diye bakarken karşısına açılmış bir çentik ve
+# gönderilmiş bir tur çıkardı.
+_WAKE_TEST_LOCK = threading.Lock()
+_WAKE_TEST: dict | None = None
+
+
+def _wake_test_finish(test_id: str, payload: dict) -> None:
+    """Sınamayı SONLANDIR ve sonucu bildir (yalnızca ilk çağrı iş görür)."""
+    global _WAKE_TEST
+
+    with _WAKE_TEST_LOCK:
+        live = _WAKE_TEST
+
+        if live is None or live["id"] != test_id:
+            return
+
+        _WAKE_TEST = None
+
+    timer = live.get("timer")
+
+    if timer is not None:
+        try:
+            timer.cancel()
+        except Exception:
+            pass
+
+    transport = live["transport"]
+    token = bind_transport(transport)
+
+    try:
+        _emit("wake.test.result", live["sid"], payload)
+    except Exception:
+        logger.debug("wake.test: result emit failed", exc_info=True)
+    finally:
+        reset_transport(token)
+
+
+def _consume_wake_test(transport, matched_phrase: str) -> bool:
+    """Saptamayı süren bir sınama karşılıyor mu?
+
+    ``True`` dönerse çağıran ``wake.detected`` YAYMIYOR.
+    """
+    with _WAKE_TEST_LOCK:
+        live = _WAKE_TEST
+
+        if live is None or live["transport"] is not transport:
+            return False
+
+        test_id = live["id"]
+
+    _wake_test_finish(test_id, {"detected": True, "phrase": matched_phrase})
+
+    # Dinleyici saptamada duraklatildi; sinama bir TUR baslatmadigi icin
+    # hemen geri aciliyor -- yoksa sinamadan sonra kulak sagir kalirdi
+    # (bkz. ``use-wake-turn-resume.ts``, ayni borc).
+    _wake_resume_if_owner(transport)
+
+    return True
+
+
+@method("wake.test")
+def _(rid, params: dict) -> dict:
+    """Uyandırma sözcüğünü SINA: bir süre dinle, tetiklendi mi söyle.
+
+    Dinleyici ARMLI olmalı. Sınama için ayrıca kurmak, kullanıcının gerçek
+    ayarlarından farklı bir yol sınamak olurdu -- ve sınamanın bütün amacı
+    gerçekte olanı ölçmek.
+    """
+    global _WAKE_TEST
+
+    try:
+        from tools.wake_word import effective_wake_phrase, is_listening, owns_listener
+    except Exception as e:
+        return _err(rid, 5046, str(e))
+
+    transport = current_transport() or _stdio_transport
+
+    if not owns_listener(transport) or not is_listening():
+        return _err(
+            rid,
+            4029,
+            "the wake word is not listening right now — turn it on first",
+        )
+
+    try:
+        raw = params.get("timeout_ms")
+        timeout_ms = int(raw) if raw is not None else 15_000
+    except (TypeError, ValueError):
+        timeout_ms = 15_000
+
+    # Alt sinir: konusmaya vakit birakmayan bir pencere her zaman "duyulmadi"
+    # derdi. Ust sinir: acik unutulmus bir sinama, gercek uyandirmalari
+    # yutmaya devam ederdi.
+    timeout_ms = min(max(timeout_ms, 3_000), 60_000)
+
+    sid = str(params.get("session_id") or "")
+    test_id = uuid.uuid4().hex[:12]
+
+    with _WAKE_TEST_LOCK:
+        previous = _WAKE_TEST
+        _WAKE_TEST = {
+            "id": test_id,
+            "sid": sid,
+            "transport": transport,
+            "timer": None,
+        }
+
+    # Onceki sinama varsa dusuruluyor: iki acik pencere, ikincisinin sonucunu
+    # birincinin yutmasi demekti.
+    if previous is not None:
+        try:
+            if previous.get("timer") is not None:
+                previous["timer"].cancel()
+        except Exception:
+            pass
+
+    timer = threading.Timer(
+        timeout_ms / 1000.0,
+        lambda: _wake_test_finish(test_id, {"detected": False, "timed_out": True}),
+    )
+    timer.daemon = True
+
+    with _WAKE_TEST_LOCK:
+        if _WAKE_TEST is not None and _WAKE_TEST["id"] == test_id:
+            _WAKE_TEST["timer"] = timer
+
+    timer.start()
+
+    try:
+        phrase = effective_wake_phrase()
+    except Exception:
+        phrase = ""
+
+    return _ok(rid, {"started": True, "phrase": phrase, "timeout_ms": timeout_ms})
+
+
+@method("wake.test_cancel")
+def _(rid, params: dict) -> dict:
+    """Süren sınamayı bırak (kullanıcı ayarları kapattı ya da vazgeçti)."""
+    with _WAKE_TEST_LOCK:
+        live = _WAKE_TEST
+
+    if live is not None:
+        _wake_test_finish(live["id"], {"detected": False, "cancelled": True})
+
+    return _ok(rid, {"cancelled": live is not None})
+
+
+@method("wake.engines")
+def _(rid, params: dict) -> dict:
+    """Motorlar: hangisi kurulu, hangisi yazılan ifadeyi dinleyebiliyor."""
+    try:
+        from fool.wake_engines import catalog
+        from tools.wake_word import effective_wake_phrase, load_wake_word_config, wake_phrase
+
+        cfg = load_wake_word_config()
+
+        return _ok(rid, {
+            "engines": catalog(cfg),
+            # Motorun GERCEKTEN dinledigi ifade. Ayarlarin gosterecegi deger bu
+            # -- ham ``phrase`` alani degil.
+            "effective_phrase": effective_wake_phrase(cfg),
+            "configured_phrase": wake_phrase(cfg),
+        })
+    except Exception as e:
+        return _err(rid, 5041, str(e))
+
+
+@method("wake.engine")
+def _(rid, params: dict) -> dict:
+    """Motoru DEĞİŞTİR.
+
+    Kurulu olmayan bir motora geçmek, çalışan bir uyandırmayı çalışmayan bir
+    motorla değiştirmek olurdu: kullanıcı "kaydedildi" görür ve wake word o
+    andan itibaren hiç tetiklenmez. Kullanıcının kalıcı kuralı da bu --
+    "kurulu olmayan bir motor seçilebilir olmamalı" -- ve arayüz kapısına
+    GÜVENİLMİYOR, kapı burada da var.
+    """
+    engine_id = str(params.get("engine") or "").strip().lower()
+
+    try:
+        from fool.wake_engines import catalog, spec
+
+        if spec(engine_id) is None:
+            return _err(rid, 4023, f"unknown wake engine: {engine_id}")
+
+        entry = next((item for item in catalog() if item["id"] == engine_id), None)
+
+        if entry is None or not entry["usable"]:
+            reason = (entry or {}).get("blocked_reason") or "not available"
+
+            return _err(rid, 4024, f"{engine_id} is not available: {reason}")
+
+        from cli import save_config_value
+
+        save_config_value("wake_word.provider", engine_id)
+    except Exception as e:
+        logger.warning("wake.engine: persist failed: %s", e)
+
+        return _err(rid, 5042, f"could not switch the wake engine: {e}")
+
+    # Calisan dinleyiciyi birak: motor kurulumda cozumleniyor, yani eskisi
+    # calismaya devam ederdi. Cagiran ``wake.start`` ile yenisini kuruyor.
+    try:
+        from tools.wake_word import stop_listening
+
+        stop_listening()
+    except Exception:
+        logger.debug("wake.engine: listener stop skipped", exc_info=True)
+
+    try:
+        from tools.wake_word import effective_wake_phrase
+
+        phrase = effective_wake_phrase()
+    except Exception:
+        phrase = ""
+
+    logger.info("wake.engine: switched to %r (phrase=%r)", engine_id, phrase)
+
+    return _ok(rid, {"engine": engine_id, "effective_phrase": phrase})
+
+
+@method("wake.model")
+def _(rid, params: dict) -> dict:
+    """``openwakeword`` için hazır ifadelerden birini seç.
+
+    Sabit dağarcıklı motorda "ifade yazmak" diye bir şey yok: model NE
+    eğitildiyse onu duyuyor. Seçim bu yüzden bir liste, serbest metin değil --
+    serbest metin sunmak, yazılanın hiçbir zaman tanınmaması demekti.
+    """
+    model = str(params.get("model") or "").strip()
+
+    if not model:
+        return _err(rid, 4025, "model required")
+
+    try:
+        from tools.wake_word import openwakeword_phrases
+
+        known = {item["model"] for item in openwakeword_phrases()}
+
+        if model not in known:
+            return _err(rid, 4026, f"unknown built-in wake model: {model}")
+
+        from cli import save_config_value
+
+        save_config_value("wake_word.openwakeword.model", model)
+        save_config_value("wake_word.provider", "openwakeword")
+    except Exception as e:
+        logger.warning("wake.model: persist failed: %s", e)
+
+        return _err(rid, 5043, f"could not save the wake model: {e}")
+
+    try:
+        from tools.wake_word import stop_listening
+
+        stop_listening()
+    except Exception:
+        logger.debug("wake.model: listener stop skipped", exc_info=True)
+
+    try:
+        from tools.wake_word import effective_wake_phrase
+
+        phrase = effective_wake_phrase()
+    except Exception:
+        phrase = ""
+
+    return _ok(rid, {"model": model, "effective_phrase": phrase})
+
+
+@method("wake.install")
+def _(rid, params: dict) -> dict:
+    """Motoru uygulamadan KUR.
+
+    Kullanıcının kuralı: "benim bilgisayarımda senin manuel kurup çalıştırdığın
+    her bir ayrı şey uygulamadan doğrudan indirilebilir olmalı ki yeni
+    bilgisayarlarda da çalışsın aynı özellikler."
+
+    İŞ olarak yürüyor: temiz bir makinede pip birkaç on saniye sürüyor ve bir
+    RPC'yi o kadar bloke etmek uygulamayı donmuş gösterirdi.
+    """
+    try:
+        from fool.wake_engines import start_install
+
+        return _ok(rid, start_install(params.get("engine")))
+    except ValueError as e:
+        return _err(rid, 4027, str(e))
+    except Exception as e:
+        return _err(rid, 5044, str(e))
+
+
+@method("wake.install_status")
+def _(rid, params: dict) -> dict:
+    """Kurulum işinin canlı durumu."""
+    try:
+        from fool.wake_engines import get_job
+
+        job = get_job(params.get("job_id"))
+
+        if job is None:
+            return _err(rid, 4028, "unknown install job")
+
+        return _ok(rid, job.snapshot())
+    except Exception as e:
+        return _err(rid, 5045, str(e))
+
+
 @method("wake.start")
 def _(rid, params: dict) -> dict:
     """Arm the wake-word listener for the calling surface ("tui" | "gui").
@@ -14630,6 +14974,13 @@ def _(rid, params: dict) -> dict:
         # back to the owner's configured phrase / no profile for
         # single-phrase engines.
         matched_phrase, matched_profile = get_last_match() or (phrase, "")
+
+        # SINAMA penceresi acikken saptama teste gidiyor, centige DEGIL:
+        # "calisiyor mu" diye bakan kullanicinin karsisina acilmis bir centik
+        # ve gonderilmis bir tur cikmamali.
+        if _consume_wake_test(transport, matched_phrase or phrase):
+            return
+
         logger.info("wake.detected: emitting to sid=%r (transport=%s, profile=%r)",
                     sid, type(transport).__name__, matched_profile)
         token = bind_transport(transport)
@@ -14787,6 +15138,11 @@ def _(rid, params: dict) -> dict:
             "owned_by_caller": owned_by_caller,
             "owner_surface": owner_surface if owner is not None else None,
             "phrase": reqs["phrase"],
+            # Motorun GERCEKTEN dinledigi ifade. ``phrase`` ham yapilandirma
+            # alani ve yalnizca ``sherpa`` onu anahtar olarak kullaniyor --
+            # ayarlarin "hey fool" gosterirken motorun "hey hermes"
+            # dinlemesinin sebebi tam olarak bu ayrimin gorunmemesiydi.
+            "effective_phrase": _effective_phrase_safe(cfg),
             "provider": reqs["provider"],
             "configured_surface": str(cfg.get("surface") or "auto"),
             "input_device": input_device,

@@ -244,9 +244,101 @@ def _confirmation_frames(cfg: Dict[str, Any]) -> int:
 
 
 def wake_phrase(cfg: Optional[Dict[str, Any]] = None) -> str:
-    """Human-facing wake phrase label (purely cosmetic; engine keys detection)."""
+    """Yapılandırmadaki HAM ``phrase`` alanı.
+
+    DİKKAT: bu, motorun dinlediği şey DEĞİL. Yalnızca ``sherpa`` bu alanı
+    gerçekten anahtar olarak kullanıyor; ``openwakeword`` gömülü bir ``.onnx``e,
+    ``porcupine`` kendi ``keyword`` alanına bakıyor. Kullanıcıya gösterilecek
+    değer için ``effective_wake_phrase`` kullanın -- bu ayrımın gözden kaçması,
+    ayarlarda "hey fool" yazarken motorun "hey hermes" dinlemesine yol açtı.
+    """
     cfg = cfg if cfg is not None else load_wake_word_config()
     return str(_get(cfg, "phrase")) or "hey fool"
+
+
+#: Gömülü ``hey_hermes`` modelinin GERÇEKTEN dinlediği ifade.
+#:
+#: Model dosyasının adı ``hey_hermes``, ama ``_BUNDLED_MODEL_ALIASES`` içinde
+#: ``"hey fool"`` de var -- yani yapılandırmada "hey fool" yazması onu gömülü
+#: modele çözüyor ve kullanıcı "hey fool" deyip hiçbir şey olmadığını görüyor.
+BUNDLED_MODEL_PHRASE = "hey hermes"
+
+#: Porcupine'in anahtar sözcük alanı boşken kullandığı değer (motorun kendi
+#: varsayılanı, ``_PorcupineEngine.__init__`` ile aynı).
+PORCUPINE_DEFAULT_KEYWORD = "jarvis"
+
+
+def _humanize_keyword(raw: object) -> str:
+    """``hey_jarvis`` ya da bir dosya yolu → insanın SÖYLEDİĞİ ifade."""
+    text = str(raw or "").strip()
+    if not text:
+        return ""
+    if _looks_like_path(text):
+        text = Path(text).stem
+    return text.replace("_", " ").replace("-", " ").strip().lower()
+
+
+def effective_wake_phrase(cfg: Optional[Dict[str, Any]] = None) -> str:
+    """Motorun GERÇEKTEN dinlediği ifade -- kullanıcıya gösterilecek olan.
+
+    Ölçülen hata
+    ------------
+    Ayarlar "hey fool" gösteriyordu, motor "hey hermes" dinliyordu. Kullanıcının
+    bildirdiği: "wake word ayarlarda hey fool olarak geçiyor... o ayarlardaki
+    neyse o sözcük wake wordümüz olmalı."
+
+    Sebep: varsayılan sağlayıcı ``openwakeword`` ve o, gömülü ``hey_hermes``
+    modelini yüklüyor. ``phrase`` alanı orada yalnızca bir ETİKET ve varsayılanı
+    "hey fool" -- yani ekrandaki yazı ile kulağın duyduğu şey birbirinden
+    bağımsızdı. Sessiz bir yalan: kullanıcı yazana bakıp konuşuyor ve hiçbir
+    şey olmuyor.
+
+    Üç motorun üçü de ANAHTARINI farklı yerden alıyor, o yüzden tek bir alanı
+    okumak yetmiyor:
+
+      * ``sherpa``     -- ``phrase`` (açık sözcük dağarcığı; TEK gerçek özel yol)
+      * ``openwakeword`` -- ``openwakeword.model`` (gömülü ya da yerleşik model)
+      * ``porcupine``  -- ``porcupine.keyword``
+    """
+    cfg = cfg if cfg is not None else load_wake_word_config()
+    provider = _provider(cfg)
+
+    if provider == "sherpa":
+        return wake_phrase(cfg)
+
+    if provider == "porcupine":
+        sub = cfg.get("porcupine") if isinstance(cfg.get("porcupine"), dict) else {}
+        return _humanize_keyword(sub.get("keyword") or PORCUPINE_DEFAULT_KEYWORD)
+
+    sub = cfg.get("openwakeword") if isinstance(cfg.get("openwakeword"), dict) else {}
+    model_ref = str(sub.get("model") or _BUNDLED_MODEL_NAME).strip()
+
+    if model_ref.lower() in _BUNDLED_MODEL_ALIASES:
+        return BUNDLED_MODEL_PHRASE
+
+    return _humanize_keyword(model_ref)
+
+
+def openwakeword_phrases() -> list[dict]:
+    """``openwakeword``in bu makinede SUNDUĞU ifadeler.
+
+    Liste SABİT YAZILMIYOR: paket kendi kataloğunu taşıyor ve sürümle
+    değişiyor. Uydurulmuş bir liste, kullanıcının seçip hiçbir zaman
+    tetiklenmeyen bir ifadeye geçmesi demekti.
+    """
+    items = [{"model": _BUNDLED_MODEL_NAME, "phrase": BUNDLED_MODEL_PHRASE}]
+
+    try:
+        from openwakeword import MODELS
+
+        for name in sorted(MODELS.keys()):
+            items.append({"model": name, "phrase": _humanize_keyword(name)})
+    except Exception:
+        # Paket kurulu degil -- gomulu model yine de calisir (yol ile
+        # yukleniyor, katalog gerekmiyor).
+        logger.debug("openwakeword catalog unavailable", exc_info=True)
+
+    return items
 
 
 def resolve_capture_mode(

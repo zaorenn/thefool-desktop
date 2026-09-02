@@ -70,6 +70,7 @@ import {
   setMessages
 } from '@/store/session'
 import { clearSessionTodos, setSessionTodos, todosForHydration } from '@/store/todos'
+import { applyWakeTestResult } from '@/store/wake-engines'
 import { armWakeWord, stopClientCapture } from '@/store/wake-word'
 import { isAuxiliaryWindow, isHudWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
@@ -725,6 +726,16 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const handleGatewayEventWithPlugins = useCallback(
     (event: Parameters<typeof handleDesktopGatewayEvent>[0]) => {
       emitGatewayEvent(event)
+
+      // SINAMA sonucu: kullanici "test" dedi ve uyandirma tetiklendi mi
+      // ogrenmek istiyor. Ayri bir olay, cunku sinama penceresi acikken
+      // saptama ``wake.detected`` OLARAK YAYILMIYOR -- yoksa sinama sirasinda
+      // centik acilir ve bir tur gonderilirdi.
+      if (event.type === 'wake.test.result') {
+        applyWakeTestResult(event.payload)
+
+        return
+      }
 
       if (event.type === 'wake.detected') {
         const payload = event.payload as { profile?: null | string; start_new_session?: boolean } | undefined

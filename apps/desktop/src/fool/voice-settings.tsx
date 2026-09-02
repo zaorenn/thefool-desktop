@@ -23,6 +23,17 @@ import { Button } from '@/components/ui/button'
 import { triggerHaptic } from '@/lib/haptics'
 import { Download, Info, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
+import {
+  $wakeEngines,
+  cancelWakeTest,
+  installWakeEngine,
+  loadWakeEngines,
+  resetWakeTest,
+  setWakeEngine,
+  setWakeModel,
+  startWakeTest,
+  type WakeTestState
+} from '@/store/wake-engines'
 import { $wakeWord, setWakePhrase } from '@/store/wake-word'
 
 import {
@@ -678,26 +689,152 @@ function PushToTalkRow() {
 }
 
 /**
- * Uyandırma ifadesi — serbest metin.
+ * Uyandırma MOTORU: hangisi kurulu, hangisi seçili, kurulmamışsa indir.
  *
- * Neden serbest metin çalışabiliyor
- * ---------------------------------
- * ``sherpa`` motoru AÇIK SÖZCÜK DAĞARCIKLI: yazılan ifade çalışma anında
- * tokenize ediliyor, eğitim ve model indirmesi yok. Varsayılan
- * ``openwakeword`` ise gömülü bir ``.onnx``e bağlı ve orada ``phrase`` yalnızca
- * kozmetik bir etiket -- yazdığınız ifade hiçbir zaman tanınmazdı. Bu yüzden
- * ifade yazmak sağlayıcıyı da çeviriyor (ağ geçidi yapıyor).
+ * Neden motor seçimi arayüzde
+ * ---------------------------
+ * Üç motor var ve üçü de anahtarını FARKLI yerden alıyor. Bu ayrım hiçbir
+ * yerde görünmüyordu ve doğrudan bir hataya yol açtı: ayarlar "hey fool"
+ * gösterirken motor "hey hermes" dinliyordu. Kullanıcının istediği de bu ayrımı
+ * eline almak: "kullanıcılar wake wordün farklı motorları varsa seçebilir...
+ * mesela hey hermes kullanmak istiyorsa onu da kullanabilir ya da kendi
+ * yazacağı bir şeyi kullanabilir."
  *
- * KAYDEDİLENE kadar yazılan metin yerel: her tuş vuruşunda dinleyiciyi yeniden
- * kurmak, kullanıcı ifadeyi yazarken onu defalarca kapatıp açmak olurdu.
+ * KURULMAMIŞ motor seçilemiyor, kurulabiliyor -- kullanıcının kalıcı kuralı:
+ * "kurulu olmayan bir motor seçilebilir olmamalı", ve "senin manuel kurup
+ * çalıştırdığın her bir ayrı şey uygulamadan doğrudan indirilebilir olmalı."
+ */
+function WakeEngineRow() {
+  const state = useStore($wakeEngines)
+  const [busy, setBusy] = useState('')
+
+  const select = useCallback(async (id: string) => {
+    setBusy(id)
+
+    try {
+      await setWakeEngine(id)
+    } catch (error) {
+      notifyError(error, 'Could not switch the wake engine')
+    } finally {
+      setBusy('')
+    }
+  }, [])
+
+  const install = useCallback(async (id: string) => {
+    try {
+      const job = await installWakeEngine(id)
+
+      if (job.state === 'failed') {
+        notifyError(new Error(job.error || 'install failed'), 'Could not install the engine')
+      }
+    } catch (error) {
+      notifyError(error, 'Could not install the engine')
+    }
+  }, [])
+
+  return (
+    <ListRow
+      action={
+        <div className="flex flex-wrap items-center justify-end gap-1">
+          {state.engines.map(engine => {
+            const job = state.installs[engine.id]
+            const installing = job?.state === 'running'
+
+            if (!engine.installed) {
+              return (
+                <Button
+                  className="h-6 px-2 text-[0.66rem]"
+                  disabled={installing}
+                  key={engine.id}
+                  onClick={() => { triggerHaptic('open'); void install(engine.id) }}
+                  size="sm"
+                  title={`Download and install ${engine.label}`}
+                  variant="outline"
+                >
+                  <Download className="mr-1 size-3" />
+                  {installing ? job.detail || 'Installing…' : engine.label}
+                </Button>
+              )
+            }
+
+            return (
+              <Button
+                className="h-6 px-2 text-[0.66rem]"
+                // Kurulu ama KULLANILAMAZ (ör. anahtarı yok) motor seçilemiyor:
+                // seçilebilir görünmesi, kullanıcıyı sessizce çalışmayan bir
+                // uyandırmaya götürürdü.
+                disabled={!engine.usable || busy === engine.id}
+                key={engine.id}
+                onClick={() => { triggerHaptic('open'); void select(engine.id) }}
+                size="sm"
+                title={engine.usable ? engine.description : `${engine.label}: ${engine.blocked_reason}`}
+                variant={engine.active ? 'default' : 'ghost'}
+              >
+                {engine.label}
+              </Button>
+            )
+          })}
+        </div>
+      }
+      description={
+        state.notice ||
+        'Built-in phrases work offline with no setup. “Custom phrase” recognises anything you type.'
+      }
+      title="Wake engine"
+    />
+  )
+}
+
+/** Sınama durumunun kullanıcıya söylediği şey. */
+function wakeTestLabel(test: WakeTestState): string {
+  switch (test.phase) {
+    case 'detected':
+      return 'Heard it'
+
+    case 'failed':
+      return test.reason
+
+    case 'listening':
+      return `Say “${test.phrase}”…`
+
+    case 'timeout':
+      return 'Did not hear it'
+
+    default:
+      return ''
+  }
+}
+
+/**
+ * Uyandırma ifadesi + SINAMA.
+ *
+ * İfade alanı motora göre şekil değiştiriyor ve bu bilinçli:
+ *
+ *   * Açık sözcük dağarcıklı motorda (``sherpa``) SERBEST METİN -- yazılan
+ *     ifade çalışma anında tokenize ediliyor, eğitim yok.
+ *   * Sabit dağarcıklı motorda (``openwakeword``) LİSTE -- model ne
+ *     eğitildiyse onu duyuyor. Orada serbest metin sunmak, yazılanın hiçbir
+ *     zaman tanınmaması demekti. Ölçülen hata tam olarak buydu: alan "hey
+ *     fool" gösteriyor, kulak "hey hermes" bekliyordu.
+ *
+ * Sınama düğmesi CANLI dinleyiciyi kullanıyor, ikinci bir mikrofon açmıyor; ve
+ * sınama penceresi açıkken saptama çentiğe GİTMİYOR -- "çalışıyor mu" diye
+ * bakan kullanıcının karşısına açılmış bir çentik çıkmamalı.
  */
 function WakePhraseRow() {
   const wake = useStore($wakeWord)
+  const engines = useStore($wakeEngines)
   const [draft, setDraft] = useState<null | string>(null)
   const [busy, setBusy] = useState(false)
 
-  const value = draft ?? wake.phrase
-  const dirty = draft !== null && draft.trim() !== wake.phrase.trim()
+  const active = engines.engines.find(engine => engine.active) ?? null
+  const custom = active?.custom_phrase ?? true
+  const phrases = active?.phrases ?? []
+
+  // Gösterilen ifade motorun GERÇEKTEN dinlediği ifade.
+  const effective = engines.effectivePhrase || wake.phrase
+  const value = draft ?? effective
+  const dirty = draft !== null && draft.trim() !== effective.trim()
 
   const save = useCallback(async () => {
     const next = (draft ?? '').trim()
@@ -710,6 +847,7 @@ function WakePhraseRow() {
 
     try {
       await setWakePhrase(next)
+      await loadWakeEngines()
       setDraft(null)
     } catch (error) {
       notifyError(error, 'Could not save the wake phrase')
@@ -718,31 +856,95 @@ function WakePhraseRow() {
     }
   }, [busy, draft])
 
+  const pick = useCallback(async (model: string) => {
+    setBusy(true)
+
+    try {
+      await setWakeModel(model)
+    } catch (error) {
+      notifyError(error, 'Could not change the wake phrase')
+    } finally {
+      setBusy(false)
+    }
+  }, [])
+
+  const test = useCallback(async () => {
+    resetWakeTest()
+    await startWakeTest()
+  }, [])
+
+  const testing = engines.test.phase === 'listening'
+  const testLabel = wakeTestLabel(engines.test)
+
+  // Sınama sonucu kendiliğinden sönüyor: ekranda kalan eski bir "Heard it",
+  // bir sonraki denemede yanlış bir güven verirdi.
+  useEffect(() => {
+    if (engines.test.phase !== 'detected' && engines.test.phase !== 'timeout') {
+      return undefined
+    }
+
+    const timer = setTimeout(resetWakeTest, 6_000)
+
+    return () => clearTimeout(timer)
+  }, [engines.test.phase])
+
   return (
     <ListRow
       action={
         <div className="flex items-center gap-2">
-          <input
-            className="h-7 w-44 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-card) px-2 text-[0.78rem] text-(--ui-text-primary) outline-none focus:border-(--theme-primary)"
-            disabled={busy}
-            onChange={event => setDraft(event.target.value)}
-            onKeyDown={event => {
-              if (event.key === 'Enter') {
-                void save()
-              }
-            }}
-            placeholder="hey fool"
-            spellCheck={false}
-            value={value}
-          />
-          {dirty && (
+          {custom ? (
+            <input
+              className="h-7 w-44 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-card) px-2 text-[0.78rem] text-(--ui-text-primary) outline-none focus:border-(--theme-primary)"
+              disabled={busy}
+              onChange={event => setDraft(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter') {
+                  void save()
+                }
+              }}
+              placeholder="hey fool"
+              spellCheck={false}
+              value={value}
+            />
+          ) : (
+            <select
+              className="h-7 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-card) px-2 text-[0.78rem] text-(--ui-text-primary)"
+              disabled={busy}
+              onChange={event => { triggerHaptic('open'); void pick(event.target.value) }}
+              value={phrases.find(item => item.phrase === effective)?.model ?? phrases[0]?.model ?? ''}
+            >
+              {phrases.map(item => (
+                <option key={item.model} value={item.model}>
+                  {item.phrase}
+                </option>
+              ))}
+            </select>
+          )}
+          {dirty && custom && (
             <Button disabled={busy} onClick={() => { triggerHaptic(); void save() }} size="sm" variant="outline">
               {busy ? 'Saving…' : 'Save'}
             </Button>
           )}
+          <Button
+            // Sınama CANLI dinleyiciyi kullanıyor, o yüzden kulak kapalıyken
+            // sınanacak bir şey yok.
+            disabled={testing || !wake.listening}
+            onClick={() => { triggerHaptic('open'); void test() }}
+            size="sm"
+            title={wake.listening ? 'Say the wake word and see whether it fires' : 'Turn the wake word on first'}
+            variant="outline"
+          >
+            <Play className="mr-1 size-3" />
+            {testing ? 'Listening…' : 'Test'}
+          </Button>
         </div>
       }
-      description="Say this to wake the notch — it answers out loud, then listens until you stop talking. Any phrase works; a few syllables detect more reliably than one word."
+      description={
+        testLabel ||
+        (custom
+          ? 'Say this to wake the notch — it answers out loud, then listens until you stop talking. A few syllables detect more reliably than one word.'
+          : 'This engine only hears the phrases it was trained on. Pick one, or switch to “Custom phrase” above to type your own.')
+      }
       title="Wake phrase"
     />
   )
@@ -867,6 +1069,18 @@ function NotchShortcutRow() {
 
 export function VoiceSettings() {
   const [catalog, setCatalog] = useState<VoiceCatalog | null>(null)
+
+  // Uyandirma motorlari katalogu: hangisi kurulu, hangisi yazilan ifadeyi
+  // dinleyebiliyor. Ayarlar KAPANIRKEN suren bir sinama birakilmiyor --
+  // acik unutulmus bir sinama penceresi gercek uyandirmalari yutmaya devam
+  // ederdi.
+  useEffect(() => {
+    void loadWakeEngines()
+
+    return () => {
+      void cancelWakeTest()
+    }
+  }, [])
   const [jobs, setJobs] = useState<Record<string, VoiceJob>>({})
   const [loading, setLoading] = useState(true)
 
@@ -1140,6 +1354,7 @@ export function VoiceSettings() {
       <SettingsSection icon={Keyboard} title="Voice controls">
         <NotchShortcutRow />
         <PushToTalkRow />
+        <WakeEngineRow />
         <WakePhraseRow />
       </SettingsSection>
 

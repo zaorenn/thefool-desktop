@@ -19,7 +19,7 @@ export interface WakeWordState {
   notice: string
   /** A toggle RPC is in flight — guards double-clicks. */
   pending: boolean
-  /** Human-facing wake phrase, e.g. "hey fool". */
+  /** Motorun GERÇEKTEN dinlediği ifade (ham yapılandırma alanı değil). */
   phrase: string
 }
 
@@ -86,6 +86,15 @@ export interface WakeStatusResponse {
   /** local | client | auto — where PCM is captured. */
   capture?: string
   configured_surface?: string
+  /**
+   * Motorun GERÇEKTEN dinlediği ifade -- gösterilecek olan bu.
+   *
+   * ``phrase`` ham yapılandırma alanı ve üç motorun yalnızca biri
+   * (``sherpa``) onu anahtar olarak kullanıyor. Ayarların "hey fool"
+   * gösterirken motorun "hey hermes" dinlemesinin sebebi tam olarak bu
+   * ayrımın görünmemesiydi.
+   */
+  effective_phrase?: string
   /** Config truth (wake_word.enabled) — drives post-voice re-arm. */
   enabled?: boolean
   frame_length?: number
@@ -187,7 +196,9 @@ export function applyWakeStatus(status: WakeStatusResponse | null | undefined): 
     enabled: Boolean(status?.enabled),
     listening,
     notice: listening && !silent ? '' : noticeFrom(status),
-    phrase: status?.phrase?.trim() || current.phrase
+    // GERÇEK ifade kazanıyor: ham ``phrase`` alanı yalnızca ``sherpa``da
+    // anahtar, diğer iki motorda kozmetik bir etiket.
+    phrase: status?.effective_phrase?.trim() || status?.phrase?.trim() || current.phrase
   })
 }
 

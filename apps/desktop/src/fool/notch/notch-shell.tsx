@@ -33,7 +33,7 @@ import {
   shouldRearmListening
 } from './hands-free'
 import { $listenMode } from './listen-mode'
-import { NotchEdgeWaves, NotchLiquid, useLiquidPhase } from './notch-liquid'
+import { liquidPourStyle, NotchEdgeWaves, NotchLiquidStyles, useLiquidPhase } from './notch-liquid'
 import { formatPttBindingLabel, parsePttBinding } from './ptt-binding'
 import { $pttCode } from './ptt-store'
 import {
@@ -65,6 +65,24 @@ const SUBTITLE_HEIGHT = 46
 
 /** Kenarlarda bırakılan pay -- şerit ekranın köşelerine yapışmasın. */
 const SUBTITLE_MARGIN = 24
+
+/**
+ * Bir karakterin kabaca kapladığı genişlik (0,82rem gövde yazısı).
+ *
+ * Şerit CÜMLE KADAR geniş oluyor: kullanıcının kararı "alt yazı cümle kadar
+ * genişlemeli, eğer cümle uzunsa geniş kısaysa ona göre uzunlukta olmalı ki
+ * her seferinde çok yer işgal etmesin."
+ *
+ * ÖLÇÜM DEĞİL TAHMİN, bilinçli: alt yazı ses saatiyle birlikte kare başına
+ * güncelleniyor ve her karede ``scrollWidth`` okumak yerleşimi yeniden
+ * hesaplatırdı. Tahmin CÖMERT (gerçek ortalamanın biraz üstünde): fazla
+ * genişlik yalnızca birkaç piksel boşluk demek, dar kalmak ise metnin
+ * kırpılması.
+ */
+const SUBTITLE_CHAR_PX = 7.2
+
+/** Şeridin inebileceği en dar hâl -- tek kelimelik bir cevapta bile okunur. */
+const SUBTITLE_MIN_WIDTH = 180
 
 
 /** Tur bittikten sonra yazının ekranda kalma süresi. */
@@ -569,7 +587,12 @@ export function NotchShell() {
     <div className="relative flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>
       {/* UST KENAR dalgalari -- yalnizca DINLERKEN ve konusma HENUZ
           algilanmamisken. Konusma algilaninca geri cekiliyorlar. */}
+      <NotchLiquidStyles />
       <NotchEdgeWaves active={voice.status === 'listening' && !voice.heardSpeech} />
+      {/* Akis SARMALAYICIDA: ``motion`` genislik/yukseklik animasyonu icin
+          kendi ``transform``ini yaziyor ve CSS keyframe'i ayni ogeye koymak
+          ikisini carpistiriyordu. */}
+      <div style={liquidPourStyle(liquidPhase)}>
       <motion.div
         animate={{
           // TEK bir aktif geometri var ve o INCE + UZUN.
@@ -589,7 +612,12 @@ export function NotchShell() {
           opacity: hovered ? 0 : expanded || subtitleMode ? 1 : 0.72,
           // ALT YAZI kipinde ekranın enine yayılıyor: model konuşurken cevabın
           // tamamı tek satıra sığsın diye.
-          width: subtitleMode ? subtitleWidth : COLLAPSED_WIDTH
+          width: subtitleMode
+            ? Math.min(
+                subtitleWidth,
+                Math.max(SUBTITLE_MIN_WIDTH, voice.reply.length * SUBTITLE_CHAR_PX + 56)
+              )
+            : COLLAPSED_WIDTH
         }}
         // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
         //
@@ -666,14 +694,13 @@ export function NotchShell() {
           )}
         </AnimatePresence>
       </motion.div>
+      </div>
 
       {/* Masaustundeki pet: cubuktan asagi damliyor ve orada duruyor.
           Centik penceresi 220 px, cubuk 22-92 px -- altta kalan alan saydam
           ve fare olaylarini geciriyor, yani masaustunu hic isgal etmiyor. */}
-      {/* Surekli duran top KALDIRILDI: "notchun hemen altinda surekli duran o
-          yuvarlak top cok dikkat dagitici." Top artik bir DURUM gostergesi
-          degil, bir GECIS -- yalnizca acilirken ve kapanirken var. */}
-      <NotchLiquid phase={liquidPhase} />
+      {/* Kirmizi top KALDIRILDI. Akan sey artik centigin KENDISI -- ona
+          eslik eden ayri bir nesne degil (gerekce ``notch-liquid.tsx``). */}
     </div>
   )
 }

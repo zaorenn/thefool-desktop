@@ -28,52 +28,40 @@ const read = (name: string) => readFileSync(join(__dirname, name), 'utf8')
 const LIQUID = read('notch-liquid.tsx')
 const SHELL = read('notch-shell.tsx')
 
-describe('surekli duran top KALDIRILDI', () => {
-  it('top artik bir DURUM gostergesi degil', () => {
-    // Kullanicinin bildirdigi: "notchun hemen altinda surekli duran o yuvarlak
-    // top cok dikkat dagitici."
+describe('kirmizi top KALDIRILDI', () => {
+  it('ayri bir nesne YOK -- akan sey centigin KENDISI', () => {
+    // Kullanicinin karari: "notchun acilis animasyonu bok gibi, onu
+    // basitlestir, o kirmizi topu komple kaldir ve basit bir sekilde
+    // siviymis gibi notch o minimal haline aksin."
+    //
+    // Dogrusu da bu: iki hareketli parca (top + serit) ayni anda ekrandayken
+    // goz hangisine bakacagini bilmiyordu.
+    expect(SHELL).not.toContain('<NotchLiquid phase=')
     expect(SHELL).not.toContain('<NotchPet')
-    expect(SHELL).toContain('<NotchLiquid phase={liquidPhase} />')
+    expect(LIQUID).not.toContain('fool-liquid-open')
   })
 
-  it('bosta HICBIR SEY cizilmiyor', () => {
+  it('SERIT akiyor: ust kenardan dokuluyor', () => {
+    expect(SHELL).toContain('liquidPourStyle(liquidPhase)')
+    expect(LIQUID).toContain("transformOrigin: 'top center'")
+  })
+
+  it('tek salinimla yerine oturuyor', () => {
+    // Sivi hissi asmayla geliyor, ama TEK salinim -- daha fazlasi zipzip
+    // olurdu.
+    expect(LIQUID).toContain('scaleY(1.12)')
+    expect(LIQUID).toContain('scaleY(0.94)')
+  })
+
+  it('kapanista ust kenara TOPLANIYOR', () => {
+    expect(LIQUID).toContain('fool-notch-drain')
+  })
+
+  it('bosta HICBIR animasyon yok', () => {
+    // Surekli oynayan bir serit, kaldirilan topun yaptigi dikkat dagitmanin
+    // aynisi olurdu.
     expect(LIQUID).toContain("if (phase === 'idle') {")
-    expect(LIQUID).toContain('return null')
-  })
-})
-
-describe('acilis: dus, yukari cekil, sicra', () => {
-  it('once ASAGI iniyor', () => {
-    // Ekranin ortasina dogru: pozitif ``translate3d`` y.
-    expect(LIQUID).toContain('translate3d(0, 96px, 0)')
-  })
-
-  it('sonra YUKARI cekiliyor', () => {
-    // Yercekimi tersine: y kuculerek sifira gidiyor.
-    expect(LIQUID).toContain('translate3d(0, 22px, 0)')
-    expect(LIQUID).toContain('translate3d(0, -2px, 0)')
-  })
-
-  it('SICRAMA ile bitiyor', () => {
-    // Yatayda yayilip dikeyde eziliyor -- su sicramasi.
-    expect(LIQUID).toContain('scale(1.9, 0.46)')
-    expect(LIQUID).toContain('scale(2.6, 0.2)')
-  })
-
-  it('ve KAYBOLUYOR', () => {
-    const open = LIQUID.slice(LIQUID.indexOf('@keyframes fool-liquid-open'))
-
-    expect(open.slice(0, open.indexOf('}\n\n'))).toContain('opacity: 0;')
-  })
-})
-
-describe('kapanis: donerek ic, yukari kaybol', () => {
-  it('DONEREK topluyor', () => {
-    expect(LIQUID).toContain('rotate(120deg)')
-  })
-
-  it('ust kenardan YUKARI kayboluyor', () => {
-    expect(LIQUID).toContain('translate3d(0, -80px, 0)')
+    expect(LIQUID).toContain('return {}')
   })
 })
 
@@ -120,7 +108,12 @@ describe('genisleme YALNIZCA alt yaziyla', () => {
     // ... sadece alt yazidan alt yaziya genislemeli." Dinlerken genis serit
     // acmak ekranin tepesini bos yere kapatiyordu.
     expect(SHELL).toContain('height: subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT')
-    expect(SHELL).toContain('width: subtitleMode ? subtitleWidth : COLLAPSED_WIDTH')
+    // Genislik CUMLE KADAR: "alt yazi cumle kadar genislemeli, eger cumle
+    // uzunsa genis kisaysa ona gore uzunlukta olmali ki her seferinde cok yer
+    // isgal etmesin." Ust sinir yine ekran genisligi.
+    expect(SHELL).toContain('SUBTITLE_CHAR_PX')
+    expect(SHELL).toContain('Math.min(')
+    expect(SHELL).toContain('SUBTITLE_MIN_WIDTH')
   })
 
   it('ETKINKEN mikrofon simgesi YOK', () => {

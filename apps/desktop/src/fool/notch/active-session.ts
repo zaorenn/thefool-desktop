@@ -195,3 +195,51 @@ export function parseVoiceSubmit(raw: unknown): null | VoiceSubmitRequest {
     return null
   }
 }
+
+
+/**
+ * Uyandırma turu SÜRÜYOR mu — PENCERELER ARASI.
+ *
+ * Ölçülen hata
+ * ------------
+ * Uyandırma sözcüğü bir kez çalışıyor, sonra ölüyordu. Kullanıcının bildirdiği
+ * birebir: "ilk hey hermesten sonra notch açıkken bir daha hey hermes demem
+ * bir işe yaramıyor" ve "wake word dinlemesi açılıp kapanana ya da notch
+ * açılıp kapanana kadar tekrardan wake word çalışmıyor."
+ *
+ * Sebep tek bir cümlede: SAPTAMA dinleyiciyi DURAKLATIYOR ve saptamayı tüketen
+ * yüzey geri açmayı BORÇLANIYOR. Sunucu ``wake.detected``i yayınlamadan hemen
+ * önce ``pause_listening`` çağırıyor (``tui_gateway/server.py::_on_detect``);
+ * kendi geri açması yalnızca SUNUCU tarafındaki ses döngüsünün geri
+ * çağrılarında (``_on_transcript`` / ``_on_silent`` / ``_on_status`` idle).
+ * Masaüstü yakalamayı tarayıcı tarafında yapıyor, o döngü hiç koşmuyor.
+ *
+ * Composer'ın konuşma kipi borcu ödüyordu (``use-composer-voice``
+ * ``resumeWakeIfPaused`` → ``resumeWakeAfterVoice``). Uyandırmayı çentiğe
+ * yönlendirince o yol devre dışı kaldı ve borcu ödeyen kimse kalmadı.
+ *
+ * Neden bir ATOM, neden doğrudan çentikten geri açmıyoruz
+ * ------------------------------------------------------
+ * Kira ANA PENCEREDE: ``resumeWakeAfterVoice`` ``surface: 'gui'`` ile
+ * uzlaştırıyor. Çentik AYRI bir ``BrowserWindow`` ve kendi isteğini atarsa
+ * kirayı başka bir taşıyıcıya devretmiş olurdu -- dinleyici ana pencerenin
+ * elinden çıkardı. Yani turu ÇENTİK biliyor, geri açmayı ANA PENCERE yapmalı;
+ * arada bu atom var.
+ *
+ * Uyandırma turuna ÖZEL, her tura değil: bas-konuş dinleyiciyi hiç
+ * duraklatmıyor, orada ödenecek bir borç yok.
+ */
+export const $wakeTurnActive = sharedAtom<string>('fool.desktop.voice.wakeTurn', '', {
+  decode: raw => raw,
+  encode: value => value
+})
+
+/** Uyandırma turunun sürüp sürmediğini yaz. */
+export function setWakeTurnActive(active: boolean): void {
+  $wakeTurnActive.set(active ? '1' : '')
+}
+
+/** Atomun ham değerinden tur durumu. */
+export function wakeTurnIsActive(raw: unknown): boolean {
+  return raw === '1'
+}

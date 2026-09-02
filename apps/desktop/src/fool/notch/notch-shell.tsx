@@ -43,6 +43,7 @@ import {
   onKeyUp as ptOnKeyUp
 } from './push-to-talk'
 import { type NotchStatus, useNotchVoice } from './use-notch-voice'
+import { useWakeTurnFlag } from './use-wake-turn-flag'
 
 const COLLAPSED_WIDTH = 104
 const COLLAPSED_HEIGHT = 22
@@ -184,6 +185,10 @@ export function NotchShell() {
       window.hermesDesktop?.notch?.close?.()
     }
   })
+
+  // Uyandirma turunun BITTIGINI ana pencereye bildiriyor; geri acmayi orasi
+  // yapiyor (gerekce ``use-wake-turn-resume.ts``).
+  const startWakeTurn = useWakeTurnFlag(voice.status)
 
   // Hangi kisayolun kayitli oldugu makineye gore degisiyor (aday
   // merdiveni), o yuzden SABIT yazmak yerine ana surece soruluyor.
@@ -490,6 +495,9 @@ export function NotchShell() {
       // kendiliginden acilir ve oda sessiz degilse yanlis tur baslardi.
       if (request?.mode === 'wake') {
         setSessionActive(true)
+        // Tur BASLADI. Saptama sunucuda dinleyiciyi duraklatti; bayrak inince
+        // ana pencere geri aciyor. Bu olmadan uyandirma BIR KEZ calisiyordu.
+        startWakeTurn()
         void voiceRef.current.beginWakeTurn()
 
         return
@@ -591,7 +599,7 @@ export function NotchShell() {
     //
     // ``voice`` bagimlilikta DEGIL: her render'da yeni bir nesne ve etkiyi
     // surekli sokup takardi (gerekce ``voiceRef``in yaninda).
-  }, [pttCode, sessionActive])
+  }, [pttCode, sessionActive, startWakeTurn])
 
   return (
     <div className="flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>

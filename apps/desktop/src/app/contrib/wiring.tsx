@@ -27,6 +27,7 @@ import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
 import { useVoiceSessionRequests } from '@/fool/notch/use-voice-session-requests'
 import { useVoiceSubmitRequests } from '@/fool/notch/use-voice-submit-requests'
+import { useWakeTurnResume } from '@/fool/notch/use-wake-turn-resume'
 import { isNotchWindow } from '@/fool/notch/window'
 import { getLatestSessionMessages } from '@/hermes'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
@@ -655,6 +656,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // RPC."
   useVoiceSubmitRequests(submitText)
 
+  // Uyandirma turu bitince dinleyiciyi geri aciyor. Saptama sunucuda
+  // duraklatiyor ve masaustu yakalamayi tarayici tarafinda yaptigi icin
+  // sunucunun kendi geri acmasi hic kosmuyor -- borcu istemci odemek zorunda.
+  useWakeTurnResume()
+
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })
 
@@ -764,7 +770,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
 
       handleDesktopGatewayEvent(event)
     },
-    [handleDesktopGatewayEvent, startFreshSessionDraft]
+    [handleDesktopGatewayEvent]
   )
 
   useGatewayBoot({

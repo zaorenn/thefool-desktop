@@ -87,13 +87,31 @@ def spec(engine_id: object) -> EngineSpec | None:
 
 
 def _installed(spec_: EngineSpec) -> bool:
+    """Motorun TÜM paketleri yerinde mi.
+
+    Ölçülen hata
+    ------------
+    Önce yalnızca ANA modüle bakıyordu (``sherpa_onnx`` içe aktarılabiliyor
+    mu). Motor "kurulu" görünüyor, seçilebiliyor ve arma sırasında bir alt
+    bağımlılıkta düşüyordu::
+
+        Wake word: "emily wake up" — off — No module named 'pypinyin'
+
+    Kurulum düğmesi de çıkmıyordu, çünkü motor zaten kurulu sayılıyordu --
+    kullanıcının kendi başına çıkamayacağı bir çıkmaz.
+
+    ``lazy_deps`` zaten paket listesinin tek sahibi ve eksikleri sayabiliyor;
+    doğru soru "ana modül var mı" değil, "bu özelliğin eksiği var mı".
+    """
     try:
-        return importlib.util.find_spec(spec_.module) is not None
+        from tools import lazy_deps
+
+        return not lazy_deps.feature_missing(spec_.feature)
     except Exception:
-        # Bozuk bir yarim kurulum ``find_spec``i attirabiliyor; o durumda
-        # motor KURULU DEGIL saymak dogrusu -- secilebilir yapmak, kullaniciyi
+        # Bozuk bir yarim kurulum sondayi attirabiliyor; o durumda motor
+        # KURULU DEGIL saymak dogrusu -- secilebilir yapmak, kullaniciyi
         # calismayan bir motora goturmek olurdu.
-        logger.debug("wake engine probe failed: %s", spec_.module, exc_info=True)
+        logger.debug("wake engine probe failed: %s", spec_.feature, exc_info=True)
         return False
 
 

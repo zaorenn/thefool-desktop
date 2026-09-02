@@ -14,14 +14,14 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 
-from cli import HermesCLI
+from cli import FoolCLI
 
 
 def _make_cli(quiet=False, session_id="20260524_111111_xyz", db=None):
-    """Build a minimal HermesCLI bound to only what _init_agent needs for
+    """Build a minimal FoolCLI bound to only what _init_agent needs for
     the resume code path: _resumed, _session_db, conversation_history,
     session_id, and tool_progress_mode."""
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = FoolCLI.__new__(FoolCLI)
     cli.session_id = session_id
     cli._resumed = True
     cli.conversation_history = []

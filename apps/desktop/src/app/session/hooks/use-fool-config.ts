@@ -1,7 +1,7 @@
 import { type MutableRefObject, useCallback, useRef, useState } from 'react'
 
 import { setTerminalFontFamilyFromConfig } from '@/app/right-sidebar/terminal/terminal-font'
-import { getHermesConfig, getHermesConfigDefaults } from '@/hermes'
+import { getFoolConfig, getFoolConfigDefaults } from '@/hermes'
 import { BUILTIN_PERSONALITIES, normalizePersonalityValue, personalityNamesFromConfig } from '@/lib/chat-runtime'
 import { normalize } from '@/lib/text'
 import { setDisplayTimestampsFromConfig } from '@/store/display-timestamps'
@@ -46,16 +46,16 @@ function normalizeConfigEffort(value: unknown): string {
   return effort === 'false' || effort === 'disabled' ? 'none' : effort
 }
 
-interface HermesConfigOptions {
+interface FoolConfigOptions {
   activeSessionIdRef: MutableRefObject<string | null>
 }
 
-export function useHermesConfig({ activeSessionIdRef }: HermesConfigOptions) {
+export function useFoolConfig({ activeSessionIdRef }: FoolConfigOptions) {
   const [voiceMaxRecordingSeconds, setVoiceMaxRecordingSeconds] = useState(DEFAULT_VOICE_SECONDS)
   const [sttEnabled, setSttEnabled] = useState(true)
   const profileRefreshEpochRef = useRef(0)
 
-  const refreshHermesConfig = useCallback(
+  const refreshFoolConfig = useCallback(
     async (force = false) => {
       if (force) {
         profileRefreshEpochRef.current += 1
@@ -65,7 +65,7 @@ export function useHermesConfig({ activeSessionIdRef }: HermesConfigOptions) {
       const selectionGeneration = getComposerSelectionGeneration()
 
       try {
-        const [config, defaults] = await Promise.all([getHermesConfig(), getHermesConfigDefaults().catch(() => ({}))])
+        const [config, defaults] = await Promise.all([getFoolConfig(), getFoolConfigDefaults().catch(() => ({}))])
 
         if (profileRefreshEpochRef.current !== profileRefreshEpoch) {
           return
@@ -122,5 +122,5 @@ export function useHermesConfig({ activeSessionIdRef }: HermesConfigOptions) {
     [activeSessionIdRef]
   )
 
-  return { refreshHermesConfig, sttEnabled, voiceMaxRecordingSeconds }
+  return { refreshFoolConfig, sttEnabled, voiceMaxRecordingSeconds }
 }

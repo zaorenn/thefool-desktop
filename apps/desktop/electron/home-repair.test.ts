@@ -41,7 +41,7 @@ test('kapi main.ts icinde GERCEKTEN cagriliyor', () => {
   // Gerçek dosya sistemi bağlanıyor -- enjeksiyon noktası test için var, ama
   // üretimde gerçek olanı taşımalı.
   assert.ok(MAIN.includes('directoryExists,'))
-  assert.ok(MAIN.includes('defaultHome: defaultHermesHome'))
+  assert.ok(MAIN.includes('defaultHome: defaultFoolHome'))
   assert.ok(MAIN.includes('os.tmpdir()'))
 })
 
@@ -73,7 +73,7 @@ test('GECERLI bir ev hala kabul ediliyor', () => {
   // yapılandırması yok sayılırdı -- aynı hatanın aynası.
   const gate = MAIN.slice(
     MAIN.indexOf('function acceptConfiguredHome'),
-    MAIN.indexOf('function resolveHermesHome')
+    MAIN.indexOf('function resolveFoolHome')
   )
 
   assert.ok(gate.includes('if (reason === null)'))

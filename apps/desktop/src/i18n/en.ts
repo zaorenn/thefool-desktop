@@ -70,7 +70,7 @@ export const en: Translations = {
       loadingSessions: 'Loading recent sessions',
       retryingRemoteBackend: 'Reconnecting to the remote Fool backend…',
       startingDesktopConnection: 'Starting desktop connection',
-      startingHermesDesktop: 'Starting The Fool Desktop…'
+      startingFoolDesktop: 'Starting The Fool Desktop…'
     },
     errors: {
       backgroundExited: 'The Fool background process exited.',
@@ -126,7 +126,7 @@ export const en: Translations = {
     backendOutOfDateMessage:
       'Your Fool backend is older than this desktop build and may not work correctly. Update to align them.',
     installMethodUnsupportedTitle: 'Unsupported install method',
-    updateHermes: 'Update The Fool',
+    updateFool: 'Update The Fool',
     updateReadyTitle: 'Update ready',
     updateReadyMessage: count => `${count} new change${count === 1 ? '' : 's'} available.`,
     updateReadyMessageUnknown: 'A new update is available.',
@@ -821,9 +821,9 @@ export const en: Translations = {
       sshPortDesc: 'Blank = 22 or the ~/.ssh/config port.',
       sshKeyTitle: 'Identity file',
       sshKeyDesc: 'Private key path. Blank = ssh-agent or ~/.ssh/config.',
-      sshHermesPathTitle: 'The Fool path (optional)',
-      sshHermesPathDesc: 'Full path to the remote fool binary. Blank = auto-detect.',
-      sshHermesPathPlaceholder: 'auto-detect',
+      sshFoolPathTitle: 'The Fool path (optional)',
+      sshFoolPathDesc: 'Full path to the remote fool binary. Blank = auto-detect.',
+      sshFoolPathPlaceholder: 'auto-detect',
       sshRemoteProfileTitle: 'Remote profile (optional)',
       sshRemoteProfileDesc: 'Profile name on the remote host. Blank = use the Desktop profile name.',
       sshTestConnection: 'Test SSH',
@@ -1389,10 +1389,10 @@ export const en: Translations = {
     noSessions: 'No sessions yet.',
     gatewayRunning: 'Messaging gateway running',
     gatewayStopped: 'Messaging gateway stopped',
-    hermesActiveSessions: (version, count) => `The Fool ${version} · Active sessions ${count}`,
+    foolActiveSessions: (version, count) => `The Fool ${version} · Active sessions ${count}`,
     restartGateway: 'Restart gateway',
     gatewayRestartFailed: 'Gateway restart failed.',
-    updateHermes: 'Update The Fool',
+    updateFool: 'Update The Fool',
     actionRunning: 'running',
     actionDone: 'done',
     actionFailed: 'failed',

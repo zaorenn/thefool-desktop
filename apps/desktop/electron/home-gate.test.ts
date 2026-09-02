@@ -129,6 +129,7 @@ test('BENZER adli dizin %TEMP% sayilmiyor', () => {
 
 test('cozulemeyen TEMP icin sandbox iddia EDILMIYOR', () => {
   const home = 'C:\\Users\\u\\AppData\\Local\\fool'
+
   const world = windowsWorld([home, 'C:\\', 'C:\\Users\\u\\AppData\\Local\\fool'], {
     tempDir: () => {
       throw new Error('temp yok')

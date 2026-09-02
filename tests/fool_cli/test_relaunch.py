@@ -7,7 +7,7 @@ import pytest
 from fool_cli import relaunch as relaunch_mod
 
 
-class TestResolveHermesBin:
+class TestResolveFoolBin:
     def test_prefers_absolute_argv0_when_executable(self, monkeypatch):
         fake = "/nix/store/abc/bin/hermes"
         monkeypatch.setattr(sys, "argv", [fake])
@@ -183,7 +183,7 @@ class TestRelaunch:
         assert exc_info.value.code == 42
 
 
-class TestResolveHermesBinWindowsPyGuard:
+class TestResolveFoolBinWindowsPyGuard:
     """On Windows, resolve_hermes_bin MUST NOT return a .py path.
     os.access(x, os.X_OK) returns True for .py files on Windows because
     PATHEXT includes .py when the Python launcher is installed — but

@@ -521,3 +521,53 @@ def brand_value(value: Any) -> Any:
 
     return value
 
+
+
+#: Beceri kaydında KİMLİK taşıyan alanlar -- asla markalanmaz.
+#:
+#: ``brand_skill_index``in yanındaki not bunu zaten söylüyor: "açıklamaları
+#: markalamak kimliği düzeltir; adları markalamak ise çağrıyı bozar." Ad,
+#: diskteki dizinin adı ve etkinleştirme/kaldırma çağrılarının anahtarı.
+SKILL_IDENTITY_FIELDS = frozenset({
+    "dir",
+    "id",
+    "name",
+    "path",
+    "provenance",
+    "slug",
+    "source",
+    "source_url",
+    "url",
+})
+
+
+def brand_skill_meta(entry: Any) -> Any:
+    """Beceri kaydının GÖRÜNEN alanlarını markala, kimliğine dokunma.
+
+    Ölçülen sızıntı
+    ---------------
+    ``/api/skills`` yanıtı hiçbir markalama görmüyordu ve kayıtlar arayüze ham
+    gidiyordu. Kullanıcının ekranında duran::
+
+        hermes-agent
+        "Use, configure, theme, extend, and orchestrate Hermes Agent."
+        author: Hermes Agent + Teknium
+
+    Arayüzün KENDİ metinleri temizdi; sızıntı veriden geliyordu. Beceri
+    içerikleri (``brand_skill_body``) ve sistem promptundaki dizin
+    (``brand_skill_index``) çoktan markalanıyordu -- eksik olan bu uçtu.
+
+    Ad KORUNUYOR: kullanıcı listede ``hermes-agent`` görmeye devam ediyor,
+    çünkü o dizinin adı ve düğmelerin anahtarı. Onu markalamak, açıp
+    kapatmayı ve kaldırmayı sessizce bozardı.
+    """
+    if isinstance(entry, dict):
+        return {
+            key: value if key in SKILL_IDENTITY_FIELDS else brand_skill_meta(value)
+            for key, value in entry.items()
+        }
+    if isinstance(entry, list):
+        return [brand_skill_meta(item) for item in entry]
+    if isinstance(entry, str):
+        return brand_text(entry)
+    return entry

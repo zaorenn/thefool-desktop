@@ -23,7 +23,7 @@ from providers.base import ProviderProfile
 _ATTRIBUTION_HEADERS = {
     "HTTP-Referer": "https://hermes-agent.nousresearch.com",
     "X-Title": "Hermes Agent",
-    "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+    "User-Agent": f"FoolAgent/{_HERMES_VERSION}",
 }
 
 

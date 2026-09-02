@@ -34,6 +34,6 @@ export function setTranslucency(intensity: number): void {
 if (typeof window !== 'undefined') {
   $translucency.subscribe(intensity => {
     persistString(KEY, String(intensity))
-    whenMainWindow(() => window.hermesDesktop?.setTranslucency?.({ intensity }))
+    whenMainWindow(() => window.foolDesktop?.setTranslucency?.({ intensity }))
   })
 }

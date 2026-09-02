@@ -61,7 +61,7 @@ def test_save_conversation_writes_under_hermes_home(hermes_home, tmp_path, monke
     ])
 
     # Call the unbound method against our stub.
-    cli.HermesCLI.save_conversation(stub, "/save json")
+    cli.FoolCLI.save_conversation(stub, "/save json")
 
     # File must NOT be in CWD
     cwd_leak = list(work.glob("hermes_conversation_*.json"))
@@ -95,7 +95,7 @@ def test_save_conversation_empty_history_does_nothing(hermes_home, capsys):
     import cli
 
     stub = _make_stub_cli([])
-    cli.HermesCLI.save_conversation(stub, "/save json")
+    cli.FoolCLI.save_conversation(stub, "/save json")
 
     saved_dir = hermes_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())
@@ -110,7 +110,7 @@ def test_save_conversation_bare_shows_usage(hermes_home, capsys):
     import cli
 
     stub = _make_stub_cli([{"role": "user", "content": "hi"}])
-    cli.HermesCLI.save_conversation(stub, "/save")
+    cli.FoolCLI.save_conversation(stub, "/save")
 
     saved_dir = hermes_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())
@@ -126,7 +126,7 @@ def test_save_conversation_bad_format_shows_usage(hermes_home, capsys):
     import cli
 
     stub = _make_stub_cli([{"role": "user", "content": "hi"}])
-    cli.HermesCLI.save_conversation(stub, "/save pdf")
+    cli.FoolCLI.save_conversation(stub, "/save pdf")
 
     saved_dir = hermes_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())

@@ -43,7 +43,7 @@ export interface RuntimeEnforceResult {
  * model zaten yok.
  */
 export function dropUnselectedModels(): void {
-  const desktop = window.hermesDesktop
+  const desktop = window.foolDesktop
 
   if (!desktop?.api) {
     return

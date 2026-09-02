@@ -123,6 +123,30 @@ PROTECTED: tuple[re.Pattern[str], ...] = (
     re.compile(r"thefool-desktop"),
 )
 
+#: BILESIK tanimlayicilar: ``hermesDesktop``, ``HermesGateway``,
+#: ``refreshHermesConfig``, ``startHermes`` ...
+#:
+#: Neden ayri bir kural kumesi
+#: --------------------------
+#: Gorunen yuzeyler zaten temizdi (``fool.audit`` uc bulgu veriyor ve ucu de
+#: bilerek birakilmis geriye donuk uyumluluk). Kalan ~1300 ``Hermes`` IC
+#: tanimlayiciydi: calisirken kimse gormuyor, ama KAYNAGI okuyan goruyor -- ve
+#: depo herkese acik olacak.
+#:
+#: Ciplak ``hermes`` BILEREK disarida. Icinde upstream git adresi, Skill Hub
+#: beceri kimlikleri (``hermes-agent``) ve upstream'i anlatan yorumlar var;
+#: toptan cevirmek tam da korunmasi istenen seyi bozardi. Kurallar yalnizca
+#: camelCase/PascalCase bilesiklerini yakaliyor, o yuzden ``~/.hermes``,
+#: ``hermes-agent`` ve ``HERMES_BACKEND_READY`` hic eslesmiyor.
+#:
+#: Donusum upstream'in kopyasina da uygulandigi icin (bkz.
+#: ``docs/fool/UPSTREAM.md``) bu adlar merge'de cakisma uretmiyor.
+IDENTIFIER_RENAMES: tuple[tuple[str, str], ...] = (
+    (r"(?<![A-Za-z0-9_])hermes(?=[A-Z])", "fool"),
+    (r"Hermes(?=[A-Za-z0-9_])", "Fool"),
+    (r"(?<=[A-Za-z0-9_])Hermes(?![A-Za-z0-9_])", "Fool"),
+)
+
 #: Dönüştürülecek dosya uzantıları.
 TEXT_SUFFIXES: frozenset[str] = frozenset({
     ".py", ".ts", ".tsx", ".js", ".mjs", ".cjs", ".json", ".yaml", ".yml",
@@ -156,6 +180,20 @@ SELF_EXCLUDE: frozenset[str] = frozenset({
     # kendini yer: eski degiskenler artik taninmaz, kullanicinin ayari
     # sessizce yok sayilir.
     "fool/compat.py",
+    # TS tarafindaki marka TANIMI -- Python kardesi (``fool/branding.py``)
+    # zaten listedeydi, bu atlanmisti.
+    #
+    # Olculdu: donusum kurallarin KENDISINI yeniden yazdi::
+    #
+    #     - [/Hermes\s+Desktop/g, BRAND.desktop],
+    #     + [/Fool\s+Desktop/g,   BRAND.desktop],
+    #
+    # Sebep ince: ``Hermes`` icinde ``Hermes``ten onceki karakter ``b``
+    # (regex kacis dizisi) ve bilesik-tanimlayici kuralina tanimlayici baglami
+    # gibi gorundu. Sonuc: markalayici artik "Hermes"i taniyamiyor, yani
+    # markalama komple oluyor. Marka tanimlari "Hermes" kelimesinin TASIYICI
+    # oldugu tek yer; donusum oraya hic girmemeli.
+    "apps/shared/src/fool-branding.ts",
 })
 
 
@@ -210,6 +248,11 @@ def transform(text: str) -> str:
     # `\bthefool\b` yalnızca serbest biçimde kalanları yakalar.
     for old, new in WORD_RENAMES:
         text = re.sub(rf"\b{re.escape(old)}\b", new, text)
+
+    # Bilesik tanimlayicilar EN SONDA: yukaridaki kurallar modul/komut
+    # adlarini coktan cozdu, buraya yalnizca camelCase artiklari kaliyor.
+    for pattern, replacement in IDENTIFIER_RENAMES:
+        text = re.sub(pattern, replacement, text)
 
     return _unprotect(text, stash)
 

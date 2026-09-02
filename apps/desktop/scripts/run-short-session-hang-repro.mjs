@@ -802,7 +802,7 @@ async function verifyInteractiveSurfaces(cdp, timed, measure, label) {
     throw new Error(`composer did not paint sentinel at ${label}`)
   }
 
-  const version = await timed(`version.ipc.${label}`, () => cdp.eval('window.hermesDesktop.getVersion()'))
+  const version = await timed(`version.ipc.${label}`, () => cdp.eval('window.foolDesktop.getVersion()'))
 
   if (typeof version?.appVersion !== 'string' || version.appVersion.length === 0) {
     throw new Error(`version IPC returned no appVersion at ${label}: ${JSON.stringify(version)}`)
@@ -1240,9 +1240,9 @@ function promoteAttemptArtifacts(output, label, index, warmup, attempt) {
 
 async function executeRunInSandboxAttempt(target, index, warmup, mock, output, sandbox, attempt) {
   const runDir = runDirForAttempt(output, target.label, index, warmup, attempt)
-  const hermesHome = join(sandbox, 'hermes-home')
+  const foolHome = join(sandbox, 'hermes-home')
   const userData = join(sandbox, 'electron-user-data')
-  const desktopLog = join(hermesHome, 'logs', 'desktop.log')
+  const desktopLog = join(foolHome, 'logs', 'desktop.log')
   const stdoutPath = join(runDir, 'electron.stdout.log')
   const stderrPath = join(runDir, 'electron.stderr.log')
   const eventsPath = join(runDir, 'events.jsonl')
@@ -1250,7 +1250,7 @@ async function executeRunInSandboxAttempt(target, index, warmup, mock, output, s
 
   mkdirSync(runDir, { recursive: true })
   mkdirSync(userData, { recursive: true })
-  writeSandboxConfig(hermesHome, mock.url)
+  writeSandboxConfig(foolHome, mock.url)
 
   const electron = require('electron')
   const stdoutLog = createWriteStream(stdoutPath)
@@ -1269,11 +1269,11 @@ async function executeRunInSandboxAttempt(target, index, warmup, mock, output, s
     {
       cwd: target.targetDesktop,
       env: sanitizedEnv({
-        FOOL_DESKTOP_APP_NAME: `HermesShortSession-${target.label}-${process.pid}-${index}-${warmup ? 'w' : 'm'}-${attempt}`,
+        FOOL_DESKTOP_APP_NAME: `FoolShortSession-${target.label}-${process.pid}-${index}-${warmup ? 'w' : 'm'}-${attempt}`,
         FOOL_DESKTOP_HERMES_ROOT: target.targetRoot,
         FOOL_DESKTOP_IGNORE_EXISTING: '1',
         FOOL_DESKTOP_USER_DATA_DIR: userData,
-        FOOL_HOME: hermesHome,
+        FOOL_HOME: foolHome,
         SHORT_SESSION_API_KEY: 'local-diagnostic-only'
       }),
       stdio: ['ignore', 'pipe', 'pipe']

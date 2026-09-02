@@ -811,7 +811,7 @@ class TestProfileIsolation:
 
 
 # ===================================================================
-# TestGetProfilesRoot / TestGetDefaultHermesHome (internal helpers)
+# TestGetProfilesRoot / TestGetDefaultFoolHome (internal helpers)
 # ===================================================================
 
 class TestInternalHelpers:

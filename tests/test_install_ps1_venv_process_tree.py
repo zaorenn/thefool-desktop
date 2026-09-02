@@ -163,7 +163,7 @@ def test_venv_sweep_stops_managed_runtime_children_but_not_unrelated_processes(
                 "-NonInteractive",
                 "-InstallDir",
                 str(install_dir),
-                "-HermesHome",
+                "-FoolHome",
                 str(hermes_home),
             ],
             cwd=tmp_path,

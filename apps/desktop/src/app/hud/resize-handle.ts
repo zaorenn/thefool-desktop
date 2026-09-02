@@ -82,7 +82,7 @@ export function useHudResizeHandle(): {
       const dx = event.screenX - state.startX
       const dy = event.screenY - state.startY
 
-      window.hermesDesktop?.hud?.setBounds?.({
+      window.foolDesktop?.hud?.setBounds?.({
         x: state.originX,
         y: state.originY,
         width: Math.max(HUD_MIN_WIDTH, state.originW + dx),

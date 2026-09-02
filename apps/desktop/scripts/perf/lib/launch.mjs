@@ -167,7 +167,7 @@ export async function startIsolatedInstance({
   devPort = 5174,
   prod = false,
   coldStart = false,
-  hermesHome,
+  foolHome,
   userDataDir,
   seedConfig = true,
   settleMs = 2500,
@@ -183,11 +183,11 @@ export async function startIsolatedInstance({
     return dir
   }
 
-  const home = hermesHome ?? mkTemp('hermes-perf-home-')
+  const home = foolHome ?? mkTemp('hermes-perf-home-')
   const userData = userDataDir ?? mkTemp('hermes-perf-ud-')
   const devUrl = prod ? null : `http://127.0.0.1:${devPort}`
 
-  if (seedConfig && !hermesHome) {
+  if (seedConfig && !foolHome) {
     seedConfigFrom(join(homedir(), '.hermes'), home)
   }
 
@@ -355,7 +355,7 @@ export async function coldStartSamples({ runs = 3, port = 9222, devPort = 5174, 
           devPort: devPort + i,
           prod,
           coldStart: true,
-          hermesHome: home,
+          foolHome: home,
           userDataDir,
           seedConfig: false
         })

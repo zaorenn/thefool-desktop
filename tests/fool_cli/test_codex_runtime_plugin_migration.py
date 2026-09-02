@@ -383,7 +383,7 @@ class TestStripUnmanagedPluginTables:
 # ---- Bug C: FOOL_HOME tempdir leak into ~/.codex/config.toml ----
 
 
-class TestHermesHomeLeakGuard:
+class TestFoolHomeLeakGuard:
     """Regression tests for issue #26250 Bug C.
 
     Previously ``_build_hermes_tools_mcp_entry()`` read ``FOOL_HOME``

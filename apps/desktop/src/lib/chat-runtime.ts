@@ -180,7 +180,7 @@ export const PR_COMMENT_URL_RE =
   /^https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/pull\/\d+(?:\/[^#\s]*)?#(?:discussion_r|issuecomment-)\d+$/
 
 /** The send-time expansion of a `review` attachment. `detail` holds the
- *  resolved comment as JSON (HermesPrComment shape); a malformed payload falls
+ *  resolved comment as JSON (FoolPrComment shape); a malformed payload falls
  *  back to the attachment's URL ref so the send never throws. */
 export function reviewCommentBlock(detail: string): null | string {
   try {

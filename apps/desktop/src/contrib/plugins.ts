@@ -2,7 +2,7 @@
  * Plugin discovery — both delivery modes:
  *
  *  - BUNDLED: every `src/plugins/<name>/plugin.{js,ts,tsx}` default-exporting
- *    a `HermesPlugin` registers automatically (vite glob — drop a folder in).
+ *    a `FoolPlugin` registers automatically (vite glob — drop a folder in).
  *    `hermes-bots` (Bot Mode) ships in-tree and is ON by default; other
  *    reference/demo plugins live in the companion `fool-example-plugins`
  *    repo. `.js` entries are SDK-consumer plugins adopted from standalone
@@ -13,11 +13,11 @@
  *    — the agent's/user's doors, watched + hot-reloaded by the runtime loader.
  */
 
-import { createPluginContext, type HermesPlugin } from './plugin'
+import { createPluginContext, type FoolPlugin } from './plugin'
 import { pluginActive, publishPlugin } from './plugins-store'
 import { watchRuntimePlugins } from './runtime-loader'
 
-const modules = import.meta.glob<{ default: HermesPlugin }>('../plugins/*/plugin.{js,ts,tsx}', { eager: true })
+const modules = import.meta.glob<{ default: FoolPlugin }>('../plugins/*/plugin.{js,ts,tsx}', { eager: true })
 
 // One-shot init guard. Contributions themselves register by id (re-registering
 // is idempotent), but the disk-door watcher setup below (watchRuntimePlugins)
@@ -36,7 +36,7 @@ export function discoverBundledPlugins(): void {
     const plugin = mod.default
 
     if (!plugin?.id || typeof plugin.register !== 'function') {
-      console.warn(`[plugins] ${path} has no valid default HermesPlugin export — skipped`)
+      console.warn(`[plugins] ${path} has no valid default FoolPlugin export — skipped`)
 
       continue
     }

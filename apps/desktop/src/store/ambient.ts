@@ -17,7 +17,7 @@
 export const SPEECH_CLAIM_TTL_MS = 10 * 60 * 1000
 
 export async function ownsAmbientCue(key: string, ttlMs?: number): Promise<boolean> {
-  const claim = window.hermesDesktop?.claimAmbientCue
+  const claim = window.foolDesktop?.claimAmbientCue
 
   if (!claim) {
     return true

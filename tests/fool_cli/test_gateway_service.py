@@ -842,7 +842,7 @@ class TestDetectVenvDir:
         assert result is None
 
 
-class TestSystemUnitHermesHome:
+class TestSystemUnitFoolHome:
     """FOOL_HOME in system units must reference the target user, not root."""
 
     def test_empty_managed_node_dir_uses_only_ambient_fallback(
@@ -958,7 +958,7 @@ class TestSystemUnitHermesHome:
         assert f'FOOL_HOME={hermes_home}' in unit
 
 
-class TestSystemUnitRefreshSyncsHermesHome:
+class TestSystemUnitRefreshSyncsFoolHome:
     """sudo system refresh must not flip TimeoutStopSec via /root/.hermes."""
 
     def test_refresh_adopts_unit_hermes_home_before_rewriting(self, tmp_path, monkeypatch):
@@ -1089,7 +1089,7 @@ class TestSystemUnitRefreshSyncsHermesHome:
             )
 
 
-class TestHermesHomeForTargetUser:
+class TestFoolHomeForTargetUser:
     """Unit tests for _hermes_home_for_target_user()."""
 
     def test_remaps_default_home(self, monkeypatch):
@@ -1459,7 +1459,7 @@ class TestDockerAwareGateway:
         assert "restart" in out.lower()
 
 
-class TestLegacyHermesUnitDetection:
+class TestLegacyFoolUnitDetection:
     """Tests for _find_legacy_hermes_units / has_legacy_hermes_units.
 
     These guard against the scenario that tripped Luis in April 2026: an
@@ -1550,7 +1550,7 @@ class TestLegacyHermesUnitDetection:
 
 
 
-class TestRemoveLegacyHermesUnits:
+class TestRemoveLegacyFoolUnits:
     """Tests for remove_legacy_hermes_units (the migration action)."""
 
     _OUR_UNIT_TEXT = (

@@ -2407,7 +2407,7 @@ class ShellFileOperations(FileOperations):
         # A per-file `tsc --noEmit <file>` cannot read the project's
         # tsconfig.json, so for any .ts that belongs to a TS project it floods
         # phantom errors — unresolved path aliases (`@/…` → TS2307) and ambient
-        # globals (`Window.hermesDesktop` → TS2339) that are defined by the
+        # globals (`Window.foolDesktop` → TS2339) that are defined by the
         # config it never loads. The delta filter then reports the misleading
         # "pre-existing lint errors … the file is still broken", which carries
         # no signal and wastes the caller's turns. When an ancestor

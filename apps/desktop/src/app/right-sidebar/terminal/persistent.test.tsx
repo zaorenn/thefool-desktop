@@ -57,7 +57,7 @@ function setVisibility(hidden: boolean) {
 
 function installWindowStateBridge() {
   windowStateCallback = null
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'foolDesktop', {
     configurable: true,
     value: {
       onWindowStateChanged: vi.fn((callback: typeof windowStateCallback) => {
@@ -186,7 +186,7 @@ describe('PersistentTerminal rect tracking', () => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
     setVisibility(false)
-    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as unknown as { foolDesktop?: unknown }).foolDesktop
   })
 
   it('settles after rect changes instead of polling forever', () => {

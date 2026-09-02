@@ -13,7 +13,7 @@ def test_windows_native_install_path_docs_match_installer() -> None:
         "C:\\Users\\<you>\\AppData\\Local\\hermes\\hermes-agent\\bin\\hermes.exe"
     ) in doc
     # Installer exposes $InstallDir\bin, and must copy the launchers into it.
-    assert '$hermesBin = "$InstallDir\\bin"' in install
+    assert '$foolBin = "$InstallDir\\bin"' in install
     assert "hermes.exe" in install and "hermes-acp.exe" in install
     # Guard against a regression back to putting venv\Scripts on PATH.
-    assert '$hermesBin = "$InstallDir\\venv\\Scripts"' not in install
+    assert '$foolBin = "$InstallDir\\venv\\Scripts"' not in install

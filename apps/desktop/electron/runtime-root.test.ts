@@ -113,7 +113,7 @@ test('goc sonrasi venv DOGRULANIYOR', () => {
   // Windows'ta venv konsol betikleri mutlak yol gomuyor; ust dizin adi
   // degisince dosya yerinde durur ama calismaz. Yalnizca fileExists bakmak
   // bunu kacirirdi.
-  assert.ok(MAIN.includes('canImportHermesCli(venvPython)'))
+  assert.ok(MAIN.includes('canImportFoolCli(venvPython)'))
 })
 
 test('kirik venv ONARIM tetikliyor', () => {
@@ -135,7 +135,7 @@ test('goc sonrasi LAUNCHER da sinaniyor', () => {
   // ``bin\fool.exe`` bir uv trampoline'i ve MUTLAK yol gömüyor; venv python'ı
   // ise kendi konumuna göre çözülüyor. Yalnızca python'ı sınamak masaüstünü
   // çalışır, kullanıcının terminalini kırık bırakıyordu.
-  assert.ok(MAIN.includes('verifyHermesCli(migratedLauncher)'))
+  assert.ok(MAIN.includes('verifyFoolCli(migratedLauncher)'))
   assert.ok(MAIN.includes('launcherOk'))
 
   // Kontrol HER acilista kosuyor -- yalnizca gocun yapildigi acilista degil.

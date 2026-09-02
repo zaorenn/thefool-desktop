@@ -1,6 +1,6 @@
 # Upstream'den besleme
 
-The Fool tam yeniden adlandırıldı: `hermes_cli` → `fool_cli`, `HERMES_*` →
+The Fool tam yeniden adlandırıldı: `fool_cli` → `fool_cli`, `HERMES_*` →
 `FOOL_*`, komut `fool`, veri dizini `~/.fool`. Normalde bu, upstream'den beslenmenin sonu
 demektir — ölçtük, bir aylık upstream değişikliği **2.776 dosyada** çakışıyor.
 
@@ -60,7 +60,7 @@ sonrası kalan artıkları temizlemek için kullanılabilir.
 
 **Aracın kendisi dönüşüme tabi değil.** `fool/rename.py`, `fool/audit.py` ve
 `fool/branding.py` `SELF_EXCLUDE` listesinde. İlk çalıştırmada bu koruma yoktu
-ve araç kendi tablosunu yedi — `("hermes_state", "fool_state")` satırı
+ve araç kendi tablosunu yedi — `("fool_state", "fool_state")` satırı
 `("fool_state", "fool_state")` oldu, yani boş bir işleme döndü. Araç
 çalışıyor görünmeye devam eder ama artık hiçbir şey yapmaz.
 
@@ -70,7 +70,7 @@ merge yolu için gerekli) ve `hermes-agent` beceri kimliği
 değiştirmek dış dünyaya bağlı bir şeyi kırar.
 
 **Yeni bir yeniden adlandırma eklerken** `MODULE_RENAMES` tablosuna uzun adı
-kısa addan ÖNCE koy. `hermes_state_common`, `hermes_state`'ten sonra gelirse
+kısa addan ÖNCE koy. `fool_state_common`, `fool_state`'ten sonra gelirse
 ikinci kural birinciyi bozar.
 
 ## Upstream'i seçici almak

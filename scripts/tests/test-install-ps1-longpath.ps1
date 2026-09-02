@@ -190,7 +190,7 @@ function Invoke-Normalization {
         Stdout     = $stdout
         Rewrites   = $rewrites
         InstallDir = $(if ($paths) { $paths.install_dir } else { $null })
-        HermesHome = $(if ($paths) { $paths.hermes_home } else { $null })
+        FoolHome = $(if ($paths) { $paths.hermes_home } else { $null })
         LongRoot   = $(if ($paths) { $paths.long_profile_root } else { $null })
     }
 }

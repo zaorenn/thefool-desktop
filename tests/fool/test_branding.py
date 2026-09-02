@@ -359,7 +359,7 @@ def test_python_and_electron_agree_on_data_dir() -> None:
     """İki taraf ayrışırsa masaüstü uygulaması backend'ini bulamaz.
 
     Python ``fool_constants._get_platform_default_hermes_home()`` ve Electron
-    ``main.ts::resolveHermesHome()`` veri dizinini BAĞIMSIZ hesaplıyor. Bu test
+    ``main.ts::resolveFoolHome()`` veri dizinini BAĞIMSIZ hesaplıyor. Bu test
     ikisinin aynı adı kullandığını doğrular.
     """
     posix_name = branding.HOME_DIR_NAME           # ".fool"
@@ -944,7 +944,7 @@ class TestSkillBodyBranding:
         assert branding.brand_skill_body(src) == src
 
     def test_modul_ve_ortam_adlari_korunur(self):
-        src = "Import hermes_cli.config after setting HERMES_HOME."
+        src = "Import fool_cli.config after setting FOOL_HOME."
         assert branding.brand_skill_body(src) == src
 
     def test_ev_dizini_markalanir(self):

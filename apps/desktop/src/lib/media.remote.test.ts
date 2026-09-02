@@ -118,7 +118,7 @@ describe('resolveMediaDisplaySrc', () => {
   })
 
   it('leaves web, data, and relative markdown image sources unchanged', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { foolDesktop: { api } })
     $connection.set({ mode: 'remote', profile: 'remote-work' } as never)
 
     await expect(resolveMediaDisplaySrc('https://example.com/a.png')).resolves.toBe('https://example.com/a.png')
@@ -132,7 +132,7 @@ describe('resolveMediaDisplaySrc', () => {
   })
 
   it('reads remote gateway-local file paths through the desktop fs bridge', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { foolDesktop: { api } })
     $connection.set({ mode: 'remote', profile: 'remote-work' } as never)
 
     await expect(resolveMediaDisplaySrc('/Users/me/project/a b.png')).resolves.toBe('data:image/png;base64,ZHVtbXk=')
@@ -145,7 +145,7 @@ describe('resolveMediaDisplaySrc', () => {
   it('reads local desktop file paths from the local desktop shell', async () => {
     const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,bG9jYWw=')
 
-    vi.stubGlobal('window', { hermesDesktop: { readFileDataUrl } })
+    vi.stubGlobal('window', { foolDesktop: { readFileDataUrl } })
     $connection.set({ mode: 'local' } as never)
 
     await expect(resolveMediaDisplaySrc('file:///Users/me/project/a%20b.png')).resolves.toBe(
@@ -162,7 +162,7 @@ describe('resolveMediaPlaybackSrc', () => {
   })
 
   it('keeps a remote HTTPS video URL unchanged', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api: vi.fn() } })
+    vi.stubGlobal('window', { foolDesktop: { api: vi.fn() } })
     $connection.set({ mode: 'remote', baseUrl: 'https://gateway.test', token: 'secret' } as never)
 
     await expect(resolveMediaPlaybackSrc('https://cdn.example.com/render.mp4')).resolves.toBe(
@@ -171,7 +171,7 @@ describe('resolveMediaPlaybackSrc', () => {
   })
 
   it('routes OAuth gateway-local video through the authenticated main-process proxy', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api: vi.fn() } })
+    vi.stubGlobal('window', { foolDesktop: { api: vi.fn() } })
     $connection.set({ authMode: 'oauth', mode: 'remote', profile: 'default', token: null } as never)
 
     await expect(resolveMediaPlaybackSrc('/root/outputs/render.mp4')).resolves.toBe(
@@ -180,7 +180,7 @@ describe('resolveMediaPlaybackSrc', () => {
   })
 
   it('uses the Electron streaming protocol for local desktop video', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api: vi.fn() } })
+    vi.stubGlobal('window', { foolDesktop: { api: vi.fn() } })
     $connection.set({ mode: 'local' } as never)
 
     await expect(resolveMediaPlaybackSrc('C:\\renders\\demo.mp4')).resolves.toBe(
@@ -200,7 +200,7 @@ describe('gatewayMediaDataUrl', () => {
 
   beforeEach(() => {
     api.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { foolDesktop: { api } })
     $connection.set({ mode: 'remote' } as never)
   })
 
@@ -224,7 +224,7 @@ describe('downloadGatewayMediaFile', () => {
 
   beforeEach(() => {
     saveGatewayFile.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { saveGatewayFile } })
+    vi.stubGlobal('window', { foolDesktop: { saveGatewayFile } })
     $connection.set({ mode: 'remote', profile: 'docker-gw' } as never)
   })
 
@@ -247,7 +247,7 @@ describe('downloadGatewayMediaFile', () => {
   })
 
   it('rejects when the desktop bridge is unavailable', async () => {
-    vi.stubGlobal('window', { hermesDesktop: {} })
+    vi.stubGlobal('window', { foolDesktop: {} })
 
     await expect(downloadGatewayMediaFile('/Users/me/project/report.md')).rejects.toThrow(
       'Desktop file download bridge'

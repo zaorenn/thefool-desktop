@@ -134,17 +134,17 @@ afterEach(() => {
   vi.resetModules()
 })
 
-/** ``window.hermesDesktop`` var mı? Akış ucunun çözülüp çözülmemesini bu belirliyor. */
+/** ``window.foolDesktop`` var mı? Akış ucunun çözülüp çözülmemesini bu belirliyor. */
 function withDesktopBridge(present: boolean) {
   if (present) {
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+    ;(window as unknown as { foolDesktop: unknown }).foolDesktop = {
       getConnection: async () => ({})
     }
 
     return
   }
 
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { foolDesktop?: unknown }).foolDesktop
 }
 
 describe('akis KURULAMAZSA kayit birakiliyor', () => {

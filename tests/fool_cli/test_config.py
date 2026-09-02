@@ -31,7 +31,7 @@ from fool_cli.config import (
 )
 
 
-class TestGetHermesHome:
+class TestGetFoolHome:
     def test_default_path(self):
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("FOOL_HOME", None)
@@ -39,7 +39,7 @@ class TestGetHermesHome:
             assert home == Path.home() / ".hermes"
 
 
-class TestEnsureHermesHome:
+class TestEnsureFoolHome:
 
     def test_creates_default_soul_md_if_missing(self, tmp_path):
         with patch.dict(os.environ, {"FOOL_HOME": str(tmp_path)}):

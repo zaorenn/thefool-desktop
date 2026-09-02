@@ -1,6 +1,6 @@
 # nix/desktop.nix — Hermes Desktop (Electron) app build + wrapper
 #
-# `hermesAgent` is the fully-built `.#default` package — it ships the
+# `foolAgent` is the fully-built `.#default` package — it ships the
 # `hermes` binary with the venv, runtime PATH, bundled skills/plugins, etc.
 # already wired up.  We point the desktop at it via the existing
 # `FOOL_DESKTOP_HERMES` override env var, so the desktop's resolver
@@ -11,9 +11,9 @@
   lib,
   stdenv,
   makeWrapper,
-  hermesNpmLib,
+  foolNpmLib,
   electron,
-  hermesAgent,
+  foolAgent,
   python3,
   ...
 }:
@@ -43,7 +43,7 @@ let
       throw "hermes-desktop: unsupported host arch for node-pty staging";
 
   # Build the renderer (dist/ + electron/ + package.json).
-  renderer = hermesNpmLib.buildNpmPackage {
+  renderer = foolNpmLib.buildNpmPackage {
     dirs = [
       "apps/desktop"
       "apps/shared"
@@ -78,7 +78,7 @@ let
         mkdir -p "$TMPDIR/electron-headers"
         tar -xzf ${electronHeaders} -C "$TMPDIR/electron-headers" --strip-components=1
 
-        ${lib.getExe hermesNpmLib.node-gyp} rebuild \
+        ${lib.getExe foolNpmLib.node-gyp} rebuild \
           --directory=../../node_modules/node-pty \
           --build-from-source \
           --runtime=electron \
@@ -167,7 +167,7 @@ stdenv.mkDerivation {
     # No reimplementation of the agent resolver in the wrapper.
     makeWrapper ${lib.getExe electron} $out/bin/hermes-desktop \
       --add-flags "$out/share/hermes-desktop" \
-      --set FOOL_DESKTOP_HERMES "${lib.getExe hermesAgent}" \
+      --set FOOL_DESKTOP_HERMES "${lib.getExe foolAgent}" \
       --set ELECTRON_IS_DEV 0
 
     # XDG launcher entry

@@ -11,7 +11,7 @@ files. In Hermes the equivalent isolation is:
   skip_memory=True)``).
 
 Both flags are wired via env vars so they work cleanly across the
-argparse → cmd_chat → cli.main() → HermesCLI → AIAgent call chain.
+argparse → cmd_chat → cli.main() → FoolCLI → AIAgent call chain.
 """
 
 from __future__ import annotations
@@ -114,26 +114,26 @@ class TestIgnoreUserConfigEnvGate:
 
 
 class TestIgnoreRulesEnvGate:
-    """The constructor / env var must propagate to ``HermesCLI.ignore_rules``
+    """The constructor / env var must propagate to ``FoolCLI.ignore_rules``
     so ``AIAgent`` is built with ``skip_context_files=True`` and
     ``skip_memory=True``.
     """
 
     def test_env_var_enables_ignore_rules(self, monkeypatch):
-        """Setting FOOL_IGNORE_RULES=1 flips HermesCLI.ignore_rules True."""
+        """Setting FOOL_IGNORE_RULES=1 flips FoolCLI.ignore_rules True."""
         monkeypatch.setenv("FOOL_IGNORE_RULES", "1")
 
-        # Import HermesCLI lazily — cli.py has heavy module-init side effects
+        # Import FoolCLI lazily — cli.py has heavy module-init side effects
         # that we don't want to run at test collection time.
         import cli
         importlib.reload(cli)
 
-        # Build only enough of HermesCLI to reach the ignore_rules assignment.
+        # Build only enough of FoolCLI to reach the ignore_rules assignment.
         # The full __init__ pulls in provider/auth/session DB, so we cheat:
         # create the object via object.__new__ and manually run the assignment
         # the same way the real constructor does.
-        obj = object.__new__(cli.HermesCLI)
-        # Replicate the exact logic from cli.py HermesCLI.__init__:
+        obj = object.__new__(cli.FoolCLI)
+        # Replicate the exact logic from cli.py FoolCLI.__init__:
         ignore_rules = False  # constructor default
         obj.ignore_rules = ignore_rules or os.environ.get("FOOL_IGNORE_RULES") == "1"
 

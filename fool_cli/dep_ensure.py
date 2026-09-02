@@ -166,7 +166,7 @@ def ensure_dependency(
             "-ExecutionPolicy", "Bypass",
             "-File", str(script),
             "-Ensure", dep,
-            "-HermesHome", str(get_hermes_home()),
+            "-FoolHome", str(get_hermes_home()),
         ]
     else:
         cmd = ["bash", str(script), "--ensure", dep]

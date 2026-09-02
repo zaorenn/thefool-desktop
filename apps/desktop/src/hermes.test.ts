@@ -9,10 +9,10 @@ import {
   audioTranscribeRequestTimeoutMs,
   getAllSessionMessages,
   getCronJobs,
+  getFoolConfig,
+  getFoolConfigDefaults,
   getGlobalModelInfo,
   getGlobalModelOptions,
-  getHermesConfig,
-  getHermesConfigDefaults,
   getLatestSessionMessages,
   getOlderSessionMessages,
   getProfiles,
@@ -45,7 +45,7 @@ describe('The Fool REST helpers', () => {
   beforeEach(() => {
     resetSidebarBatchCapability()
     api = vi.fn().mockResolvedValue(emptySessionsResponse)
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'foolDesktop', {
       configurable: true,
       value: { api }
     })
@@ -54,7 +54,7 @@ describe('The Fool REST helpers', () => {
   afterEach(() => {
     setApiRequestProfile(null)
     vi.restoreAllMocks()
-    Reflect.deleteProperty(window, 'hermesDesktop')
+    Reflect.deleteProperty(window, 'foolDesktop')
   })
 
   it('uses a longer timeout for the single-profile session list', async () => {
@@ -305,8 +305,8 @@ describe('The Fool REST helpers', () => {
     api.mockResolvedValue({})
 
     const bootCalls: [() => Promise<unknown>, string][] = [
-      [getHermesConfig, '/api/config'],
-      [getHermesConfigDefaults, '/api/config/defaults'],
+      [getFoolConfig, '/api/config'],
+      [getFoolConfigDefaults, '/api/config/defaults'],
       [getGlobalModelInfo, '/api/model/info'],
       [() => getGlobalModelOptions(), '/api/model/options?explicit_only=1'],
       [getCronJobs, '/api/cron/jobs']
@@ -536,7 +536,7 @@ describe('pluginSocket', () => {
 
   beforeEach(() => {
     getConnection = vi.fn().mockResolvedValue(null)
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'foolDesktop', {
       configurable: true,
       value: { api: vi.fn(), getConnection }
     })
@@ -544,7 +544,7 @@ describe('pluginSocket', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    Reflect.deleteProperty(window, 'hermesDesktop')
+    Reflect.deleteProperty(window, 'foolDesktop')
     setApiRequestProfile(null)
   })
 

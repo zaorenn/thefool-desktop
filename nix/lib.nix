@@ -234,7 +234,7 @@ let
   # e.g. apps/desktop depends on apps/shared.
   #
   # Usage:
-  #   hermesNpmLib.buildNpmPackage {
+  #   foolNpmLib.buildNpmPackage {
   #     dirs = [ "apps/desktop" "apps/shared" ];
   #     buildPhase = '' ... '';
   #     installPhase = '' ... '';

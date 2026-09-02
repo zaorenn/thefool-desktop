@@ -22,7 +22,7 @@ import { useMessageStream } from './index'
 const ACTIVE_SID = 'session-active'
 const ACTIVE_PROFILE = 'compass'
 let handleEvent: ((event: RpcEvent) => void) | null = null
-let refreshHermesConfig: ReturnType<typeof vi.fn<() => Promise<void>>>
+let refreshFoolConfig: ReturnType<typeof vi.fn<() => Promise<void>>>
 let refreshSessions: ReturnType<typeof vi.fn<() => Promise<void>>>
 let hydrateFromStoredSession: ReturnType<typeof vi.fn<() => Promise<void>>>
 let queryClient: QueryClient
@@ -39,7 +39,7 @@ function Harness() {
     activeSessionIdRef,
     hydrateFromStoredSession,
     queryClient,
-    refreshHermesConfig,
+    refreshFoolConfig,
     refreshSessions,
     sessionStateByRuntimeIdRef,
     updateSessionState: (sessionId, updater) => {
@@ -69,7 +69,7 @@ const sessionInfo = (sessionId: string, payload: Record<string, unknown>) =>
 beforeEach(() => {
   handleEvent = null
   sessionStates = null
-  refreshHermesConfig = vi.fn<() => Promise<void>>(async () => undefined)
+  refreshFoolConfig = vi.fn<() => Promise<void>>(async () => undefined)
   refreshSessions = vi.fn<() => Promise<void>>(async () => undefined)
   hydrateFromStoredSession = vi.fn<() => Promise<void>>(async () => undefined)
   queryClient = new QueryClient()
@@ -95,13 +95,13 @@ describe('session.info config refetch gating', () => {
     sessionInfo(ACTIVE_SID, { model: 'm1', running: false })
     sessionInfo(ACTIVE_SID, { model: 'm1', title: 't' })
 
-    expect(refreshHermesConfig).not.toHaveBeenCalled()
+    expect(refreshFoolConfig).not.toHaveBeenCalled()
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400)
     })
 
-    expect(refreshHermesConfig).toHaveBeenCalledTimes(1)
+    expect(refreshFoolConfig).toHaveBeenCalledTimes(1)
   })
 
   it('never fetches config for a background session heartbeat', async () => {
@@ -115,7 +115,7 @@ describe('session.info config refetch gating', () => {
       await vi.advanceTimersByTimeAsync(400)
     })
 
-    expect(refreshHermesConfig).not.toHaveBeenCalled()
+    expect(refreshFoolConfig).not.toHaveBeenCalled()
   })
 })
 

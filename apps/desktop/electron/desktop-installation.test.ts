@@ -38,6 +38,7 @@ test('loadOrCreateInstallationId persists and reuses one installation ID', () =>
       loadOrCreateInstallationId(filePath, () => ID_B),
       ID_A
     )
+
     // POSIX mode bitleri Windows'ta yok: ``chmod`` orada yalnizca salt-okunur
     // bayragini ceviriyor ve maske her zaman 0o666 donuyor. Kimlik dosyasi
     // kullanicinin profil dizininde duruyor ve orayi Windows kendi ACL'siyle

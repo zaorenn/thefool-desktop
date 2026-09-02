@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { HermesReadDirResult } from '@/global'
-import type * as HermesModule from '@/hermes'
+import type { FoolReadDirResult } from '@/global'
+import type * as FoolModule from '@/hermes'
 
 import { $pluginRecords, setPluginEnabled } from './plugins-store'
 import { discoverRuntimePlugins, watchRuntimePlugins } from './runtime-loader'
@@ -11,13 +11,13 @@ import { discoverRuntimePlugins, watchRuntimePlugins } from './runtime-loader'
 const getStatus = vi.fn(async () => ({ hermes_home: '/remote/box/.fool' }))
 
 vi.mock('@/hermes', async importActual => ({
-  ...(await importActual<typeof HermesModule>()),
+  ...(await importActual<typeof FoolModule>()),
   getStatus: () => getStatus()
 }))
 
 const desktopPluginsRoot = vi.fn<() => Promise<string>>()
 const agentPluginsRoot = vi.fn<() => Promise<string>>()
-const readDir = vi.fn<(path: string) => Promise<HermesReadDirResult>>()
+const readDir = vi.fn<(path: string) => Promise<FoolReadDirResult>>()
 const readFileText = vi.fn<(path: string) => Promise<{ text: string }>>()
 const watchDirectory = vi.fn<(path: string) => Promise<{ id: string }>>()
 const watchPreviewFile = vi.fn<(path: string) => Promise<{ id: string }>>()
@@ -32,7 +32,7 @@ beforeEach(() => {
   watchPreviewFile.mockReset()
   onPreviewFileChanged.mockReset()
   getStatus.mockClear()
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+  ;(window as unknown as { foolDesktop: unknown }).foolDesktop = {
     agentPluginsRoot,
     desktopPluginsRoot,
     onPreviewFileChanged,
@@ -44,7 +44,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { foolDesktop?: unknown }).foolDesktop
 })
 
 describe('scanDiskPlugins (#66899)', () => {
@@ -91,7 +91,7 @@ describe('scanDiskPlugins (#66899)', () => {
   })
 
   it('still scans the standalone root when agentPluginsRoot is absent (older shell)', async () => {
-    delete (window.hermesDesktop as unknown as { agentPluginsRoot?: unknown }).agentPluginsRoot
+    delete (window.foolDesktop as unknown as { agentPluginsRoot?: unknown }).agentPluginsRoot
     desktopPluginsRoot.mockResolvedValue('/local/.fool/desktop-plugins')
     readDir.mockResolvedValue({ entries: [] })
 

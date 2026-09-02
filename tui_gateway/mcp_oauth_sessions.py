@@ -156,10 +156,10 @@ def _worker(session_id: str, hermes_home: str, server_name: str, cfg: dict, reco
         secret_token = set_secret_scope(build_profile_secret_scope(Path(hermes_home)))
         try:
             with force_interactive_oauth(), dashboard_oauth_flow(flow):
-                from tools.mcp_oauth import HermesTokenStorage
+                from tools.mcp_oauth import FoolTokenStorage
 
                 manager = get_manager()
-                storage = HermesTokenStorage(server_name)
+                storage = FoolTokenStorage(server_name)
                 backup = storage.snapshot()
                 previous_entry = None
                 try:

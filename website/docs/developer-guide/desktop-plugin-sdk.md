@@ -12,7 +12,7 @@ entries, keybinds, themes — registers into one central registry. Core register
 its surfaces exactly the way a plugin does, so the plugin story is the real one,
 not a bolted-on afterthought.
 
-A **desktop plugin** is a single ESM file that default-exports a `HermesPlugin`.
+A **desktop plugin** is a single ESM file that default-exports a `FoolPlugin`.
 It imports one module — `@fool/plugin-sdk` — and gets everything: the app's
 live state, the gateway JSON-RPC door, a scoped REST/socket backend namespace,
 React Query, and the app's own UI kit so plugin UI looks native by default. No
@@ -58,7 +58,7 @@ plugin, and fail to resolve in a disk plugin). Capability comes in tiers:
 | **Unified package** | `$FOOL_HOME/plugins/<id>/desktop/plugin.js` | plugins that also ship agent-side code | none — same disk pipeline |
 | **Bundled** | `apps/desktop/src/plugins/<id>/plugin.tsx` | in-tree, shipped with the app | the app's own Vite build |
 
-All three take the same `HermesPlugin` contract, appear in **Settings → Plugins**,
+All three take the same `FoolPlugin` contract, appear in **Settings → Plugins**,
 and enable/disable live. A unified package is just the disk door scanning inside
 your agent plugin's folder — see
 [One package, both SDKs](#one-package-both-sdks). Everything on this page is
@@ -139,10 +139,10 @@ The only importable specifiers are `@fool/plugin-sdk`, `react`, and
 
 ## The plugin contract
 
-A plugin default-exports a `HermesPlugin`:
+A plugin default-exports a `FoolPlugin`:
 
 ```ts
-interface HermesPlugin {
+interface FoolPlugin {
   /** Stable slug — becomes the `plugin:<id>` source and the id namespace. */
   id: string
   /** Human name for Settings / about UI. Defaults to `id`. */
@@ -667,7 +667,7 @@ ctx.storage.remove('lastTab')
 ## Bundled plugins
 
 A plugin can ship in-tree at `apps/desktop/src/plugins/<id>/plugin.tsx` (default
-export a `HermesPlugin`). It's discovered by `discoverBundledPlugins()` at boot —
+export a `FoolPlugin`). It's discovered by `discoverBundledPlugins()` at boot —
 no import, no registry edit — and shares the exact inventory + live
 enable/disable contract as a disk plugin. The two differences:
 
@@ -724,7 +724,7 @@ not treat this pipeline as a trust boundary.
 | Category | Exports |
 |----------|---------|
 | Host | `host` (`.state.*`, `.notify`, `.notifyError`, `.navigate`, `.onEvent`, `.logs`, `.status`, `.restartGateway`, `.request`) |
-| Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginRestOptions`, `PluginNativeNotificationInput`, `Contribution` |
+| Plugin contract | `FoolPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginRestOptions`, `PluginNativeNotificationInput`, `Contribution` |
 | Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `COMPOSER_AREAS` |
 | Area payloads | `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider` |
 | React / state | `useValue`, `atom`, `computed`, `useQuery`, `useMutation`, `useQueryClient`, `queryClient`, `Contribute` |

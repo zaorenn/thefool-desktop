@@ -120,8 +120,8 @@ export const ja: Translations = {
     starting: "起動中",
     startedInBackground: "バックグラウンドで起動しました — 進行状況はログをご確認ください",
     stopped: "停止",
-    updateHermes: "The Fool を更新",
-    updatingHermes: "The Fool を更新しています…",
+    updateFool: "The Fool を更新",
+    updatingFool: "The Fool を更新しています…",
     waitingForOutput: "出力を待機しています…",
   },
 

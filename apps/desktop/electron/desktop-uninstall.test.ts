@@ -96,7 +96,7 @@ test('resolveRemovableAppPath returns null for an unrecognized Windows dir', () 
 
 test('resolveRemovableAppPath uses APPIMAGE on Linux when set', () => {
   assert.equal(
-    resolveRemovableAppPath('/tmp/.mount_HermesXXXX/fool', 'linux', { APPIMAGE: '/home/x/Apps/The Fool.AppImage' }),
+    resolveRemovableAppPath('/tmp/.mount_FoolXXXX/fool', 'linux', { APPIMAGE: '/home/x/Apps/The Fool.AppImage' }),
     '/home/x/Apps/The Fool.AppImage'
   )
 })
@@ -131,7 +131,7 @@ test('buildPosixCleanupScript waits for the PID, runs the uninstall module, remo
     agentRoot: '/home/x/.fool/hermes-agent',
     uninstallArgs: ['-m', 'fool_cli.uninstall', '--mode', 'gui'],
     appPath: '/opt/fool/linux-unpacked',
-    hermesHome: '/home/x/.fool'
+    foolHome: '/home/x/.fool'
   })
 
   assert.match(script, /^#!\/bin\/bash/)
@@ -152,7 +152,7 @@ test('buildPosixCleanupScript exports PYTHONPATH when pythonPath is set (lite/fu
     agentRoot: '/home/x/.fool/hermes-agent',
     uninstallArgs: ['-m', 'fool_cli.uninstall', '--mode', 'full'],
     appPath: null,
-    hermesHome: '/home/x/.fool'
+    foolHome: '/home/x/.fool'
   })
 
   // System python + source on PYTHONPATH so import fool_cli works while the
@@ -169,7 +169,7 @@ test('buildPosixCleanupScript omits PYTHONPATH when pythonPath is null (gui)', (
     agentRoot: '/a',
     uninstallArgs: ['-m', 'fool_cli.uninstall', '--mode', 'gui'],
     appPath: null,
-    hermesHome: '/h'
+    foolHome: '/h'
   })
 
   assert.doesNotMatch(script, /export PYTHONPATH/)
@@ -183,7 +183,7 @@ test('buildPosixCleanupScript omits the bundle rm when appPath is null', () => {
     agentRoot: '/a',
     uninstallArgs: ['-m', 'fool_cli.uninstall', '--mode', 'lite'],
     appPath: null,
-    hermesHome: '/h'
+    foolHome: '/h'
   })
 
   assert.doesNotMatch(script, /rm -rf '\//)
@@ -199,7 +199,7 @@ test('buildPosixCleanupScript single-quote-escapes paths with apostrophes', () =
     agentRoot: '/a',
     uninstallArgs: ['-m', 'fool_cli.uninstall', '--mode', 'gui'],
     appPath: null,
-    hermesHome: '/h'
+    foolHome: '/h'
   })
 
   // The apostrophe is closed-escaped-reopened so the shell sees the literal.
@@ -216,7 +216,7 @@ test('buildWindowsCleanupScript waits (bounded) for PID, runs uninstall, rmdir b
     agentRoot: 'C:\\fool',
     uninstallArgs: ['-m', 'fool_cli.uninstall', '--mode', 'full'],
     appPath: 'C:\\Users\\x\\AppData\\Local\\Programs\\The Fool',
-    hermesHome: 'C:\\Users\\x\\AppData\\Local\\fool'
+    foolHome: 'C:\\Users\\x\\AppData\\Local\\fool'
   })
 
   assert.match(script, /@echo off/)
@@ -243,7 +243,7 @@ test('buildWindowsCleanupScript omits PYTHONPATH + rmdir when not needed (gui, n
     agentRoot: 'C:\\h',
     uninstallArgs: ['-m', 'fool_cli.uninstall', '--mode', 'gui'],
     appPath: null,
-    hermesHome: 'C:\\h'
+    foolHome: 'C:\\h'
   })
 
   assert.doesNotMatch(script, /rmdir/)

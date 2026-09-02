@@ -52,7 +52,7 @@ export function windowsQuote(value: string): string {
  */
 export function terminalScriptEnv(
   backendEnv: Record<string, string | undefined> = {},
-  hermesHome?: string
+  foolHome?: string
 ): Record<string, string> {
   const out: Record<string, string> = {}
 
@@ -64,8 +64,8 @@ export function terminalScriptEnv(
     out[key] = value
   }
 
-  if (hermesHome) {
-    out.FOOL_HOME = hermesHome
+  if (foolHome) {
+    out.FOOL_HOME = foolHome
   }
 
   return out

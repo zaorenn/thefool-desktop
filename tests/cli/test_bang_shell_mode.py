@@ -125,10 +125,10 @@ class TestBangExecution:
 # ── CLI handler: approval gate, usage hint, exit codes ─────────────────────
 
 def _make_cli(history=None):
-    """Build a HermesCLI shell with only what handle_bang_shell touches."""
-    from cli import HermesCLI
+    """Build a FoolCLI shell with only what handle_bang_shell touches."""
+    from cli import FoolCLI
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = FoolCLI.__new__(FoolCLI)
     cli.config = {}
     cli.console = MagicMock()
     cli.agent = None

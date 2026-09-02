@@ -6783,7 +6783,7 @@ def _desktop_packaged_executable(desktop_dir: Path) -> Optional[Path]:
     else:
         candidates = [
             release_dir / "linux-unpacked" / "fool",
-            release_dir / "linux-unpacked" / "thefool",
+            release_dir / "linux-unpacked" / "fool",
             release_dir / "linux-unpacked" / "The Fool",
             release_dir / "linux-arm64-unpacked" / "fool",
             release_dir / "linux-arm64-unpacked" / "The Fool",

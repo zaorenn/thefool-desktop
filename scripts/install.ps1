@@ -30,7 +30,7 @@ param(
     # existing tree pass -ForceCommit.
     [switch]$ForceCommit,
     [string]$Tag = "",
-    [string]$HermesHome = $(if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }),
+    [string]$FoolHome = $(if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }),
     # Runtime dizini ``fool-agent`` -- ``hermes-agent`` DEGIL.
     #
     # Istenen: "hermes kalintisi kalmasin". Veri dizini zaten ayriydi, ama
@@ -267,17 +267,17 @@ function ConvertTo-LongPath {
     # 1. kernel32. Compiled on first use only, so a normal profile never pays
     #    the Add-Type cost (this file is re-entered once per install stage).
     try {
-        if (-not ([System.Management.Automation.PSTypeName]'HermesInstall.LongPath').Type) {
-            Add-Type -Namespace 'HermesInstall' -Name 'LongPath' -MemberDefinition @'
+        if (-not ([System.Management.Automation.PSTypeName]'FoolInstall.LongPath').Type) {
+            Add-Type -Namespace 'FoolInstall' -Name 'LongPath' -MemberDefinition @'
 [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
 public static extern int GetLongPathNameW(string lpszShortPath, System.Text.StringBuilder lpszLongPath, int cchBuffer);
 '@
         }
         $buffer = New-Object System.Text.StringBuilder 4096
-        $length = [HermesInstall.LongPath]::GetLongPathNameW($Path, $buffer, $buffer.Capacity)
+        $length = [FoolInstall.LongPath]::GetLongPathNameW($Path, $buffer, $buffer.Capacity)
         if ($length -gt $buffer.Capacity) {
             $buffer = New-Object System.Text.StringBuilder $length
-            $length = [HermesInstall.LongPath]::GetLongPathNameW($Path, $buffer, $buffer.Capacity)
+            $length = [FoolInstall.LongPath]::GetLongPathNameW($Path, $buffer, $buffer.Capacity)
         }
         if ($length -gt 0) {
             $expanded = $buffer.ToString()
@@ -343,13 +343,13 @@ function Set-LongProfileEnvVars {
 $script:NormalizedProfilePaths = Set-LongProfileEnvVars
 
 # Re-derive the install paths now that the env vars behind their defaults are
-# long. An explicitly passed -HermesHome / -InstallDir is normalized in place
+# long. An explicitly passed -FoolHome / -InstallDir is normalized in place
 # rather than replaced, so a caller's choice is never overwritten by a default.
 # $PSBoundParameters is only meaningful at script scope, so this stays inline.
-if ($PSBoundParameters.ContainsKey('HermesHome')) {
-    $HermesHome = ConvertTo-LongPath $HermesHome
+if ($PSBoundParameters.ContainsKey('FoolHome')) {
+    $FoolHome = ConvertTo-LongPath $FoolHome
 } else {
-    $HermesHome = ConvertTo-LongPath $(
+    $FoolHome = ConvertTo-LongPath $(
         if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }
     )
 }
@@ -373,7 +373,7 @@ if ($PSBoundParameters.ContainsKey('InstallDir')) {
 if ($script:NormalizedProfilePaths) {
     # Which paths the install actually settled on. Absent from every report of
     # this bug class, and the whole question once a short alias is in play.
-    Write-PathDiag "resolved install paths: HermesHome=$HermesHome InstallDir=$InstallDir"
+    Write-PathDiag "resolved install paths: FoolHome=$FoolHome InstallDir=$InstallDir"
 }
 
 # Captured here, where the values are final, and emitted from the entry-point
@@ -390,7 +390,7 @@ $script:ResolvedPathReport = @{
     normalized        = $script:NormalizedPathRewrites
     resolver          = $script:LastResolver
     temp              = $env:TEMP
-    hermes_home       = $HermesHome
+    hermes_home       = $FoolHome
     install_dir       = $InstallDir
 }
 
@@ -665,10 +665,10 @@ function Find-SystemBrowser {
 
 function Write-BrowserEnv {
     param([string]$BrowserPath)
-    if (-not (Test-Path $HermesHome)) {
-        New-Item -ItemType Directory -Force -Path $HermesHome | Out-Null
+    if (-not (Test-Path $FoolHome)) {
+        New-Item -ItemType Directory -Force -Path $FoolHome | Out-Null
     }
-    $envFile = Join-Path $HermesHome ".env"
+    $envFile = Join-Path $FoolHome ".env"
     if (-not (Test-Path $envFile)) {
         Set-Content -Path $envFile -Value "AGENT_BROWSER_EXECUTABLE_PATH=$BrowserPath" -Encoding UTF8
         return
@@ -694,7 +694,7 @@ function Install-AgentBrowser {
     # complexity and an extra credential/supply-chain surface for a path
     # npx already covers.
     Write-Info "Installing camofox browser server..."
-    $prefixDir = Join-Path $HermesHome "node"
+    $prefixDir = Join-Path $FoolHome "node"
     if (-not (Test-Path $prefixDir)) {
         New-Item -ItemType Directory -Path $prefixDir -Force | Out-Null
     }
@@ -759,11 +759,11 @@ function Get-PowerShellHostExe {
 }
 
 function Install-Uv {
-    # The Fool owns its own uv at $HermesHome\bin\uv.exe.  Always install there --
+    # The Fool owns its own uv at $FoolHome\bin\uv.exe.  Always install there --
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (fool_cli/managed_uv.py) looks in the same
     # place, so install.ps1 and `fool update` stay in sync.
-    $managedUv = Join-Path $HermesHome "bin\uv.exe"
+    $managedUv = Join-Path $FoolHome "bin\uv.exe"
 
     if (Test-Path $managedUv) {
         $script:UvCmd = $managedUv
@@ -772,15 +772,15 @@ function Install-Uv {
         return $true
     }
 
-    Write-Info "Installing managed uv into $HermesHome\bin ..."
-    New-Item -ItemType Directory -Path (Join-Path $HermesHome "bin") -Force | Out-Null
+    Write-Info "Installing managed uv into $FoolHome\bin ..."
+    New-Item -ItemType Directory -Path (Join-Path $FoolHome "bin") -Force | Out-Null
 
     # UV_INSTALL_DIR tells the astral installer to place the binary
-    # directly into $HermesHome\bin instead of ~/.local/bin.
+    # directly into $FoolHome\bin instead of ~/.local/bin.
     $prevEAP = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        $env:UV_INSTALL_DIR = Join-Path $HermesHome "bin"
+        $env:UV_INSTALL_DIR = Join-Path $FoolHome "bin"
         # uv KULLANICININ PATH'ine dokunmasin.
         #
         # Olculen sizinti: sandbox eviyle yapilan bir kurulumdan sonra
@@ -834,7 +834,7 @@ function Install-Uv {
         # on PATH, or at ~/.local/bin (the astral default location when
         # UV_INSTALL_DIR was ignored by an older installer) -- copy it into
         # the managed location so the managed-first invariant holds
-        # (fool_cli/managed_uv.py looks only at $HermesHome\bin\uv.exe).
+        # (fool_cli/managed_uv.py looks only at $FoolHome\bin\uv.exe).
         if (-not (Test-Path $managedUv)) {
             $existingUv = $null
             $uvOnPath = Get-Command uv -CommandType Application -ErrorAction SilentlyContinue |
@@ -1100,7 +1100,7 @@ function Resolve-UvCmd {
     }
 
     # Check the managed location first -- this is where Install-Uv puts it.
-    $managedUv = Join-Path $HermesHome "bin\uv.exe"
+    $managedUv = Join-Path $FoolHome "bin\uv.exe"
     if (Test-Path $managedUv) {
         $script:UvCmd = $managedUv
         return
@@ -1413,10 +1413,10 @@ function Install-Git {
         Write-Info "Trying a The Fool-managed PortableGit install instead..."
     }
 
-    # Download PortableGit into $HermesHome\git.  Always works as long as
+    # Download PortableGit into $FoolHome\git.  Always works as long as
     # we can reach github.com -- no admin, no winget, no reliance on the
     # user's possibly-broken system Git install.
-    Write-Info "Git not found -- downloading PortableGit to $HermesHome\git\ ..."
+    Write-Info "Git not found -- downloading PortableGit to $FoolHome\git\ ..."
     Write-Info "(no admin rights required; isolated from any system Git install)"
 
     try {
@@ -1460,7 +1460,7 @@ function Install-Git {
         $downloadUrl = "https://github.com/git-for-windows/git/releases/download/$gitTag/$assetName"
         $downloadExt = if ($downloadIsZip) { "zip" } else { "7z.exe" }
         $tmpFile = "$env:TEMP\$assetName"
-        $gitDir = "$HermesHome\git"
+        $gitDir = "$FoolHome\git"
 
         Write-Info "Downloading $assetName (Git for Windows $gitVerTag)..."
         Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpFile -UseBasicParsing
@@ -1565,10 +1565,10 @@ function Set-GitBashEnvVar {
     # this with a system-Git-only installation anyway.
     #
     # Layouts:
-    #   PortableGit (our default): $HermesHome\git\bin\bash.exe
-    #   MinGit (32-bit fallback):  $HermesHome\git\usr\bin\bash.exe
-    $candidates += "$HermesHome\git\bin\bash.exe"       # PortableGit layout (primary)
-    $candidates += "$HermesHome\git\usr\bin\bash.exe"   # MinGit / PortableGit usr\bin fallback
+    #   PortableGit (our default): $FoolHome\git\bin\bash.exe
+    #   MinGit (32-bit fallback):  $FoolHome\git\usr\bin\bash.exe
+    $candidates += "$FoolHome\git\bin\bash.exe"       # PortableGit layout (primary)
+    $candidates += "$FoolHome\git\usr\bin\bash.exe"   # MinGit / PortableGit usr\bin fallback
 
     # git.exe on PATH can tell us where the install root is
     $gitCmd = Get-Command git -ErrorAction SilentlyContinue
@@ -1634,16 +1634,16 @@ function Test-Node {
     }
 
     # Prefer a The Fool-managed Node from a previous run over a too-old system one.
-    $managedNode = "$HermesHome\node\node.exe"
+    $managedNode = "$FoolHome\node\node.exe"
     if ((Test-Path $managedNode) -and (Test-NodeVersionOk (& $managedNode --version))) {
         $version = & $managedNode --version
-        $env:Path = "$HermesHome\node;$env:Path"
-        Set-ManagedNodeFirstOnUserPath "$HermesHome\node"
+        $env:Path = "$FoolHome\node;$env:Path"
+        Set-ManagedNodeFirstOnUserPath "$FoolHome\node"
         Write-Success "Node.js $version found (The Fool-managed)"
         # A tree from an older install still has that Node major's bundled
         # npm, which is below the current engines.npm floor. No-ops when the
         # npm is already in range, so reruns cost one --version probe.
-        Update-ManagedNpm "$HermesHome\node" | Out-Null
+        Update-ManagedNpm "$FoolHome\node" | Out-Null
         $script:HasNode = $true
         return $true
     }
@@ -1654,11 +1654,11 @@ function Test-Node {
     # winget install OpenJS.NodeJS.LTS triggers a system-wide MSI install
     # which prompts UAC (the dialog often appears minimized in the taskbar
     # and the install silently waits for consent, looking like a hang).
-    # The portable zip path drops node.exe + npm into $HermesHome\node\
+    # The portable zip path drops node.exe + npm into $FoolHome\node\
     # which is user-scoped and identical to how Install-Git handles
     # PortableGit.  Same UX guarantee: works on locked-down enterprise
     # machines with no admin rights.
-    Write-Info "Downloading portable Node.js $NodeVersion to $HermesHome\node\ ..."
+    Write-Info "Downloading portable Node.js $NodeVersion to $FoolHome\node\ ..."
     Write-Info "(no admin rights required; isolated from any system Node install)"
     try {
         $arch = Get-WindowsArch
@@ -1687,15 +1687,15 @@ function Test-Node {
                 # runs; locked files simply stay for the next attempt.  Only
                 # dirs older than 10 minutes are removed so a concurrent
                 # heal's in-flight swap is never disturbed.
-                Get-ChildItem "$HermesHome" -Directory -Filter "node.old-*" -ErrorAction SilentlyContinue |
+                Get-ChildItem "$FoolHome" -Directory -Filter "node.old-*" -ErrorAction SilentlyContinue |
                     Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-10) } |
                     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-                Get-ChildItem "$HermesHome" -Directory -Filter "node.new-*" -ErrorAction SilentlyContinue |
+                Get-ChildItem "$FoolHome" -Directory -Filter "node.new-*" -ErrorAction SilentlyContinue |
                     Where-Object { $_.LastWriteTime -lt (Get-Date).AddMinutes(-10) } |
                     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
                 $stamp = [Guid]::NewGuid().ToString("N")
-                $staged = "$HermesHome\node.new-$stamp"
-                $backup = "$HermesHome\node.old-$stamp"
+                $staged = "$FoolHome\node.new-$stamp"
+                $backup = "$FoolHome\node.old-$stamp"
                 # Stage to a sibling directory so the final swap is a
                 # same-volume rename (atomic), not a cross-volume Move-Item
                 # (copy+delete, non-atomic -- a partial copy would leave a
@@ -1708,9 +1708,9 @@ function Test-Node {
                     Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
                     return $false
                 }
-                if (Test-Path "$HermesHome\node") {
+                if (Test-Path "$FoolHome\node") {
                     try {
-                        Rename-Item "$HermesHome\node" $backup -ErrorAction Stop
+                        Rename-Item "$FoolHome\node" $backup -ErrorAction Stop
                     } catch {
                         Write-Warn "The Fool-managed Node.js is in use by a running app; deferring its upgrade. Close the app and re-run the update."
                         Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
@@ -1726,12 +1726,12 @@ function Test-Node {
                         (Get-Item $backup).LastWriteTime = Get-Date
                     } catch { }
                     try {
-                        Rename-Item $staged "$HermesHome\node" -ErrorAction Stop
+                        Rename-Item $staged "$FoolHome\node" -ErrorAction Stop
                     } catch {
                         # Restore the live tree before bailing.  The swap is a
                         # same-volume rename, so a failure leaves no partial
                         # target to clear.
-                        Rename-Item $backup "$HermesHome\node" -ErrorAction SilentlyContinue
+                        Rename-Item $backup "$FoolHome\node" -ErrorAction SilentlyContinue
                         Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
                         Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
                         Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
@@ -1740,7 +1740,7 @@ function Test-Node {
                     Remove-Item -Recurse -Force $backup -ErrorAction SilentlyContinue
                 } else {
                     try {
-                        Rename-Item $staged "$HermesHome\node" -ErrorAction Stop
+                        Rename-Item $staged "$FoolHome\node" -ErrorAction Stop
                     } catch {
                         Remove-Item -Recurse -Force $staged -ErrorAction SilentlyContinue
                         Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
@@ -1750,19 +1750,19 @@ function Test-Node {
                 }
 
                 # Session PATH so the rest of this run sees node/npm.
-                $env:Path = "$HermesHome\node;$env:Path"
+                $env:Path = "$FoolHome\node;$env:Path"
 
                 # Persist to User PATH so fresh shells (and future stages
                 # in cross-process driver mode) see it.  Matches the
                 # pattern Install-Git uses for PortableGit.  See
                 # Set-ManagedNodeFirstOnUserPath for why this is a
                 # move-to-front and not an add-if-missing.
-                Set-ManagedNodeFirstOnUserPath "$HermesHome\node"
+                Set-ManagedNodeFirstOnUserPath "$FoolHome\node"
 
-                $version = & "$HermesHome\node\node.exe" --version
-                Write-Success "Node.js $version installed to $HermesHome\node\ (portable, user-scoped)"
+                $version = & "$FoolHome\node\node.exe" --version
+                Write-Success "Node.js $version installed to $FoolHome\node\ (portable, user-scoped)"
                 # The zip's bundled npm is below the repo's engines.npm floor.
-                Update-ManagedNpm "$HermesHome\node" | Out-Null
+                Update-ManagedNpm "$FoolHome\node" | Out-Null
                 $script:HasNode = $true
 
                 Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
@@ -2499,7 +2499,7 @@ function Install-Venv {
             # on failure -- but only for tasks that were enabled to begin with.
             # Best-effort: a missing task just errors quietly.
             try {
-                schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | Where-Object { ($_.TaskName -like '*Fool_Gateway*' -or $_.TaskName -like '*Hermes_Gateway*') } | ForEach-Object {
+                schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | Where-Object { ($_.TaskName -like '*Fool_Gateway*' -or $_.TaskName -like '*Fool_Gateway*') } | ForEach-Object {
                     $tn = $_.TaskName
                     if ($_.Status -eq 'Disabled') {
                         Write-Info "  gateway autostart task $tn is already disabled; leaving it that way"
@@ -3028,7 +3028,7 @@ function Set-PathVariable {
     Write-Info "Setting up fool command..."
     
     if ($NoVenv) {
-        $hermesBin = "$InstallDir"
+        $foolBin = "$InstallDir"
     } else {
         # Expose ONLY the fool launchers on PATH -- never the whole
         # venv\Scripts directory. venv\Scripts contains python.exe /
@@ -3039,8 +3039,8 @@ function Set-PathVariable {
         # launcher exes keeps `fool` globally available without
         # shadowing anything. (Launcher exes embed the venv interpreter
         # path, so they work from any location and survive updates.)
-        $hermesBin = "$InstallDir\bin"
-        New-Item -ItemType Directory -Force -Path $hermesBin | Out-Null
+        $foolBin = "$InstallDir\bin"
+        New-Item -ItemType Directory -Force -Path $foolBin | Out-Null
         # FOOL-SEAM: cli-launchers
         # venv artik fool.exe / fool-acp.exe uretiyor. Eski adlar
         # kalirsa bu asama var olmayan dosyalari kopyalamaya calisir
@@ -3049,7 +3049,7 @@ function Set-PathVariable {
         foreach ($launcher in @("fool.exe", "fool-acp.exe")) {
             $src = "$InstallDir\venv\Scripts\$launcher"
             if (Test-Path $src) {
-                Copy-Item -Force $src "$hermesBin\$launcher"
+                Copy-Item -Force $src "$foolBin\$launcher"
             }
         }
     }
@@ -3074,7 +3074,7 @@ function Set-PathVariable {
     foreach ($tempRoot in $tempRoots) {
         try {
             $resolvedTemp = [IO.Path]::GetFullPath($tempRoot).TrimEnd('\')
-            $resolvedHome = [IO.Path]::GetFullPath($HermesHome).TrimEnd('\')
+            $resolvedHome = [IO.Path]::GetFullPath($FoolHome).TrimEnd('\')
             if ($resolvedHome.Equals($resolvedTemp, [StringComparison]::OrdinalIgnoreCase) -or
                 $resolvedHome.StartsWith($resolvedTemp + '\', [StringComparison]::OrdinalIgnoreCase)) {
                 $isSandboxHome = $true
@@ -3087,7 +3087,7 @@ function Set-PathVariable {
     }
 
     if ($isSandboxHome) {
-        Write-Info "Gecici/sandbox ev: kalici PATH ve FOOL_HOME yazilmadi ($HermesHome)"
+        Write-Info "Gecici/sandbox ev: kalici PATH ve FOOL_HOME yazilmadi ($FoolHome)"
     } else {
         $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 
@@ -3098,16 +3098,16 @@ function Set-PathVariable {
             $cleaned = ($currentPath -split ';' | Where-Object { $_ -and $_ -ne $legacyBin }) -join ';'
             [Environment]::SetEnvironmentVariable("Path", $cleaned, "User")
             $currentPath = $cleaned
-            Write-Info "Removed legacy venv\Scripts from user PATH (kept fool via $hermesBin)"
+            Write-Info "Removed legacy venv\Scripts from user PATH (kept fool via $foolBin)"
         }
 
-        if ($currentPath -notlike "*$hermesBin*") {
+        if ($currentPath -notlike "*$foolBin*") {
             [Environment]::SetEnvironmentVariable(
                 "Path",
-                "$hermesBin;$currentPath",
+                "$foolBin;$currentPath",
                 "User"
             )
-            Write-Success "Added to user PATH: $hermesBin"
+            Write-Success "Added to user PATH: $foolBin"
         } else {
             Write-Info "PATH already configured"
         }
@@ -3125,7 +3125,7 @@ function Set-PathVariable {
     # gecici yolu HKCU\Environment'a koyuyordu ve test bittiginde kimse geri
     # almiyordu.
     #
-    # Sonuc: masaustu uygulamasi (main.ts::resolveHermesHome) kullanici
+    # Sonuc: masaustu uygulamasi (main.ts::resolveFoolHome) kullanici
     # kapsamli FOOL_HOME'u %LOCALAPPDATA%\fool'dan ONCE okudugu icin, uygulama
     # o gunden sonra her acilista BOS bir test kutusuna giriyordu -- oturum
     # gecmisi yok, profil yok, ses klonu yok, sidecar yok. Kullanicinin
@@ -3137,18 +3137,18 @@ function Set-PathVariable {
     # ediyor -- kalici olan tek sey artik gercek bir ev.
     # ``$isSandboxHome`` YUKARIDA bir kez hesaplandi (PATH yazmasiyla ayni kapi).
     if ($isSandboxHome) {
-        Write-Info "FOOL_HOME kalici olarak yazilmadi -- gecici/sandbox ev: $HermesHome"
+        Write-Info "FOOL_HOME kalici olarak yazilmadi -- gecici/sandbox ev: $FoolHome"
     } else {
-        $currentHermesHome = [Environment]::GetEnvironmentVariable("FOOL_HOME", "User")
-        if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
-            [Environment]::SetEnvironmentVariable("FOOL_HOME", $HermesHome, "User")
-            Write-Success "Set FOOL_HOME=$HermesHome"
+        $currentFoolHome = [Environment]::GetEnvironmentVariable("FOOL_HOME", "User")
+        if (-not $currentFoolHome -or $currentFoolHome -ne $FoolHome) {
+            [Environment]::SetEnvironmentVariable("FOOL_HOME", $FoolHome, "User")
+            Write-Success "Set FOOL_HOME=$FoolHome"
         }
     }
-    $env:FOOL_HOME = $HermesHome
+    $env:FOOL_HOME = $FoolHome
     
     # Update current session
-    $env:Path = "$hermesBin;$env:Path"
+    $env:Path = "$foolBin;$env:Path"
     
     Write-Success "fool command ready"
 }
@@ -3233,20 +3233,20 @@ function Write-BootstrapMarker {
 function Copy-ConfigTemplates {
     Write-Info "Setting up configuration files..."
     
-    # Create the FOOL_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\hermes)
-    New-Item -ItemType Directory -Force -Path "$HermesHome\cron" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\sessions" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\logs" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\pairing" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\hooks" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\image_cache" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\audio_cache" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\memories" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\skills" | Out-Null
+    # Create the FOOL_HOME directory structure ($FoolHome, default %LOCALAPPDATA%\hermes)
+    New-Item -ItemType Directory -Force -Path "$FoolHome\cron" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\sessions" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\logs" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\pairing" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\hooks" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\image_cache" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\audio_cache" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\memories" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$FoolHome\skills" | Out-Null
 
     
     # Create .env
-    $envPath = "$HermesHome\.env"
+    $envPath = "$FoolHome\.env"
     if (-not (Test-Path $envPath)) {
         $examplePath = "$InstallDir\.env.example"
         if (Test-Path $examplePath) {
@@ -3261,7 +3261,7 @@ function Copy-ConfigTemplates {
     }
     
     # Create config.yaml
-    $configPath = "$HermesHome\config.yaml"
+    $configPath = "$FoolHome\config.yaml"
     if (-not (Test-Path $configPath)) {
         $examplePath = "$InstallDir\cli-config.yaml.example"
         if (Test-Path $examplePath) {
@@ -3281,7 +3281,7 @@ function Copy-ConfigTemplates {
     # don't control which PowerShell version the user has.  Go direct
     # to .NET with an explicit UTF8Encoding($false) -- BOM-free on every
     # PowerShell version.
-    $soulPath = "$HermesHome\SOUL.md"
+    $soulPath = "$FoolHome\SOUL.md"
     if (-not (Test-Path $soulPath)) {
         # MUST match DEFAULT_SOUL_MD in fool_cli/default_soul.py. The runtime
         # upgrades the old comment-only scaffold to this text on next run, so
@@ -3294,10 +3294,10 @@ You are Fool Agent, an intelligent AI assistant. You are helpful, knowledgeable,
         Write-Success "Created $soulPath (edit to customize personality)"
     }
     
-    Write-Success "Configuration directory ready: $HermesHome"
+    Write-Success "Configuration directory ready: $FoolHome"
     
-    # Seed bundled skills into $HermesHome\skills (manifest-based, one-time per skill)
-    Write-Info "Syncing bundled skills to $HermesHome\skills ..."
+    # Seed bundled skills into $FoolHome\skills (manifest-based, one-time per skill)
+    Write-Info "Syncing bundled skills to $FoolHome\skills ..."
     $pythonExe = "$InstallDir\venv\Scripts\python.exe"
     if (Test-Path $pythonExe) {
         try {
@@ -3318,14 +3318,14 @@ You are Fool Agent, an intelligent AI assistant. You are helpful, knowledgeable,
                 $env:PYTHONIOENCODING = $prevPythonioencoding
                 $env:PYTHONUTF8 = $prevPythonutf8
             }
-            Write-Success "Skills synced to $HermesHome\skills"
+            Write-Success "Skills synced to $FoolHome\skills"
         } catch {
             # Fallback: simple directory copy
             $bundledSkills = "$InstallDir\skills"
-            $userSkills = "$HermesHome\skills"
+            $userSkills = "$FoolHome\skills"
             if ((Test-Path $bundledSkills) -and -not (Get-ChildItem $userSkills -Exclude '.bundled_manifest' -ErrorAction SilentlyContinue)) {
                 Copy-Item -Path "$bundledSkills\*" -Destination $userSkills -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Success "Skills copied to $HermesHome\skills"
+                Write-Success "Skills copied to $FoolHome\skills"
             }
         }
     }
@@ -3651,7 +3651,7 @@ function Install-BrowserUseCli {
         Write-Info "Skipping Browser Use CLI install (uv unavailable)"
         return
     }
-    $managedBin = Join-Path $HermesHome "bin"
+    $managedBin = Join-Path $FoolHome "bin"
     $managedBu = Join-Path $managedBin "browser-use.exe"
     # MANAGED-FIRST: only The Fool' managed copy short-circuits. A browser-use
     # on the user's PATH is a side install -- resolution prefers the managed
@@ -4444,7 +4444,7 @@ function Install-PlatformSdks {
         return
     }
 
-    $envPath = "$HermesHome\.env"
+    $envPath = "$FoolHome\.env"
     if (-not (Test-Path $envPath)) { return }
     $envLines = Get-Content $envPath -ErrorAction SilentlyContinue
 
@@ -4557,7 +4557,7 @@ function Invoke-SetupWizard {
 }
 
 function Start-GatewayIfConfigured {
-    $envPath = "$HermesHome\.env"
+    $envPath = "$FoolHome\.env"
     if (-not (Test-Path $envPath)) { return }
 
     $hasMessaging = $false
@@ -4569,14 +4569,14 @@ function Start-GatewayIfConfigured {
 
     if (-not $hasMessaging) { return }
 
-    $hermesCmd = "$InstallDir\venv\Scripts\hermes.exe"
-    if (-not (Test-Path $hermesCmd)) {
-        $hermesCmd = "hermes"
+    $foolCmd = "$InstallDir\venv\Scripts\hermes.exe"
+    if (-not (Test-Path $foolCmd)) {
+        $foolCmd = "hermes"
     }
 
     # If WhatsApp is enabled but not yet paired, run foreground for QR scan
     $whatsappEnabled = $content | Where-Object { $_ -match "^WHATSAPP_ENABLED=true" }
-    $whatsappSession = "$HermesHome\whatsapp\session\creds.json"
+    $whatsappSession = "$FoolHome\whatsapp\session\creds.json"
     if ($whatsappEnabled -and -not (Test-Path $whatsappSession)) {
         Write-Host ""
         Write-Info "WhatsApp is enabled but not yet paired."
@@ -4589,7 +4589,7 @@ function Start-GatewayIfConfigured {
             $response = Read-Host "Pair WhatsApp now? [Y/n]"
             if ($response -eq "" -or $response -match "^[Yy]") {
                 try {
-                    & $hermesCmd whatsapp
+                    & $foolCmd whatsapp
                 } catch {
                     # Expected after pairing completes
                 }
@@ -4618,10 +4618,10 @@ function Start-GatewayIfConfigured {
     if ($response -eq "" -or $response -match "^[Yy]") {
         Write-Info "Starting gateway in background..."
         try {
-            $logFile = "$HermesHome\logs\gateway.log"
-            Start-Process -FilePath $hermesCmd -ArgumentList "gateway" `
+            $logFile = "$FoolHome\logs\gateway.log"
+            Start-Process -FilePath $foolCmd -ArgumentList "gateway" `
                 -RedirectStandardOutput $logFile `
-                -RedirectStandardError "$HermesHome\logs\gateway-error.log" `
+                -RedirectStandardError "$FoolHome\logs\gateway-error.log" `
                 -WindowStyle Hidden
             Write-Success "Gateway started! Your bot is now online."
             Write-Info "Logs: $logFile"
@@ -4645,13 +4645,13 @@ function Write-Completion {
     Write-Host "* Your files:" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "   Config:    " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\config.yaml"
+    Write-Host "$FoolHome\config.yaml"
     Write-Host "   API Keys:  " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\.env"
+    Write-Host "$FoolHome\.env"
     Write-Host "   Data:      " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\cron\, sessions\, logs\"
+    Write-Host "$FoolHome\cron\, sessions\, logs\"
     Write-Host "   Code:      " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\hermes-agent\"
+    Write-Host "$FoolHome\hermes-agent\"
     Write-Host ""
     
     Write-Host "---------------------------------------------------------" -ForegroundColor Cyan

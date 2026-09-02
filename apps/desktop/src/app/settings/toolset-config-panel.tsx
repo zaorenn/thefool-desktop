@@ -651,9 +651,9 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
 
       const url = start.verification_url
 
-      if (window.hermesDesktop?.openExternal) {
+      if (window.foolDesktop?.openExternal) {
         try {
-          await window.hermesDesktop.openExternal(url)
+          await window.foolDesktop.openExternal(url)
         } catch {
           window.open(url, '_blank', 'noopener,noreferrer')
         }

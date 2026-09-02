@@ -85,8 +85,8 @@ export function useImageDownload(src?: string) {
     setSaving(true)
 
     try {
-      if (window.hermesDesktop?.saveImageFromUrl) {
-        if (await window.hermesDesktop.saveImageFromUrl(src)) {
+      if (window.foolDesktop?.saveImageFromUrl) {
+        if (await window.foolDesktop.saveImageFromUrl(src)) {
           notify({ kind: 'success', title: copy.imageSaved, message: imageFilename(src) })
         }
 

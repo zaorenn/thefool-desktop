@@ -1,4 +1,4 @@
-import { buildHermesWebSocketUrl } from "@fool/shared";
+import { buildFoolWebSocketUrl } from "@fool/shared";
 
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
@@ -274,7 +274,7 @@ export async function buildWsUrl(
   path: string,
   params?: Record<string, string>,
 ): Promise<string> {
-  return buildHermesWebSocketUrl({
+  return buildFoolWebSocketUrl({
     authParam: await buildWsAuthParam(),
     basePath: BASE,
     params,
@@ -952,9 +952,9 @@ export const api = {
   // Gateway / update actions
   restartGateway: () =>
     fetchJSON<ActionResponse>("/api/gateway/restart", { method: "POST" }),
-  updateHermes: () =>
+  updateFool: () =>
     fetchJSON<ActionResponse>("/api/fool/update", { method: "POST" }),
-  checkHermesUpdate: (force = false) =>
+  checkFoolUpdate: (force = false) =>
     fetchJSON<UpdateCheckResponse>(
       `/api/fool/update/check${force ? "?force=true" : ""}`,
     ),

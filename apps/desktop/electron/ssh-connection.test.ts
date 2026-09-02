@@ -819,6 +819,7 @@ test('open() rejects a control-dir that is a symlink', async () => {
 
     throw err
   }
+
   const spawnFn = scriptedSpawn(args => (args.includes('check') ? { code: 255 } : { code: 0 }))
   const conn = new SshConnection({ host: 'box', user: 'me' }, { spawnFn, mux: true, controlDir: link })
   await assert.rejects(conn.open(), /symlink|unsafe/i)

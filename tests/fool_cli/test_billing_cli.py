@@ -14,12 +14,12 @@ import pytest
 
 import agent.billing_view as bv
 from agent.billing_view import BillingState, CardInfo, MonthlyCap
-from cli import HermesCLI
+from cli import FoolCLI
 
 
 @pytest.fixture
 def cli():
-    obj = HermesCLI.__new__(HermesCLI)  # bypass __init__ (no full app needed)
+    obj = FoolCLI.__new__(FoolCLI)  # bypass __init__ (no full app needed)
     obj._app = None  # non-interactive: forces the text path
     return obj
 
@@ -59,7 +59,7 @@ def test_topup_overview_splits_onetime_from_automatic_copy(cli, monkeypatch, cap
     )
     monkeypatch.setattr(bv, "build_billing_state", lambda *a, **kw: state)
     # Overview prints the explainer, then the action modal → back out with "cancel".
-    monkeypatch.setattr(HermesCLI, "_prompt_text_input_modal", _scripted("cancel"), raising=False)
+    monkeypatch.setattr(FoolCLI, "_prompt_text_input_modal", _scripted("cancel"), raising=False)
     cli._show_billing("/topup")
     out = capsys.readouterr().out
 
@@ -83,7 +83,7 @@ def test_topup_automatic_copy_generic_when_amounts_missing(cli, monkeypatch, cap
         portal_url="https://portal/billing",
     )
     monkeypatch.setattr(bv, "build_billing_state", lambda *a, **kw: state)
-    monkeypatch.setattr(HermesCLI, "_prompt_text_input_modal", _scripted("cancel"), raising=False)
+    monkeypatch.setattr(FoolCLI, "_prompt_text_input_modal", _scripted("cancel"), raising=False)
     cli._show_billing("/topup")
     out = capsys.readouterr().out
 
@@ -114,7 +114,7 @@ def test_buy_flow_no_card_back_abandons(cli, monkeypatch, capsys):
         return nocard
 
     monkeypatch.setattr(bv, "build_billing_state", _no_fetch)
-    monkeypatch.setattr(HermesCLI, "_prompt_text_input_modal", _scripted("cancel"), raising=False)
+    monkeypatch.setattr(FoolCLI, "_prompt_text_input_modal", _scripted("cancel"), raising=False)
 
     cli._billing_buy_flow(nocard)
     out = capsys.readouterr().out

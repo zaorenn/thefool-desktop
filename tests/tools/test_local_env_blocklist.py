@@ -1277,7 +1277,7 @@ class TestSanePathIncludesHomebrew:
     def _disable_hermes_bin_injection(self):
         """These tests assert the sane-path merge in isolation. Disable the
         hermes-install-dir prepend (a separate concern, covered by
-        TestHermesBinDirOnPath) so a real ``hermes`` on the test runner's PATH
+        TestFoolBinDirOnPath) so a real ``hermes`` on the test runner's PATH
         doesn't shift the asserted PATH layout."""
         from tools.environments import local as local_mod
         saved = local_mod._HERMES_BIN_DIR
@@ -1351,7 +1351,7 @@ class TestSanePathIncludesHomebrew:
         assert "PATH" not in result
 
 
-class TestHermesBinDirOnPath:
+class TestFoolBinDirOnPath:
     """The hermes install dir is reachable in the terminal subshell PATH.
 
     Plugins shelling out to bare ``hermes`` via the terminal tool must work
@@ -1399,7 +1399,7 @@ class TestHermesBinDirOnPath:
         assert "/usr/bin" in entries
 
 
-class TestHermesInternalDynamicSecrets:
+class TestFoolInternalDynamicSecrets:
     """Dynamically-named Hermes secrets injected at gateway/CLI startup must
     not leak into terminal subprocesses.
 

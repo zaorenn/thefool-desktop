@@ -59,7 +59,7 @@ def _get_platform_default_hermes_home() -> Path:
     upstream Hermes varsa, aynı dizini paylaşmak kullanıcının config'ini,
     oturumlarını ve SOUL.md'sini bozar.
 
-    Karşılığı ``apps/desktop/electron/main.ts`` içindeki ``resolveHermesHome()``.
+    Karşılığı ``apps/desktop/electron/main.ts`` içindeki ``resolveFoolHome()``.
     İKİSİ BİRLİKTE değişmeli — ayrışırlarsa masaüstü uygulaması backend'ini
     bulamaz. ``tests/fool/test_branding.py`` ayrışmayı yakalar.
 
@@ -346,7 +346,7 @@ def iter_hermes_node_dirs(home: Path | None = None) -> list[Path]:
     root = home or get_hermes_home()
     dirs = [root / "node"]
     bin_dir = root / "node" / "bin"
-    # NOTE: keep this ordering in sync with hermesManagedNodePathEntries() in
+    # NOTE: keep this ordering in sync with foolManagedNodePathEntries() in
     # apps/desktop/electron/backend-env.ts — the Electron main process is Node
     # and cannot import this module, so the platform-ordering rule is mirrored
     # there (once; main.ts imports it rather than keeping its own copy).

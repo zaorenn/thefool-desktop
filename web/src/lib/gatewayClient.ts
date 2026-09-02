@@ -15,7 +15,7 @@
 
 import {
   JsonRpcGatewayClient,
-  buildHermesWebSocketUrl,
+  buildFoolWebSocketUrl,
   type ConnectionState,
   type GatewayEvent,
   type GatewayEventName,
@@ -53,7 +53,7 @@ export class GatewayClient extends JsonRpcGatewayClient {
     }
 
     await super.connect(
-      buildHermesWebSocketUrl({
+      buildFoolWebSocketUrl({
         authParam,
         basePath: FOOL_BASE_PATH,
         path: "/api/ws",

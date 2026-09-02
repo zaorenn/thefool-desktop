@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/hermes', () => ({
-  getHermesConfigRecord: vi.fn(async () => ({})),
-  saveHermesConfig: vi.fn(async () => undefined)
+  getFoolConfigRecord: vi.fn(async () => ({})),
+  saveFoolConfig: vi.fn(async () => undefined)
 }))
 
 import { $voiceStopPhrase, applyVoiceStopPhraseFromConfig } from './voice-prefs'

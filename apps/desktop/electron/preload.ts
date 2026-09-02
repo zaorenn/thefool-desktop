@@ -16,7 +16,7 @@ interface ForwardedPtt {
 }
 
 
-contextBridge.exposeInMainWorld('hermesDesktop', {
+contextBridge.exposeInMainWorld('foolDesktop', {
   getConnection: profile => ipcRenderer.invoke('fool:connection', profile),
   // Registry-scoped backend resolution: { connectionId, profile } → descriptor.
   getConnectionFor: payload => ipcRenderer.invoke('fool:connection:for', payload),

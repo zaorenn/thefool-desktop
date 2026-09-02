@@ -17996,7 +17996,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 # Resolve the session's actual model/provider/base_url the
                 # same way the hygiene compression block does (~11080).
                 # GatewayRunner has no self._model/self._base_url attrs
-                # (that was copy-pasted from HermesCLI, which does carry
+                # (that was copy-pasted from FoolCLI, which does carry
                 # self.model/self.base_url), so using them here always raised
                 # AttributeError, silently caught below, meaning this feature
                 # never ran.

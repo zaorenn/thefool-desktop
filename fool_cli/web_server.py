@@ -9886,7 +9886,7 @@ async def cancel_whatsapp_onboarding(pairing_id: str):
 
 
 _TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.hermes-agent.nousresearch.com"
-_TELEGRAM_ONBOARDING_USER_AGENT = f"HermesDashboard/{__version__}"
+_TELEGRAM_ONBOARDING_USER_AGENT = f"FoolDashboard/{__version__}"
 @dataclass
 class _TelegramOnboardingPairing:
     poll_token: str
@@ -13554,7 +13554,7 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
         )
         from fool_constants import reset_hermes_home_override, set_hermes_home_override
         from tools.mcp_dashboard_oauth import dashboard_oauth_flow
-        from tools.mcp_oauth import HermesTokenStorage, force_interactive_oauth
+        from tools.mcp_oauth import FoolTokenStorage, force_interactive_oauth
         from tools.mcp_oauth_manager import get_manager
 
         home_token = set_hermes_home_override(flow.hermes_home)
@@ -13563,7 +13563,7 @@ def _run_dashboard_mcp_oauth(flow, cfg: dict) -> None:
             transaction = _mcp_oauth_transaction(flow)
             with transaction, force_interactive_oauth(), dashboard_oauth_flow(flow):
                 manager = get_manager()
-                storage = HermesTokenStorage(flow.server_name)
+                storage = FoolTokenStorage(flow.server_name)
                 backup = storage.snapshot()
                 previous_entry = None
                 try:
@@ -16751,9 +16751,9 @@ async def console_ws(ws: WebSocket) -> None:
     send_lock = asyncio.Lock()
 
     try:
-        from fool_cli.console_engine import HermesConsoleEngine
+        from fool_cli.console_engine import FoolConsoleEngine
 
-        engine = HermesConsoleEngine(output_limit=_CONSOLE_OUTPUT_LIMIT)
+        engine = FoolConsoleEngine(output_limit=_CONSOLE_OUTPUT_LIMIT)
         if profile and profile.lower() != "current":
             _resolve_profile_dir(profile)
     except HTTPException as exc:

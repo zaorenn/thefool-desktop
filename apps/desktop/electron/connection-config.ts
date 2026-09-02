@@ -372,10 +372,10 @@ function normalizeSshConfig(entry) {
     out.keyPath = keyPath
   }
 
-  const remoteHermesPath = String(entry.remoteHermesPath || '').trim()
+  const remoteFoolPath = String(entry.remoteFoolPath || '').trim()
 
-  if (remoteHermesPath) {
-    out.remoteHermesPath = remoteHermesPath
+  if (remoteFoolPath) {
+    out.remoteFoolPath = remoteFoolPath
   }
 
   // A Desktop profile can be a local routing label rather than the profile

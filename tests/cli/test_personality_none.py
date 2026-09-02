@@ -15,10 +15,10 @@ import yaml
 class TestCLIPersonalityNone:
 
     def _make_cli(self, personalities=None):
-        from cli import HermesCLI
+        from cli import FoolCLI
         from fool_cli.personality import available_personalities
 
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = FoolCLI.__new__(FoolCLI)
         user = personalities or {
             "helpful": "You are helpful.",
             "concise": "You are concise.",
@@ -184,10 +184,10 @@ class TestPersonalityDictFormat:
     """Test dict-format custom personalities with description, tone, style."""
 
     def _make_cli(self, personalities):
-        from cli import HermesCLI
+        from cli import FoolCLI
         from fool_cli.personality import available_personalities
 
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = FoolCLI.__new__(FoolCLI)
         cli.config = {"agent": {"personalities": personalities}}
         cli.personalities = available_personalities(cli.config)
         cli.system_prompt = ""
@@ -226,14 +226,14 @@ class TestPersonalityDictFormat:
         assert cli.system_prompt == "You are helpful."
 
     def test_resolve_prompt_dict_no_tone_no_style(self):
-        from cli import HermesCLI
-        result = HermesCLI._resolve_personality_prompt({
+        from cli import FoolCLI
+        result = FoolCLI._resolve_personality_prompt({
             "description": "A helper",
             "system_prompt": "You are helpful.",
         })
         assert result == "You are helpful."
 
     def test_resolve_prompt_string(self):
-        from cli import HermesCLI
-        result = HermesCLI._resolve_personality_prompt("You are helpful.")
+        from cli import FoolCLI
+        result = FoolCLI._resolve_personality_prompt("You are helpful.")
         assert result == "You are helpful."

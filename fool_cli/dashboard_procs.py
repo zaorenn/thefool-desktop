@@ -769,7 +769,7 @@ def _valid_lockfile_payload(parsed: object, ownership_id: str) -> bool:
     if not isinstance(port, int) or port < 0 or port > 65535:
         return False
     # String fields must be present and bounded (the writer enforces <=1024).
-    for field in ("profile", "hermesPath", "hermesHome", "logPath", "startedAt"):
+    for field in ("profile", "foolPath", "foolHome", "logPath", "startedAt"):
         value = parsed.get(field)
         if not isinstance(value, str) or len(value) > 1024:
             return False

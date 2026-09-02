@@ -2,7 +2,7 @@ import { isGatewayReauthRequired, resolveGatewayWsUrl } from '@fool/shared'
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useRef } from 'react'
 
-import type { HermesGateway } from '@/hermes'
+import type { FoolGateway } from '@/hermes'
 import { $gateway, ensureActiveGatewayOpen, isActivePrimary } from '@/store/gateway'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $gatewayState, setConnection } from '@/store/session'
@@ -16,15 +16,15 @@ export function useGatewayRequest() {
   // null on mount, and if the connection state doesn't happen to flip
   // afterwards it never re-renders to pick the instance up. Anything that needs
   // the gateway as a render-time VALUE (props, memo deps) must use this.
-  const gateway = useStore($gateway) as HermesGateway | null
-  const gatewayRef = useRef<HermesGateway | null>(null)
+  const gateway = useStore($gateway) as FoolGateway | null
+  const gatewayRef = useRef<FoolGateway | null>(null)
 
-  const connectionRef = useRef<Awaited<ReturnType<NonNullable<typeof window.hermesDesktop>['getConnection']>> | null>(
+  const connectionRef = useRef<Awaited<ReturnType<NonNullable<typeof window.foolDesktop>['getConnection']>> | null>(
     null
   )
 
   const gatewayStateRef = useRef(gatewayState)
-  const reconnectingRef = useRef<Promise<HermesGateway | null> | null>(null)
+  const reconnectingRef = useRef<Promise<FoolGateway | null> | null>(null)
   // Holds the reauth error from the most recent failed reconnect so
   // requestGateway can surface the gateway's "session expired, sign in again"
   // message instead of the opaque "connection closed" that triggered the retry.
@@ -40,7 +40,7 @@ export function useGatewayRequest() {
   useEffect(
     () =>
       $gateway.subscribe(gateway => {
-        gatewayRef.current = gateway as HermesGateway | null
+        gatewayRef.current = gateway as FoolGateway | null
       }),
     []
   )
@@ -61,7 +61,7 @@ export function useGatewayRequest() {
     }
 
     reconnectingRef.current = (async () => {
-      const desktop = window.hermesDesktop
+      const desktop = window.foolDesktop
 
       if (!desktop) {
         return null

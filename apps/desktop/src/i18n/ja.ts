@@ -70,7 +70,7 @@ export const ja = defineLocale({
       loadingSessions: '最近のセッションを読み込み中',
       retryingRemoteBackend: 'リモート The Fool バックエンドに再接続中…',
       startingDesktopConnection: 'デスクトップ接続を開始中',
-      startingHermesDesktop: 'The Fool Desktop を起動中…'
+      startingFoolDesktop: 'The Fool Desktop を起動中…'
     },
     errors: {
       backgroundExited: 'The Fool バックグラウンドプロセスが終了しました。',
@@ -127,7 +127,7 @@ export const ja = defineLocale({
     backendOutOfDateMessage:
       'The Fool バックエンドがこのデスクトップビルドより古く、正常に動作しない場合があります。更新して揃えてください。',
     installMethodUnsupportedTitle: 'サポート対象外のインストール方法',
-    updateHermes: 'The Fool を更新',
+    updateFool: 'The Fool を更新',
     updateReadyTitle: '更新の準備ができました',
     updateReadyMessage: count => `${count} 件の新しい変更が利用可能です。`,
     updateReadyMessageUnknown: '新しい更新が利用可能です。',
@@ -816,9 +816,9 @@ export const ja = defineLocale({
       sshPortDesc: '空欄 = 22 または ~/.ssh/config のポート。',
       sshKeyTitle: '鍵ファイル',
       sshKeyDesc: '秘密鍵のパス。空欄 = ssh-agent または ~/.ssh/config。',
-      sshHermesPathTitle: 'The Fool パス（任意）',
-      sshHermesPathDesc: 'リモートの fool バイナリへのフルパス。空欄 = 自動検出。',
-      sshHermesPathPlaceholder: '自動検出',
+      sshFoolPathTitle: 'The Fool パス（任意）',
+      sshFoolPathDesc: 'リモートの fool バイナリへのフルパス。空欄 = 自動検出。',
+      sshFoolPathPlaceholder: '自動検出',
       sshRemoteProfileTitle: 'リモートプロファイル（任意）',
       sshRemoteProfileDesc: 'リモートホスト上のプロファイル名。空欄 = Desktop のプロファイル名を使用。',
       sshTestConnection: 'SSH をテスト',
@@ -1272,10 +1272,10 @@ export const ja = defineLocale({
     noSessions: 'セッションはまだありません。',
     gatewayRunning: 'メッセージングゲートウェイが実行中',
     gatewayStopped: 'メッセージングゲートウェイが停止中',
-    hermesActiveSessions: (version, count) => `The Fool ${version} · アクティブセッション ${count}`,
+    foolActiveSessions: (version, count) => `The Fool ${version} · アクティブセッション ${count}`,
     restartGateway: 'ゲートウェイを再起動',
     gatewayRestartFailed: 'ゲートウェイの再起動に失敗しました。',
-    updateHermes: 'The Fool を更新',
+    updateFool: 'The Fool を更新',
     actionRunning: '実行中',
     actionDone: '完了',
     actionFailed: '失敗',

@@ -50,7 +50,7 @@ type ConsoleFrame =
 
 type ConnectionState = "connecting" | "ready" | "running" | "closed" | "error";
 
-interface HermesConsoleModalProps {
+interface FoolConsoleModalProps {
   open: boolean;
   onClose: () => void;
 }
@@ -98,7 +98,7 @@ function isPrintable(data: string): boolean {
   return data >= " " || data === "\t";
 }
 
-export function HermesConsoleModal({ open, onClose }: HermesConsoleModalProps) {
+export function FoolConsoleModal({ open, onClose }: FoolConsoleModalProps) {
   const modalRef = useModalBehavior({ open, onClose });
   const hostRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<XtermTerminal | null>(null);

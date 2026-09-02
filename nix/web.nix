@@ -1,6 +1,6 @@
 # nix/web.nix — Hermes Web Dashboard (Vite/React) frontend build
-{ hermesNpmLib, ... }:
-hermesNpmLib.buildNpmPackage {
+{ foolNpmLib, ... }:
+foolNpmLib.buildNpmPackage {
   dirs = [
     "web"
 

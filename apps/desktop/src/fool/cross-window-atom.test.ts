@@ -139,7 +139,7 @@ describe('masaustu koprusu', () => {
   }
 
   afterEach(() => {
-    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as unknown as { foolDesktop?: unknown }).foolDesktop
   })
 
   it('ACILISTA mevcut degeri aliyor', async () => {
@@ -148,7 +148,7 @@ describe('masaustu koprusu', () => {
     const b = bridge()
 
     b.seed('live-1')
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+    ;(window as unknown as { foolDesktop: unknown }).foolDesktop = { shared: b.api }
 
     const { sharedAtom } = await import('./cross-window-atom')
 
@@ -162,7 +162,7 @@ describe('masaustu koprusu', () => {
   it('DISARIDAN gelen degisimi benimsiyor', async () => {
     const b = bridge()
 
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+    ;(window as unknown as { foolDesktop: unknown }).foolDesktop = { shared: b.api }
 
     const { sharedAtom } = await import('./cross-window-atom')
 
@@ -177,7 +177,7 @@ describe('masaustu koprusu', () => {
   it('KENDI yazisini koprue gonderiyor', async () => {
     const b = bridge()
 
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+    ;(window as unknown as { foolDesktop: unknown }).foolDesktop = { shared: b.api }
 
     const { sharedAtom } = await import('./cross-window-atom')
 
@@ -193,7 +193,7 @@ describe('masaustu koprusu', () => {
     // Yoksa iki pencere birbirinin yazisini sonsuza kadar geri yollardi.
     const b = bridge()
 
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+    ;(window as unknown as { foolDesktop: unknown }).foolDesktop = { shared: b.api }
 
     const { sharedAtom } = await import('./cross-window-atom')
 
@@ -210,7 +210,7 @@ describe('masaustu koprusu', () => {
   it('ILGISIZ anahtari yok sayiyor', async () => {
     const b = bridge()
 
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { shared: b.api }
+    ;(window as unknown as { foolDesktop: unknown }).foolDesktop = { shared: b.api }
 
     const { sharedAtom } = await import('./cross-window-atom')
 

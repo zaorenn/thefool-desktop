@@ -11,7 +11,7 @@ import { UserMessage } from '@/components/assistant-ui/thread/user-message'
 import { Intro, type IntroProps } from '@/components/chat/intro'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoiceSetupStep } from '@/fool/setup/voice-step'
-import type { HermesGateway } from '@/hermes'
+import type { FoolGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
 
@@ -19,7 +19,7 @@ type ThreadLoadingState = 'response' | 'session'
 
 interface ThreadEditContextValue {
   cwd: string | null
-  gateway: HermesGateway | null
+  gateway: FoolGateway | null
   sessionId: string | null
 }
 
@@ -36,7 +36,7 @@ const ThreadEditContext = createContext<ThreadEditContextValue>({ cwd: null, gat
 interface ThreadProps {
   clampToComposer?: boolean
   cwd?: string | null
-  gateway?: HermesGateway | null
+  gateway?: FoolGateway | null
   intro?: IntroProps
   loading?: ThreadLoadingState
   onBranchInNewChat?: (messageId: string) => void

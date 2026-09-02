@@ -32,7 +32,7 @@ from fool_cli.model_switch import (
         "hermes_4_70b",
         "openrouter/hermes3:70b",
         "openrouter/nousresearch/hermes-4-405b",
-        "NousResearch/Hermes3",
+        "NousResearch/Fool3",
         "hermes-3.1",
     ],
 )

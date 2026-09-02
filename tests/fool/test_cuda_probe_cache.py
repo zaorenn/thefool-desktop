@@ -24,7 +24,7 @@ from fool import cuda_probe_cache as cache
 @pytest.fixture(autouse=True)
 def _isolated_home(tmp_path, monkeypatch):
     """Önbellek dosyası testin kendi dizininde -- gerçek kurulum bozulmasın."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("FOOL_HOME", str(tmp_path))
     monkeypatch.setattr("fool_constants.get_hermes_home", lambda: str(tmp_path))
     cache.invalidate()
     yield

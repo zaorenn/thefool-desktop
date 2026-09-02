@@ -245,7 +245,7 @@ function stagedFileMtimeMs(candidate: string): number | null {
  * install that never went through the installer); callers degrade gracefully.
  */
 export function resolveStagedUpdaterBinary(
-  hermesHome: string,
+  foolHome: string,
   deps: ResolveStagedUpdaterBinaryDeps = {}
 ): string | null {
   const isWindows = deps.isWindows ?? process.platform === 'win32'
@@ -255,7 +255,7 @@ export function resolveStagedUpdaterBinary(
   }
 
   const fileExists = deps.fileExists ?? stagedFileExists
-  const candidate = path.join(hermesHome, 'fool-setup.exe')
+  const candidate = path.join(foolHome, 'fool-setup.exe')
 
   return fileExists(candidate) ? candidate : null
 }

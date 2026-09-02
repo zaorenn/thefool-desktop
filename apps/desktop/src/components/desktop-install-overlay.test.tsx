@@ -44,7 +44,7 @@ function installDesktopMock(state: DesktopBootstrapState) {
     }
   }
 
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'foolDesktop', {
     configurable: true,
     value: desktop
   })
@@ -86,7 +86,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
-  Reflect.deleteProperty(window, 'hermesDesktop')
+  Reflect.deleteProperty(window, 'foolDesktop')
 })
 
 describe('DesktopInstallOverlay first-run setup', () => {

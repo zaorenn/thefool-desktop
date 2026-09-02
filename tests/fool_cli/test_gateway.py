@@ -888,18 +888,18 @@ class TestWindowsScheduledTaskSupervisorGuard:
     """
 
     def test_running_task_skips_reap(self, monkeypatch):
-        """Hermes_Gateway_* is Running => reaper returns False, kills nothing."""
+        """Fool_Gateway_* is Running => reaper returns False, kills nothing."""
         monkeypatch.setattr(gateway, "is_windows", lambda: True)
         monkeypatch.setattr(gateway, "is_macos", lambda: False)
         monkeypatch.setattr(gateway, "supports_systemd_services", lambda: False)
         # The guard must query the PROFILE-AWARE install-time task name from
         # gateway_windows.get_task_name(), never a hardcoded literal — a
-        # hardcoded "HermesGateway" would leave the guard dormant on every
-        # standard install (task name is Hermes_Gateway / Hermes_Gateway_<p>).
+        # hardcoded "FoolGateway" would leave the guard dormant on every
+        # standard install (task name is Fool_Gateway / Fool_Gateway_<p>).
         import fool_cli.gateway_windows as gateway_windows
 
         monkeypatch.setattr(
-            gateway_windows, "get_task_name", lambda: "Hermes_Gateway_testprof"
+            gateway_windows, "get_task_name", lambda: "Fool_Gateway_testprof"
         )
         queried = []
 
@@ -923,7 +923,7 @@ class TestWindowsScheduledTaskSupervisorGuard:
 
         assert result is False
         assert killed_pids == []
-        assert queried == ["Hermes_Gateway_testprof"]
+        assert queried == ["Fool_Gateway_testprof"]
 
     def test_ready_task_skips_reap(self, monkeypatch):
         """Ready is the post-launcher steady state — still supervised (#87001)."""
@@ -933,7 +933,7 @@ class TestWindowsScheduledTaskSupervisorGuard:
         import fool_cli.gateway_windows as gateway_windows
 
         monkeypatch.setattr(
-            gateway_windows, "get_task_name", lambda: "Hermes_Gateway_testprof"
+            gateway_windows, "get_task_name", lambda: "Fool_Gateway_testprof"
         )
         monkeypatch.setattr(
             gateway, "_windows_scheduled_task_state", lambda name: "Ready"
@@ -990,9 +990,9 @@ class TestWindowsScheduledTaskSupervisorGuard:
             raise AssertionError("subprocess must not run off Windows")
 
         monkeypatch.setattr(gateway.subprocess, "run", _boom_run)
-        assert gateway._windows_scheduled_task_running("HermesGateway") is False
-        assert gateway._windows_scheduled_task_supervises("HermesGateway") is False
-        assert gateway._windows_scheduled_task_state("HermesGateway") is None
+        assert gateway._windows_scheduled_task_running("FoolGateway") is False
+        assert gateway._windows_scheduled_task_supervises("FoolGateway") is False
+        assert gateway._windows_scheduled_task_state("FoolGateway") is None
 
     def test_supervises_ready_and_queued_but_not_disabled(self, monkeypatch):
         monkeypatch.setattr(gateway, "is_windows", lambda: True)
@@ -1000,5 +1000,5 @@ class TestWindowsScheduledTaskSupervisorGuard:
 
         for state, expected in states.items():
             monkeypatch.setattr(gateway, "_windows_scheduled_task_state", lambda name, s=state: s)
-            assert gateway._windows_scheduled_task_supervises("Hermes_Gateway") is expected, state
-            assert gateway._windows_scheduled_task_running("Hermes_Gateway") is (state == "Running")
+            assert gateway._windows_scheduled_task_supervises("Fool_Gateway") is expected, state
+            assert gateway._windows_scheduled_task_running("Fool_Gateway") is (state == "Running")

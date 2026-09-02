@@ -120,8 +120,8 @@ export const uk: Translations = {
     starting: "Запускається",
     startedInBackground: "Запущено у фоні — перевірте журнали для прогресу",
     stopped: "Зупинено",
-    updateHermes: "Оновити The Fool",
-    updatingHermes: "Оновлення The Fool…",
+    updateFool: "Оновити The Fool",
+    updatingFool: "Оновлення The Fool…",
     waitingForOutput: "Очікування виводу…",
   },
 

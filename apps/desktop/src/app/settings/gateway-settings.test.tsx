@@ -47,7 +47,7 @@ beforeEach(() => {
   ])
   getConnectionConfig.mockResolvedValue(localConnection)
   saveConnectionConfig.mockResolvedValue(localConnection)
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'foolDesktop', {
     configurable: true,
     value: { getConnectionConfig, saveConnectionConfig }
   })
@@ -89,7 +89,7 @@ describe('GatewaySettings', () => {
             sshUser: 'alice',
             sshPort: 22,
             sshKeyPath: '',
-            sshRemoteHermesPath: '/opt/fool/bin/fool',
+            sshRemoteFoolPath: '/opt/fool/bin/fool',
             sshRemoteProfile: 'default'
           }
         : localConnection

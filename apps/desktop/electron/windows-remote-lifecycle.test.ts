@@ -41,8 +41,8 @@ test('platform detection preserves POSIX and falls back to Windows PowerShell', 
       return JSON.stringify({
         os: 'Windows',
         arch: 'ARM64',
-        hermesHome: 'C:\\h',
-        hermesPath: 'C:\\h\\fool.exe',
+        foolHome: 'C:\\h',
+        foolPath: 'C:\\h\\fool.exe',
         python: 'C:\\h\\python.exe'
       })
     })
@@ -103,8 +103,8 @@ test('Windows lock validation is scoped and exact', () => {
     creationTimeNs: '1784219690452757504',
     port: 1234,
     tokenFingerprint: 'a'.repeat(32),
-    hermesPath: 'C:\\h\\fool.exe',
-    hermesHome: 'C:\\h'
+    foolPath: 'C:\\h\\fool.exe',
+    foolHome: 'C:\\h'
   }
 
   assert.equal(validLock(lock, ownershipId), true)
@@ -129,12 +129,12 @@ test('Windows SSH reuse requires the requested remote profile to match the lock'
     port: 1234,
     profile: 'default',
     tokenFingerprint: crypto.createHash('sha256').update(token).digest('hex').slice(0, 32),
-    hermesPath: 'C:\\h\\fool.exe',
-    hermesHome: 'C:\\h'
+    foolPath: 'C:\\h\\fool.exe',
+    foolHome: 'C:\\h'
   }
 
   const state = { alive: true, owned: true }
-  const runtime = { hermesPath: lock.hermesPath, hermesHome: lock.hermesHome }
+  const runtime = { foolPath: lock.foolPath, foolHome: lock.foolHome }
 
   assert.equal(reusableWindowsLock(lock, state, 'default', token, runtime), true)
   assert.equal(reusableWindowsLock(lock, state, 'desktop-work', token, runtime), false)

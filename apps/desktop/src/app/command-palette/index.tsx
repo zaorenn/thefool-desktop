@@ -17,7 +17,7 @@ import { codiconIcon } from '@/components/ui/codicon'
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { HighlightMatches } from '@/components/ui/highlight-matches'
 import { KbdCombo } from '@/components/ui/kbd'
-import { getHermesConfigRecord, listAllProfileSessions } from '@/hermes'
+import { getFoolConfigRecord, listAllProfileSessions } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { sessionTitle } from '@/lib/chat-runtime'
 import {
@@ -613,7 +613,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   // reopen paints from cache and revalidates in the background.
   const configQuery = useQuery({
     queryKey: ['command-palette', 'config'],
-    queryFn: () => getHermesConfigRecord()
+    queryFn: () => getFoolConfigRecord()
   })
 
   const sessionsQuery = useQuery({
@@ -884,7 +884,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             icon: Download,
             id: 'cc-update-fool',
             keywords: ['update', 'upgrade', 'fool', 'version', 'system', 'restart'],
-            label: cc.updateHermes,
+            label: cc.updateFool,
             run: () => requestActiveUpdate()
           }
         ]

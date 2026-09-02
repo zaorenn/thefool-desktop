@@ -2260,7 +2260,7 @@ def _(rid, params: dict) -> dict:
     ``{ok: true, session_id, auth_url, flow: "pkce"}``.
 
     The client (desktop) opens ``auth_url`` in the native browser
-    (``window.hermesDesktop.openExternal``) and then polls
+    (``window.foolDesktop.openExternal``) and then polls
     ``mcp.servers.oauth.poll`` with the returned ``session_id`` until
     ``status == "approved"``. This mirrors the provider-OAuth start/poll model
     (``/api/providers/oauth/{id}/start`` + ``/poll``): a background worker drives

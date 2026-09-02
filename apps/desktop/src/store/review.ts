@@ -3,7 +3,7 @@ import { atom, computed } from 'nanostores'
 import { SIDEBAR_COLLAPSE_MEDIA_QUERY } from '@/app/layout-constants'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
-import type { HermesReviewFile, HermesReviewShipInfo } from '@/global'
+import type { FoolReviewFile, FoolReviewShipInfo } from '@/global'
 import { matchesQuery } from '@/hooks/use-media-query'
 import { desktopGit } from '@/lib/desktop-git'
 import { isExcludedPath } from '@/lib/excluded-paths'
@@ -58,7 +58,7 @@ export function toggleReviewTreeMode(): void {
   $reviewTreeMode.set($reviewTreeMode.get() === 'tree' ? 'list' : 'tree')
 }
 
-export const $reviewFiles = atom<HermesReviewFile[]>([])
+export const $reviewFiles = atom<FoolReviewFile[]>([])
 export const $reviewLoading = atom(false)
 // False when the active session isn't in a local git repo (detached/fresh chat,
 // remote backend). Lets the pane say "not a repo" instead of stranding on a
@@ -79,7 +79,7 @@ export const $reviewDiffLoading = atom(false)
 
 // Ship state: gh availability + this branch's PR, and a busy flag for the
 // commit/push/PR action bar (disables buttons + shows progress).
-export const $reviewShipInfo = atom<HermesReviewShipInfo>({ ghReady: false, pr: null })
+export const $reviewShipInfo = atom<FoolReviewShipInfo>({ ghReady: false, pr: null })
 export const $reviewShipBusy = atom(false)
 
 // True while a commit message is being generated (drives the input's spinner).
@@ -97,7 +97,7 @@ export const reviewRepoCwd = (): null | string => $reviewScopeCwd.get()?.trim() 
 
 const repoCwd = reviewRepoCwd
 
-type ReviewBridge = NonNullable<NonNullable<NonNullable<Window['hermesDesktop']>['git']>['review']>
+type ReviewBridge = NonNullable<NonNullable<NonNullable<Window['foolDesktop']>['git']>['review']>
 let reviewRefreshSeq = 0
 let reviewRefreshTimer: ReturnType<typeof setTimeout> | null = null
 let shipInfoSeq = 0
@@ -188,7 +188,7 @@ function scheduleReviewRefresh(): void {
   }, REVIEW_REFRESH_DEBOUNCE_MS)
 }
 
-export async function selectReviewFile(file: HermesReviewFile): Promise<void> {
+export async function selectReviewFile(file: FoolReviewFile): Promise<void> {
   $reviewSelectedPath.set(file.path)
 
   const ctx = reviewCtx()
@@ -328,7 +328,7 @@ export function revealReview(scopeCwd: null | string = null): void {
 }
 
 /** The changed file matching a tool-reported path (absolute or repo-relative). */
-function matchReviewFile(files: readonly HermesReviewFile[], path: string): HermesReviewFile | undefined {
+function matchReviewFile(files: readonly FoolReviewFile[], path: string): FoolReviewFile | undefined {
   const target = path.replace(/\\/g, '/').replace(/\/+$/, '')
 
   if (!target) {
@@ -516,7 +516,7 @@ export async function createOrOpenPr(): Promise<void> {
   const existing = $reviewShipInfo.get().pr
 
   if (existing?.url) {
-    void window.hermesDesktop?.openExternal?.(existing.url)
+    void window.foolDesktop?.openExternal?.(existing.url)
 
     return
   }
@@ -525,7 +525,7 @@ export async function createOrOpenPr(): Promise<void> {
     const { url } = await ctx.review.createPr(ctx.cwd)
 
     if (url) {
-      void window.hermesDesktop?.openExternal?.(url)
+      void window.foolDesktop?.openExternal?.(url)
     }
 
     // The session recorded its branch when it started; the checkout may have

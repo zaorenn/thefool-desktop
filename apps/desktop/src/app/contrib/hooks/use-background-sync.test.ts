@@ -92,7 +92,7 @@ function useSyncHarness({
     refreshActiveTranscript,
     refreshCronJobs: vi.fn(),
     refreshCurrentModel: vi.fn(),
-    refreshHermesConfig: vi.fn(),
+    refreshFoolConfig: vi.fn(),
     refreshMessagingSessions: vi.fn(),
     refreshSessions: vi.fn(),
     requestGateway: vi.fn(async () => ({ sessions: [] })) as never

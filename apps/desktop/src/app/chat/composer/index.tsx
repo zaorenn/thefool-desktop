@@ -107,6 +107,7 @@ export function ChatBar({
   onTranscribeAudio
 }: ChatBarProps) {
   const hudMode = useStore($hudMode)
+
   const {
     grabbing: hudGrabbing,
     onGripPointerDown: onHudGripPointerDown,

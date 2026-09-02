@@ -69,7 +69,7 @@ def test_kurulum_gecici_bir_evi_KALICI_yazmiyor() -> None:
 
     gate = INSTALL_PS1.index("$isSandboxHome = $false")
     persist = INSTALL_PS1.index(
-        '[Environment]::SetEnvironmentVariable("FOOL_HOME", $HermesHome, "User")'
+        '[Environment]::SetEnvironmentVariable("FOOL_HOME", $FoolHome, "User")'
     )
 
     assert gate < persist

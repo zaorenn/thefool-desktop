@@ -16,7 +16,7 @@
  * authoring/activating a skin from a prompt, or `/skin` elsewhere) repaints.
  */
 
-import type { HermesSkin } from '@fool/shared/skin'
+import type { FoolSkin } from '@fool/shared/skin'
 import { atom } from 'nanostores'
 
 import { BUILTIN_THEMES } from './presets'
@@ -53,7 +53,7 @@ export function __resetBackendSkinSync(): void {
  * records the baseline; `apply: true` (runtime change / poll) repaints on a name
  * change. Built-in names keep the desktop's own palette but can still be applied.
  */
-export function ingestBackendSkin(skin: HermesSkin | undefined | null, { apply }: { apply: boolean }): void {
+export function ingestBackendSkin(skin: FoolSkin | undefined | null, { apply }: { apply: boolean }): void {
   const name = (skin && typeof skin === 'object' ? (skin.name ?? '') : '').trim()
 
   if (!name) {
@@ -75,7 +75,7 @@ export function ingestBackendSkin(skin: HermesSkin | undefined | null, { apply }
   $backendAccent.set(skin && typeof skin === 'object' ? (skin as Record<string, unknown>) : null)
 
   if (name !== 'default' && !BUILTIN_THEMES[name]) {
-    const theme = skinToDesktopTheme(skin as HermesSkin)
+    const theme = skinToDesktopTheme(skin as FoolSkin)
 
     if (!theme) {
       return

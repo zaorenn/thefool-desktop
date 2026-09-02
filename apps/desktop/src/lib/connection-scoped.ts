@@ -27,7 +27,7 @@ import { readKey, writeKey } from './storage'
 // profile keys). Backend-mirrored lists (pins) self-heal from the gateway's
 // own rows instead.
 
-/** Minimal slice of HermesConnection this module keys on. */
+/** Minimal slice of FoolConnection this module keys on. */
 export interface ConnectionScopeDescriptor {
   baseUrl?: string
   mode?: 'local' | 'remote'

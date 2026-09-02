@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 // time paths; mock the seams (same shape as updates.test.ts) so this test only
 // exercises the pure transition state machine.
 vi.mock('@/hermes', () => ({
-  getHermesConfigRecord: vi.fn(),
+  getFoolConfigRecord: vi.fn(),
   testMcpServer: vi.fn()
 }))
 

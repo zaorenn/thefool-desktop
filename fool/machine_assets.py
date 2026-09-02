@@ -22,7 +22,7 @@ varlıkları. Bir sidecar ortamı gigabaytlarca, değişmez ve profil başına
 kopyalanması anlamsız -- indirilen ses ağırlıkları da öyle.
 
 Masaüstü tarafı bu ayrımı zaten biliyor: ``electron/backend-env.ts``
-içindeki ``normalizeHermesHomeRoot`` profil yolunu köke çeviriyor. Python
+içindeki ``normalizeFoolHomeRoot`` profil yolunu köke çeviriyor. Python
 tarafında karşılığı yoktu.
 
 Zone A: upstream bu dosyayı bilmiyor.

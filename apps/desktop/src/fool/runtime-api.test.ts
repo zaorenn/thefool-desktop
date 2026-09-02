@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { dropUnselectedModels } from './runtime-api'
 
-const desktopWindow = window as unknown as { hermesDesktop?: unknown }
+const desktopWindow = window as unknown as { foolDesktop?: unknown }
 
 afterEach(() => {
-  delete desktopWindow.hermesDesktop
+  delete desktopWindow.foolDesktop
 })
 
 describe('dropUnselectedModels', () => {
@@ -16,7 +16,8 @@ describe('dropUnselectedModels', () => {
       total: 1,
       unloaded: { llm: ['qwen/qwen3.5-9b'] }
     }))
-    desktopWindow.hermesDesktop = { api }
+
+    desktopWindow.foolDesktop = { api }
 
     dropUnselectedModels()
 
@@ -35,7 +36,7 @@ describe('dropUnselectedModels', () => {
       throw new Error('backend is not running')
     })
 
-    desktopWindow.hermesDesktop = { api }
+    desktopWindow.foolDesktop = { api }
 
     expect(() => dropUnselectedModels()).not.toThrow()
 

@@ -40,7 +40,7 @@ import {
 const POLL_MS = 10_000
 
 export async function fetchRelationship(): Promise<null | RelationshipSnapshot> {
-  const desktop = window.hermesDesktop
+  const desktop = window.foolDesktop
 
   // Yayinlanan yapida sabit ``false`` -- bkz. ``companion/build-flag.ts``.
   if (!COMPANION_BUILD || !desktop?.api) {

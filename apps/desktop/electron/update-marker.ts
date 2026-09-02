@@ -29,8 +29,8 @@ import path from 'path'
 // recycled the pid onto an unrelated process), so the gate self-heals.
 export const UPDATE_MARKER_MAX_AGE_MS = 20 * 60 * 1000
 
-export function markerPath(hermesHome) {
-  return path.join(hermesHome, '.fool-update-in-progress')
+export function markerPath(foolHome) {
+  return path.join(foolHome, '.fool-update-in-progress')
 }
 
 // True only if a host process with this pid is currently alive. Signal 0 does
@@ -64,7 +64,7 @@ export function isPidAlive(pid, kill: typeof process.kill = process.kill.bind(pr
  * clock for tests.
  */
 export function readLiveUpdateMarker(
-  hermesHome,
+  foolHome,
   {
     kill,
     now = Date.now,
@@ -75,7 +75,7 @@ export function readLiveUpdateMarker(
     kill?: typeof process.kill
   } = {}
 ) {
-  const file = markerPath(hermesHome)
+  const file = markerPath(foolHome)
   let raw
 
   try {
@@ -125,8 +125,8 @@ export function readLiveUpdateMarker(
  * If the updater never starts (spawn failure) the marker still contains a
  * real PID, so `readLiveUpdateMarker` will self-heal once that PID exits.
  */
-export function writeUpdateMarker(hermesHome, pid, { now = Date.now } = {}) {
-  const file = markerPath(hermesHome)
+export function writeUpdateMarker(foolHome, pid, { now = Date.now } = {}) {
+  const file = markerPath(foolHome)
   const startedAt = Math.floor(now() / 1000)
 
   try {
@@ -157,14 +157,14 @@ export function writeUpdateMarker(hermesHome, pid, { now = Date.now } = {}) {
  * `readLiveUpdateMarker`.
  */
 export function updateHandoffConflict(
-  hermesHome,
+  foolHome,
   opts: {
     now?: () => number
     maxAgeMs?: number
     kill?: typeof process.kill
   } = {}
 ) {
-  const owner = readLiveUpdateMarker(hermesHome, opts)
+  const owner = readLiveUpdateMarker(foolHome, opts)
 
   if (!owner) {
     return null

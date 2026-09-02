@@ -3,7 +3,7 @@
  *
  * Pure, dependency-injected pieces of Windows `fool` resolution pulled out
  * of main.ts's findOnPath(), handOffWindowsBootstrapRecovery(), and
- * unwrapWindowsVenvHermesCommand(). Each of the three functions here pins one
+ * unwrapWindowsVenvFoolCommand(). Each of the three functions here pins one
  * of the Windows resolution bugs that caused desktop reinstall loops:
  *
  *   1. buildPathExtCandidates() — findOnPath() tried the empty extension
@@ -17,7 +17,7 @@
  *      of venv setup and absent in interrupted states), so it escalated to a
  *      full venv recreate even on healthy installs. The fix: gate on ANY
  *      real-install signal, not just the shim.
- *   3. resolveVenvHermesCommand() — unwrapWindowsVenvHermesCommand() returned
+ *   3. resolveVenvFoolCommand() — unwrapWindowsVenvFoolCommand() returned
  *      the venv python with NO runtime probe (bypassing the caller's
  *      --version check too), so a venv broken mid-update (e.g. missing
  *      python-dotenv) was re-selected forever: Retry / "Repair install"
@@ -164,20 +164,20 @@ export function getVenvSitePackagesEntries(
   return entries
 }
 
-export interface ResolveVenvHermesCommandDeps {
+export interface ResolveVenvFoolCommandDeps {
   isWindows: boolean
   isCommandScript: (command: string) => boolean
   fileExists: (filePath: string) => boolean
   directoryExists: (filePath: string) => boolean
-  canImportHermesCli: (python: string, opts?: { env?: Record<string, string> }) => boolean
+  canImportFoolCli: (python: string, opts?: { env?: Record<string, string> }) => boolean
   getVenvPython: (venvRoot: string) => string
   getVenvSitePackagesEntries: (venvRoot: string) => string[]
   buildDesktopBackendEnv: (opts: {
-    hermesHome: string
+    foolHome: string
     pythonPathEntries: string[]
     venvRoot: string
   }) => Record<string, string>
-  hermesHome: string
+  foolHome: string
   resolvePath: (...segments: string[]) => string
   dirname: (p: string) => string
   basename: (p: string) => string
@@ -188,7 +188,7 @@ export interface ResolveVenvHermesCommandDeps {
  * If `command` is a Windows venv `fool`/`fool.exe` console-script shim
  * (i.e. `<venvRoot>/Scripts/fool(.exe)`), resolve it to the underlying
  * venv python invoked as `python -m fool_cli.main <backendArgs>` — but
- * ONLY after smoke-testing that interpreter with canImportHermesCli(). A
+ * ONLY after smoke-testing that interpreter with canImportFoolCli(). A
  * venv whose update died mid-`pip install` still has python.exe + fool.exe
  * on disk, but the backend dies on its first import (e.g.
  * ModuleNotFoundError: dotenv) before the gateway ever binds. Returning it
@@ -203,10 +203,10 @@ export interface ResolveVenvHermesCommandDeps {
  * python doesn't exist, or the import probe fails. Otherwise returns the
  * resolved backend descriptor.
  */
-export function resolveVenvHermesCommand(
+export function resolveVenvFoolCommand(
   command: string,
   backendArgs: string[],
-  deps: ResolveVenvHermesCommandDeps
+  deps: ResolveVenvFoolCommandDeps
 ): {
   label: string
   command: string
@@ -222,11 +222,11 @@ export function resolveVenvHermesCommand(
     isCommandScript,
     fileExists,
     directoryExists,
-    canImportHermesCli,
+    canImportFoolCli,
     getVenvPython,
     getVenvSitePackagesEntries,
     buildDesktopBackendEnv,
-    hermesHome,
+    foolHome,
     resolvePath,
     dirname,
     basename,
@@ -259,7 +259,7 @@ export function resolveVenvHermesCommand(
   const root = dirname(venvRoot)
 
   if (
-    !canImportHermesCli(python, {
+    !canImportFoolCli(python, {
       env: {
         PYTHONPATH: [...(directoryExists(root) ? [root] : []), process.env.PYTHONPATH]
           .filter((entry): entry is string => Boolean(entry))
@@ -280,7 +280,7 @@ export function resolveVenvHermesCommand(
     args: ['-m', 'fool_cli.main', ...backendArgs],
     bootstrap: false,
     env: buildDesktopBackendEnv({
-      hermesHome,
+      foolHome,
       pythonPathEntries: [...(directoryExists(root) ? [root] : []), ...getVenvSitePackagesEntries(venvRoot)],
       venvRoot
     }),

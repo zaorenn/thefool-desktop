@@ -11,13 +11,13 @@
 
 import { computed } from 'nanostores'
 
-import type { HermesActiveWork } from '@/global'
+import type { FoolActiveWork } from '@/global'
 import { $sessions } from '@/store/session'
 import { $workingSessionIds } from '@/store/session-states'
 
 import { whenMainWindow } from './main-window-only'
 
-const $activeWork = computed([$workingSessionIds, $sessions], (workingIds, sessions): HermesActiveWork => {
+const $activeWork = computed([$workingSessionIds, $sessions], (workingIds, sessions): FoolActiveWork => {
   const titleById = new Map(sessions.map(session => [session.id, session.title?.trim() ?? '']))
 
   return {
@@ -115,7 +115,7 @@ if (typeof window !== 'undefined') {
       }
 
       lastSent = next
-      window.hermesDesktop?.setActiveWork?.(work)
+      window.foolDesktop?.setActiveWork?.(work)
     })
   )
 }

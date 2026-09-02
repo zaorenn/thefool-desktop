@@ -108,7 +108,7 @@ import { SessionSwitcher } from '../session-switcher'
 import { useBackgroundQueueDrain } from '../session/hooks/use-background-queue-drain'
 import { useContextSuggestions } from '../session/hooks/use-context-suggestions'
 import { useCwdActions } from '../session/hooks/use-cwd-actions'
-import { useHermesConfig } from '../session/hooks/use-fool-config'
+import { useFoolConfig } from '../session/hooks/use-fool-config'
 import { useMessageStream } from '../session/hooks/use-message-stream'
 import { useModelControls } from '../session/hooks/use-model-controls'
 import { usePreviewRouting } from '../session/hooks/use-preview-routing'
@@ -308,7 +308,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     requestGateway
   })
 
-  const { refreshHermesConfig, sttEnabled, voiceMaxRecordingSeconds } = useHermesConfig({ activeSessionIdRef })
+  const { refreshFoolConfig, sttEnabled, voiceMaxRecordingSeconds } = useFoolConfig({ activeSessionIdRef })
 
   const { applySavedMainModel, refreshCurrentModel, selectModel } = useModelControls({
     queryClient,
@@ -417,7 +417,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     activeSessionIdRef,
     hydrateFromStoredSession,
     queryClient,
-    refreshHermesConfig,
+    refreshFoolConfig,
     refreshSessions,
     sessionStateByRuntimeIdRef,
     updateSessionState
@@ -519,9 +519,9 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     // if the composer already shows values from the previous profile. Both
     // refreshes carry an intent token so a picker click made in flight wins.
     void refreshCurrentModel(true)
-    void refreshHermesConfig(true)
+    void refreshFoolConfig(true)
     void refreshActiveProfile()
-  }, [activeGatewayProfile, refreshCurrentModel, refreshHermesConfig])
+  }, [activeGatewayProfile, refreshCurrentModel, refreshFoolConfig])
 
   // New session anchored to a workspace. Seeds cwd + branch from the clicked
   // workspace; an explicit worktree path also drills the sidebar into that
@@ -790,7 +790,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         //
         // Yeni oturum ACILMIYOR: acik sohbet varken uyandirmak, kullanicinin
         // okudugu konusmayi birakip bos bir sayfaya gecmek olurdu.
-        void window.hermesDesktop?.notch?.wake?.()
+        void window.foolDesktop?.notch?.wake?.()
 
         return
       }
@@ -814,7 +814,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     onGatewayReady: g => {
       gatewayRef.current = g
     },
-    refreshHermesConfig,
+    refreshFoolConfig,
     refreshSessions
   })
 
@@ -844,7 +844,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     refreshActiveTranscript,
     refreshCronJobs,
     refreshCurrentModel,
-    refreshHermesConfig,
+    refreshFoolConfig,
     refreshMessagingSessions,
     refreshSessions,
     requestGateway
@@ -1124,7 +1124,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         <DesktopOnboardingOverlay
           enabled={gatewayState === 'open'}
           onCompleted={() => {
-            void refreshHermesConfig()
+            void refreshFoolConfig()
             void refreshCurrentModel()
             void queryClient.invalidateQueries({ queryKey: ['model-options'] })
           }}
@@ -1162,7 +1162,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
             gateway={gateway}
             onClose={closeOverlayToPreviousRoute}
             onConfigSaved={() => {
-              void refreshHermesConfig()
+              void refreshFoolConfig()
               void refreshCurrentModel()
               void queryClient.invalidateQueries({ queryKey: ['model-options'] })
             }}

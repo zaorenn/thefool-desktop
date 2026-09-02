@@ -114,7 +114,7 @@ function adoptDesktopBridge<T>(
   fallback: T,
   codec: Codec<T>
 ): void {
-  const shared = typeof window === 'undefined' ? undefined : window.hermesDesktop?.shared
+  const shared = typeof window === 'undefined' ? undefined : window.foolDesktop?.shared
 
   if (!shared) {
     return

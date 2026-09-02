@@ -13,17 +13,17 @@ export {}
 
 declare global {
   interface Window {
-    hermesDesktop: {
+    foolDesktop: {
       // Resolve a backend connection. Omit `profile` (or pass the primary) for
       // the window's backend; pass a named profile to lazily spawn/reuse that
       // profile's backend from the pool.
-      getConnection: (profile?: string | null) => Promise<HermesConnection>
+      getConnection: (profile?: string | null) => Promise<FoolConnection>
       // Registry-scoped backend resolution: dial (connectionId, profile). An
       // empty/local connectionId delegates to the legacy getConnection path.
       getConnectionFor?: (payload: {
         connectionId?: null | string
         profile?: null | string
-      }) => Promise<HermesConnection>
+      }) => Promise<FoolConnection>
       // Registry-scoped fresh WS URL (same result contract as getGatewayWsUrl).
       getGatewayWsUrlFor?: (payload: {
         connectionId?: null | string
@@ -223,8 +223,8 @@ declare global {
         // clear the preference.
         set: (name: string | null) => Promise<DesktopActiveProfile>
       }
-      api: <T>(request: HermesApiRequest) => Promise<T>
-      notify: (payload: HermesNotification) => Promise<boolean>
+      api: <T>(request: FoolApiRequest) => Promise<T>
+      notify: (payload: FoolNotification) => Promise<boolean>
       requestMicrophoneAccess: () => Promise<boolean>
       /** read_window_below tool: metadata for the OS window directly underneath this one (never pixels). */
       readWindowBelow?: () => Promise<{
@@ -246,8 +246,8 @@ declare global {
         get: () => Promise<{ defaultMaxMb: number; maxBytes: number; maxMb: number }>
         set: (maxMb: number) => Promise<{ defaultMaxMb: number; maxBytes: number; maxMb: number }>
       }
-      readFileText: (filePath: string) => Promise<HermesReadFileTextResult>
-      selectPaths: (options?: HermesSelectPathsOptions) => Promise<string[]>
+      readFileText: (filePath: string) => Promise<FoolReadFileTextResult>
+      selectPaths: (options?: FoolSelectPathsOptions) => Promise<string[]>
       /** Native save dialog; returns the chosen path or null on cancel. */
       selectSavePath?: (options?: {
         defaultPath?: string
@@ -265,15 +265,15 @@ declare global {
       saveImageBuffer: (data: ArrayBuffer | Uint8Array, ext: string) => Promise<string>
       saveClipboardImage: () => Promise<string>
       getPathForFile: (file: File) => string
-      normalizePreviewTarget: (target: string, baseDir?: string) => Promise<HermesPreviewTarget | null>
-      watchPreviewFile: (url: string) => Promise<HermesPreviewWatch>
+      normalizePreviewTarget: (target: string, baseDir?: string) => Promise<FoolPreviewTarget | null>
+      watchPreviewFile: (url: string) => Promise<FoolPreviewWatch>
       /** Watch a directory for entry churn (disk-plugin door); same watcher
        *  registry + onPreviewFileChanged channel as watchPreviewFile. Optional:
        *  older Electron shells predate it and fall back to the readdir poll. */
-      watchDirectory?: (dir: string) => Promise<HermesPreviewWatch>
+      watchDirectory?: (dir: string) => Promise<FoolPreviewWatch>
       stopPreviewFileWatch: (id: string) => Promise<boolean>
-      setActiveWork?: (payload: HermesActiveWork) => void
-      setTitleBarTheme?: (payload: HermesTitleBarTheme) => void
+      setActiveWork?: (payload: FoolActiveWork) => void
+      setTitleBarTheme?: (payload: FoolTitleBarTheme) => void
       setNativeTheme?: (mode: 'dark' | 'light' | 'system') => void
       setTranslucency?: (payload: { intensity: number }) => void
       setKeepAwake?: (on: boolean) => void
@@ -302,7 +302,7 @@ declare global {
         message: string
         componentStack: string
       }) => void
-      readDir: (path: string) => Promise<HermesReadDirResult>
+      readDir: (path: string) => Promise<FoolReadDirResult>
       gitRoot?: (path: string) => Promise<string | null>
       // Reveal a path in the OS file manager (Finder / Explorer).
       revealPath?: (path: string) => Promise<boolean>
@@ -325,7 +325,7 @@ declare global {
       trashPath?: (path: string) => Promise<boolean>
       // Git-driven worktree management for the "Start work" flow.
       git?: {
-        worktreeList: (repoPath: string) => Promise<HermesGitWorktree[]>
+        worktreeList: (repoPath: string) => Promise<FoolGitWorktree[]>
         worktreeAdd: (
           repoPath: string,
           options?: { name?: string; branch?: string; base?: string; existingBranch?: string }
@@ -338,25 +338,25 @@ declare global {
         branchSwitch: (repoPath: string, branch: string) => Promise<{ branch: string }>
         // The local branches, plus the remote-tracking refs that have no local
         // branch, for the "convert a branch into a worktree" picker.
-        branchList: (repoPath: string) => Promise<HermesGitBranch[]>
+        branchList: (repoPath: string) => Promise<FoolGitBranch[]>
         // Local + remote-tracking branches for the "base branch" picker in the
         // new-worktree dialog. The remote default (origin/HEAD) is flagged so
         // the UI can preselect it.
-        baseBranchList: (repoPath: string) => Promise<HermesGitBaseBranch[]>
+        baseBranchList: (repoPath: string) => Promise<FoolGitBaseBranch[]>
         // Compact working-tree status for the composer coding rail. Null on a
         // non-repo / remote backend (where the Electron probe can't run).
-        repoStatus: (repoPath: string) => Promise<HermesRepoStatus | null>
+        repoStatus: (repoPath: string) => Promise<FoolRepoStatus | null>
         // Working-tree-vs-HEAD unified diff for one file (the preview's diff
         // view). Empty string when the file is unchanged or not in a repo.
         fileDiff: (repoPath: string, filePath: string) => Promise<string>
         // Codex-style review pane: changed files per scope, per-file diff, and
         // stage / unstage / revert.
         review: {
-          list: (repoPath: string, scope: HermesReviewScope, baseRef?: null | string) => Promise<HermesReviewList>
+          list: (repoPath: string, scope: FoolReviewScope, baseRef?: null | string) => Promise<FoolReviewList>
           diff: (
             repoPath: string,
             filePath: string,
-            scope: HermesReviewScope,
+            scope: FoolReviewScope,
             baseRef?: null | string,
             staged?: boolean
           ) => Promise<string>
@@ -369,15 +369,15 @@ declare global {
           // commit message. Reads only; empty strings off-repo.
           commitContext: (repoPath: string) => Promise<{ diff: string; recent: string }>
           push: (repoPath: string) => Promise<{ ok: boolean }>
-          shipInfo: (repoPath: string) => Promise<HermesReviewShipInfo>
+          shipInfo: (repoPath: string) => Promise<FoolReviewShipInfo>
           // The PR on each of the given branches — plus any known only by
           // number — for badging a list of sessions in one request instead of
           // one `pr view` per checkout.
-          prList: (repoPath: string, branches: string[], numbers?: number[]) => Promise<HermesRepoPullRequests>
+          prList: (repoPath: string, branches: string[], numbers?: number[]) => Promise<FoolRepoPullRequests>
           // A pasted PR review/issue comment URL resolved to its structured
           // context (author, body, file + line anchor, diff hunk). Null when
           // gh can't answer — the paste stays a plain URL.
-          fetchPrComment: (repoPath: string, url: string) => Promise<HermesPrComment | null>
+          fetchPrComment: (repoPath: string, url: string) => Promise<FoolPrComment | null>
           createPr: (repoPath: string) => Promise<{ url: string }>
         }
         // Repo-first discovery: scan bounded roots for git repos (depth-capped).
@@ -393,9 +393,9 @@ declare global {
         cwd: (id: string) => Promise<string | null>
         dispose: (id: string) => Promise<boolean>
         onData: (id: string, callback: (payload: string) => void) => () => void
-        onExit: (id: string, callback: (payload: HermesTerminalExit) => void) => () => void
+        onExit: (id: string, callback: (payload: FoolTerminalExit) => void) => () => void
         resize: (id: string, size: { cols: number; rows: number }) => Promise<boolean>
-        start: (options?: { cols?: number; cwd?: string; rows?: number }) => Promise<HermesTerminalSession>
+        start: (options?: { cols?: number; cwd?: string; rows?: number }) => Promise<FoolTerminalSession>
         write: (id: string, data: string) => Promise<boolean>
       }
       onClosePreviewRequested?: (callback: () => void) => () => void
@@ -405,10 +405,10 @@ declare global {
         callback: (payload: { kind: string; name: string; params: Record<string, string> }) => void
       ) => () => void
       signalDeepLinkReady?: () => Promise<{ ok: boolean }>
-      onWindowStateChanged?: (callback: (payload: HermesWindowState) => void) => () => void
+      onWindowStateChanged?: (callback: (payload: FoolWindowState) => void) => () => void
       onFocusSession?: (callback: (sessionId: string) => void) => () => void
       onNotificationAction?: (callback: (payload: { actionId: string; sessionId?: string }) => void) => () => void
-      onPreviewFileChanged: (callback: (payload: HermesPreviewFileChanged) => void) => () => void
+      onPreviewFileChanged: (callback: (payload: FoolPreviewFileChanged) => void) => () => void
       onBackendExit: (callback: (payload: BackendExit) => void) => () => void
       // Soft gateway-mode apply: primary backend was torn down without a window
       // reload. Wipe session lists (skeletons) and re-dial.
@@ -482,13 +482,13 @@ export interface DesktopMarketplaceThemeResult {
   themes: DesktopMarketplaceThemeFile[]
 }
 
-export interface HermesTerminalSession {
+export interface FoolTerminalSession {
   cwd: string
   id: string
   shell: string
 }
 
-export interface HermesTerminalExit {
+export interface FoolTerminalExit {
   code: number | null
   signal: string | null
 }
@@ -498,7 +498,7 @@ export interface DesktopVersionInfo {
   electronVersion: string
   nodeVersion: string
   platform: string
-  hermesRoot: string
+  foolRoot: string
 }
 
 export type DesktopUninstallMode = 'full' | 'gui' | 'lite'
@@ -582,7 +582,7 @@ export interface DesktopUpdateApplyResult {
    *  `fool update` themselves. `command` is the exact line to run. */
   manual?: boolean
   command?: string
-  hermesRoot?: string
+  foolRoot?: string
   /** True when the backend was updated but the GUI couldn't be relaunched in
    *  place (AppImage / dev run): the new version loads on next launch. */
   backendUpdated?: boolean
@@ -640,7 +640,7 @@ export interface DesktopPluginProfileRoute {
   targetProfile: string
 }
 
-export interface HermesConnection {
+export interface FoolConnection {
   baseUrl: string
   darwinMajor?: number
   isFullscreen: boolean
@@ -652,7 +652,7 @@ export interface HermesConnection {
   remoteHost?: string
   remoteIdentity?: string
   remoteKind?: 'cloud' | 'ssh' | 'url'
-  remoteHermesVersion?: string
+  remoteFoolVersion?: string
   nativeOverlayWidth: number
   source?: 'env' | 'local' | 'settings'
   token: string
@@ -674,18 +674,18 @@ export interface HermesConnection {
   windowButtonPosition: { x: number; y: number } | null
 }
 
-export interface HermesTitleBarTheme {
+export interface FoolTitleBarTheme {
   background: string
   foreground: string
 }
 
 /** Turns in flight, so the main process can confirm before a quit kills them. */
-export interface HermesActiveWork {
+export interface FoolActiveWork {
   count: number
   titles: string[]
 }
 
-export interface HermesWindowState {
+export interface FoolWindowState {
   darwinMajor?: number
   isFullscreen: boolean
   isMinimized?: boolean
@@ -732,7 +732,7 @@ export interface DesktopConnectionConfig {
   sshUser: string
   sshPort: number | null
   sshKeyPath: string
-  sshRemoteHermesPath: string
+  sshRemoteFoolPath: string
   sshRemoteProfile: string
 }
 
@@ -755,7 +755,7 @@ export interface DesktopConnectionConfigInput {
   sshUser?: string
   sshPort?: number | null
   sshKeyPath?: string
-  sshRemoteHermesPath?: string
+  sshRemoteFoolPath?: string
   sshRemoteProfile?: string
 }
 
@@ -776,8 +776,8 @@ export interface DesktopConnectionTestResult {
     | null
   error?: string | null
   host?: string
-  remoteHermesPath?: string
-  remoteHermesVersion?: string
+  remoteFoolPath?: string
+  remoteFoolVersion?: string
   remotePlatform?: string
 }
 
@@ -799,7 +799,7 @@ export interface DesktopRegistryConnection {
   user?: string
   port?: number
   keyPath?: string
-  remoteHermesPath?: string
+  remoteFoolPath?: string
   remoteProfile?: string
   tokenSet: boolean
   tokenPreview: null | string
@@ -839,7 +839,7 @@ export interface DesktopRegistryConnectionInput {
   user?: string
   port?: null | number
   keyPath?: string
-  remoteHermesPath?: string
+  remoteFoolPath?: string
   remoteProfile?: string
 }
 
@@ -1056,7 +1056,7 @@ export type DesktopBootstrapEvent =
       docsUrl: string
     }
 
-export interface HermesApiRequest {
+export interface FoolApiRequest {
   path: string
   method?: string
   body?: unknown
@@ -1077,7 +1077,7 @@ export interface HermesApiRequest {
   connectionId?: string | null
 }
 
-export interface HermesNotification {
+export interface FoolNotification {
   title?: string
   body?: string
   silent?: boolean
@@ -1088,7 +1088,7 @@ export interface HermesNotification {
   actions?: { id: string; text: string }[]
 }
 
-export interface HermesPreviewTarget {
+export interface FoolPreviewTarget {
   binary?: boolean
   byteSize?: number
   kind: 'file' | 'url'
@@ -1103,7 +1103,7 @@ export interface HermesPreviewTarget {
   url: string
 }
 
-export interface HermesReadFileTextResult {
+export interface FoolReadFileTextResult {
   binary?: boolean
   byteSize?: number
   language?: string
@@ -1113,14 +1113,14 @@ export interface HermesReadFileTextResult {
   truncated?: boolean
 }
 
-export interface HermesPreviewWatch {
+export interface FoolPreviewWatch {
   id: string
   path: string
 }
 
 // A real git worktree as reported by `git worktree list` (source of truth for
 // the "Start work" flow), as opposed to the session-cwd-derived grouping above.
-export interface HermesGitWorktree {
+export interface FoolGitWorktree {
   path: string
   branch: null | string
   isMain: boolean
@@ -1134,7 +1134,7 @@ export interface HermesGitWorktree {
 // that a selection switches the main checkout, and does not make
 // `.worktrees/main`. `isRemote` means that a selection first makes a local
 // branch that tracks the remote one.
-export interface HermesGitBranch {
+export interface FoolGitBranch {
   name: string
   checkedOut: boolean
   isDefault: boolean
@@ -1146,7 +1146,7 @@ export interface HermesGitBranch {
 // refs. `isRemote` distinguishes `origin/main` from a local `main` (the UI
 // may show a remote glyph); `isDefault` flags origin/HEAD so the dialog can
 // preselect it.
-export interface HermesGitBaseBranch {
+export interface FoolGitBaseBranch {
   name: string
   isRemote: boolean
   isDefault: boolean
@@ -1154,7 +1154,7 @@ export interface HermesGitBaseBranch {
 
 // A single changed path from `git status --porcelain=v2`, classified by state
 // so the coding rail / switcher can group + open the right diff.
-export interface HermesRepoStatusFile {
+export interface FoolRepoStatusFile {
   path: string
   staged: boolean
   unstaged: boolean
@@ -1164,7 +1164,7 @@ export interface HermesRepoStatusFile {
 
 // Compact working-tree status for the composer coding rail (parsed from
 // `git status --porcelain=v2 --branch`).
-export interface HermesRepoStatus {
+export interface FoolRepoStatus {
   branch: null | string
   // The repo's trunk ("main" / "master" / …), so the UI can offer "branch off
   // the default" from anywhere. Null when no trunk is detected.
@@ -1183,16 +1183,16 @@ export interface HermesRepoStatus {
   added: number
   removed: number
   // Capped changed-file list (REPO_STATUS_FILE_CAP) for the diff/open actions.
-  files: HermesRepoStatusFile[]
+  files: FoolRepoStatusFile[]
 }
 
 // Diff scope for the review pane, mirroring Codex: uncommitted working-tree
 // changes, all changes vs the branch base, or everything since the current
 // turn began.
-export type HermesReviewScope = 'branch' | 'lastTurn' | 'uncommitted'
+export type FoolReviewScope = 'branch' | 'lastTurn' | 'uncommitted'
 
 // One changed file in the review pane (status letter, +/- lines, staged flag).
-export interface HermesReviewFile {
+export interface FoolReviewFile {
   path: string
   added: number
   removed: number
@@ -1201,15 +1201,15 @@ export interface HermesReviewFile {
   staged: boolean
 }
 
-export interface HermesReviewList {
-  files: HermesReviewFile[]
+export interface FoolReviewList {
+  files: FoolReviewFile[]
   // The resolved base ref the scope diffed against (branch merge-base / turn
   // baseline), or null for the uncommitted scope.
   base: null | string
 }
 
 // The branch's PR (if any) as reported by `gh pr view`.
-export interface HermesReviewPr {
+export interface FoolReviewPr {
   url: string
   state: string
   number: number
@@ -1217,7 +1217,7 @@ export interface HermesReviewPr {
 
 // One repo's PRs as reported by `gh pr list`, each tied to the branch it was
 // opened from — how a session row finds its own PR.
-export interface HermesBranchPullRequest {
+export interface FoolBranchPullRequest {
   branch: string
   draft: boolean
   number: number
@@ -1227,16 +1227,16 @@ export interface HermesBranchPullRequest {
   url: string
 }
 
-export interface HermesRepoPullRequests {
+export interface FoolRepoPullRequests {
   ghReady: boolean
-  prs: HermesBranchPullRequest[]
+  prs: FoolBranchPullRequest[]
 }
 
 // A PR review/issue comment resolved from a pasted GitHub URL — the composer's
 // review-comment attachment context. `path`/`line`/`diffHunk` are empty for
 // conversation-tab (issue) comments; `line` is null when the comment is
 // outdated and only `original_line` remained.
-export interface HermesPrComment {
+export interface FoolPrComment {
   author: string
   body: string
   diffHunk: string
@@ -1249,29 +1249,29 @@ export interface HermesPrComment {
 }
 // gh availability/auth + the current branch's PR — drives the review pane's PR
 // button (disabled when gh isn't ready, "Open PR" vs "Create PR" otherwise).
-export interface HermesReviewShipInfo {
+export interface FoolReviewShipInfo {
   ghReady: boolean
-  pr: HermesReviewPr | null
+  pr: FoolReviewPr | null
 }
 
-export interface HermesReadDirEntry {
+export interface FoolReadDirEntry {
   name: string
   path: string
   isDirectory: boolean
 }
 
-export interface HermesReadDirResult {
-  entries: HermesReadDirEntry[]
+export interface FoolReadDirResult {
+  entries: FoolReadDirEntry[]
   error?: string
 }
 
-export interface HermesPreviewFileChanged {
+export interface FoolPreviewFileChanged {
   id: string
   path: string
   url: string
 }
 
-export interface HermesSelectPathsOptions {
+export interface FoolSelectPathsOptions {
   title?: string
   defaultPath?: string
   directories?: boolean

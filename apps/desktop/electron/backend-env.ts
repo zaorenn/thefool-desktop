@@ -76,41 +76,41 @@ function appendUniquePathEntries(entries, { delimiter = path.delimiter } = {}) {
  * `iter_hermes_node_dirs()` in fool_constants.py, which the Electron main
  * process cannot import.
  */
-function hermesManagedNodePathEntries(
-  hermesHome,
+function foolManagedNodePathEntries(
+  foolHome,
   { platform = process.platform, pathModule = pathModuleForPlatform(platform) }: any = {}
 ) {
-  if (!hermesHome) {
+  if (!foolHome) {
     return []
   }
 
-  const root = pathModule.join(hermesHome, 'node')
+  const root = pathModule.join(foolHome, 'node')
   const bin = pathModule.join(root, 'bin')
 
   return platform === 'win32' ? [root, bin] : [bin, root]
 }
 
 function buildDesktopBackendPath({
-  hermesHome,
+  foolHome,
   venvRoot,
   currentPath = '',
   platform = process.platform,
   pathModule = pathModuleForPlatform(platform)
 }: any = {}) {
   const delimiter = delimiterForPlatform(platform)
-  const hermesNodeDirs = hermesManagedNodePathEntries(hermesHome, { platform, pathModule })
+  const foolNodeDirs = foolManagedNodePathEntries(foolHome, { platform, pathModule })
   const venvBin = venvRoot ? pathModule.join(venvRoot, platform === 'win32' ? 'Scripts' : 'bin') : null
   const saneEntries = platform === 'win32' ? [] : POSIX_SANE_PATH_ENTRIES
 
-  return appendUniquePathEntries([hermesNodeDirs, venvBin, currentPath, saneEntries], { delimiter })
+  return appendUniquePathEntries([foolNodeDirs, venvBin, currentPath, saneEntries], { delimiter })
 }
 
-function normalizeHermesHomeRoot(hermesHome, { pathModule = pathModuleForPlatform(process.platform) }: any = {}) {
-  if (!hermesHome) {
-    return hermesHome
+function normalizeFoolHomeRoot(foolHome, { pathModule = pathModuleForPlatform(process.platform) }: any = {}) {
+  if (!foolHome) {
+    return foolHome
   }
 
-  const resolved = pathModule.resolve(String(hermesHome))
+  const resolved = pathModule.resolve(String(foolHome))
   const parent = pathModule.dirname(resolved)
 
   if (pathModule.basename(parent).toLowerCase() === 'profiles') {
@@ -180,7 +180,7 @@ function espeakDataEnv(
 
   // ASCII ise oldugu gibi: kisa adlar okunaksiz ve sorunu olmayan makinede
   // bu bedeli odemek gereksiz.
-  // eslint-disable-next-line no-control-regex
+   
   if (isAsciiPath(data)) {
     return { ESPEAK_DATA_PATH: data }
   }
@@ -190,7 +190,7 @@ function espeakDataEnv(
   // Kisa ad uretimi birimde kapali olabilir; o zaman elimizde daha iyisi yok.
   // Yanlis bir yol vermek yerine hic vermiyoruz -- Python tarafindaki kapi
   // o durumu yakalayip Piper'i hic yuklemiyor.
-  // eslint-disable-next-line no-control-regex
+   
   return short && isAsciiPath(short) ? { ESPEAK_DATA_PATH: short } : {}
 }
 
@@ -212,7 +212,7 @@ function shortPathSync(target) {
 }
 
 function buildDesktopBackendEnv({
-  hermesHome,
+  foolHome,
   pythonPathEntries = [],
   venvRoot,
   currentEnv = process.env,
@@ -235,7 +235,7 @@ function buildDesktopBackendEnv({
     // this. User's explicit setting wins. Re-port of PR #56499 (echoriver89).
     PYTHONUTF8: currentEnv?.PYTHONUTF8 ?? '1',
     [key]: buildDesktopBackendPath({
-      hermesHome,
+      foolHome,
       venvRoot,
       currentPath: currentPathValue(currentEnv, platform),
       platform,
@@ -253,8 +253,8 @@ export {
   buildDesktopBackendEnv,
   buildDesktopBackendPath,
   delimiterForPlatform,
-  hermesManagedNodePathEntries,
-  normalizeHermesHomeRoot,
+  foolManagedNodePathEntries,
+  normalizeFoolHomeRoot,
   pathEnvKey,
   POSIX_SANE_PATH_ENTRIES
 }

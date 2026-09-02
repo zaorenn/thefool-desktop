@@ -44,7 +44,7 @@ async function reconnect(server: string, sessionId: string | null, cancelled: ()
       status: getMcpOAuthFlow,
       cancelled,
       cancel: cancelMcpOAuthFlow,
-      openExternal: url => window.hermesDesktop.openExternal(url)
+      openExternal: url => window.foolDesktop.openExternal(url)
     })
 
     // Fresh tokens reach the live session before the pill claims success.

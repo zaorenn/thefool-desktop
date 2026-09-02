@@ -122,7 +122,7 @@ kimi = KimiProfile(
     default_headers={
         "HTTP-Referer": "https://hermes-agent.nousresearch.com",
         "X-Title": "Hermes Agent",
-        "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+        "User-Agent": f"FoolAgent/{_HERMES_VERSION}",
     },
     default_aux_model="kimi-k2-turbo-preview",
 )
@@ -137,7 +137,7 @@ kimi_cn = KimiProfile(
     default_headers={
         "HTTP-Referer": "https://hermes-agent.nousresearch.com",
         "X-Title": "Hermes Agent",
-        "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+        "User-Agent": f"FoolAgent/{_HERMES_VERSION}",
     },
     default_aux_model="kimi-k2-turbo-preview",
 )

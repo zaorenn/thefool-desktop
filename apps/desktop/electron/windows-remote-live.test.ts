@@ -12,7 +12,7 @@ import { connectWindowsRemote } from './windows-remote-lifecycle'
 //   FOOL_WIN_SSH_HERMES absolute path to the remote fool.exe under test
 const liveHost = process.env.FOOL_WIN_SSH_HOST || ''
 const liveUser = process.env.FOOL_WIN_SSH_USER || ''
-const configuredHermes = process.env.FOOL_WIN_SSH_HERMES || ''
+const configuredFool = process.env.FOOL_WIN_SSH_HERMES || ''
 const ownershipId = '89abcdef0123456789abcdef01234567'
 
 function fetchJson(url, token, path) {
@@ -25,7 +25,7 @@ function fetchJson(url, token, path) {
   })
 }
 
-test.skipIf(!liveHost || !liveUser || !configuredHermes)(
+test.skipIf(!liveHost || !liveUser || !configuredFool)(
   'live Windows remote lifecycle spawns, authenticates, reuses, and cleans exact ownership',
   async () => {
     const ssh = new SshConnection({ host: liveHost, user: liveUser, port: 22, keyPath: '' }, { mux: true })
@@ -35,11 +35,11 @@ test.skipIf(!liveHost || !liveUser || !configuredHermes)(
       ssh,
       ownershipId,
       profile: '',
-      remoteHermesPath: configuredHermes,
+      remoteFoolPath: configuredFool,
       pickLocalPort,
       forward: (local, remote) => ssh.forward(local, remote),
       cancelForward: (local, remote) => ssh.cancelForward(local, remote),
-      waitForHermes: async (baseUrl, token) => {
+      waitForFool: async (baseUrl, token) => {
         for (let i = 0; i < 40; i++) {
           try {
             await fetchJson(baseUrl, token, '/api/status')
@@ -81,15 +81,15 @@ test.skipIf(!liveHost || !liveUser || !configuredHermes)(
         await ssh.cancelForward(second.localPort, second.remotePort)
       }
 
-      const runtimeScript = `& '${configuredHermes.replace('fool.exe', 'python.exe')}' -m fool_cli.windows_ssh_runtime read-lock '${ownershipId}'`
+      const runtimeScript = `& '${configuredFool.replace('fool.exe', 'python.exe')}' -m fool_cli.windows_ssh_runtime read-lock '${ownershipId}'`
 
       const lock: any = JSON.parse(
         await ssh.exec(`powershell.exe -NoProfile -NonInteractive -Command "${runtimeScript}"`)
       )
 
       if (lock) {
-        const python = configuredHermes.replace('fool.exe', 'python.exe')
-        const terminate = `& '${python}' -m fool_cli.windows_ssh_runtime terminate '${lock.pid}' '${lock.creationTimeNs}' '${lock.hermesPath}' '${lock.spawnNonce}'`
+        const python = configuredFool.replace('fool.exe', 'python.exe')
+        const terminate = `& '${python}' -m fool_cli.windows_ssh_runtime terminate '${lock.pid}' '${lock.creationTimeNs}' '${lock.foolPath}' '${lock.spawnNonce}'`
         await ssh.exec(`powershell.exe -NoProfile -NonInteractive -Command "${terminate}"`)
         await ssh.exec(
           `powershell.exe -NoProfile -NonInteractive -Command "& '${python}' -m fool_cli.windows_ssh_runtime remove-lock '${ownershipId}'"`

@@ -26,7 +26,7 @@ fool acp / hermes-acp / python -m acp_adapter
   -> parse --version / --check / --setup before server startup
   -> load ~/.hermes/.env
   -> configure stderr logging
-  -> construct HermesACPAgent
+  -> construct FoolACPAgent
   -> acp.run_agent(agent, use_unstable_protocol=True)
 ```
 
@@ -34,7 +34,7 @@ Stdout is reserved for ACP JSON-RPC transport. Human-readable logs go to stderr.
 
 ## Major components
 
-### `HermesACPAgent`
+### `FoolACPAgent`
 
 `acp_adapter/server.py` implements the ACP agent protocol.
 

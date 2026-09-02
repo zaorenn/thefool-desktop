@@ -879,12 +879,12 @@ def build_anthropic_client(
         # team asked us to identify ourselves properly so they can attribute
         # traffic correctly. Send the same attribution header set we send to
         # OpenRouter, Vercel AI Gateway, and Fireworks:
-        # HTTP-Referer + X-Title + HermesAgent User-Agent.
+        # HTTP-Referer + X-Title + FoolAgent User-Agent.
         kwargs["api_key"] = api_key
         kwargs["default_headers"] = {
             "HTTP-Referer": "https://hermes-agent.nousresearch.com",
             "X-Title": "Fool Agent",  # FOOL-SEAM: client-attribution
-            "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+            "User-Agent": f"FoolAgent/{_HERMES_VERSION}",
             **( {"anthropic-beta": ",".join(common_betas)} if common_betas else {} )
         }
     elif _requires_bearer_auth(normalized_base_url):
@@ -931,7 +931,7 @@ def build_anthropic_client(
         headers = dict(kwargs.get("default_headers") or {})
         headers.setdefault("HTTP-Referer", "https://hermes-agent.nousresearch.com")
         headers.setdefault("X-Title", "Fool Agent")  # FOOL-SEAM: client-attribution
-        headers.setdefault("User-Agent", f"HermesAgent/{_HERMES_VERSION}")
+        headers.setdefault("User-Agent", f"FoolAgent/{_HERMES_VERSION}")
         kwargs["default_headers"] = headers
 
     client = _anthropic_sdk.Anthropic(**kwargs)

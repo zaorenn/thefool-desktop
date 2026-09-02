@@ -49,14 +49,14 @@ const agentPluginRowKey = (row: AgentPluginRow) =>
   row.key ?? [row.name, row.source, row.version, row.description].join('\0')
 
 function reveal(file: string) {
-  void window.hermesDesktop?.revealPath?.(file)?.catch(() => undefined)
+  void window.foolDesktop?.revealPath?.(file)?.catch(() => undefined)
 }
 
 async function revealPluginsDir() {
   try {
     // Electron owns the local plugin root — deriving it from the backend's
     // hermes_home breaks against a remote backend (#66899).
-    const dir = await window.hermesDesktop?.desktopPluginsRoot?.()
+    const dir = await window.foolDesktop?.desktopPluginsRoot?.()
 
     if (!dir) {
       notifyError('Desktop plugins are unavailable', 'Could not resolve the plugins folder')
@@ -66,7 +66,7 @@ async function revealPluginsDir() {
 
     // openDir (not reveal): the door often doesn't exist on first use, and
     // showItemInFolder on a missing path silently no-ops (esp. Windows).
-    const result = await window.hermesDesktop?.openDir?.(dir)
+    const result = await window.foolDesktop?.openDir?.(dir)
 
     if (result && !result.ok) {
       notifyError(result.error ?? 'unknown error', 'Could not open the plugins folder')
@@ -91,7 +91,7 @@ async function revealAgentPluginsDir(request: GatewayRequest) {
       return
     }
 
-    const opened = await window.hermesDesktop?.openDir?.(`${home}/plugins`)
+    const opened = await window.foolDesktop?.openDir?.(`${home}/plugins`)
 
     if (opened && !opened.ok) {
       notifyError(opened.error ?? 'unknown error', 'Could not open the plugins folder')

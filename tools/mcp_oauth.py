@@ -11,7 +11,7 @@ which handles discovery, dynamic client registration, PKCE, token exchange,
 refresh, and step-up authorization automatically.
 
 This module provides the glue:
-    - ``HermesTokenStorage``: persists tokens/client-info to disk so they
+    - ``FoolTokenStorage``: persists tokens/client-info to disk so they
       survive across process restarts.
     - Callback server: ephemeral localhost HTTP server to capture the OAuth
       redirect with the authorization code.
@@ -242,7 +242,7 @@ def _reserve_callback_port() -> int:
     return port
 
 
-def _cached_redirect_port(storage: "HermesTokenStorage | None") -> int | None:
+def _cached_redirect_port(storage: "FoolTokenStorage | None") -> int | None:
     """Return the loopback callback port from cached client registration.
 
     OAuth providers bind a dynamically-registered ``client_id`` to the exact
@@ -277,7 +277,7 @@ def _cached_redirect_port(storage: "HermesTokenStorage | None") -> int | None:
     return None
 
 
-def _cached_redirect_uri(storage: "HermesTokenStorage | None") -> str | None:
+def _cached_redirect_uri(storage: "FoolTokenStorage | None") -> str | None:
     """Return a cached non-loopback redirect URI, if one was registered."""
     if storage is None:
         return None
@@ -422,11 +422,11 @@ def _write_json(path: Path, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# HermesTokenStorage -- persistent token/client-info on disk
+# FoolTokenStorage -- persistent token/client-info on disk
 # ---------------------------------------------------------------------------
 
 
-class HermesTokenStorage:
+class FoolTokenStorage:
     """Persist OAuth tokens and client registration to JSON files.
 
     File layout::
@@ -1084,17 +1084,17 @@ def _paste_callback_reader(result: dict) -> None:
 # ---------------------------------------------------------------------------
 
 
-HermesOAuthClientProvider: Any = None
+FoolOAuthClientProvider: Any = None
 
 
 def _get_hermes_oauth_provider_class() -> type | None:
-    global HermesOAuthClientProvider
-    if HermesOAuthClientProvider is not None:
-        return HermesOAuthClientProvider
+    global FoolOAuthClientProvider
+    if FoolOAuthClientProvider is not None:
+        return FoolOAuthClientProvider
     if not _ensure_sdk_loaded():
         return None
 
-    class _HermesOAuthClientProvider(OAuthClientProvider):
+    class _FoolOAuthClientProvider(OAuthClientProvider):
         """OAuth provider with pragmatic fixes for real-world MCP providers.
 
         Supabase MCP dynamic registration returns ``client_secret`` but omits
@@ -1166,10 +1166,10 @@ def _get_hermes_oauth_provider_class() -> type | None:
                 self.context.clear_tokens()
                 return False
 
-    _HermesOAuthClientProvider.__name__ = "HermesOAuthClientProvider"
-    _HermesOAuthClientProvider.__qualname__ = "HermesOAuthClientProvider"
-    HermesOAuthClientProvider = _HermesOAuthClientProvider
-    return HermesOAuthClientProvider
+    _FoolOAuthClientProvider.__name__ = "FoolOAuthClientProvider"
+    _FoolOAuthClientProvider.__qualname__ = "FoolOAuthClientProvider"
+    FoolOAuthClientProvider = _FoolOAuthClientProvider
+    return FoolOAuthClientProvider
 
 
 # ---------------------------------------------------------------------------
@@ -1183,7 +1183,7 @@ def remove_oauth_tokens(
     hermes_home: str | Path | None = None,
 ) -> None:
     """Delete stored OAuth tokens and client info for a server."""
-    storage = HermesTokenStorage(server_name, hermes_home=hermes_home)
+    storage = FoolTokenStorage(server_name, hermes_home=hermes_home)
     storage.remove()
     logger.info("OAuth tokens removed for '%s'", server_name)
 
@@ -1199,7 +1199,7 @@ def remove_oauth_tokens(
 
 def _configure_callback_port(
     cfg: dict,
-    storage: "HermesTokenStorage | None" = None,
+    storage: "FoolTokenStorage | None" = None,
 ) -> int:
     """Pick or validate the OAuth callback port.
 
@@ -1385,7 +1385,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
 
 
 def _invalidate_tokens_on_client_change(
-    storage: "HermesTokenStorage",
+    storage: "FoolTokenStorage",
     new_client_id: str,
     new_client_secret: str | None,
 ) -> None:
@@ -1440,7 +1440,7 @@ def _invalidate_tokens_on_client_change(
 
 
 def _maybe_preregister_client(
-    storage: "HermesTokenStorage",
+    storage: "FoolTokenStorage",
     cfg: dict,
     client_metadata: "OAuthClientMetadata",
 ) -> None:
@@ -1559,7 +1559,7 @@ def build_oauth_auth(
     apply_oauth_provider_defaults(
         cfg, server_name=server_name, server_url=server_url
     )
-    storage = HermesTokenStorage(server_name)
+    storage = FoolTokenStorage(server_name)
 
     if not _is_interactive() and not storage.has_cached_tokens():
         raise OAuthNonInteractiveError(

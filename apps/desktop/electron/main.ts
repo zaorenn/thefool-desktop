@@ -37,15 +37,15 @@ import { classifyActiveRuntime } from './active-runtime-state'
 import { stopBackendChild as stopBackendChildImpl, stopBackendTreesForUpdate } from './backend-child'
 import { dashboardFallbackArgs, sourceDeclaresServe } from './backend-command'
 import { createBackendConnectionState } from './backend-connection-state'
-import { buildDesktopBackendEnv, hermesManagedNodePathEntries, normalizeHermesHomeRoot } from './backend-env'
-import { isReauthRequiredError, waitForHermesReady } from './backend-health'
+import { buildDesktopBackendEnv, foolManagedNodePathEntries, normalizeFoolHomeRoot } from './backend-env'
+import { isReauthRequiredError, waitForFoolReady } from './backend-health'
 import { backendCommandMatches, createBackendOwnership, createBackendShutdownCoordinator } from './backend-ownership'
 import {
-  canImportHermesCli,
+  canImportFoolCli,
   execProbeSync,
   PROBE_TIMEOUT_MS,
-  shouldTrustHermesOverride,
-  verifyHermesCli
+  shouldTrustFoolOverride,
+  verifyFoolCli
 } from './backend-probes'
 import { waitForDashboardPortAnnouncement } from './backend-ready'
 import {
@@ -340,7 +340,7 @@ import {
   buildPathExtCandidates,
   chooseUpdaterArgs,
   getVenvSitePackagesEntries,
-  resolveVenvHermesCommand
+  resolveVenvFoolCommand
 } from './windows-fool-path'
 import {
   buildWindowsInteractiveCommand,
@@ -691,7 +691,7 @@ if (INSTALL_STAMP) {
 }
 
 // FOOL_HOME — the user-facing root for everything The Fool-related. Mirrors
-// scripts/install.ps1's $HermesHome and scripts/install.sh's $FOOL_HOME.
+// scripts/install.ps1's $FoolHome and scripts/install.sh's $FOOL_HOME.
 //
 // Defaults:
 //   Windows: %LOCALAPPDATA%\fool (matches install.ps1)
@@ -740,7 +740,7 @@ if (INSTALL_STAMP) {
 // yalnizca KAYNAK OKUYAN testlerle korunuyor olurdu.
 function looksLikeDiscardedHome(home: string): null | string {
   return looksLikeDiscardedHomePure(home, {
-    defaultHome: defaultHermesHome,
+    defaultHome: defaultFoolHome,
     directoryExists,
     resolve: p => path.resolve(p),
     rootOf: p => path.parse(p).root,
@@ -756,7 +756,7 @@ function looksLikeDiscardedHome(home: string): null | string {
 }
 
 /** Yapilandirma olmasaydi kullanilacak ev. */
-function defaultHermesHome(): string {
+function defaultFoolHome(): string {
   if (IS_WINDOWS && process.env.LOCALAPPDATA) {
     const localappdata = path.join(process.env.LOCALAPPDATA, 'fool')
     const legacy = path.join(app.getPath('home'), '.fool')
@@ -773,14 +773,14 @@ function defaultHermesHome(): string {
 
 /** Yapilandirilmis evi kabul et -- ya da onu reddedip varsayilana don. */
 function acceptConfiguredHome(raw: string, source: string): string {
-  const home = normalizeHermesHomeRoot(raw)
+  const home = normalizeFoolHomeRoot(raw)
   const reason = looksLikeDiscardedHome(home)
 
   if (reason === null) {
     return home
   }
 
-  const fallback = defaultHermesHome()
+  const fallback = defaultFoolHome()
 
   console.warn(
     `[fool] [home] ${source} FOOL_HOME=${home} yok sayildi (${reason}); ` +
@@ -790,7 +790,7 @@ function acceptConfiguredHome(raw: string, source: string): string {
   return fallback
 }
 
-function resolveHermesHome() {
+function resolveFoolHome() {
   // ORTAM DEGISKENI dogrulanmiyor -- bilerek.
   //
   // Ilk yazimda bu da kapidan geciriliyordu ve OLCULDU: masaustunun kendi
@@ -804,7 +804,7 @@ function resolveHermesHome() {
   // ozel, bilincli bir secim -- ve gecici bir dizini kasten gostermek
   // (sandbox, CI, tasinabilir kurulum) mesru bir kullanim.
   if (process.env.FOOL_HOME) {
-    return normalizeHermesHomeRoot(process.env.FOOL_HOME)
+    return normalizeFoolHomeRoot(process.env.FOOL_HOME)
   }
 
   if (USER_DATA_OVERRIDE) {
@@ -846,10 +846,10 @@ function resolveHermesHome() {
   return path.join(app.getPath('home'), '.fool')
 }
 
-const FOOL_HOME = resolveHermesHome()
+const FOOL_HOME = resolveFoolHome()
 
-function pathWithHermesManagedNode(...entries) {
-  const managed = hermesManagedNodePathEntries(FOOL_HOME).filter(directoryExists)
+function pathWithFoolManagedNode(...entries) {
+  const managed = foolManagedNodePathEntries(FOOL_HOME).filter(directoryExists)
 
   return [...managed, ...entries, process.env.PATH].filter(Boolean).join(path.delimiter)
 }
@@ -916,7 +916,7 @@ const VENV_ROOT = path.join(ACTIVE_HERMES_ROOT, 'venv')
 // (Phase 1D) after install.ps1 has completed all stages and the user has
 // finished initial configuration. Presence of this marker means the install
 // is in a known-good state and we can skip the bootstrap flow on subsequent
-// boots, going straight to `resolveHermesBackend()`. Missing or stale marker
+// boots, going straight to `resolveFoolBackend()`. Missing or stale marker
 // means we re-run the bootstrap; install.ps1's stages are idempotent so a
 // re-run on an already-good install just discovers everything in place.
 //
@@ -937,7 +937,7 @@ const DESKTOP_UPDATE_CONFIG_PATH = path.join(app.getPath('userData'), 'updates.j
 const DESKTOP_WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-state.json')
 const DESKTOP_BACKEND_OWNERSHIP_PATH = path.join(app.getPath('userData'), 'backend-ownership.json')
 // active-profile.json records which The Fool profile the desktop launches its
-// local backend as. When set, startHermes() passes `fool --profile <name>
+// local backend as. When set, startFool() passes `fool --profile <name>
 // dashboard …`, which deterministically pins FOOL_HOME (see
 // _apply_profile_override in fool_cli/main.py) and bypasses the sticky
 // ~/.fool/active_profile file. Unset (null) preserves the legacy behavior:
@@ -948,7 +948,7 @@ const DESKTOP_PROFILE_CONFIG_PATH = path.join(app.getPath('userData'), 'active-p
 const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/
 // Branch we track for self-update. The GUI work has merged to main, so this
 // tracks main. User can also override at runtime via
-// hermesDesktop.updates.setBranch().
+// foolDesktop.updates.setBranch().
 const DEFAULT_UPDATE_BRANCH = 'main'
 // desktop.log lives under FOOL_HOME/logs/ so it sits next to agent.log,
 // errors.log, gateway.log produced by fool_logging.setup_logging — one log
@@ -1325,7 +1325,7 @@ if (IS_WINDOWS) {
 // the seed here just covers the first open and any non-menu invocation path.
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
-  applicationVersion: resolveHermesVersion(),
+  applicationVersion: resolveFoolVersion(),
   copyright: 'Copyright © 2026 Fool Labs'
 })
 
@@ -1396,7 +1396,7 @@ const remoteRevalidation = new RemoteRevalidationCoordinator()
 let softRehomeInProgress = false
 // Additional per-profile backends, keyed by profile name. The PRIMARY backend
 // (the desktop's launch profile) stays managed by backendConnectionState +
-// startHermes(); this pool only holds EXTRA profile
+// startFool(); this pool only holds EXTRA profile
 // backends spawned lazily when a session belongs to a different profile. A user
 // with no named profiles never populates this map, so their experience is
 // byte-for-byte the single-backend behavior.
@@ -1424,7 +1424,7 @@ const RENDERER_RELOAD_WINDOW_MS = 60_000
 const RENDERER_RELOAD_MAX = 3
 const rendererReloadTimesRef: { current: number[] } = { current: [] }
 // Latched bootstrap failure: when the first-launch install fails, we hold
-// onto the error so subsequent startHermes() calls (e.g. the renderer's
+// onto the error so subsequent startFool() calls (e.g. the renderer's
 // ensureGatewayOpen retrying after the WS won't open) return the same error
 // instead of re-running install.ps1 in a hot loop. Cleared explicitly by
 // the renderer's "Reload and retry" path or by quitting the app.
@@ -1478,7 +1478,7 @@ let connectionRegistryCache = null
 let connectionRegistryCacheMtime = null
 let remoteHeaderRulesInstalled = false
 const remoteWsHeadersByUrl = new Map<string, Record<string, string>>()
-const hermesLog = []
+const foolLog = []
 const previewWatchers = new Map()
 let previewShortcutActive = false
 let desktopLogBuffer = ''
@@ -1628,10 +1628,10 @@ function rememberLog(chunk) {
   // at the same moment.  ISO-8601 UTC, matching agent.log/gateway.log.
   const stamp = new Date().toISOString()
   const lines = text.split(/\r?\n/).map(line => formatDesktopLogLine(line, stamp))
-  hermesLog.push(...lines)
+  foolLog.push(...lines)
 
-  if (hermesLog.length > 300) {
-    hermesLog.splice(0, hermesLog.length - 300)
+  if (foolLog.length > 300) {
+    foolLog.splice(0, foolLog.length - 300)
   }
 
   desktopLogBuffer += `${lines.join('\n')}\n`
@@ -2265,17 +2265,17 @@ function isCommandScript(command) {
   return IS_WINDOWS && /\.(cmd|bat)$/i.test(command || '')
 }
 
-function unwrapWindowsVenvHermesCommand(command, backendArgs) {
-  return resolveVenvHermesCommand(command, backendArgs, {
+function unwrapWindowsVenvFoolCommand(command, backendArgs) {
+  return resolveVenvFoolCommand(command, backendArgs, {
     isWindows: IS_WINDOWS,
     isCommandScript,
     fileExists,
     directoryExists,
-    canImportHermesCli,
+    canImportFoolCli,
     getVenvPython,
     getVenvSitePackagesEntries,
     buildDesktopBackendEnv,
-    hermesHome: FOOL_HOME,
+    foolHome: FOOL_HOME,
     resolvePath: (...segments) => path.resolve(...segments),
     dirname: p => path.dirname(p),
     basename: p => path.basename(p),
@@ -2332,7 +2332,7 @@ function backendSupportsServe(backend) {
         timeout: PROBE_TIMEOUT_MS,
         stdio: 'ignore',
         // `.cmd`/`.bat` shim backends carry shell: true in their descriptor
-        // (see resolveHermesBackend step 4); execFileSync of a .cmd without
+        // (see resolveFoolBackend step 4); execFileSync of a .cmd without
         // shell throws EINVAL on modern Node, which the catch below would
         // mis-cache as "serve unsupported" for the process lifetime.
         shell: Boolean(backend.shell),
@@ -2402,7 +2402,7 @@ function looksLikeDesktopAppBinary(commandPath) {
   )
 }
 
-function isHermesSourceRoot(root) {
+function isFoolSourceRoot(root) {
   return directoryExists(root) && fileExists(path.join(root, 'fool_cli', 'main.py'))
 }
 
@@ -2690,8 +2690,8 @@ function resolveGhBinary() {
   return _ghBinaryCache
 }
 
-function recentHermesLog() {
-  return hermesLog.slice(-20).join('\n')
+function recentFoolLog() {
+  return foolLog.slice(-20).join('\n')
 }
 
 // ─── Self-update (git-pull against the running backend's fool root) ──────
@@ -2836,8 +2836,8 @@ function flushZoomState() {
 function resolveUpdateRoot() {
   const candidates = [
     process.env.FOOL_DESKTOP_HERMES_ROOT && path.resolve(process.env.FOOL_DESKTOP_HERMES_ROOT),
-    !IS_PACKAGED && isHermesSourceRoot(SOURCE_REPO_ROOT) ? SOURCE_REPO_ROOT : null,
-    isHermesSourceRoot(ACTIVE_HERMES_ROOT) ? ACTIVE_HERMES_ROOT : null
+    !IS_PACKAGED && isFoolSourceRoot(SOURCE_REPO_ROOT) ? SOURCE_REPO_ROOT : null,
+    isFoolSourceRoot(ACTIVE_HERMES_ROOT) ? ACTIVE_HERMES_ROOT : null
   ].filter(Boolean)
 
   return candidates.find(c => directoryExists(path.join(c, '.git'))) || candidates[0] || ACTIVE_HERMES_ROOT
@@ -2928,7 +2928,7 @@ async function checkUpdates() {
       supported: false,
       reason: 'not-a-git-checkout',
       message: `${updateRoot} isn't a git checkout — desktop self-update only runs against a source install.`,
-      hermesRoot: updateRoot,
+      foolRoot: updateRoot,
       branch
     }
   }
@@ -2954,7 +2954,7 @@ async function checkUpdates() {
         branch,
         error: 'fetch-failed',
         message: firstLine(target.stderr) || 'git ls-remote failed.',
-        hermesRoot: updateRoot,
+        foolRoot: updateRoot,
         fetchedAt: Date.now()
       }
     }
@@ -2984,7 +2984,7 @@ async function checkUpdates() {
       targetSha,
       commits: [],
       dirty: dirtyStr.length > 0,
-      hermesRoot: updateRoot,
+      foolRoot: updateRoot,
       fetchedAt: Date.now()
     }
   }
@@ -3003,7 +3003,7 @@ async function checkUpdates() {
       branch,
       error: 'fetch-failed',
       message: firstLine(fetched.stderr) || 'git fetch failed.',
-      hermesRoot: updateRoot,
+      foolRoot: updateRoot,
       fetchedAt: Date.now()
     }
   }
@@ -3063,7 +3063,7 @@ async function checkUpdates() {
     targetSha,
     commits,
     dirty: dirtyStr.length > 0,
-    hermesRoot: updateRoot,
+    foolRoot: updateRoot,
     fetchedAt: Date.now()
   }
 }
@@ -3202,7 +3202,7 @@ function repairMacUpdaterHelper(updater) {
 // Path to the venv shim whose lock decides whether `fool update` can write
 // fresh entry points. On Windows this is the file the running backend
 // `fool.exe` holds open; on POSIX it's never mandatory-locked.
-function venvHermesShimPath(updateRoot) {
+function venvFoolShimPath(updateRoot) {
   return IS_WINDOWS
     ? path.join(updateRoot, 'venv', 'Scripts', 'fool.exe')
     : path.join(updateRoot, 'venv', 'bin', 'fool')
@@ -3488,7 +3488,7 @@ async function claimBackendChild(child, command, profile, nonce) {
       parentStartMarker: await desktopParentStartMarker()
     })
 
-    child.hermesBackendIdentity = identity
+    child.foolBackendIdentity = identity
 
     return identity
   } catch (error) {
@@ -3499,7 +3499,7 @@ async function claimBackendChild(child, command, profile, nonce) {
 }
 
 function releaseBackendChild(child) {
-  const identity = child?.hermesBackendIdentity
+  const identity = child?.foolBackendIdentity
 
   if (!identity) {
     return
@@ -3532,7 +3532,7 @@ function reapOrphanedBackendsOnce() {
 
 // Before handing off the update on Windows, the desktop MUST stop every backend
 // it spawned and WAIT for the venv shim to actually unlock. The old code did
-// `hermesProcess.kill('SIGTERM')` + `app.quit()` fire-and-forget: SIGTERM on
+// `foolProcess.kill('SIGTERM')` + `app.quit()` fire-and-forget: SIGTERM on
 // Windows doesn't reap the backend's grandchildren, and quit didn't wait for
 // teardown, so the updater raced a still-locked `fool.exe`, the quarantine
 // rename failed, uv's `pip install` hit "Access is denied", and the git path
@@ -3565,14 +3565,14 @@ async function releaseBackendLock(updateRoot, tag) {
     return { unlocked: true }
   }
 
-  const hermesProcess = backendConnectionState.getProcess()
+  const foolProcess = backendConnectionState.getProcess()
 
-  stopBackendTreesForUpdate(hermesProcess, {
+  stopBackendTreesForUpdate(foolProcess, {
     forceKillProcessTree,
     stopAllPoolBackends
   })
 
-  const shim = venvHermesShimPath(updateRoot)
+  const shim = venvFoolShimPath(updateRoot)
   const deadlineMs = Date.now() + 15000
 
   while (Date.now() < deadlineMs) {
@@ -3587,10 +3587,10 @@ async function releaseBackendLock(updateRoot, tag) {
     // instead of trusting the initial sweep.
     const stragglers = []
 
-    const currentHermesProcess = backendConnectionState.getProcess()
+    const currentFoolProcess = backendConnectionState.getProcess()
 
-    if (currentHermesProcess && Number.isInteger(currentHermesProcess.pid)) {
-      stragglers.push(currentHermesProcess.pid)
+    if (currentFoolProcess && Number.isInteger(currentFoolProcess.pid)) {
+      stragglers.push(currentFoolProcess.pid)
     }
 
     for (const entry of backendPool.values()) {
@@ -3691,7 +3691,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
         rememberLog(`[updates] no staged updater; surfacing manual \`${command}\` for CLI install at ${updateRoot}`)
         emitUpdateProgress({ stage: 'manual', message: command, percent: null })
 
-        return { ok: true, manual: true, command, hermesRoot: updateRoot }
+        return { ok: true, manual: true, command, foolRoot: updateRoot }
       }
 
       rememberLog('[updates] no staged updater; using repo hand-off script for CLI install')
@@ -3752,7 +3752,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
         '(a second Fool window or a terminal running fool?). Close it and retry.'
 
       emitUpdateProgress({ stage: 'error', message, percent: null })
-      startHermes().catch(() => {})
+      startFool().catch(() => {})
 
       return { ok: false, error: message }
     }
@@ -3785,7 +3785,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
 
         rememberLog(`[updates] venv-blocked: ${scanOutcome.result.processes.length} process(es) hold the install`)
         emitUpdateProgress({ stage: 'error', message, percent: null })
-        startHermes().catch(() => {})
+        startFool().catch(() => {})
 
         return { ok: false, error: 'venv-blocked', message, blockers: scanOutcome.result.processes }
       }
@@ -3795,7 +3795,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
 
         rememberLog(`[updates] venv-blocker probe failed: ${scanOutcome.error}`)
         emitUpdateProgress({ stage: 'error', message, percent: null })
-        startHermes().catch(() => {})
+        startFool().catch(() => {})
 
         return { ok: false, error: 'venv-probe-failed', message }
       }
@@ -3839,7 +3839,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
         env: {
           ...process.env,
           FOOL_HOME,
-          PATH: pathWithHermesManagedNode(venvBin)
+          PATH: pathWithFoolManagedNode(venvBin)
         },
         detached: true,
         stdio: 'ignore'
@@ -3865,7 +3865,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
         env: {
           ...process.env,
           FOOL_HOME,
-          PATH: pathWithHermesManagedNode(venvBin)
+          PATH: pathWithFoolManagedNode(venvBin)
         },
         detached: true,
         stdio: 'ignore'
@@ -3919,7 +3919,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
 
       rememberLog(`[updates] hand-off not viable, aborting quit: ${handoffOutcome.message}`)
       emitUpdateProgress({ stage: 'error', message, percent: null })
-      startHermes().catch(() => {})
+      startFool().catch(() => {})
 
       return { ok: false, error: 'updater-spawn-failed', message }
     }
@@ -3975,7 +3975,7 @@ async function handOffWindowsBootstrapRecovery(reason) {
     : configuredBranch || DEFAULT_UPDATE_BRANCH
 
   const venvBin = path.join(updateRoot, 'venv', IS_WINDOWS ? 'Scripts' : 'bin')
-  const venvHermes = path.join(venvBin, IS_WINDOWS ? 'fool.exe' : 'fool')
+  const venvFool = path.join(venvBin, IS_WINDOWS ? 'fool.exe' : 'fool')
   const venvPython = path.join(venvBin, IS_WINDOWS ? 'python.exe' : 'python')
 
   // Choose the gentle in-place --update when ANY real-install signal is present,
@@ -3985,7 +3985,7 @@ async function handOffWindowsBootstrapRecovery(reason) {
   // --repair (full venv recreate) and drove reinstall loops. The venv interpreter
   // and the bootstrap-complete marker are present earlier and are better signals.
   const haveRealInstall =
-    fileExists(venvPython) || fileExists(venvHermes) || fileExists(path.join(updateRoot, '.fool-bootstrap-complete'))
+    fileExists(venvPython) || fileExists(venvFool) || fileExists(path.join(updateRoot, '.fool-bootstrap-complete'))
 
   const updaterArgs = chooseUpdaterArgs(haveRealInstall, branch)
 
@@ -3996,7 +3996,7 @@ async function handOffWindowsBootstrapRecovery(reason) {
     env: {
       ...process.env,
       FOOL_HOME,
-      PATH: pathWithHermesManagedNode(venvBin)
+      PATH: pathWithFoolManagedNode(venvBin)
     },
     detached: true,
     stdio: 'ignore'
@@ -4066,8 +4066,8 @@ function runningAppBundle() {
 // desktop Electron process itself, before the backend is killed and
 // before the updater is spawned — a separate safety net from the
 // Python-level pre-update snapshot inside `fool update`.
-function preflightStateDb(hermesHome, rememberLog) {
-  const stateDbPath = path.join(hermesHome, 'state.db')
+function preflightStateDb(foolHome, rememberLog) {
+  const stateDbPath = path.join(foolHome, 'state.db')
 
   if (!fileExists(stateDbPath)) {
     rememberLog('[updates] state.db pre-flight: not found (fresh install?)')
@@ -4103,7 +4103,7 @@ function preflightStateDb(hermesHome, rememberLog) {
       // Emergency timestamped backup, separate from the Python-level snapshot.
       const ts = new Date().toISOString().replace(/[:.]/g, '-')
 
-      const emergencyPath = path.join(hermesHome, `state.db.pre-update-emergency-${ts}.bak`)
+      const emergencyPath = path.join(foolHome, `state.db.pre-update-emergency-${ts}.bak`)
 
       try {
         fs.copyFileSync(stateDbPath, emergencyPath)
@@ -4113,7 +4113,7 @@ function preflightStateDb(hermesHome, rememberLog) {
 
         // Prune to the 2 most recent emergency backups.
         try {
-          const homeDir = fs.readdirSync(hermesHome)
+          const homeDir = fs.readdirSync(foolHome)
 
           const backups = homeDir
             .filter(
@@ -4127,7 +4127,7 @@ function preflightStateDb(hermesHome, rememberLog) {
 
           for (const old of backups.slice(2)) {
             try {
-              fs.unlinkSync(path.join(hermesHome, old))
+              fs.unlinkSync(path.join(foolHome, old))
             } catch {
               void 0
             }
@@ -4159,7 +4159,7 @@ async function applyUpdatesPosixHandoff(opts: any) {
   if (!handoff) {
     emitUpdateProgress({ stage: 'manual', message: 'fool update', percent: null })
 
-    return { ok: true, manual: true, command: 'fool update', hermesRoot: updateRoot }
+    return { ok: true, manual: true, command: 'fool update', foolRoot: updateRoot }
   }
 
   const handoffConflict = updateHandoffConflict(FOOL_HOME)
@@ -4224,7 +4224,7 @@ async function applyUpdatesPosixHandoff(opts: any) {
     env: {
       ...process.env,
       FOOL_HOME,
-      PATH: pathWithHermesManagedNode(path.join(updateRoot, 'venv', 'bin'))
+      PATH: pathWithFoolManagedNode(path.join(updateRoot, 'venv', 'bin'))
     },
     detached: true,
     stdio: 'ignore'
@@ -4330,9 +4330,9 @@ function isActiveRuntimeUsable() {
   const venvPython = getVenvPython(VENV_ROOT)
 
   return (
-    isHermesSourceRoot(ACTIVE_HERMES_ROOT) &&
+    isFoolSourceRoot(ACTIVE_HERMES_ROOT) &&
     fileExists(venvPython) &&
-    canImportHermesCli(venvPython, {
+    canImportFoolCli(venvPython, {
       env: {
         PYTHONPATH: [ACTIVE_HERMES_ROOT, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
       }
@@ -4534,7 +4534,7 @@ function isPackagedInstallPath(dir) {
   })
 }
 
-function resolveHermesCwd() {
+function resolveFoolCwd() {
   // In a packaged build, `process.cwd()` resolves to the install root (e.g.
   // `…/win-unpacked` on Windows or `/Applications/The Fool.app/Contents/...`
   // on macOS). Sessions spawned there leave files inside the app bundle
@@ -4574,7 +4574,7 @@ function sanitizeWorkspaceCwd(cwd) {
   const trimmed = typeof cwd === 'string' ? cwd.trim() : ''
 
   if (!trimmed || isPackagedInstallPath(trimmed)) {
-    return { cwd: resolveHermesCwd(), sanitized: Boolean(trimmed) }
+    return { cwd: resolveFoolCwd(), sanitized: Boolean(trimmed) }
   }
 
   try {
@@ -4587,7 +4587,7 @@ function sanitizeWorkspaceCwd(cwd) {
     // Fall through to the resolved default.
   }
 
-  return { cwd: resolveHermesCwd(), sanitized: Boolean(trimmed) }
+  return { cwd: resolveFoolCwd(), sanitized: Boolean(trimmed) }
 }
 
 // Persisted "Default project directory" — surfaced as a setting in the
@@ -4673,7 +4673,7 @@ function createPythonBackend(root, label, backendArgs, options: any = {}) {
     command,
     args: ['-m', 'fool_cli.main', ...backendArgs],
     env: buildDesktopBackendEnv({
-      hermesHome: FOOL_HOME,
+      foolHome: FOOL_HOME,
       pythonPathEntries: [root, ...getVenvSitePackagesEntries(venvRoot)],
       venvRoot
     }),
@@ -4697,7 +4697,7 @@ function createActiveBackend(backendArgs) {
     command,
     args: ['-m', 'fool_cli.main', ...backendArgs],
     env: buildDesktopBackendEnv({
-      hermesHome: FOOL_HOME,
+      foolHome: FOOL_HOME,
       pythonPathEntries: [ACTIVE_HERMES_ROOT, ...getVenvSitePackagesEntries(VENV_ROOT)],
       venvRoot: VENV_ROOT
     }),
@@ -4707,12 +4707,12 @@ function createActiveBackend(backendArgs) {
   }
 }
 
-function resolveHermesBackend(backendArgs) {
+function resolveFoolBackend(backendArgs) {
   // 1. Explicit override -- FOOL_DESKTOP_HERMES_ROOT points at a developer
   //    checkout. Honour it as-is (no bootstrap; the user is driving).
   const overrideRoot = process.env.FOOL_DESKTOP_HERMES_ROOT && path.resolve(process.env.FOOL_DESKTOP_HERMES_ROOT)
 
-  if (overrideRoot && isHermesSourceRoot(overrideRoot)) {
+  if (overrideRoot && isFoolSourceRoot(overrideRoot)) {
     const backend = createPythonBackend(overrideRoot, `The Fool source at ${overrideRoot}`, backendArgs)
 
     if (backend) {
@@ -4723,8 +4723,8 @@ function resolveHermesBackend(backendArgs) {
   // 2. Development source -- when running `npm run dev` from a checkout, the
   //    cloned repo at SOURCE_REPO_ROOT takes precedence over ACTIVE and any
   //    installed `fool` on PATH so local Python edits are actually exercised.
-  //    (In dev with no checkout, SOURCE_REPO_ROOT won't pass isHermesSourceRoot.)
-  if (!IS_PACKAGED && isHermesSourceRoot(SOURCE_REPO_ROOT)) {
+  //    (In dev with no checkout, SOURCE_REPO_ROOT won't pass isFoolSourceRoot.)
+  if (!IS_PACKAGED && isFoolSourceRoot(SOURCE_REPO_ROOT)) {
     const backend = createPythonBackend(SOURCE_REPO_ROOT, `The Fool source at ${SOURCE_REPO_ROOT}`, backendArgs)
 
     if (backend) {
@@ -4769,32 +4769,32 @@ function resolveHermesBackend(backendArgs) {
   //    don't want to take ownership of an install we didn't perform.
   //    FOOL_DESKTOP_IGNORE_EXISTING=1 forces the bootstrap path for testing.
   if (process.env.FOOL_DESKTOP_IGNORE_EXISTING !== '1') {
-    let hermesCommand = null
-    const hermesOverride = process.env.FOOL_DESKTOP_HERMES
+    let foolCommand = null
+    const foolOverride = process.env.FOOL_DESKTOP_HERMES
 
-    if (hermesOverride) {
-      const resolvedOverride = findOnPath(hermesOverride)
+    if (foolOverride) {
+      const resolvedOverride = findOnPath(foolOverride)
 
       if (resolvedOverride) {
-        hermesCommand = resolvedOverride
-      } else if (!isWindowsBinaryPathInWsl(hermesOverride, { isWsl: IS_WSL })) {
-        hermesCommand = hermesOverride
+        foolCommand = resolvedOverride
+      } else if (!isWindowsBinaryPathInWsl(foolOverride, { isWsl: IS_WSL })) {
+        foolCommand = foolOverride
       } else {
-        rememberLog(`Ignoring Windows The Fool override under WSL: ${hermesOverride}`)
+        rememberLog(`Ignoring Windows The Fool override under WSL: ${foolOverride}`)
       }
     } else {
-      hermesCommand = findOnPath('fool')
+      foolCommand = findOnPath('fool')
     }
 
-    if (hermesCommand) {
-      if (looksLikeDesktopAppBinary(hermesCommand)) {
-        rememberLog(`Ignoring desktop app executable on PATH while resolving The Fool CLI: ${hermesCommand}`)
-        hermesCommand = null
+    if (foolCommand) {
+      if (looksLikeDesktopAppBinary(foolCommand)) {
+        rememberLog(`Ignoring desktop app executable on PATH while resolving The Fool CLI: ${foolCommand}`)
+        foolCommand = null
       }
     }
 
-    if (hermesCommand) {
-      const unwrapped = unwrapWindowsVenvHermesCommand(hermesCommand, backendArgs)
+    if (foolCommand) {
+      const unwrapped = unwrapWindowsVenvFoolCommand(foolCommand, backendArgs)
 
       if (unwrapped) {
         return unwrapped
@@ -4807,21 +4807,21 @@ function resolveHermesBackend(backendArgs) {
       // dead backend instead of the first-launch installer. The cheap
       // `--version` probe (see backend-probes.ts) catches that case
       // and lets the resolver fall through to step 6 / bootstrap.
-      const shellForProbe = isCommandScript(hermesCommand)
+      const shellForProbe = isCommandScript(foolCommand)
 
       // FOOL_DESKTOP_HERMES is an explicit deployment override (used by
       // the Nix wrapper), not a discovered PATH candidate. It must not fall
       // through to the install-script bootstrap if the optional probe times
       // out under load; the pinned backend is the only valid runtime there.
-      if (shouldTrustHermesOverride(hermesOverride) || verifyHermesCli(hermesCommand, { shell: shellForProbe })) {
+      if (shouldTrustFoolOverride(foolOverride) || verifyFoolCli(foolCommand, { shell: shellForProbe })) {
         // `unwrapped` above already answered "is this a Windows venv shim?" —
         // it was null (not a shim, or its import probe failed). Do NOT re-run
-        // unwrapWindowsVenvHermesCommand here: the second call repeats the
+        // unwrapWindowsVenvFoolCommand here: the second call repeats the
         // same un-memoized import probe, costing up to another full probe
         // timeout on the boot path for an answer we already have.
         return {
-          label: `existing The Fool CLI at ${hermesCommand}`,
-          command: hermesCommand,
+          label: `existing The Fool CLI at ${foolCommand}`,
+          command: foolCommand,
           args: backendArgs,
           bootstrap: false,
           env: {},
@@ -4831,7 +4831,7 @@ function resolveHermesBackend(backendArgs) {
       }
 
       rememberLog(
-        `Ignoring existing The Fool CLI at ${hermesCommand}: --version probe failed; falling through to bootstrap.`
+        `Ignoring existing The Fool CLI at ${foolCommand}: --version probe failed; falling through to bootstrap.`
       )
     }
   }
@@ -4850,7 +4850,7 @@ function resolveHermesBackend(backendArgs) {
     // Verify the import works before trusting the candidate; on
     // failure, fall through to step 6 so the bootstrap runner pulls
     // a uv-managed 3.11 into %LOCALAPPDATA%\fool\hermes-agent\venv.
-    if (canImportHermesCli(python)) {
+    if (canImportFoolCli(python)) {
       return {
         kind: 'python',
         label: `installed fool_cli module via ${python}`,
@@ -4872,7 +4872,7 @@ function resolveHermesBackend(backendArgs) {
   //    explaining what's missing.
   //
   //    We deliberately do NOT throw here -- throwing inside
-  //    resolveHermesBackend was the old "no payload" path and forced the
+  //    resolveFoolBackend was the old "no payload" path and forced the
   //    user into a dead end. With the bootstrap protocol, "no install yet"
   //    is a recoverable state the GUI can drive through.
   return {
@@ -4898,7 +4898,7 @@ async function ensureRuntime(backend) {
     return backend
   }
 
-  // backend.kind === 'bootstrap-needed' means resolveHermesBackend couldn't
+  // backend.kind === 'bootstrap-needed' means resolveFoolBackend couldn't
   // find anything to spawn. Hand off to the bootstrap runner which drives the
   // platform installer, writes the bootstrap-complete marker on success, then
   // we re-resolve to get the now-installed backend.
@@ -4948,7 +4948,7 @@ async function ensureRuntime(backend) {
       installStamp: backend.installStamp,
       activeRoot: backend.activeRoot,
       sourceRepoRoot: SOURCE_REPO_ROOT,
-      hermesHome: FOOL_HOME,
+      foolHome: FOOL_HOME,
       logRoot: path.join(FOOL_HOME, 'logs'),
       abortSignal: bootstrapAbortController.signal,
       onEvent: ev => {
@@ -4990,7 +4990,7 @@ async function ensureRuntime(backend) {
 
       bootstrapError.isBootstrapFailure = true
       bootstrapError.failedStage = bootstrapResult.failedStage || null
-      // Latch the failure so subsequent startHermes() calls return this
+      // Latch the failure so subsequent startFool() calls return this
       // same error without re-running install.ps1.  Cleared by the
       // fool:bootstrap:reset IPC (renderer's "Reload and retry").
       bootstrapFailure = bootstrapError
@@ -5001,7 +5001,7 @@ async function ensureRuntime(backend) {
 
     // Re-resolve now that the install exists. The new resolution lands in
     // step 3 (bootstrap-complete marker) and we recurse to wire venvPython.
-    return ensureRuntime(resolveHermesBackend(backend.args))
+    return ensureRuntime(resolveFoolBackend(backend.args))
   }
 
   // bootstrap=true with a real backend (createActiveBackend path) means we
@@ -5010,7 +5010,7 @@ async function ensureRuntime(backend) {
   // sync flow exited through, minus all the factory/pip/marker machinery
   // (install.ps1 owns those concerns now and the bootstrap-complete marker
   // attests they ran successfully).
-  if (!isHermesSourceRoot(ACTIVE_HERMES_ROOT)) {
+  if (!isFoolSourceRoot(ACTIVE_HERMES_ROOT)) {
     throw new Error(
       `The Fool install at ${ACTIVE_HERMES_ROOT} is missing or incomplete. ` +
         'Reinstall via the desktop installer or scripts/install.ps1.'
@@ -5102,7 +5102,7 @@ async function ensureRuntime(backend) {
       error: null
     })
 
-    return ensureRuntime(resolveHermesBackend(backend.args))
+    return ensureRuntime(resolveFoolBackend(backend.args))
   }
 
   if (needsRepair(versionState)) {
@@ -5122,7 +5122,7 @@ async function ensureRuntime(backend) {
     // No venv at the expected location AND no bootstrap-needed sentinel
     // means we have a half-installed checkout: .git exists, source files
     // exist, but venv is missing or broken. This shouldn't happen in
-    // normal flow because activeRuntimeState() requires isHermesSourceRoot()
+    // normal flow because activeRuntimeState() requires isFoolSourceRoot()
     // plus an importable fool_cli before it hands back the active runtime.
     // If we hit this, the user (or a deleted venv) broke the invariant; tell
     // them to re-run the install.
@@ -5161,7 +5161,7 @@ async function ensureRuntime(backend) {
 
     // LAUNCHER da sinaniyor -- venv python'i YETMIYOR.
     //
-    // Olculdu: goc sonrasi ``canImportHermesCli(venvPython)`` GECTI ama
+    // Olculdu: goc sonrasi ``canImportFoolCli(venvPython)`` GECTI ama
     // terminaldeki komut kirildi::
     //
     //     > fool --version
@@ -5180,9 +5180,9 @@ async function ensureRuntime(backend) {
       IS_WINDOWS ? 'fool.exe' : 'fool'
     )
 
-    const launcherOk = !fileExists(migratedLauncher) || verifyHermesCli(migratedLauncher)
+    const launcherOk = !fileExists(migratedLauncher) || verifyFoolCli(migratedLauncher)
 
-    if (!canImportHermesCli(venvPython) || !launcherOk) {
+    if (!canImportFoolCli(venvPython) || !launcherOk) {
       // Surum onarimi da isaretleniyor: yeniden kurulum AYNI yukleyiciyi
       // kosuyor, yani ozyinelemede surum kapisinin ikinci kez ayni turu
       // istemesi tamamen bosa is olurdu.
@@ -5202,7 +5202,7 @@ async function ensureRuntime(backend) {
         error: null
       })
 
-      return ensureRuntime(resolveHermesBackend(backend.args))
+      return ensureRuntime(resolveFoolBackend(backend.args))
     }
 
     rememberLog('[runtime] dogrulandi: venv ve fool komutu calisiyor')
@@ -5995,7 +5995,7 @@ function expandUserPath(filePath) {
 
 async function previewFileTarget(rawTarget, baseDir) {
   const raw = String(rawTarget || '').trim()
-  const base = baseDir ? path.resolve(expandUserPath(baseDir)) : resolveHermesCwd()
+  const base = baseDir ? path.resolve(expandUserPath(baseDir)) : resolveFoolCwd()
 
   let resolved = resolveRequestedPathForIpc(/^file:/i.test(raw) ? raw : expandUserPath(raw), {
     baseDir: base,
@@ -6297,7 +6297,7 @@ async function gatewayAuthProviders(baseUrl, headers = {}) {
 // an anonymous probe 401s forever against a live session, and it can never
 // see the 404 that identifies a backend predating /api/health (the auth gate
 // answers before the SPA catch-all). `probeIsCredentialed` tells
-// waitForHermesReady how to read a 401 — rejected session vs gated route.
+// waitForFoolReady how to read a 401 — rejected session vs gated route.
 async function buildReadinessHealthProbe(baseUrl, authMode, token) {
   const nativeAt = authMode === 'oauth' ? await ensureNativeAccessToken(baseUrl).catch(() => null) : null
   const probeAuth = resolveReadinessProbeAuth(authMode, nativeAt, token)
@@ -6329,10 +6329,10 @@ async function buildReadinessHealthProbe(baseUrl, authMode, token) {
   return { probeHealth: fetchPublicJson, probeIsCredentialed: false }
 }
 
-async function waitForHermes(baseUrl, token, signal?, authMode?, headers = {}) {
+async function waitForFool(baseUrl, token, signal?, authMode?, headers = {}) {
   const { probeHealth, probeIsCredentialed } = await buildReadinessHealthProbe(baseUrl, authMode, token)
 
-  return waitForHermesReady(baseUrl, {
+  return waitForFoolReady(baseUrl, {
     token,
     signal,
     fetchPublicJson,
@@ -7140,7 +7140,7 @@ function getOauthSession() {
 // cookies.get() on a fresh cold start can resolve BEFORE the jar has finished
 // hydrating from disk and return an empty array — even though the user is
 // signed in. That false-negative used to make hasLiveOauthSession() report
-// "not signed in", which on the initial boot path (startHermes → the renderer's
+// "not signed in", which on the initial boot path (startFool → the renderer's
 // single-shot boot() with no retry) surfaced as the "The Fool couldn't start"
 // OAuth overlay that vanishes the instant the user clicks Retry.
 //
@@ -8986,7 +8986,7 @@ function sanitizeConnectionsRegistry(registry = readDesktopConnectionsRegistry()
 /**
  * Save (create or edit) a registry connection from a renderer payload.
  * Edits merge over the stored entry (mergeConnectionInput) so fields the
- * editor doesn't carry — cloud `org`, ssh `remoteHermesPath`/`remoteProfile` —
+ * editor doesn't carry — cloud `org`, ssh `remoteFoolPath`/`remoteProfile` —
  * survive a rename. Token handling mirrors coerceDesktopConnectionConfig: an
  * incoming plaintext token is encrypted (honoring the same allowPlainTextToken
  * opt-in seam as Settings → Gateway); an absent token field inherits the
@@ -9147,7 +9147,7 @@ async function sanitizeDesktopConnectionConfig(config = readDesktopConnectionCon
     sshUser: (ssh || savedSsh)?.user || '',
     sshPort: (ssh || savedSsh)?.port || null,
     sshKeyPath: (ssh || savedSsh)?.keyPath || '',
-    sshRemoteHermesPath: (ssh || savedSsh)?.remoteHermesPath || '',
+    sshRemoteFoolPath: (ssh || savedSsh)?.remoteFoolPath || '',
     sshRemoteProfile: (ssh || savedSsh)?.remoteProfile || '',
     // The env override only forces the global/primary connection; a per-profile
     // scope is never overridden by FOOL_DESKTOP_REMOTE_URL.
@@ -9300,7 +9300,7 @@ function buildSshBlock(input: any, existingBlock: any = {}) {
     user: input.sshUser ?? existingBlock.user,
     port: input.sshPort ?? existingBlock.port,
     keyPath: input.sshKeyPath ?? existingBlock.keyPath,
-    remoteHermesPath: input.sshRemoteHermesPath ?? existingBlock.remoteHermesPath,
+    remoteFoolPath: input.sshRemoteFoolPath ?? existingBlock.remoteFoolPath,
     remoteProfile: input.sshRemoteProfile ?? existingBlock.remoteProfile
   })
 
@@ -9599,18 +9599,18 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
   let result
 
   try {
-    const platform = await detectRemotePlatform(ssh, sshConfig.remoteHermesPath || '')
+    const platform = await detectRemotePlatform(ssh, sshConfig.remoteFoolPath || '')
     const lifecycle = platform.os === 'Windows' ? connectWindowsRemote : remoteLifecycle.connect
     result = await lifecycle({
       ssh,
       profile: sshConfig.remoteProfile || connectionScopeKey(profile) || '',
-      remoteHermesPath: sshConfig.remoteHermesPath || '',
+      remoteFoolPath: sshConfig.remoteFoolPath || '',
       ownershipId: sshOwnershipKey(profile),
       reuseToken: reuseToken || '',
       forward: (localPort, remotePort) => ssh.forward(localPort, remotePort),
       cancelForward: (localPort, remotePort) => ssh.cancelForward(localPort, remotePort),
       pickLocalPort,
-      waitForHermes: (baseUrl, token) => waitForHermes(baseUrl, token, lease.signal, 'token'),
+      waitForFool: (baseUrl, token) => waitForFool(baseUrl, token, lease.signal, 'token'),
       probeReuseProof: sshProbeReuseProof,
       adoptServedToken: adoptServedDashboardToken,
       rememberLog: sshRememberLog,
@@ -9669,14 +9669,14 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
     pid: result.pid,
     host: sshConfig.host,
     hostLabel,
-    hermesVersion: result.hermesVersion || '',
+    foolVersion: result.foolVersion || '',
     remotePlatform: result.platform?.os || '',
     reused: result.reused
   })
 
   sshRememberLog(
     `[ssh] connection ${result.reused ? 'REUSED' : 'spawned'} dashboard: ` +
-      `${result.hermesVersion || 'fool (version unknown)'} at ${result.hermesPath || '?'}`
+      `${result.foolVersion || 'fool (version unknown)'} at ${result.foolPath || '?'}`
   )
 
   const connection = await buildRemoteConnection(
@@ -9689,7 +9689,7 @@ async function bootstrapSshConnectionInner(profile, sshConfig, reuseToken, sourc
     result.ownershipId
   )
 
-  return { ...connection, remoteHermesVersion: result.hermesVersion || '' }
+  return { ...connection, remoteFoolVersion: result.foolVersion || '' }
 }
 
 function persistSshConnectionToken(profile, source, token) {
@@ -9844,7 +9844,7 @@ function globalRemoteActive() {
 // True when the PRIMARY profile's backend resolves to a remote/cloud host —
 // i.e. resolveRemoteBackend(primaryProfileKey()) would return a descriptor
 // rather than null. Mirrors that function's precedence (per-profile override →
-// env → global) so a startHermes() failure can be classified as remote (never
+// env → global) so a startFool() failure can be classified as remote (never
 // latch — transient, must stay retryable) vs local (latch to break install
 // loops) BEFORE the throwing resolve/mint runs.
 function primaryBackendIsRemote() {
@@ -9952,7 +9952,7 @@ async function testDesktopConnectionConfig(input: any = {}) {
       user: input.sshUser,
       port: input.sshPort,
       keyPath: input.sshKeyPath,
-      remoteHermesPath: input.sshRemoteHermesPath
+      remoteFoolPath: input.sshRemoteFoolPath
     })
 
     if (!sshConfig) {
@@ -9973,21 +9973,21 @@ async function testDesktopConnectionConfig(input: any = {}) {
       for (;;) {
         try {
           await ssh.open()
-          const platform: any = await detectRemotePlatform(ssh, sshConfig.remoteHermesPath || '')
-          let hermesPath
-          let hermesVersion
+          const platform: any = await detectRemotePlatform(ssh, sshConfig.remoteFoolPath || '')
+          let foolPath
+          let foolVersion
           let supported
 
           if (platform.os === 'Windows') {
             const runtime = platform
-            hermesPath = runtime.hermesPath
-            const inspection = await helper(ssh, runtime, 'inspect', [runtime.hermesPath])
-            hermesVersion = inspection.version
+            foolPath = runtime.foolPath
+            const inspection = await helper(ssh, runtime, 'inspect', [runtime.foolPath])
+            foolVersion = inspection.version
             supported = inspection.supported
           } else {
-            hermesPath = await remoteLifecycle.locateHermes(ssh, sshConfig.remoteHermesPath || '')
-            hermesVersion = await remoteLifecycle.probeHermesVersion(ssh, hermesPath)
-            supported = await remoteLifecycle.remoteSupportsSshOwnership(ssh, hermesPath)
+            foolPath = await remoteLifecycle.locateFool(ssh, sshConfig.remoteFoolPath || '')
+            foolVersion = await remoteLifecycle.probeFoolVersion(ssh, foolPath)
+            supported = await remoteLifecycle.remoteSupportsSshOwnership(ssh, foolPath)
           }
 
           if (!supported) {
@@ -10003,8 +10003,8 @@ async function testDesktopConnectionConfig(input: any = {}) {
             sshError: null,
             error: null,
             remotePlatform: `${platform.os}/${platform.arch}`,
-            remoteHermesPath: hermesPath,
-            remoteHermesVersion: hermesVersion,
+            remoteFoolPath: foolPath,
+            remoteFoolVersion: foolVersion,
             host: sshConfig.user ? `${sshConfig.user}@${sshConfig.host}` : sshConfig.host
           }
         } catch (error: any) {
@@ -10056,7 +10056,7 @@ async function testDesktopConnectionConfig(input: any = {}) {
       token = decryptDesktopSecret(block.token)
     }
   } else {
-    const remote = (await resolveRemoteBackend(key)) || (await startHermes())
+    const remote = (await resolveRemoteBackend(key)) || (await startFool())
     baseUrl = remote.baseUrl
     token = remote.token
     authMode = normAuthMode(remote.authMode)
@@ -10118,12 +10118,12 @@ function stopBackendChild(child) {
 // reloading the renderer. The shell stays up; the renderer wipes session lists
 // (so skeletons retrigger) and re-dials. Distinct from hard re-home (profile
 // switch / crash recovery), which still resets boot progress + reloads.
-function resetHermesConnection({ soft = false } = {}) {
+function resetFoolConnection({ soft = false } = {}) {
   backendStartFailure = null
   remoteReauthFailure = null
   remoteLiveness.clear()
-  const hermesProcess = backendConnectionState.invalidate()
-  stopBackendChild(hermesProcess)
+  const foolProcess = backendConnectionState.invalidate()
+  stopBackendChild(foolProcess)
 
   if (!soft) {
     resetBootProgressForReconnect()
@@ -10132,19 +10132,19 @@ function resetHermesConnection({ soft = false } = {}) {
 
 // Re-home the primary backend: reset connection state, then wait for the live
 // dashboard process to actually exit (SIGKILL after 5s) so the next
-// startHermes() spawns fresh instead of racing the dying one. Shared by the
+// startFool() spawns fresh instead of racing the dying one. Shared by the
 // connection-config and profile switch flows.
 async function teardownPrimaryBackendAndWait({ soft = false } = {}) {
-  // Capture the reference before resetHermesConnection() invalidates it.
-  const hermesProcess = backendConnectionState.getProcess()
-  const dying = hermesProcess && !hermesProcess.killed ? hermesProcess : null
+  // Capture the reference before resetFoolConnection() invalidates it.
+  const foolProcess = backendConnectionState.getProcess()
+  const dying = foolProcess && !foolProcess.killed ? foolProcess : null
 
   if (soft) {
     softRehomeInProgress = true
   }
 
   try {
-    resetHermesConnection({ soft })
+    resetFoolConnection({ soft })
     await waitForBackendExit(dying)
   } finally {
     if (soft) {
@@ -10264,7 +10264,7 @@ async function ensureBackend(profile) {
   const route = resolveProfileBackendRoute(key, profileRouteOptions(key))
 
   if (route.backend === 'primary') {
-    const connection = await startHermes()
+    const connection = await startFool()
 
     // A shared backend still owes the caller its profile scope, so renderer-side
     // WebSocket, filesystem, and cache routing target the selected profile.
@@ -10435,7 +10435,7 @@ async function connectRegistryBackend(source, profile, key, poolEntry) {
       user: source.user,
       port: source.port,
       keyPath: source.keyPath,
-      remoteHermesPath: source.remoteHermesPath,
+      remoteFoolPath: source.remoteFoolPath,
       remoteProfile: source.remoteProfile || (profileKey === 'default' ? '' : profileKey)
     })
 
@@ -10460,7 +10460,7 @@ async function connectRegistryBackend(source, profile, key, poolEntry) {
       // is only the routing label. fool:api uses it to translate explicit
       // self-profile query filters into the backend's namespace.
       remoteProfile: sshConfig.remoteProfile || '',
-      logs: hermesLog.slice(-80),
+      logs: foolLog.slice(-80),
       ...getWindowState()
     }
   }
@@ -10481,7 +10481,7 @@ async function connectRegistryBackend(source, profile, key, poolEntry) {
     source.headers
   )
 
-  await waitForHermes(connection.baseUrl, connection.token, undefined, connection.authMode, connection.headers)
+  await waitForFool(connection.baseUrl, connection.token, undefined, connection.authMode, connection.headers)
   poolEntry.remoteBaseUrl = connection.baseUrl
 
   return {
@@ -10491,7 +10491,7 @@ async function connectRegistryBackend(source, profile, key, poolEntry) {
     // One host, many profiles: REST paths must carry ?profile= (same contract
     // as the global-remote shared-primary route).
     sharedRemote: true,
-    logs: hermesLog.slice(-80),
+    logs: foolLog.slice(-80),
     ...getWindowState()
   }
 }
@@ -10581,7 +10581,7 @@ function startPoolIdleReaper() {
 }
 
 // Spawn an additional dashboard backend pinned to a named profile. Mirrors the
-// local-spawn portion of startHermes() but without the boot-progress UI,
+// local-spawn portion of startFool() but without the boot-progress UI,
 // bootstrap, or remote handling (those belong to the primary backend only).
 // `opts.forceLocal` skips remote resolution entirely (the registry 'local'
 // entry means THIS machine regardless of the v1 routing table); `opts.poolKey`
@@ -10603,7 +10603,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   profileDeletionGate.assertCanStart(profile)
 
   if (remote) {
-    await waitForHermes(remote.baseUrl, remote.token, undefined, remote.authMode, remote.headers)
+    await waitForFool(remote.baseUrl, remote.token, undefined, remote.authMode, remote.headers)
 
     // Recorded on the entry so revalidation can probe this descriptor without
     // awaiting connectionPromise, which may still be pending for a sibling.
@@ -10612,7 +10612,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     return {
       ...remote,
       profile,
-      logs: hermesLog.slice(-80),
+      logs: foolLog.slice(-80),
       ...getWindowState()
     }
   }
@@ -10645,10 +10645,10 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   // step 3 in fool_cli/main.py), so the child re-homes to this profile.
   // --port 0: the OS assigns an ephemeral port; the child announces it on stdout.
   const backendArgs = ['--profile', profile, 'serve', '--host', '127.0.0.1', '--port', '0']
-  const backend = await ensureRuntime(resolveHermesBackend(backendArgs))
+  const backend = await ensureRuntime(resolveFoolBackend(backendArgs))
   // Route old runtimes (no `serve`) through the legacy `dashboard --no-open`.
   backend.args = getBackendArgsForRuntime(backend)
-  const hermesCwd = resolveHermesCwd()
+  const foolCwd = resolveFoolCwd()
   const webDist = resolveWebDist()
   const readyFile = backend.readyFile ? makeDashboardReadyFile() : null
 
@@ -10665,7 +10665,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     backend.command,
     backend.args,
     hiddenWindowsChildOptions({
-      cwd: hermesCwd,
+      cwd: foolCwd,
       env: {
         ...process.env,
         FOOL_HOME,
@@ -10673,7 +10673,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
         // Pin the gateway's tool/terminal cwd to the same directory we chose for
         // the child process. Inherited TERMINAL_CWD (or a stale config bridge)
         // can still point at the install dir even when spawn cwd is home.
-        TERMINAL_CWD: hermesCwd,
+        TERMINAL_CWD: foolCwd,
         FOOL_DASHBOARD_SESSION_TOKEN: token,
         // Marks this dashboard backend as desktop-spawned so it runs the cron
         // scheduler tick loop (the gateway isn't running under the app).
@@ -10754,7 +10754,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
   entry.port = port
 
   const baseUrl = `http://127.0.0.1:${port}`
-  await Promise.race([waitForHermes(baseUrl, token), startFailed])
+  await Promise.race([waitForFool(baseUrl, token), startFailed])
   ready = true
 
   const authToken = await adoptServedDashboardToken(baseUrl, token, {
@@ -10784,7 +10784,7 @@ async function spawnPoolBackend(profile, entry, opts: { forceLocal?: boolean; po
     token: authToken,
     profile,
     wsUrl,
-    logs: hermesLog.slice(-80),
+    logs: foolLog.slice(-80),
     ...getWindowState()
   }
 }
@@ -10873,7 +10873,7 @@ async function prepareProfileDeleteRequest(request) {
   return decision.profile
 }
 
-async function startHermes() {
+async function startFool() {
   // Only the single-instance lock holder may reap/spawn/claim the desktop
   // backend. A lock-losing instance must stay inert even if some path reaches
   // here (e.g. the deferred-quit window before `ready`): its reapOrphans()
@@ -10886,7 +10886,7 @@ async function startHermes() {
   await reapOrphanedBackendsOnce()
 
   // Latched-failure short-circuit: once bootstrap has failed in this
-  // process, every subsequent startHermes() call re-throws the same error
+  // process, every subsequent startFool() call re-throws the same error
   // without re-running install.ps1. This prevents the renderer's
   // ensureGatewayOpen retries (and any other getConnection callers) from
   // restarting a 5-10 minute install loop while the user is still reading
@@ -10939,7 +10939,7 @@ async function startHermes() {
       }
 
       await advanceBootProgress('backend.remote', `Connecting to remote The Fool backend at ${remote.baseUrl}`, 24)
-      await waitForHermes(remote.baseUrl, remote.token, undefined, remote.authMode, remote.headers)
+      await waitForFool(remote.baseUrl, remote.token, undefined, remote.authMode, remote.headers)
 
       // Second async boundary: the health probe itself can outlive the
       // attempt. A late success here must not publish a stale descriptor.
@@ -10962,10 +10962,10 @@ async function startHermes() {
         authMode: remote.authMode || 'token',
         remoteHost: remote.remoteHost,
         remoteKind: remote.remoteKind,
-        remoteHermesVersion: remote.remoteHermesVersion,
+        remoteFoolVersion: remote.remoteFoolVersion,
         token: remote.token,
         wsUrl: remote.wsUrl,
-        logs: hermesLog.slice(-80),
+        logs: foolLog.slice(-80),
         ...getWindowState()
       }
     }
@@ -11009,7 +11009,7 @@ async function startHermes() {
       prepareLocalBackend: async () => {
         await advanceBootProgress('backend.runtime', 'Resolving The Fool runtime', 28)
 
-        return resolveHermesBackend(backendArgs)
+        return resolveFoolBackend(backendArgs)
       },
       resolveRemote: () => {
         // Classify immediately before each throwing resolve. This callback runs
@@ -11031,7 +11031,7 @@ async function startHermes() {
     const backend = setup.backend
     // Route old runtimes (no `serve`) through the legacy `dashboard --no-open`.
     backend.args = getBackendArgsForRuntime(backend)
-    const hermesCwd = resolveHermesCwd()
+    const foolCwd = resolveFoolCwd()
     const webDist = resolveWebDist()
     const readyFile = backend.readyFile ? makeDashboardReadyFile() : null
 
@@ -11043,15 +11043,15 @@ async function startHermes() {
     const backendNonce = crypto.randomBytes(16).toString('hex')
     const parentIdentityEnv = parentWatchdogEnv(process.pid, parentStartMarker, backendNonce)
 
-    const hermesProcess = spawn(
+    const foolProcess = spawn(
       backend.command,
       backend.args,
       hiddenWindowsChildOptions({
-        cwd: hermesCwd,
+        cwd: foolCwd,
         env: {
           ...process.env,
           // Explicitly pin FOOL_HOME for the child so Python's get_hermes_home()
-          // resolves to the SAME location our resolveHermesHome() picked. Without
+          // resolves to the SAME location our resolveFoolHome() picked. Without
           // this pin, Python falls back to ~/.fool on every platform — fine on
           // mac/linux (where our default matches), but on Windows our default is
           // %LOCALAPPDATA%\fool, which differs from C:\Users\<u>\.fool.
@@ -11060,7 +11060,7 @@ async function startHermes() {
           // can't reliably do that, so we set it inline for every spawn.
           FOOL_HOME,
           ...backend.env,
-          TERMINAL_CWD: hermesCwd,
+          TERMINAL_CWD: foolCwd,
           FOOL_DASHBOARD_SESSION_TOKEN: token,
           // Marks this dashboard backend as desktop-spawned so it runs the cron
           // scheduler tick loop (the gateway isn't running under the app).
@@ -11077,18 +11077,18 @@ async function startHermes() {
       })
     )
 
-    await claimBackendChild(hermesProcess, `${backend.command} ${backend.args.join(' ')}`, profile, backendNonce)
-    const processOwner = backendConnectionState.attachProcess(connectionAttempt, hermesProcess)
+    await claimBackendChild(foolProcess, `${backend.command} ${backend.args.join(' ')}`, profile, backendNonce)
+    const processOwner = backendConnectionState.attachProcess(connectionAttempt, foolProcess)
 
     if (!processOwner) {
-      stopBackendChild(hermesProcess)
-      await waitForBackendExit(hermesProcess)
-      releaseBackendChild(hermesProcess)
+      stopBackendChild(foolProcess)
+      await waitForBackendExit(foolProcess)
+      releaseBackendChild(foolProcess)
       throw new Error('The Fool backend start was superseded by a newer connection attempt.')
     }
 
-    hermesProcess.stdout.on('data', rememberLog)
-    hermesProcess.stderr.on('data', rememberLog)
+    foolProcess.stdout.on('data', rememberLog)
+    foolProcess.stderr.on('data', rememberLog)
     let backendReady = false
     let rejectBackendStart = null
 
@@ -11096,8 +11096,8 @@ async function startHermes() {
       rejectBackendStart = reject
     })
 
-    hermesProcess.once('error', error => {
-      releaseBackendChild(hermesProcess)
+    foolProcess.once('error', error => {
+      releaseBackendChild(foolProcess)
 
       if (!backendConnectionState.clearForCurrentProcess(processOwner)) {
         rememberLog(`Ignoring stale The Fool backend error: ${error.message}`)
@@ -11119,8 +11119,8 @@ async function startHermes() {
       sendBackendExit({ code: null, signal: null, error: error.message })
       rejectBackendStart?.(error)
     })
-    hermesProcess.once('exit', (code, signal) => {
-      releaseBackendChild(hermesProcess)
+    foolProcess.once('exit', (code, signal) => {
+      releaseBackendChild(foolProcess)
 
       if (!backendConnectionState.clearForCurrentProcess(processOwner)) {
         rememberLog(`Ignoring stale The Fool backend exit (${signal || code})`)
@@ -11148,7 +11148,7 @@ async function startHermes() {
         )
         rejectBackendStart?.(
           new Error(
-            `The Fool backend exited before it became ready (${signal || code}). Log: ${DESKTOP_LOG_PATH}\n${recentHermesLog()}`
+            `The Fool backend exited before it became ready (${signal || code}). Log: ${DESKTOP_LOG_PATH}\n${recentFoolLog()}`
           )
         )
       }
@@ -11158,7 +11158,7 @@ async function startHermes() {
 
     // Discover the ephemeral port the child bound to
     const port = await Promise.race([
-      waitForDashboardPortAnnouncement(hermesProcess, { readyFile }),
+      waitForDashboardPortAnnouncement(foolProcess, { readyFile }),
       backendStartFailed
     ])
 
@@ -11168,12 +11168,12 @@ async function startHermes() {
 
     const baseUrl = `http://127.0.0.1:${port}`
     await advanceBootProgress('backend.wait', 'Waiting for The Fool backend to become ready', 90)
-    await Promise.race([waitForHermes(baseUrl, token), backendStartFailed])
+    await Promise.race([waitForFool(baseUrl, token), backendStartFailed])
     backendReady = true
     backendStartFailure = null
 
     const authToken = await adoptServedDashboardToken(baseUrl, token, {
-      childAlive: () => hermesProcess.exitCode === null && !hermesProcess.killed,
+      childAlive: () => foolProcess.exitCode === null && !foolProcess.killed,
       rememberLog
     })
 
@@ -11209,7 +11209,7 @@ async function startHermes() {
       authMode: 'token',
       token: authToken,
       wsUrl,
-      logs: hermesLog.slice(-80),
+      logs: foolLog.slice(-80),
       ...getWindowState()
     }
   })().catch(async error => {
@@ -12521,7 +12521,7 @@ const QUIT_UNLOAD_TIMEOUT_MS = 8_000
 /**
  * ZATEN calisan arka uca sor -- asla yeni bir tane baslatma.
  *
- * Olagan istek yolu (``handleHermesApiRequest`` -> ``ensureBackend``) arka uc
+ * Olagan istek yolu (``handleFoolApiRequest`` -> ``ensureBackend``) arka uc
  * yoksa bir tane baslatiyor. Burada tam olarak yanlis olan bu: tepsi menusunu
  * acmak (ya da uygulamadan cikmak) "ne yuklu" diye sormak icin bir Python
  * sureci baslatirdi.
@@ -12876,7 +12876,7 @@ function createWindow() {
   // shared (backendConnectionState), so the renderer's getConnection() joins
   // this in-flight boot instead of duplicating it; early boot-progress events
   // the renderer misses are recovered by its getBootProgress() pull on mount.
-  startHermes().catch(error => rememberLog(error.stack || error.message))
+  startFool().catch(error => rememberLog(error.stack || error.message))
 
   mainWindow.webContents.once('did-finish-load', () => {
     // Zoom restore is handled by wireCommonWindowHandlers (shared with session
@@ -12924,7 +12924,7 @@ ipcMain.handle('fool:connection:revalidate', async () => {
         currentConnectionPromise: () => backendConnectionState.getPromise(),
         log: rememberLog,
         probe: fetchPublicJson,
-        resetConnection: resetHermesConnection,
+        resetConnection: resetFoolConnection,
         tracker: remoteLiveness
       }),
       revalidatePool()
@@ -13000,7 +13000,7 @@ ipcMain.handle('fool:window:openInTerminal', async (_event, sessionId, opts) => 
 
   try {
     const profile = typeof opts?.profile === 'string' ? opts.profile.trim() : ''
-    const backend = resolveHermesBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
+    const backend = resolveFoolBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
 
     if (!backend.command) {
       return { ok: false, error: 'The Fool is not installed yet' }
@@ -13677,7 +13677,7 @@ ipcMain.handle('fool:notch:toggle', async () => {
 })
 ipcMain.handle('fool:bootstrap:reset', async () => {
   // Renderer's "Reload and retry" path. Clear the latched failure and
-  // reset connection state so the next startHermes() call restarts the
+  // reset connection state so the next startFool() call restarts the
   // full backend flow (including a fresh runBootstrap pass).
   rememberLog('[bootstrap] reset requested by renderer; clearing latched failure')
   await teardownPrimaryBackendAndWait()
@@ -13690,7 +13690,7 @@ ipcMain.handle('fool:bootstrap:reset', async () => {
   return { ok: true }
 })
 ipcMain.handle('fool:bootstrap:repair', async () => {
-  // Forceful repair: force the next startHermes() through the full installer
+  // Forceful repair: force the next startFool() through the full installer
   // (refreshing a broken/partial venv) and clear any latched failure + live
   // connection. The renderer reloads afterwards to re-drive the boot flow.
   //
@@ -13728,7 +13728,7 @@ ipcMain.handle('fool:bootstrap:repair', async () => {
   // The guard may decide the install is healthy enough that a restart
   // (without touching the venv) is the right answer. Translate that into
   // the existing flag: if the guard said "soft restart", we skip the
-  // "bypass active runtime" path inside startHermes() and fall through
+  // "bypass active runtime" path inside startFool() and fall through
   // to the normal restart branch, which just kills the current child
   // and respawns it against the same venv. See #74874 — this is what
   // breaks the infinite reinstall loop the user hit.
@@ -13737,7 +13737,7 @@ ipcMain.handle('fool:bootstrap:repair', async () => {
   backendStartFailure = null
   remoteReauthFailure = null
   getFirstRunSetupGate().resetForRepair()
-  resetHermesConnection()
+  resetFoolConnection()
 
   return { ok: true }
 })
@@ -13924,7 +13924,7 @@ ipcMain.handle('fool:connections:test', async (_event, id) => {
       sshUser: entry.user,
       sshPort: entry.port,
       sshKeyPath: entry.keyPath,
-      sshRemoteHermesPath: entry.remoteHermesPath
+      sshRemoteFoolPath: entry.remoteFoolPath
     })
   }
 
@@ -13941,7 +13941,7 @@ ipcMain.handle('fool:connections:test', async (_event, id) => {
   let testHeaders = {}
 
   if (entry.kind === 'local') {
-    const local = await startHermes()
+    const local = await startFool()
     baseUrl = local.baseUrl
     token = local.token
     authMode = normAuthMode(local.authMode)
@@ -14212,7 +14212,7 @@ ipcMain.handle('fool:connection-config:oauth-login', async (_event, rawUrl) => {
 
       _storeNativeTokens(baseUrl, tokens)
       // Confirmed sign-in — release the reauth latch so the next
-      // startHermes() re-dials instead of replaying the stale rejection.
+      // startFool() re-dials instead of replaying the stale rejection.
       remoteReauthFailure = null
 
       return { ok: true, baseUrl, connected: true }
@@ -14625,7 +14625,7 @@ async function mergeRemoteProfileSessions(searchParams, remoteProfiles) {
   }
 }
 
-async function handleHermesApiRequest(request) {
+async function handleFoolApiRequest(request) {
   // Registry-pinned request (request.connectionId): the renderer is working
   // against a REGISTERED gateway connection, so the data — cron jobs and their
   // run sessions included — lives in THAT host's state.db, not any local
@@ -14728,12 +14728,12 @@ ipcMain.handle('fool:api', async (_event, request) => {
   const deletingProfile = profileNameFromDeleteRequest(request)
 
   if (!deletingProfile) {
-    return handleHermesApiRequest(request)
+    return handleFoolApiRequest(request)
   }
 
   const releaseProfileDeletion = profileDeletionGate.acquire(deletingProfile)
 
-  return handleHermesApiRequest(request).finally(releaseProfileDeletion)
+  return handleFoolApiRequest(request).finally(releaseProfileDeletion)
 })
 
 // One deduper per cross-window cue — the choke point every window shares. Main
@@ -15274,12 +15274,12 @@ ipcMain.handle('fool:openPreviewInBrowser', async (_event, url) => {
 
 // User-configurable default project directory. The renderer reads this on
 // settings mount and seeds the value into the picker; writing back persists
-// it via writeDefaultProjectDir so resolveHermesCwd picks it up on the next
+// it via writeDefaultProjectDir so resolveFoolCwd picks it up on the next
 // session spawn (no app restart needed).
 ipcMain.handle('fool:setting:defaultProjectDir:get', async () => ({
   dir: readDefaultProjectDir(),
   defaultLabel: app.getPath('home'),
-  resolvedCwd: resolveHermesCwd()
+  resolvedCwd: resolveFoolCwd()
 }))
 
 ipcMain.handle('fool:workspace:sanitize', async (_event, cwd) => sanitizeWorkspaceCwd(cwd))
@@ -15332,7 +15332,7 @@ ipcMain.handle('fool:logs:reveal', async () => {
   }
 })
 
-ipcMain.handle('fool:logs:recent', async () => ({ path: DESKTOP_LOG_PATH, lines: hermesLog.slice(-200) }))
+ipcMain.handle('fool:logs:recent', async () => ({ path: DESKTOP_LOG_PATH, lines: foolLog.slice(-200) }))
 
 // Renderer error-boundary catches (#79428 defect B): the component stack only
 // exists in renderer memory, so the boundary posts it here and we persist it
@@ -15584,7 +15584,7 @@ ipcMain.handle('fool:fs:openDir', async (_event, dirPath) => {
 })
 
 // The LOCAL Desktop runtime-plugin root: `<FOOL_HOME>/desktop-plugins`,
-// resolved from the main-process FOOL_HOME (see resolveHermesHome) — NOT from
+// resolved from the main-process FOOL_HOME (see resolveFoolHome) — NOT from
 // the connected backend. A remote backend reports its own `hermes_home` over
 // the gateway, which is a path on the REMOTE box; deriving the plugin dir from
 // it yields `undefined/desktop-plugins` (or a non-existent remote path) and the
@@ -15934,7 +15934,7 @@ ipcMain.handle('fool:updates:branch:set', async (_event, name) => {
 // real The Fool version instead of the Electron app's own package.json version,
 // which historically drifted (stuck at 0.0.2). Falls back to app.getVersion()
 // when the source tree can't be read (e.g. a packaged build without the repo).
-function resolveHermesVersion() {
+function resolveFoolVersion() {
   try {
     const root = resolveUpdateRoot()
     const initPath = path.join(root, 'fool_cli', '__init__.py')
@@ -15961,18 +15961,18 @@ function resolveHermesVersion() {
 function showAboutPanelFresh() {
   app.setAboutPanelOptions({
     applicationName: APP_NAME,
-    applicationVersion: resolveHermesVersion(),
+    applicationVersion: resolveFoolVersion(),
     copyright: 'Copyright © 2026 Fool Labs'
   })
   app.showAboutPanel()
 }
 
 ipcMain.handle('fool:version', async () => ({
-  appVersion: resolveHermesVersion(),
+  appVersion: resolveFoolVersion(),
   electronVersion: process.versions.electron,
   nodeVersion: process.versions.node,
   platform: process.platform,
-  hermesRoot: resolveUpdateRoot()
+  foolRoot: resolveUpdateRoot()
 }))
 
 // ===========================================================================
@@ -16002,7 +16002,7 @@ async function getUninstallSummary() {
   // probe fails — the renderer still needs *something* to render options from.
   const fallback = () => ({
     hermes_home: FOOL_HOME,
-    agent_installed: isHermesSourceRoot(agentRoot) && fileExists(py),
+    agent_installed: isFoolSourceRoot(agentRoot) && fileExists(py),
     gui_installed: true,
     source_built_artifacts: [],
     packaged_app_paths: [],
@@ -16135,7 +16135,7 @@ async function runDesktopUninstall(mode) {
     agentRoot: ACTIVE_HERMES_ROOT,
     uninstallArgs,
     appPath: removeBundle,
-    hermesHome: FOOL_HOME
+    foolHome: FOOL_HOME
   }
 
   let scriptPath
@@ -16300,7 +16300,7 @@ if (!isPrimaryInstance) {
   // Hard-exit, not app.quit(): the before-quit teardown coordinator defers a
   // plain quit (event.preventDefault + async backend shutdown), and in that
   // window `ready` still fires — the lock-losing instance then runs the full
-  // startup (shortcut registration, createWindow → startHermes), whose
+  // startup (shortcut registration, createWindow → startFool), whose
   // reapOrphans() SIGTERMs the running instance's live backend (#87295).
   // app.exit() terminates immediately, before `ready`, so a second launch
   // routes into the running window and never touches backend machinery.

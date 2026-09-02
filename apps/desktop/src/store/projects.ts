@@ -5,8 +5,8 @@ import {
   NO_PROJECT_ID,
   type SidebarProjectTree
 } from '@/app/chat/sidebar/projects/workspace-groups'
-import type { HermesGitBaseBranch, HermesGitBranch } from '@/global'
-import { getHermesConfig, type HermesGateway } from '@/hermes'
+import type { FoolGitBaseBranch, FoolGitBranch } from '@/global'
+import { type FoolGateway, getFoolConfig } from '@/hermes'
 import { translateNow } from '@/i18n'
 import { desktopDefaultCwd, isDesktopFsRemoteMode, selectDesktopPaths, writeDesktopFileText } from '@/lib/desktop-fs'
 import { desktopGit, isGitEndpointMissingError } from '@/lib/desktop-git'
@@ -342,7 +342,7 @@ async function gatewayRequest<T>(method: string, params: Record<string, unknown>
 }
 
 async function gatewayRequestOn<T>(
-  gateway: HermesGateway,
+  gateway: FoolGateway,
   method: string,
   params: Record<string, unknown> = {}
 ): Promise<T> {
@@ -350,7 +350,7 @@ async function gatewayRequestOn<T>(
 }
 
 interface ActiveProjectsContext {
-  gateway: HermesGateway
+  gateway: FoolGateway
   profile: string
 }
 
@@ -419,7 +419,7 @@ function applyProjectTreePayload(res: ProjectTreePayload): void {
   }
 }
 
-async function refreshProjectTreeOn(gateway: HermesGateway): Promise<void> {
+async function refreshProjectTreeOn(gateway: FoolGateway): Promise<void> {
   const generation = ++projectTreeRefreshGeneration
 
   if (activeGateway() === gateway) {
@@ -475,7 +475,7 @@ async function refreshProjectTreeAcrossProfiles(): Promise<void> {
   $projectTreeLoading.set(true)
 
   try {
-    const res = await window.hermesDesktop.api<ProjectTreePayload>({
+    const res = await window.foolDesktop.api<ProjectTreePayload>({
       path: `/api/profiles/projects/tree?preview_limit=${PROJECT_TREE_PREVIEW_LIMIT}`,
       timeoutMs: PROJECT_TREE_REQUEST_TIMEOUT_MS
     })
@@ -590,8 +590,8 @@ interface RepoScanState {
   runningSignature?: string
 }
 
-const repoScanStates = new WeakMap<HermesGateway, RepoScanState>()
-const scanningGatewayGenerations = new WeakMap<HermesGateway, number>()
+const repoScanStates = new WeakMap<FoolGateway, RepoScanState>()
+const scanningGatewayGenerations = new WeakMap<FoolGateway, number>()
 
 function syncReposScanning(): void {
   const gateway = activeGateway()
@@ -624,7 +624,7 @@ export async function scanAndRecordRepos(force = false): Promise<void> {
   let generation: number | undefined
 
   try {
-    const policy = repoDiscoveryPolicyFromConfig(await getHermesConfig(context.profile))
+    const policy = repoDiscoveryPolicyFromConfig(await getFoolConfig(context.profile))
     const signature = repoDiscoveryPolicySignature(policy)
 
     if (!force && (state.completedSignature === signature || state.runningSignature === signature)) {
@@ -1101,7 +1101,7 @@ export async function startWorkInRepo(
 // by hand first.
 // Empty on a non-repo. On a remote gateway the list comes from the backend's
 // /api/git/branches mirror, so it acts on the repo where sessions actually run.
-export async function listRepoBranches(repoPath: string): Promise<HermesGitBranch[]> {
+export async function listRepoBranches(repoPath: string): Promise<FoolGitBranch[]> {
   const git = desktopGit()
 
   if (!git?.branchList || !repoPath) {
@@ -1115,7 +1115,7 @@ export async function listRepoBranches(repoPath: string): Promise<HermesGitBranc
 // new-worktree dialog. The remote default (origin/HEAD) is flagged so the
 // UI can preselect it. Empty on a non-repo; remote gateways serve it from the
 // backend's /api/git/base-branches mirror.
-export async function listBaseBranches(repoPath: string): Promise<HermesGitBaseBranch[]> {
+export async function listBaseBranches(repoPath: string): Promise<FoolGitBaseBranch[]> {
   const git = desktopGit()
 
   if (!git?.baseBranchList || !repoPath) {
@@ -1210,14 +1210,14 @@ export async function removeWorktreePath(
 // Reveal a project/worktree path in the OS file manager (git-GUI standard).
 export async function revealPath(path: null | string): Promise<void> {
   if (path) {
-    await window.hermesDesktop?.revealPath?.(path)
+    await window.foolDesktop?.revealPath?.(path)
   }
 }
 
 // Copy a path to the clipboard (git-GUI standard).
 export async function copyPath(path: null | string): Promise<void> {
   if (path) {
-    await window.hermesDesktop?.writeClipboard?.(path)
+    await window.foolDesktop?.writeClipboard?.(path)
   }
 }
 

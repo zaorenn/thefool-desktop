@@ -157,7 +157,7 @@ def _print_version() -> None:
 
 def _run_check() -> None:
     import acp  # noqa: F401
-    from acp_adapter.server import HermesACPAgent  # noqa: F401
+    from acp_adapter.server import FoolACPAgent  # noqa: F401
 
     print("Hermes ACP check OK")
 
@@ -247,7 +247,7 @@ def main(argv: list[str] | None = None) -> None:
         sys.path.insert(0, project_root)
 
     import acp
-    from .server import HermesACPAgent
+    from .server import FoolACPAgent
 
     # MCP tool discovery from config.yaml — fire-and-forget in a
     # background daemon thread so the ACP server becomes responsive
@@ -268,7 +268,7 @@ def main(argv: list[str] | None = None) -> None:
         except Exception:
             logger.debug("MCP tool discovery failed at ACP startup", exc_info=True)
 
-    agent = HermesACPAgent()
+    agent = FoolACPAgent()
     try:
         asyncio.run(acp.run_agent(agent, use_unstable_protocol=True))
     except KeyboardInterrupt:

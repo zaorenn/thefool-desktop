@@ -36,7 +36,7 @@ test('runBootstrap bails immediately when the signal is already aborted', async 
     installStamp: null,
     activeRoot: '/tmp/fool-runner-test',
     sourceRepoRoot: null,
-    hermesHome: '/tmp/fool-runner-test',
+    foolHome: '/tmp/fool-runner-test',
     logRoot: '/tmp/fool-runner-test',
     onEvent: ev => events.push(ev),
     abortSignal: controller.signal
@@ -90,7 +90,7 @@ test('fresh bootstrap args include the packaged commit pin', () => {
     buildPosixPinArgs({
       installStamp,
       activeRoot: '/tmp/hermes-agent',
-      hermesHome: '/tmp/fool'
+      foolHome: '/tmp/fool'
     }),
     ['--dir', '/tmp/hermes-agent', '--fool-home', '/tmp/fool', '--branch', 'main', '--commit', installStamp.commit]
   )
@@ -104,7 +104,7 @@ test('existing-checkout bootstrap args keep branch but skip the packaged commit 
     buildPosixPinArgs({
       installStamp,
       activeRoot: '/tmp/hermes-agent',
-      hermesHome: '/tmp/fool',
+      foolHome: '/tmp/fool',
       pinCommit: false
     }),
     ['--dir', '/tmp/hermes-agent', '--fool-home', '/tmp/fool', '--branch', 'main']
@@ -126,7 +126,7 @@ test('fallback install stamps use an unpinned branch ref', () => {
     buildPosixPinArgs({
       installStamp: stamp,
       activeRoot: '/tmp/fool',
-      hermesHome: '/tmp/home'
+      foolHome: '/tmp/home'
     }),
     ['--dir', '/tmp/fool', '--fool-home', '/tmp/home', '--branch', 'main']
   )
@@ -165,7 +165,7 @@ test('resolveInstallScript downloads fallback stamps by branch instead of zero c
     const result = await resolveInstallScript({
       installStamp: { commit: ZERO_COMMIT, branch: 'main' },
       sourceRepoRoot: null,
-      hermesHome: home,
+      foolHome: home,
       emit: ev => logs.push(ev),
       _download: async (ref, destPath) => {
         refs.push(ref)
@@ -203,7 +203,7 @@ test('resolveInstallScript prefers a cached script without touching the network'
     const result = await resolveInstallScript({
       installStamp: { commit },
       sourceRepoRoot: null,
-      hermesHome: home,
+      foolHome: home,
       emit: ev => logs.push(ev)
     })
 
@@ -230,7 +230,7 @@ test('resolveInstallScript falls back to the installed agent checkout on a 404',
     const result = await resolveInstallScript({
       installStamp: { commit },
       sourceRepoRoot: null,
-      hermesHome: home,
+      foolHome: home,
       emit: ev => logs.push(ev),
       // Simulate GitHub returning a 404 for the pinned commit.
       _download: async () => {
@@ -261,7 +261,7 @@ test('resolveInstallScript rethrows when the 404 fallback is unavailable', async
       resolveInstallScript({
         installStamp: { commit },
         sourceRepoRoot: null,
-        hermesHome: home,
+        foolHome: home,
         emit: () => {},
         _download: async () => {
           throw new Error('Failed to download install.sh: HTTP 404')

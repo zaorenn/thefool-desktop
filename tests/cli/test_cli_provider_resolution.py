@@ -145,7 +145,7 @@ def test_provider_flag_uses_named_custom_default_model(monkeypatch):
     monkeypatch.setattr("fool_cli.config.load_config", lambda: config)
     monkeypatch.setattr("fool_cli.runtime_provider.load_config", lambda: config)
 
-    shell = cli.HermesCLI(provider="gmk-lan", compact=True, max_turns=1)
+    shell = cli.FoolCLI(provider="gmk-lan", compact=True, max_turns=1)
 
     assert shell.model == "/models/gemma.gguf"
     assert shell.requested_provider == "gmk-lan"
@@ -173,7 +173,7 @@ def test_explicit_model_wins_over_provider_default_model(monkeypatch):
     monkeypatch.setattr("fool_cli.config.load_config", lambda: config)
     monkeypatch.setattr("fool_cli.runtime_provider.load_config", lambda: config)
 
-    shell = cli.HermesCLI(
+    shell = cli.FoolCLI(
         provider="gmk-lan",
         model="explicit-id",
         compact=True,
@@ -201,7 +201,7 @@ def test_provider_flag_logs_when_custom_default_model_cannot_resolve(monkeypatch
     )
 
     with caplog.at_level("WARNING"):
-        shell = cli.HermesCLI(provider="gmk-lan", compact=True, max_turns=1)
+        shell = cli.FoolCLI(provider="gmk-lan", compact=True, max_turns=1)
 
     assert shell.model == "tencent/hy3:free"
     assert any(
@@ -216,12 +216,12 @@ def test_hermes_cli_init_does_not_eagerly_resolve_runtime_provider(monkeypatch):
 
     def _unexpected_runtime_resolve(**kwargs):
         calls["count"] += 1
-        raise AssertionError("resolve_runtime_provider should not be called in HermesCLI.__init__")
+        raise AssertionError("resolve_runtime_provider should not be called in FoolCLI.__init__")
 
     monkeypatch.setattr("fool_cli.runtime_provider.resolve_runtime_provider", _unexpected_runtime_resolve)
     monkeypatch.setattr("fool_cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
 
-    shell = cli.HermesCLI(model="gpt-5", compact=True, max_turns=1)
+    shell = cli.FoolCLI(model="gpt-5", compact=True, max_turns=1)
 
     assert shell is not None
     assert calls["count"] == 0
@@ -251,7 +251,7 @@ def test_runtime_resolution_failure_is_not_sticky(monkeypatch):
     monkeypatch.setattr("fool_cli.runtime_provider.format_runtime_provider_error", lambda exc: str(exc))
     monkeypatch.setattr(cli, "AIAgent", _DummyAgent)
 
-    shell = cli.HermesCLI(model="gpt-5", compact=True, max_turns=1)
+    shell = cli.FoolCLI(model="gpt-5", compact=True, max_turns=1)
 
     assert shell._init_agent() is False
     assert shell._init_agent() is True
@@ -263,7 +263,7 @@ def test_runtime_resolution_failure_is_not_sticky(monkeypatch):
 
 def test_cli_turn_routing_uses_primary_when_disabled(monkeypatch):
     cli = _import_cli()
-    shell = cli.HermesCLI(model="gpt-5", compact=True, max_turns=1)
+    shell = cli.FoolCLI(model="gpt-5", compact=True, max_turns=1)
     shell.provider = "openrouter"
     shell.api_mode = "chat_completions"
     shell.base_url = "https://openrouter.ai/api/v1"
@@ -420,7 +420,7 @@ def test_codex_provider_uses_config_model(monkeypatch):
         lambda access_token=None: ["gpt-5.2-codex"],
     )
 
-    shell = cli.HermesCLI(compact=True, max_turns=1)
+    shell = cli.FoolCLI(compact=True, max_turns=1)
 
     assert shell._ensure_runtime_credentials() is True
     assert shell.provider == "openai-codex"

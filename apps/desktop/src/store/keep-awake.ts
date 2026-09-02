@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
   $keepAwake.subscribe(on => persistBoolean(KEY, on))
 
   whenMainWindow(() => {
-    window.hermesDesktop?.setKeepAwake?.($keepAwake.get())
-    $keepAwake.subscribe(on => window.hermesDesktop?.setKeepAwake?.(on))
+    window.foolDesktop?.setKeepAwake?.($keepAwake.get())
+    $keepAwake.subscribe(on => window.foolDesktop?.setKeepAwake?.(on))
   })
 }

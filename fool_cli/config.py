@@ -3054,7 +3054,7 @@ def split_model_config_default(raw_default: Any) -> tuple[str, str]:
     A dict-valued default (``model.default: {provider: ..., model: ...}``)
     pairs the model string with the provider it must be routed through. The
     dict is flattened here at the shared boundary so both halves stay
-    together through ``HermesCLI`` construction: the model becomes a plain
+    together through ``FoolCLI`` construction: the model becomes a plain
     string and the provider is returned explicitly instead of being lost to
     the outer merged ``model.provider`` default (often ``"auto"``, which
     runtime resolution treats as authoritative and would otherwise route the

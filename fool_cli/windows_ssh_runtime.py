@@ -388,7 +388,7 @@ def _resolve_direct_interpreter(python_entry: str) -> tuple[str, list[str]]:
 def spawn_backend(payload: dict[str, Any]) -> dict[str, Any]:
     ownership_id = _ownership(str(payload["ownershipId"]))
     spawn_nonce = _nonce(str(payload["spawnNonce"]))
-    configured_path = str(payload["hermesPath"])
+    configured_path = str(payload["foolPath"])
     if not os.path.isabs(configured_path):
         raise ValueError("The Fool path must be absolute")
     hermes_path = os.path.abspath(configured_path)
@@ -456,7 +456,7 @@ def dispatch(argv: list[str]) -> Any:
     operation = argv[0]
     if operation == "probe":
         import platform
-        return {"os": "Windows", "arch": platform.machine(), "hermesHome": str(get_default_hermes_root()), "python": sys.executable}
+        return {"os": "Windows", "arch": platform.machine(), "foolHome": str(get_default_hermes_root()), "python": sys.executable}
     if operation == "upload-token" and len(argv) == 3:
         return upload_token(argv[1], argv[2], sys.stdin.buffer.read(65))
     if operation == "read-lock" and len(argv) == 2:

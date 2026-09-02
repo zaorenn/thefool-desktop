@@ -51,7 +51,7 @@ def _import_cli():
 
 
 def _make_shell(cli, monkeypatch):
-    shell = cli.HermesCLI(compact=True, max_turns=1)
+    shell = cli.FoolCLI(compact=True, max_turns=1)
     return shell
 
 

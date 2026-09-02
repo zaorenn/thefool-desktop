@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils'
 import { referenceKind, referenceRe, referenceStyle, WIRE_REFERENCE_KINDS } from './reference-kinds'
 
 const FOOL_REF_TYPES = WIRE_REFERENCE_KINDS
-type HermesRefType = (typeof FOOL_REF_TYPES)[number]
+type FoolRefType = (typeof FOOL_REF_TYPES)[number]
 
 /** Icon glyphs come from the shared reference vocabulary, so the popover row
  *  and the chip can never drift apart. */
@@ -178,7 +178,7 @@ export function formatRefValue(value: string): string {
   return value
 }
 
-export const hermesDirectiveFormatter: Unstable_DirectiveFormatter = {
+export const foolDirectiveFormatter: Unstable_DirectiveFormatter = {
   serialize(item: Unstable_TriggerItem): string {
     const metadata = item.metadata as { rawText?: unknown; insertId?: unknown } | undefined
     const rawText = typeof metadata?.rawText === 'string' ? metadata.rawText : null
@@ -331,7 +331,7 @@ function safeEmbeddedImages(text: string) {
 
 function safeDirectiveSegments(text: string): Unstable_DirectiveSegment[] {
   try {
-    return [...hermesDirectiveFormatter.parse(text)]
+    return [...foolDirectiveFormatter.parse(text)]
   } catch {
     return [{ kind: 'text', text }]
   }
@@ -414,7 +414,7 @@ const DirectiveImage: FC<{ id: string; label: string }> = ({ id, label }) => {
     // Remote gateway: the image lives on the gateway's disk, not ours — fetch
     // it over the authenticated API. Local: read it straight off this disk.
     const load =
-      window.hermesDesktop && isRemoteGateway() ? gatewayMediaDataUrl(id) : window.hermesDesktop?.readFileDataUrl(id)
+      window.foolDesktop && isRemoteGateway() ? gatewayMediaDataUrl(id) : window.foolDesktop?.readFileDataUrl(id)
 
     void Promise.resolve(load)
       .then(url => alive && url && setSrc(url))

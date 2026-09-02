@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import yaml
 
-from cli import HermesCLI
+from cli import FoolCLI
 from fool_cli.commands import (
     GATEWAY_KNOWN_COMMANDS,
     SUBCOMMANDS,

@@ -157,7 +157,7 @@ export function useHudComposerDrag(enabled: boolean) {
       state.lastX = event.screenX
       state.lastY = event.screenY
 
-      window.hermesDesktop?.hud?.moveBy?.({
+      window.foolDesktop?.hud?.moveBy?.({
         x: dx,
         y: dy,
         width: state.originW,

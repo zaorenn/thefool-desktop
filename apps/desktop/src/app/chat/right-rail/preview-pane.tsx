@@ -100,7 +100,7 @@ function PreviewLoadError({
             href={error.url}
             onClick={event => {
               event.preventDefault()
-              void window.hermesDesktop?.openExternal(error.url)
+              void window.foolDesktop?.openExternal(error.url)
             }}
           >
             {compactUrl(error.url)}
@@ -448,8 +448,8 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
     if (
       target.kind !== 'file' ||
       isDesktopFsRemoteMode() ||
-      !window.hermesDesktop?.watchPreviewFile ||
-      !window.hermesDesktop?.onPreviewFileChanged
+      !window.foolDesktop?.watchPreviewFile ||
+      !window.foolDesktop?.onPreviewFileChanged
     ) {
       return
     }
@@ -482,7 +482,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
       reloadPreview()
     }
 
-    const unsubscribe = window.hermesDesktop.onPreviewFileChanged(payload => {
+    const unsubscribe = window.foolDesktop.onPreviewFileChanged(payload => {
       if (!active || payload.id !== watchId) {
         return
       }
@@ -500,11 +500,11 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
       }, FILE_RELOAD_DEBOUNCE_MS)
     })
 
-    void window.hermesDesktop
+    void window.foolDesktop
       .watchPreviewFile(target.url)
       .then(watch => {
         if (!active) {
-          void window.hermesDesktop?.stopPreviewFileWatch?.(watch.id)
+          void window.foolDesktop?.stopPreviewFileWatch?.(watch.id)
 
           return
         }
@@ -527,7 +527,7 @@ export function PreviewPane({ embedded = false, onRestartServer, reloadRequest =
       }
 
       if (watchId) {
-        void window.hermesDesktop?.stopPreviewFileWatch?.(watchId)
+        void window.foolDesktop?.stopPreviewFileWatch?.(watchId)
       }
     }
   }, [appendConsoleEntry, copy, reloadPreview, target.kind, target.url])

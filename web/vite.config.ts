@@ -15,7 +15,7 @@ const BACKEND = process.env.FOOL_DASHBOARD_URL ?? "http://127.0.0.1:9119";
  * load, scrapes the `window.__HERMES_SESSION_TOKEN__` assignment, and
  * re-injects it into the dev HTML. No-op in production builds.
  */
-function hermesDevToken(): Plugin {
+function foolDevToken(): Plugin {
   const TOKEN_RE = /window\.__HERMES_SESSION_TOKEN__\s*=\s*"([^"]+)"/;
   const EMBEDDED_RE =
     /window\.__HERMES_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
@@ -58,7 +58,7 @@ function hermesDevToken(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), hermesDevToken()],
+  plugins: [react(), tailwindcss(), foolDevToken()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -52,8 +52,8 @@ test('HUD composer remains fully inside the transparent window', async () => {
 
   await fixture!.page.evaluate(() =>
     (window as typeof window & {
-      hermesDesktop?: { hud?: { open: (options: { sessionId: null }) => Promise<void> } }
-    }).hermesDesktop?.hud?.open({ sessionId: null })
+      foolDesktop?: { hud?: { open: (options: { sessionId: null }) => Promise<void> } }
+    }).foolDesktop?.hud?.open({ sessionId: null })
   )
 
   const hudPage = await hudPagePromise

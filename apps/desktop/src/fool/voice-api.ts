@@ -146,7 +146,7 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   // bos geldi: istek sessizce basarisiz oluyordu (koken/kimlik dogrulama
   // renderer'dan cozulemiyor). Uygulamanin geri kalani zaten bu koprudan
   // geciyor; ayri bir yol acmak, calisan tek yolu atlamak demekti.
-  const desktop = window.hermesDesktop
+  const desktop = window.foolDesktop
 
   if (!desktop?.api) {
     // Metin KULLANICIYA gorunuyor: ``voice-settings.tsx`` yakaladigi hatanin

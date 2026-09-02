@@ -19,7 +19,7 @@ import pytest
 # whole suite down.
 pytest.importorskip("acp", reason="optional [acp] extra is not installed")
 
-from acp_adapter.server import HermesACPAgent, _named_custom_provider_catalogs
+from acp_adapter.server import FoolACPAgent, _named_custom_provider_catalogs
 from acp_adapter.session import SessionManager
 from acp.schema import SessionModelState
 
@@ -126,7 +126,7 @@ class TestModelStateIncludesNamedProviders:
                 model="gpt-5.4", provider="openai-codex"
             )
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = FoolACPAgent(session_manager=manager)
 
         with patch(
             "fool_cli.models.curated_models_for_provider",

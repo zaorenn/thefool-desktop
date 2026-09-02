@@ -64,7 +64,7 @@ const APP = (() => {
 })()
 
 // Default FOOL_HOME for non-sandboxed runs -- matches main.ts's
-// resolveHermesHome(). On Windows it's %LOCALAPPDATA%\hermes; elsewhere
+// resolveFoolHome(). On Windows it's %LOCALAPPDATA%\hermes; elsewhere
 // it's ~/.hermes. The fresh-install sandbox launchFresh() sets its own
 // FOOL_HOME and never touches this.
 const DEFAULT_HERMES_HOME = (() => {
@@ -261,11 +261,11 @@ function launchFresh() {
 
   const sandbox = fs.mkdtempSync(`${FRESH_SANDBOX_ROOT}-`)
   const userDataDir = path.join(sandbox, 'electron-user-data')
-  const hermesHome = path.join(sandbox, 'hermes-home')
+  const foolHome = path.join(sandbox, 'hermes-home')
   const cwd = path.join(sandbox, 'workspace')
 
   fs.mkdirSync(userDataDir, { recursive: true })
-  fs.mkdirSync(hermesHome, { recursive: true })
+  fs.mkdirSync(foolHome, { recursive: true })
   fs.mkdirSync(cwd, { recursive: true })
 
   // Strip every credential-shaped env var so the sandbox is actually fresh.
@@ -279,7 +279,7 @@ function launchFresh() {
   env.FOOL_DESKTOP_IGNORE_EXISTING = '1'
   env.FOOL_DESKTOP_TEST_MODE = 'fresh-install'
   env.FOOL_DESKTOP_USER_DATA_DIR = userDataDir
-  env.FOOL_HOME = hermesHome
+  env.FOOL_HOME = foolHome
   delete env.FOOL_DESKTOP_HERMES
   delete env.FOOL_DESKTOP_HERMES_ROOT
 
@@ -294,10 +294,10 @@ function launchFresh() {
   console.log('\nFresh install sandbox:')
   console.log(`  root: ${sandbox}`)
   console.log(`  electron userData: ${userDataDir}`)
-  console.log(`  FOOL_HOME: ${hermesHome}`)
+  console.log(`  FOOL_HOME: ${foolHome}`)
   console.log(`  cwd: ${cwd}`)
 
-  return { runtimeRoot: path.join(hermesHome, 'hermes-agent', 'venv') }
+  return { runtimeRoot: path.join(foolHome, 'hermes-agent', 'venv') }
 }
 
 // Validate the packaged bundle matches the thin-installer architecture:

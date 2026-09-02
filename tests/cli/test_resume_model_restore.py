@@ -15,8 +15,8 @@ from fool_state import SessionDB
 
 
 def _make_stub(**overrides):
-    """Bare HermesCLI the way resume paths see it (no __init__)."""
-    stub = object.__new__(cli_mod.HermesCLI)
+    """Bare FoolCLI the way resume paths see it (no __init__)."""
+    stub = object.__new__(cli_mod.FoolCLI)
     stub.model = "ambient-model"
     stub.provider = "openrouter"
     stub.requested_provider = "openrouter"

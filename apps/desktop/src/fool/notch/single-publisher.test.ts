@@ -35,9 +35,9 @@ const STORE_DIR = join(import.meta.dirname, '../../store')
 /** Pencere sınırını GEÇEN yazma yolları. */
 const CROSS_BOUNDARY = [
   // Ana surece giden yayinlar.
-  'hermesDesktop?.setActiveWork',
-  'hermesDesktop?.setKeepAwake',
-  'hermesDesktop?.setTranslucency',
+  'foolDesktop?.setActiveWork',
+  'foolDesktop?.setKeepAwake',
+  'foolDesktop?.setTranslucency',
   // Pencereler arasi paylasilan atom.
   '$voiceSessionId.set'
 ]

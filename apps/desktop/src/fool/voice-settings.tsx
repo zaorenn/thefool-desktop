@@ -983,7 +983,7 @@ function NotchShortcutRow() {
     let cancelled = false
 
     void (async () => {
-      const state = await window.hermesDesktop?.notch?.shortcut?.()
+      const state = await window.foolDesktop?.notch?.shortcut?.()
 
       if (!cancelled && state) {
         setShortcut(state.shortcut ?? '')
@@ -997,7 +997,7 @@ function NotchShortcutRow() {
   }, [])
 
   const apply = useCallback(async (accelerator: string) => {
-    const result = await window.hermesDesktop?.notch?.setShortcut?.(accelerator)
+    const result = await window.foolDesktop?.notch?.setShortcut?.(accelerator)
 
     if (result) {
       setShortcut(result.shortcut ?? '')

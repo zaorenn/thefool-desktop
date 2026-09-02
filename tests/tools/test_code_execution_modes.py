@@ -472,7 +472,7 @@ class TestPythonEnvironmentPrefix(unittest.TestCase):
         self.assertEqual(result, os.path.realpath("/recovered/prefix"))
 
 
-class TestUsesHermesPythonEnvironment(unittest.TestCase):
+class TestUsesFoolPythonEnvironment(unittest.TestCase):
     """Unit tests for _uses_hermes_python_environment."""
 
     def setUp(self):

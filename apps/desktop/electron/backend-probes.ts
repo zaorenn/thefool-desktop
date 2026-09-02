@@ -2,7 +2,7 @@
  * backend-probes.ts
  *
  * Cheap "does this candidate backend actually work" checks used by
- * resolveHermesBackend (main.ts). The resolver walks a ladder of
+ * resolveFoolBackend (main.ts). The resolver walks a ladder of
  * candidates -- bootstrap marker, `fool` on PATH, system Python with
  * fool_cli installed -- and historically returned the first candidate
  * whose binary existed on disk. That assumption breaks when a user has
@@ -24,7 +24,7 @@
  *     issue #61764 death-loop) with FOOL_PROBE_TIMEOUT_MS override
  *   - one automatic retry after a timeout before declaring the runtime dead
  *   - stdio ignored (we only care about exit code; stdout/stderr are
- *     not surfaced to the user, just to recentHermesLog for forensics
+ *     not surfaced to the user, just to recentFoolLog for forensics
  *     via the caller's catch block if it chooses)
  *   - any throw -> false (never propagate -- resolver wants a boolean)
  *
@@ -119,7 +119,7 @@ function execProbeSync(
  *
  * @returns {string}
  */
-function hermesRuntimeImportProbe() {
+function foolRuntimeImportProbe() {
   return 'import yaml; import dotenv; import fool_cli.config'
 }
 
@@ -127,7 +127,7 @@ function hermesRuntimeImportProbe() {
  * Return true iff the Fool runtime import probe exits 0.
  *
  * Used to gate the "fallback to system Python with fool_cli installed"
- * rung of resolveHermesBackend. Without this, a system Python 3.11-3.13
+ * rung of resolveFoolBackend. Without this, a system Python 3.11-3.13
  * registered in PEP 514 makes findSystemPython() succeed regardless of
  * whether fool_cli has actually been pip-installed into its
  * site-packages -- and the resolver returns a backend that immediately
@@ -141,13 +141,13 @@ function hermesRuntimeImportProbe() {
  * @param {object} [opts.env] - Additional environment for the probe.
  * @returns {boolean}
  */
-function canImportHermesCli(pythonPath: string, opts: { env?: Record<string, string> } = {}) {
+function canImportFoolCli(pythonPath: string, opts: { env?: Record<string, string> } = {}) {
   if (!pythonPath) {
     return false
   }
 
   try {
-    execProbeSync(pythonPath, ['-c', hermesRuntimeImportProbe()], {
+    execProbeSync(pythonPath, ['-c', foolRuntimeImportProbe()], {
       env: { ...process.env, ...(opts.env || {}) },
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
@@ -161,7 +161,7 @@ function canImportHermesCli(pythonPath: string, opts: { env?: Record<string, str
 }
 
 /**
- * Return true iff `<hermesCommand> --version` exits 0.
+ * Return true iff `<foolCommand> --version` exits 0.
  *
  * Used to gate the "existing `fool` on PATH" rung. Without this, a
  * stale fool.cmd shim left behind by an uninstalled pip install (or
@@ -172,12 +172,12 @@ function canImportHermesCli(pythonPath: string, opts: { env?: Record<string, str
  * here -- `--version` is the cheapest "is this binary alive" smoke
  * test that every fool_cli entry-point has supported since 0.1.
  *
- * @param {string} hermesCommand - Resolved absolute path to a fool
+ * @param {string} foolCommand - Resolved absolute path to a fool
  *   executable (or an interpreter+script wrapper).
  * @param {boolean} [opts.shell] - Whether to run through a shell. For
  *   .cmd/.bat shims on Windows execFileSync needs shell:true to find
  *   the cmd interpreter; mirrors the same flag isCommandScript() drives
- *   in resolveHermesBackend.
+ *   in resolveFoolBackend.
  * @returns {boolean}
  */
 /**
@@ -186,17 +186,17 @@ function canImportHermesCli(pythonPath: string, opts: { env?: Record<string, str
  * its immutable, matching The Fool package; it must never fall through to the
  * mutable install-script bootstrap path if a best-effort probe is slow.
  */
-function shouldTrustHermesOverride(hermesOverride?: string) {
-  return typeof hermesOverride === 'string' && hermesOverride.trim().length > 0
+function shouldTrustFoolOverride(foolOverride?: string) {
+  return typeof foolOverride === 'string' && foolOverride.trim().length > 0
 }
 
-function verifyHermesCli(hermesCommand: string, opts?: { shell?: boolean }) {
-  if (!hermesCommand) {
+function verifyFoolCli(foolCommand: string, opts?: { shell?: boolean }) {
+  if (!foolCommand) {
     return false
   }
 
   try {
-    execProbeSync(hermesCommand, ['--version'], {
+    execProbeSync(foolCommand, ['--version'], {
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
       shell: Boolean(opts?.shell),
@@ -210,12 +210,12 @@ function verifyHermesCli(hermesCommand: string, opts?: { shell?: boolean }) {
 }
 
 export {
-  canImportHermesCli,
+  canImportFoolCli,
   DEFAULT_PROBE_TIMEOUT_MS,
   execProbeSync,
-  hermesRuntimeImportProbe,
+  foolRuntimeImportProbe,
   PROBE_TIMEOUT_MS,
   resolveProbeTimeoutMs,
-  shouldTrustHermesOverride,
-  verifyHermesCli
+  shouldTrustFoolOverride,
+  verifyFoolCli
 }

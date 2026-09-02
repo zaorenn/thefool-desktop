@@ -19,7 +19,7 @@ vi.mock('@/hermes', () => ({ getApiRequestProfile: () => 'persona' }))
 
 beforeEach(() => {
   api.mockReset()
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { api }
+  ;(window as unknown as { foolDesktop: unknown }).foolDesktop = { api }
   // Kural DOM'a sorgu icin uzanmayi engelliyor; burada gorunurlugu TAKLIT
   // ediyoruz ve bunun testing-library karsiligi yok.
   // eslint-disable-next-line no-restricted-globals
@@ -42,7 +42,7 @@ describe('RelationshipBar', () => {
   })
 
   it('koprude yokken cizilmiyor', async () => {
-    ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = undefined
+    ;(window as unknown as { foolDesktop: unknown }).foolDesktop = undefined
 
     const { container } = render(<RelationshipBar />)
 

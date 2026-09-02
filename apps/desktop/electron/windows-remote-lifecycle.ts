@@ -28,14 +28,14 @@ function powerShellCommand(script) {
   return `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ${encodedPowerShell(script)}`
 }
 
-async function probeWindowsRemote(ssh, explicitHermesPath = '') {
-  const explicit = psLiteral(explicitHermesPath)
+async function probeWindowsRemote(ssh, explicitFoolPath = '') {
+  const explicit = psLiteral(explicitFoolPath)
 
   const script = [
     '$ErrorActionPreference="Stop"',
     `$explicit=${explicit}`,
-    '$hermesHome=$env:FOOL_HOME',
-    'if(-not $hermesHome){$hermesHome=Join-Path $env:LOCALAPPDATA "fool"}',
+    '$foolHome=$env:FOOL_HOME',
+    'if(-not $foolHome){$foolHome=Join-Path $env:LOCALAPPDATA "fool"}',
     '$candidates=@()',
     'if($explicit){$candidates+=$explicit}',
     '$cmd=Get-Command fool.exe -ErrorAction SilentlyContinue',
@@ -43,15 +43,15 @@ async function probeWindowsRemote(ssh, explicitHermesPath = '') {
     // FOOL-SEAM: runtime-dir-name
     // Runtime dizini ``fool-agent`` adini aldi; YENI ad once, eski ad aday
     // olarak KALIYOR -- goc edememis bir uzak kurulum hala bulunmali.
-    '$candidates+=(Join-Path $hermesHome "fool-agent\\venv\\Scripts\\fool.exe")',
-    '$candidates+=(Join-Path $hermesHome "hermes-agent\\venv\\Scripts\\fool.exe")',
+    '$candidates+=(Join-Path $foolHome "fool-agent\\venv\\Scripts\\fool.exe")',
+    '$candidates+=(Join-Path $foolHome "hermes-agent\\venv\\Scripts\\fool.exe")',
     '$candidates+=(Join-Path $HOME "hermes-agent\\.venv\\Scripts\\fool.exe")',
     '$fool=$candidates|Where-Object{Test-Path -LiteralPath $_ -PathType Leaf}|Select-Object -First 1',
     'if(-not $fool){throw "The Fool is not installed on the remote Windows host."}',
     'if($explicit -and $fool -ne $explicit){throw "The configured Fool path is not an executable file."}',
     '$python=Join-Path (Split-Path $fool) "python.exe"',
     'if(-not (Test-Path -LiteralPath $python -PathType Leaf)){throw "The remote Fool Python runtime was not found."}',
-    '[ordered]@{os="Windows";arch=$env:PROCESSOR_ARCHITECTURE;hermesHome=$hermesHome;hermesPath=$fool;python=$python}|ConvertTo-Json -Compress'
+    '[ordered]@{os="Windows";arch=$env:PROCESSOR_ARCHITECTURE;foolHome=$foolHome;foolPath=$fool;python=$python}|ConvertTo-Json -Compress'
   ].join(';')
 
   return JSON.parse((await ssh.exec(powerShellCommand(script))).trim())
@@ -64,7 +64,7 @@ const TRANSPORT_KINDS = new Set([
   SSH_ERROR.UNREACHABLE
 ])
 
-async function detectRemotePlatform(ssh, explicitHermesPath = '') {
+async function detectRemotePlatform(ssh, explicitFoolPath = '') {
   try {
     const output = (await ssh.exec('uname -s; uname -m')).trim().split('\n')
 
@@ -81,7 +81,7 @@ async function detectRemotePlatform(ssh, explicitHermesPath = '') {
   }
 
   try {
-    return await probeWindowsRemote(ssh, explicitHermesPath)
+    return await probeWindowsRemote(ssh, explicitFoolPath)
   } catch (cause: any) {
     if (TRANSPORT_KINDS.has(cause?.kind)) {
       throw cause
@@ -157,8 +157,8 @@ function validLock(lock, ownershipId) {
     lock.port >= 0 &&
     lock.port <= 65535 &&
     /^[0-9a-f]{32}$/.test(lock.tokenFingerprint || '') &&
-    typeof lock.hermesPath === 'string' &&
-    typeof lock.hermesHome === 'string'
+    typeof lock.foolPath === 'string' &&
+    typeof lock.foolHome === 'string'
   )
 }
 
@@ -170,8 +170,8 @@ function reusableWindowsLock(lock, state, profile, reuseToken, runtime) {
     lock.profile === profile &&
     reuseToken &&
     lock.tokenFingerprint === fingerprintToken(reuseToken) &&
-    lock.hermesPath === runtime.hermesPath &&
-    lock.hermesHome === runtime.hermesHome
+    lock.foolPath === runtime.foolPath &&
+    lock.foolHome === runtime.foolHome
   )
 }
 
@@ -187,7 +187,7 @@ async function processState(ssh, runtime, lock) {
   return helper(ssh, runtime, 'process-state', [
     String(lock.pid),
     String(lock.creationTimeNs),
-    lock.hermesPath,
+    lock.foolPath,
     lock.spawnNonce
   ])
 }
@@ -210,7 +210,7 @@ async function cleanupOwned(ssh, runtime, ownershipId, lock) {
       await helper(ssh, runtime, 'terminate', [
         String(lock.pid),
         String(lock.creationTimeNs),
-        lock.hermesPath,
+        lock.foolPath,
         lock.spawnNonce
       ])
     }
@@ -287,21 +287,21 @@ async function connectWindowsRemote(deps) {
     ssh,
     ownershipId,
     profile = '',
-    remoteHermesPath = '',
+    remoteFoolPath = '',
     reuseToken = '',
     signal,
     pickLocalPort,
     forward,
     cancelForward,
-    waitForHermes,
+    waitForFool,
     probeReuseProof,
     rememberLog = () => {},
     readyTimeoutMs = 45_000
   } = deps
 
   assertCurrent(signal)
-  const runtime = await probeWindowsRemote(ssh, remoteHermesPath)
-  const inspection = await helper(ssh, runtime, 'inspect', [runtime.hermesPath])
+  const runtime = await probeWindowsRemote(ssh, remoteFoolPath)
+  const inspection = await helper(ssh, runtime, 'inspect', [runtime.foolPath])
 
   if (!inspection.supported) {
     const error: any = new Error('Update The Fool on the remote Windows host before connecting with Desktop SSH.')
@@ -309,10 +309,10 @@ async function connectWindowsRemote(deps) {
     throw error
   }
 
-  runtime.hermesPath = inspection.path
-  const hermesVersion = inspection.version || ''
+  runtime.foolPath = inspection.path
+  const foolVersion = inspection.version || ''
   rememberLog(`[ssh-lifecycle] remote platform Windows/${runtime.arch}`)
-  rememberLog(`[ssh-lifecycle] located fool at ${runtime.hermesPath}`)
+  rememberLog(`[ssh-lifecycle] located fool at ${runtime.foolPath}`)
 
   const lock = await helper(ssh, runtime, 'read-lock', [ownershipId])
 
@@ -344,8 +344,8 @@ async function connectWindowsRemote(deps) {
             pid: lock.pid,
             reused: true,
             platform: { os: 'Windows', arch: runtime.arch },
-            hermesPath: runtime.hermesPath,
-            hermesVersion,
+            foolPath: runtime.foolPath,
+            foolVersion,
             ownershipId,
             spawnNonce: lock.spawnNonce,
             creationTimeNs: lock.creationTimeNs
@@ -381,7 +381,7 @@ async function connectWindowsRemote(deps) {
       runtime,
       'spawn',
       [],
-      JSON.stringify({ ownershipId, spawnNonce, profile, hermesPath: runtime.hermesPath })
+      JSON.stringify({ ownershipId, spawnNonce, profile, foolPath: runtime.foolPath })
     )
   } catch (error) {
     await helper(ssh, runtime, 'remove-token', [ownershipId, spawnNonce])
@@ -397,8 +397,8 @@ async function connectWindowsRemote(deps) {
     creationTimeNs: spawned.creationTimeNs,
     port: 0,
     profile,
-    hermesPath: runtime.hermesPath,
-    hermesHome: runtime.hermesHome,
+    foolPath: runtime.foolPath,
+    foolHome: runtime.foolHome,
     tokenFingerprint: fingerprintToken(token),
     startedAt: new Date().toISOString()
   }
@@ -417,7 +417,7 @@ async function connectWindowsRemote(deps) {
     localPort = await pickLocalPort()
     await forward(localPort, remotePort)
     const baseUrl = `http://127.0.0.1:${localPort}`
-    await waitForHermes(baseUrl, token)
+    await waitForFool(baseUrl, token)
     assertCurrent(signal)
     await helper(ssh, runtime, 'write-lock', [ownershipId], JSON.stringify({ ...owned, port: remotePort }))
 
@@ -429,8 +429,8 @@ async function connectWindowsRemote(deps) {
       pid: spawned.pid,
       reused: false,
       platform: { os: 'Windows', arch: runtime.arch },
-      hermesPath: runtime.hermesPath,
-      hermesVersion,
+      foolPath: runtime.foolPath,
+      foolVersion,
       ownershipId,
       spawnNonce,
       creationTimeNs: spawned.creationTimeNs

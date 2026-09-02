@@ -6,15 +6,15 @@ import type { SessionInfo } from '@/types/hermes'
 
 import { $hudActive, $hudSession, openHud } from './hud'
 
-const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
-const initialHermesDesktop = desktopWindow.hermesDesktop
+const desktopWindow = window as unknown as { foolDesktop?: Window['foolDesktop'] }
+const initialFoolDesktop = desktopWindow.foolDesktop
 
 const open = vi.fn().mockResolvedValue({ ok: true })
 
 function installBridge() {
-  desktopWindow.hermesDesktop = {
+  desktopWindow.foolDesktop = {
     hud: { open }
-  } as unknown as Window['hermesDesktop']
+  } as unknown as Window['foolDesktop']
 }
 
 function session(overrides: Partial<SessionInfo>): SessionInfo {
@@ -31,10 +31,10 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  if (initialHermesDesktop) {
-    desktopWindow.hermesDesktop = initialHermesDesktop
+  if (initialFoolDesktop) {
+    desktopWindow.foolDesktop = initialFoolDesktop
   } else {
-    delete desktopWindow.hermesDesktop
+    delete desktopWindow.foolDesktop
   }
 })
 

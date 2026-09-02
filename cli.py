@@ -579,7 +579,7 @@ def load_cli_config() -> Dict[str, Any]:
                     # choice isn't shadowed by the hardcoded default.  Without this,
                     # profile configs that only set "model:" (not "default:") silently
                     # fall back to claude-opus because the merge preserves the
-                    # hardcoded default and HermesCLI.__init__ checks "default" first.
+                    # hardcoded default and FoolCLI.__init__ checks "default" first.
                     if "model" in file_config["model"] and "default" not in file_config["model"]:
                         defaults["model"]["default"] = file_config["model"]["model"]
 
@@ -4481,7 +4481,7 @@ class ChatConsole:
         ``ChatConsole()``, which historically only implemented ``print()``.
         Returning a silent context manager keeps slash commands compatible
         without duplicating the higher-level busy indicator already shown by
-        ``HermesCLI._busy_command()``.
+        ``FoolCLI._busy_command()``.
         """
         yield self
 
@@ -4709,7 +4709,7 @@ def save_config_value(key_path: str, value: any) -> bool:
 
 
 # ============================================================================
-# HermesCLI Class
+# FoolCLI Class
 # ============================================================================
 
 
@@ -4757,7 +4757,7 @@ class _VoiceInputMessage:
         return self.text
 
 
-class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
+class FoolCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
     """
     Interactive CLI for the Hermes Agent.
     
@@ -7667,7 +7667,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             if self.show_timestamps:
                 label = f"{label} {datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}"
             w = self._scrollback_box_width()
-            fill = w - 2 - HermesCLI._status_bar_display_width(label)
+            fill = w - 2 - FoolCLI._status_bar_display_width(label)
             _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
 
         self._stream_buf += text
@@ -10547,7 +10547,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if result.warning_message:
             _cprint(f"    ⚠ {result.warning_message}")
         if persist_global:
-            HermesCLI._clear_persisted_context_for_model_switch(self, result)
+            FoolCLI._clear_persisted_context_for_model_switch(self, result)
             save_config_value("model.default", result.new_model)
             save_config_value("model.provider", result.target_provider)
             # base_url/api_mode were previously never persisted here, so a
@@ -10567,7 +10567,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         # (future sessions), but the row still records what THIS session
         # actually runs — otherwise a later resume would restore the stale
         # creation-time model over the user's new global choice.
-        HermesCLI._persist_model_switch_to_session(self, result)
+        FoolCLI._persist_model_switch_to_session(self, result)
 
     def _handle_model_picker_selection(self, persist_global: bool = False) -> None:
         state = self._model_picker_state
@@ -10934,7 +10934,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         # Persistence
         if persist_global:
-            HermesCLI._clear_persisted_context_for_model_switch(self, result)
+            FoolCLI._clear_persisted_context_for_model_switch(self, result)
             save_config_value("model.default", result.new_model)
             save_config_value("model.provider", result.target_provider)
             # See _apply_model_switch_result above for why base_url/api_mode
@@ -10952,7 +10952,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         # the row still records what THIS session runs; --once is ephemeral
         # and restored after one turn, so it must not touch the row).
         if not one_turn:
-            HermesCLI._persist_model_switch_to_session(self, result)
+            FoolCLI._persist_model_switch_to_session(self, result)
 
     def _handle_codex_runtime(self, cmd_original: str) -> None:
         """Handle /codex-runtime — toggle the codex app-server runtime opt-in.
@@ -15521,7 +15521,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                             label = " ⚕ Hermes "
                             if self.show_timestamps:
                                 label = f"{label}{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))} "
-                            fill = w - 2 - HermesCLI._status_bar_display_width(label)
+                            fill = w - 2 - FoolCLI._status_bar_display_width(label)
                             _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
                         _cprint(f"{_STREAM_PAD}{sentence.rstrip()}")
                     _tts_display_cb = display_callback
@@ -18644,7 +18644,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 term_rows = get_app().output.get_size().rows
             except Exception:
                 term_rows = shutil.get_terminal_size((100, 24)).lines
-            scroll_offset, visible = HermesCLI._compute_model_picker_viewport(
+            scroll_offset, visible = FoolCLI._compute_model_picker_viewport(
                 selected, state.get("_scroll_offset", 0), len(choices), term_rows,
             )
             state["_scroll_offset"] = scroll_offset
@@ -19581,7 +19581,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 # Main Entry Point
 # ============================================================================
 
-def _run_kanban_goal_loop_q(cli: "HermesCLI", first_response: str) -> None:
+def _run_kanban_goal_loop_q(cli: "FoolCLI", first_response: str) -> None:
     """Drive a kanban goal_mode worker through the Ralph-style goal loop.
 
     Called from the quiet single-query path AFTER the worker's first turn,
@@ -19791,7 +19791,7 @@ def main(
             ).start()
             # Worktree creation itself (~0.2-0.6s of git subprocess wall
             # time) runs concurrently with the rest of startup; join right
-            # after HermesCLI construction, before anything consumes
+            # after FoolCLI construction, before anything consumes
             # TERMINAL_CWD / wt_info. Failure semantics preserved: setup
             # failure still aborts the session (checked at join).
             _sync_base = CLI_CONFIG.get("worktree_sync", True)
@@ -19882,7 +19882,7 @@ def main(
     parsed_skills = _parse_skills_argument(skills)
 
     # Create CLI instance
-    cli = HermesCLI(
+    cli = FoolCLI(
         model=model,
         toolsets=toolsets_list,
         provider=provider,
@@ -19904,7 +19904,7 @@ def main(
         # result is only consumed at agent init (first message / first
         # agent-touching command), not by the banner. cmd_chat joins the
         # thread via cli.finalize_preloaded_skills() before any consumer
-        # reads cli.system_prompt — HermesCLI._create_agent calls it too,
+        # reads cli.system_prompt — FoolCLI._create_agent calls it too,
         # so no agent can be built with the skills missing.
         def _load_preloaded_skills() -> None:
             try:
@@ -19922,7 +19922,7 @@ def main(
         cli._preload_skills_thread.start()
 
     # Join the background worktree creation (started above) before anything
-    # consumes TERMINAL_CWD / wt_info — the HermesCLI construction it
+    # consumes TERMINAL_CWD / wt_info — the FoolCLI construction it
     # overlapped with is done. Setup failure keeps the old abort semantics.
     if _join_worktree is not None:
         wt_info = _join_worktree()
@@ -19957,7 +19957,7 @@ def main(
     atexit.register(_run_cleanup)
 
     # Also install signal handlers in single-query / `-q` mode.  Interactive
-    # mode registers its own inside HermesCLI.run(), but `-q` runs
+    # mode registers its own inside FoolCLI.run(), but `-q` runs
     # cli.agent.run_conversation() below and AIAgent spawns worker threads
     # for tools — so when SIGTERM arrives on the main thread, raising
     # KeyboardInterrupt only unwinds the main thread, not the worker

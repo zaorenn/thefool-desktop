@@ -184,7 +184,7 @@ def set_current_session_id(session_id: str) -> None:
     # Skip the process-global os.environ write for delegated children. The
     # child's own tools and subprocesses still resolve their id through the
     # ContextVar (task-local), while the parent's process-wide env keeps the
-    # parent's session identity. See HermesPRDelegationSessionContext task.
+    # parent's session identity. See FoolPRDelegationSessionContext task.
     try:
         from agent.delegation_context import is_delegated_child_context
 

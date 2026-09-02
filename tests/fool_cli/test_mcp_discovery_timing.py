@@ -222,7 +222,7 @@ def test_init_agent_forwards_single_query_flag(monkeypatch):
     """Single-query mode forwards single_query=True to the discovery wait."""
     import cli as cli_mod
 
-    cli = cli_mod.HermesCLI(compact=True)
+    cli = cli_mod.FoolCLI(compact=True)
     cli._session_db = object()
     cli._resumed = False
     cli.conversation_history = []
@@ -251,7 +251,7 @@ def test_init_agent_defaults_to_interactive(monkeypatch):
     """Without _single_query_mode, the helper uses interactive (short) bound."""
     import cli as cli_mod
 
-    cli = cli_mod.HermesCLI(compact=True)
+    cli = cli_mod.FoolCLI(compact=True)
     cli._session_db = object()
     cli._resumed = False
     cli.conversation_history = []

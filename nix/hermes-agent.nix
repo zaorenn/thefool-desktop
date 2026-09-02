@@ -38,26 +38,26 @@
   extraDependencyGroups ? [ ],
 }:
 let
-  mkHermesVenv =
+  mkFoolVenv =
     extraDependencyGroups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
-      pythonSrc = hermesNpmLib.pythonSrc;
+      pythonSrc = foolNpmLib.pythonSrc;
       dependency-groups = [ "all" ] ++ extraDependencyGroups;
     };
 
-  hermesVenv = (mkHermesVenv extraDependencyGroups).venv;
+  foolVenv = (mkFoolVenv extraDependencyGroups).venv;
 
-  hermesNpmLib = callPackage ./lib.nix {
+  foolNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix;
   };
 
-  hermesTui = callPackage ./tui.nix {
-    inherit hermesNpmLib;
+  foolTui = callPackage ./tui.nix {
+    inherit foolNpmLib;
   };
 
-  hermesWeb = callPackage ./web.nix {
-    inherit hermesNpmLib;
+  foolWeb = callPackage ./web.nix {
+    inherit foolNpmLib;
   };
 
   bundledSkills = lib.cleanSourceWith {
@@ -95,7 +95,7 @@ let
   };
 
   runtimeDeps = [
-    hermesNpmLib.nodejs
+    foolNpmLib.nodejs
     ripgrep
     git
     openssh
@@ -126,7 +126,7 @@ let
 
     # Collect core venv package names
     core = set()
-    venv_sp = pathlib.Path('${hermesVenv}/${sitePackagesPath}')
+    venv_sp = pathlib.Path('${foolVenv}/${sitePackagesPath}')
     for di in venv_sp.glob('*.dist-info'):
         meta = di / 'METADATA'
         if meta.exists():
@@ -178,12 +178,12 @@ stdenv.mkDerivation (finalAttrs: {
     ln -s ${bundledPlugins} $out/share/hermes-agent/plugins
     ln -s ${bundledLocales} $out/share/hermes-agent/locales
     ln -s ${bundledOptionalMcps} $out/share/hermes-agent/optional-mcps
-    ln -s ${hermesWeb} $out/share/hermes-agent/web_dist
-    ln -s ${hermesTui}/lib/hermes-tui $out/ui-tui
+    ln -s ${foolWeb} $out/share/hermes-agent/web_dist
+    ln -s ${foolTui}/lib/hermes-tui $out/ui-tui
 
     ${lib.concatMapStringsSep "\n"
       (name: ''
-        makeWrapper ${hermesVenv}/bin/${name} $out/bin/${name} \
+        makeWrapper ${foolVenv}/bin/${name} $out/bin/${name} \
           --suffix PATH : "${runtimePath}" \
           --set FOOL_BUNDLED_SKILLS $out/share/hermes-agent/skills \
           --set FOOL_OPTIONAL_SKILLS $out/share/hermes-agent/optional-skills \
@@ -193,8 +193,8 @@ stdenv.mkDerivation (finalAttrs: {
           --set FOOL_WEB_DIST $out/share/hermes-agent/web_dist \
           --set FOOL_TUI_DIR $out/ui-tui \
           --set-default FOOL_BIN $out/bin/hermes \
-          --set FOOL_PYTHON ${hermesVenv}/bin/python3 \
-          --set FOOL_NODE ${lib.getExe hermesNpmLib.nodejs}${
+          --set FOOL_PYTHON ${foolVenv}/bin/python3 \
+          --set FOOL_NODE ${lib.getExe foolNpmLib.nodejs}${
             # Fold the line continuation INTO the optionalString: a bare
             # `\` on the line above an empty expansion would dangle onto a
             # blank line, ending the makeWrapper command early and running
@@ -216,7 +216,7 @@ stdenv.mkDerivation (finalAttrs: {
 
     ${lib.optionalString (extraPythonPackages != [ ]) ''
       echo "=== Checking for plugin/core package collisions ==="
-      ${hermesVenv}/bin/python3 -c "${checkPackageCollisions}"
+      ${foolVenv}/bin/python3 -c "${checkPackageCollisions}"
       echo "=== No collisions ==="
     ''}
 
@@ -225,26 +225,26 @@ stdenv.mkDerivation (finalAttrs: {
 
   passthru =
     let
-      devPython = (mkHermesVenv (extraDependencyGroups ++ [ "dev" ])).editableVenv;
+      devPython = (mkFoolVenv (extraDependencyGroups ++ [ "dev" ])).editableVenv;
     in
     {
       inherit
-        hermesTui
-        hermesWeb
-        hermesNpmLib
-        hermesVenv
+        foolTui
+        foolWeb
+        foolNpmLib
+        foolVenv
         ;
 
-      # `hermesDesktop` references `finalAttrs.finalPackage` (this whole
+      # `foolDesktop` references `finalAttrs.finalPackage` (this whole
       # derivation, after all overrides are applied) so the desktop wrapper
       # can prepend its `/bin` to PATH.  The desktop's resolver step 4
       # ("existing hermes on PATH") then picks up the fully wrapped
       # `hermes` binary — venv with all deps, bundled skills/plugins,
       # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
       # of the agent resolution in the desktop wrapper.
-      hermesDesktop = callPackage ./desktop.nix {
-        inherit hermesNpmLib electron;
-        hermesAgent = finalAttrs.finalPackage;
+      foolDesktop = callPackage ./desktop.nix {
+        inherit foolNpmLib electron;
+        foolAgent = finalAttrs.finalPackage;
       };
 
       devShellHook = ''

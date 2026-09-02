@@ -7,15 +7,15 @@ import {
   appendUniquePathEntries,
   buildDesktopBackendEnv,
   buildDesktopBackendPath,
-  hermesManagedNodePathEntries,
-  normalizeHermesHomeRoot,
+  foolManagedNodePathEntries,
+  normalizeFoolHomeRoot,
   pathEnvKey,
   POSIX_SANE_PATH_ENTRIES
 } from './backend-env'
 
 test('desktop backend PATH adds The Fool-managed bins and missing POSIX sane entries', () => {
   const result = buildDesktopBackendPath({
-    hermesHome: '/Users/test/.fool',
+    foolHome: '/Users/test/.fool',
     venvRoot: '/Users/test/.fool/hermes-agent/venv',
     currentPath: '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin',
     platform: 'darwin',
@@ -39,12 +39,12 @@ test('desktop backend PATH adds The Fool-managed bins and missing POSIX sane ent
 })
 
 test('managed Node dirs lead with the platform-native layout but always offer both', () => {
-  const posix = hermesManagedNodePathEntries('/Users/test/.fool', {
+  const posix = foolManagedNodePathEntries('/Users/test/.fool', {
     platform: 'darwin',
     pathModule: path.posix
   })
 
-  const windows = hermesManagedNodePathEntries('C:\\Users\\test\\AppData\\Local\\fool', {
+  const windows = foolManagedNodePathEntries('C:\\Users\\test\\AppData\\Local\\fool', {
     platform: 'win32',
     pathModule: path.win32
   })
@@ -59,8 +59,8 @@ test('managed Node dirs lead with the platform-native layout but always offer bo
 })
 
 test('managed Node dirs are empty without a Fool home', () => {
-  assert.deepEqual(hermesManagedNodePathEntries(undefined, { platform: 'darwin', pathModule: path.posix }), [])
-  assert.deepEqual(hermesManagedNodePathEntries('', { platform: 'win32', pathModule: path.win32 }), [])
+  assert.deepEqual(foolManagedNodePathEntries(undefined, { platform: 'darwin', pathModule: path.posix }), [])
+  assert.deepEqual(foolManagedNodePathEntries('', { platform: 'win32', pathModule: path.win32 }), [])
 })
 
 test('every managed Node dir outranks the inherited PATH on both platforms', () => {
@@ -69,14 +69,14 @@ test('every managed Node dir outranks the inherited PATH on both platforms', () 
     ['win32', path.win32, 'C:\\fool', 'C:\\Program Files\\nodejs;C:\\Windows\\System32', ';']
   ] as const) {
     const entries = buildDesktopBackendPath({
-      hermesHome: home,
+      foolHome: home,
       venvRoot: null,
       currentPath: inherited,
       platform,
       pathModule
     }).split(delimiter)
 
-    const managed = hermesManagedNodePathEntries(home, { platform, pathModule })
+    const managed = foolManagedNodePathEntries(home, { platform, pathModule })
     const firstInherited = Math.min(...inherited.split(delimiter).map(entry => entries.indexOf(entry)))
 
     for (const dir of managed) {
@@ -90,7 +90,7 @@ test('every managed Node dir outranks the inherited PATH on both platforms', () 
 
 test('desktop backend PATH preserves first occurrence and avoids duplicates', () => {
   const result = buildDesktopBackendPath({
-    hermesHome: '/Users/test/.fool',
+    foolHome: '/Users/test/.fool',
     venvRoot: '/Users/test/.fool/hermes-agent/venv',
     currentPath: '/opt/homebrew/bin:/usr/bin:/opt/homebrew/bin:/bin',
     platform: 'darwin',
@@ -107,7 +107,7 @@ test('desktop backend PATH preserves first occurrence and avoids duplicates', ()
 
 test('buildDesktopBackendEnv extends PYTHONPATH and backend PATH together', () => {
   const env = buildDesktopBackendEnv({
-    hermesHome: '/Users/test/.fool',
+    foolHome: '/Users/test/.fool',
     pythonPathEntries: ['/repo/hermes-agent'],
     venvRoot: '/Users/test/.fool/hermes-agent/venv',
     currentEnv: {
@@ -129,7 +129,7 @@ test('buildDesktopBackendEnv extends PYTHONPATH and backend PATH together', () =
 
 test('buildDesktopBackendEnv forces PYTHONUTF8 unless the user set it explicitly', () => {
   const defaulted = buildDesktopBackendEnv({
-    hermesHome: '/Users/test/.fool',
+    foolHome: '/Users/test/.fool',
     currentEnv: { PATH: '/usr/bin' },
     platform: 'darwin',
     pathModule: path.posix
@@ -138,7 +138,7 @@ test('buildDesktopBackendEnv forces PYTHONUTF8 unless the user set it explicitly
   assert.equal(defaulted.PYTHONUTF8, '1')
 
   const optedOut = buildDesktopBackendEnv({
-    hermesHome: '/Users/test/.fool',
+    foolHome: '/Users/test/.fool',
     currentEnv: { PATH: '/usr/bin', PYTHONUTF8: '0' },
     platform: 'darwin',
     pathModule: path.posix
@@ -147,21 +147,21 @@ test('buildDesktopBackendEnv forces PYTHONUTF8 unless the user set it explicitly
   assert.equal(optedOut.PYTHONUTF8, '0')
 })
 
-test('normalizeHermesHomeRoot maps profile homes back to the global Fool root', () => {
+test('normalizeFoolHomeRoot maps profile homes back to the global Fool root', () => {
   assert.equal(
-    normalizeHermesHomeRoot('/Users/test/.fool/profiles/oracle', { pathModule: path.posix }),
+    normalizeFoolHomeRoot('/Users/test/.fool/profiles/oracle', { pathModule: path.posix }),
     '/Users/test/.fool'
   )
   assert.equal(
-    normalizeHermesHomeRoot('C:\\Users\\test\\AppData\\Local\\fool\\profiles\\oracle', { pathModule: path.win32 }),
+    normalizeFoolHomeRoot('C:\\Users\\test\\AppData\\Local\\fool\\profiles\\oracle', { pathModule: path.win32 }),
     'C:\\Users\\test\\AppData\\Local\\fool'
   )
-  assert.equal(normalizeHermesHomeRoot('/Users/test/.fool', { pathModule: path.posix }), '/Users/test/.fool')
+  assert.equal(normalizeFoolHomeRoot('/Users/test/.fool', { pathModule: path.posix }), '/Users/test/.fool')
 })
 
 test('Windows PATH casing and delimiter are preserved without POSIX sane entries', () => {
   const env = buildDesktopBackendEnv({
-    hermesHome: 'C:\\Users\\test\\AppData\\Local\\fool',
+    foolHome: 'C:\\Users\\test\\AppData\\Local\\fool',
     pythonPathEntries: ['C:\\repo\\hermes-agent'],
     venvRoot: 'C:\\Users\\test\\AppData\\Local\\fool\\hermes-agent\\venv',
     currentEnv: {
@@ -211,7 +211,7 @@ test('ASCII olmayan bir yolda espeak ASCII kisa yolu aliyor', () => {
   // düzeltmesi runtime checkout'unda yaşıyor ve oraya ancak yükleyici
   // koştuktan sonra ulaşıyor. Buradaki satır kurulur kurulmaz geçerli.
   const env = buildDesktopBackendEnv({
-    hermesHome: 'C:/Users/Birhan Oğurlu/AppData/Local/fool',
+    foolHome: 'C:/Users/Birhan Oğurlu/AppData/Local/fool',
     venvRoot: 'C:/Users/Birhan Oğurlu/AppData/Local/fool/fool-agent/venv',
     currentEnv: {},
     platform: 'win32',
@@ -233,7 +233,7 @@ test('ASCII bir yola DOKUNULMUYOR', () => {
   let shortAsked = false
 
   const env = buildDesktopBackendEnv({
-    hermesHome: 'C:/Users/dev/AppData/Local/fool',
+    foolHome: 'C:/Users/dev/AppData/Local/fool',
     venvRoot: 'C:/Users/dev/AppData/Local/fool/fool-agent/venv',
     currentEnv: {},
     platform: 'win32',
@@ -252,7 +252,7 @@ test('ASCII bir yola DOKUNULMUYOR', () => {
 
 test('KULLANICININ ayari eziliyor DEGIL', () => {
   const env = buildDesktopBackendEnv({
-    hermesHome: 'C:/Users/dev/AppData/Local/fool',
+    foolHome: 'C:/Users/dev/AppData/Local/fool',
     venvRoot: 'C:/Users/dev/AppData/Local/fool/fool-agent/venv',
     currentEnv: { ESPEAK_DATA_PATH: 'D:/my-espeak' },
     platform: 'win32',
@@ -266,7 +266,7 @@ test('KULLANICININ ayari eziliyor DEGIL', () => {
 test('veri YOKSA hicbir sey iddia edilmiyor', () => {
   // Yarım bir kurulumu göstermek, hiçbir şey göstermemekle aynı hatayı verirdi.
   const env = buildDesktopBackendEnv({
-    hermesHome: 'C:/Users/dev/AppData/Local/fool',
+    foolHome: 'C:/Users/dev/AppData/Local/fool',
     venvRoot: 'C:/Users/dev/AppData/Local/fool/fool-agent/venv',
     currentEnv: {},
     platform: 'win32',
@@ -279,7 +279,7 @@ test('veri YOKSA hicbir sey iddia edilmiyor', () => {
 
 test('POSIX ETKILENMIYOR', () => {
   const env = buildDesktopBackendEnv({
-    hermesHome: '/home/u/.fool',
+    foolHome: '/home/u/.fool',
     venvRoot: '/home/u/.fool/fool-agent/venv',
     currentEnv: {},
     platform: 'linux',

@@ -73,7 +73,7 @@ export function useNotchClickThrough(): void {
     // o ``document.elementFromPoint`` ile geliyor. Kullanilmayan bir ref
     // tasimak, HUD'un kancasina benzesin diye tasinan olu bir bagimlilik
     // olurdu.
-    const setIgnoreMouse = window.hermesDesktop?.notch?.setIgnoreMouse
+    const setIgnoreMouse = window.foolDesktop?.notch?.setIgnoreMouse
 
     if (!setIgnoreMouse) {
       return

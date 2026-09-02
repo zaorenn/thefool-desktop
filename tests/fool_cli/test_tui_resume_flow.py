@@ -149,7 +149,7 @@ def _stub_plugin_discovery(monkeypatch):
 
 
 def test_oneshot_wires_session_db_for_recall(monkeypatch):
-    """hermes -z bypasses HermesCLI, but recall still needs SessionDB."""
+    """hermes -z bypasses FoolCLI, but recall still needs SessionDB."""
     from fool_cli.oneshot import _run_agent
 
     captured = {}

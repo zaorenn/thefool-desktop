@@ -6,7 +6,7 @@ export interface ProfileRouteConfig {
   remoteUrl: string
   sshHost: string
   sshPort: null | number
-  sshRemoteHermesPath: string
+  sshRemoteFoolPath: string
   sshRemoteProfile: string
   sshUser: string
 }
@@ -149,7 +149,7 @@ async function connectionScope(
         effective.user.trim(),
         effective.hostname.trim().toLowerCase(),
         effective.port ?? 22,
-        config.sshRemoteHermesPath.trim()
+        config.sshRemoteFoolPath.trim()
       ].join('\0'),
       mode: 'remote'
     }

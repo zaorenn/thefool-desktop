@@ -60,7 +60,7 @@ function publishToMain(value: string): void {
     return
   }
 
-  void window.hermesDesktop?.notch?.setPushToTalk?.(parsePttBinding(value).code)
+  void window.foolDesktop?.notch?.setPushToTalk?.(parsePttBinding(value).code)
 }
 
 // Montajda BIR KEZ: ana surec varsayilanla basliyor ve kullanicinin ayari

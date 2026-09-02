@@ -39,7 +39,7 @@ Design notes / invariants (same contract as ``fool_cli/goals.py``):
   continuation queued (or the goal judge is mid-flight), the /loop tick
   defers to the next interval instead of racing a second synthetic turn.
   Goal-continuation turns never count as loop ticks and vice versa.
-- This module has zero hard dependency on ``cli.HermesCLI``, the gateway
+- This module has zero hard dependency on ``cli.FoolCLI``, the gateway
   runner, or the TUI gateway — all three drive the same ``LoopManager``.
 """
 

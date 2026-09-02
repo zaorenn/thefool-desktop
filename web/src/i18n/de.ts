@@ -120,8 +120,8 @@ export const de: Translations = {
     starting: "Startet",
     startedInBackground: "Im Hintergrund gestartet — siehe Protokolle für den Fortschritt",
     stopped: "Gestoppt",
-    updateHermes: "The Fool aktualisieren",
-    updatingHermes: "The Fool wird aktualisiert…",
+    updateFool: "The Fool aktualisieren",
+    updatingFool: "The Fool wird aktualisiert…",
     waitingForOutput: "Warte auf Ausgabe…",
   },
 

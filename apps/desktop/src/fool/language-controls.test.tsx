@@ -121,6 +121,7 @@ it('CAGIRAN taraf da kararli bir kimlik veriyor', async () => {
   // -- kararli bir sahte islev verdigi icin -- yine yesil yanar.
   const fs = await import('node:fs')
   const path = await import('node:path')
+
   const source = fs.readFileSync(
     path.join(__dirname, '..', 'app', 'shell', 'titlebar-controls.tsx'),
     'utf8'

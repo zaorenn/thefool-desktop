@@ -181,7 +181,7 @@ export function stopVoicePlayback() {
 // ---------------------------------------------------------------------------
 
 async function resolveSpeakStreamUrl(options?: VoicePlaybackOptions): Promise<null | string> {
-  const desktop = window.hermesDesktop
+  const desktop = window.foolDesktop
 
   if (!desktop?.getConnection) {
     return null

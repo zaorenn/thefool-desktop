@@ -55,7 +55,7 @@ class TestFireworksHeaders:
 
     def test_user_agent_identifies_hermes(self, fireworks_profile):
         # Prefix, not the full string — the version moves every release.
-        assert fireworks_profile.default_headers["User-Agent"].startswith("HermesAgent/")
+        assert fireworks_profile.default_headers["User-Agent"].startswith("FoolAgent/")
 
 
 class TestFireworksAliases:

@@ -120,8 +120,8 @@ export const hu: Translations = {
     starting: "Indul",
     startedInBackground: "Háttérben elindítva — kövesse a naplókat a folyamathoz",
     stopped: "Leállítva",
-    updateHermes: "The Fool frissítése",
-    updatingHermes: "The Fool frissítése…",
+    updateFool: "The Fool frissítése",
+    updatingFool: "The Fool frissítése…",
     waitingForOutput: "Várakozás a kimenetre…",
   },
 
@@ -522,7 +522,7 @@ export const hu: Translations = {
       highest_tier: "Legmagasabb szint",
       highest_tier_hint: "Copper → Silver → Gold → Diamond → Olympian",
       latest: "Legutóbbi",
-      latest_hint_empty: "futtasd többet a Hermest",
+      latest_hint_empty: "futtasd többet a Foolt",
       none_yet: "Még semmi",
     },
     state: {

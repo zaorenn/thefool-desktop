@@ -7,7 +7,7 @@ eviyle çalıştırıyor (``hermes-desktop-fresh-install-*\\hermes-home``).
 ``install.ps1`` kurulumun sonunda ``FOOL_HOME``u KULLANICI kapsamına yazıyordu
 ve test bittiğinde bu değeri kimse geri almıyordu.
 
-Masaüstü uygulaması (``apps/desktop/electron/main.ts::resolveHermesHome``)
+Masaüstü uygulaması (``apps/desktop/electron/main.ts::resolveFoolHome``)
 kullanıcı kapsamlı ``FOOL_HOME``u ``%LOCALAPPDATA%\\fool``dan **önce** okuyor --
 Explorer'dan açılan bir GUI, login'den sonra ``setx`` ile ayarlanmış bir
 değişkeni ``process.env``de göremediği için bilerek böyle yazılmıştı.
@@ -30,7 +30,7 @@ from pathlib import Path
 INSTALL = Path("scripts/install.ps1").read_text(encoding="utf-8")
 
 #: Kalıcı yazmanın yapıldığı satır.
-PERSIST = '[Environment]::SetEnvironmentVariable("FOOL_HOME", $HermesHome, "User")'
+PERSIST = '[Environment]::SetEnvironmentVariable("FOOL_HOME", $FoolHome, "User")'
 
 
 def test_sandbox_kapisi_DURUYOR() -> None:
@@ -70,7 +70,7 @@ def test_oturum_degiskeni_YINE_ayarlaniyor() -> None:
     persist = INSTALL.index(PERSIST)
     after = INSTALL[persist : persist + 2000]
 
-    assert "$env:FOOL_HOME = $HermesHome" in after
+    assert "$env:FOOL_HOME = $FoolHome" in after
 
 
 def test_masaustu_kullanici_kapsamini_OKUMAYA_devam_ediyor() -> None:

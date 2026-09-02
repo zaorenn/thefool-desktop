@@ -83,7 +83,7 @@ export function ConnectionsSettings() {
   const [plainTextConfirm, setPlainTextConfirm] = useState(false)
   const [updatingAll, setUpdatingAll] = useState(false)
 
-  const bridge = window.hermesDesktop?.connections
+  const bridge = window.foolDesktop?.connections
 
   const load = useCallback(async () => {
     if (!bridge) {

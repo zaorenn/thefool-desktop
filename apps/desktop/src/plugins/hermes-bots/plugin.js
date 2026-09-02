@@ -1391,8 +1391,8 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile }) {
     try {
       if (host.openExternal) {
         host.openExternal(authUrl)
-      } else if (typeof window !== 'undefined' && window.hermesDesktop && window.hermesDesktop.openExternal) {
-        window.hermesDesktop.openExternal(authUrl)
+      } else if (typeof window !== 'undefined' && window.foolDesktop && window.foolDesktop.openExternal) {
+        window.foolDesktop.openExternal(authUrl)
       } else {
         window.open(authUrl, '_blank')
       }

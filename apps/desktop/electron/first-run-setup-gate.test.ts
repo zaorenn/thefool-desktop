@@ -143,6 +143,7 @@ test('FOOL_DESKTOP_AUTO_SETUP=local kapiyi atlar (kurulum SURESI olculebilsin)',
 
   try {
     const prompts: unknown[] = []
+
     const gate = createFirstRunSetupGate({
       promptChoice: backend => prompts.push(backend),
       stuckAfterMs: 0
@@ -168,6 +169,7 @@ test('degisken YOKKEN gercek kullaniciya hala soruluyor', async () => {
 
   try {
     const prompts: unknown[] = []
+
     const gate = createFirstRunSetupGate({
       promptChoice: backend => prompts.push(backend),
       stuckAfterMs: 0

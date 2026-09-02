@@ -200,7 +200,7 @@ async function connect(known: SuggestibleServer, sessionId: string | null, cance
         status: getMcpOAuthFlow,
         cancelled,
         cancel: cancelMcpOAuthFlow,
-        openExternal: url => window.hermesDesktop.openExternal(url)
+        openExternal: url => window.foolDesktop.openExternal(url)
       })
     } catch (error) {
       // Decline/failure means "no server" — roll back the config write

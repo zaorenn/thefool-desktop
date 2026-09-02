@@ -1,11 +1,11 @@
 import type { BillingBlock, UsageModelData } from '@fool/shared/billing'
-import type { HermesSkin } from '@fool/shared/skin'
+import type { FoolSkin } from '@fool/shared/skin'
 
 import type { SessionInfo, SlashCategory, SubagentStatus, Usage } from './types.js'
 
 /** The cross-surface skin contract (canonical shape in `@fool/shared`).
  *  Includes the paired light_colors/dark_colors overlays from #20379. */
-export type GatewaySkin = HermesSkin
+export type GatewaySkin = FoolSkin
 
 export interface GatewayCompletionItem {
   display: string

@@ -1,4 +1,4 @@
-"""Tests for HermesCLI initialization -- catches configuration bugs
+"""Tests for FoolCLI initialization -- catches configuration bugs
 that only manifest at runtime (not in mocked unit tests)."""
 
 import os
@@ -11,7 +11,7 @@ import pytest
 
 
 def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
-    """Create a HermesCLI instance with minimal mocking."""
+    """Create a FoolCLI instance with minimal mocking."""
     import importlib
 
     _clean_config = {
@@ -53,7 +53,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
             _cli_mod = importlib.reload(_cli_mod)
             with patch.object(_cli_mod, "get_tool_definitions", return_value=[]), \
                  patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}):
-                return _cli_mod.HermesCLI(**kwargs)
+                return _cli_mod.FoolCLI(**kwargs)
     finally:
         # The reload above re-executed cli.py while prompt_toolkit was stubbed
         # with MagicMocks, permanently rebinding cli's module globals
@@ -389,7 +389,7 @@ class TestNestedDictModelDefaultPairing:
     """A dict-valued ``model.default`` must keep its nested provider paired.
 
     ``model.default: {provider: ..., model: ...}`` canonicalizes to the string
-    model AND the nested provider, so ``HermesCLI`` routes the model through
+    model AND the nested provider, so ``FoolCLI`` routes the model through
     that provider instead of discarding it and falling back to the outer
     merged ``model.provider`` (``"auto"`` — authoritative at runtime
     resolution, which would route the model through the wrong active

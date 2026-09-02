@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from fool_cli.console_engine import HermesConsoleEngine, run_console_repl
+from fool_cli.console_engine import FoolConsoleEngine, run_console_repl
 
 
 EXPECTED_CONSOLE_COMMANDS = {
@@ -251,7 +251,7 @@ def test_sessions_list_and_stats_use_isolated_session_store(_isolate_hermes_home
     finally:
         db.close()
 
-    engine = HermesConsoleEngine()
+    engine = FoolConsoleEngine()
     listed = engine.execute("sessions list --limit 10")
     stats = engine.execute("sessions stats")
 
@@ -292,7 +292,7 @@ def test_sessions_export_rejects_oversized_single_before_touching_output(
     output = tmp_path / "sessions.jsonl"
     output.write_text("keep me\n", encoding="utf-8")
 
-    result = HermesConsoleEngine().execute(
+    result = FoolConsoleEngine().execute(
         f"sessions export {output} --session-id too-large",
         confirmed=True,
     )
@@ -336,7 +336,7 @@ def test_sessions_export_all_uses_per_session_budget(
 
     # 3 sessions x 2 messages = 6 total > 3, but each session is under the
     # per-session limit, so the full-DB export succeeds.
-    result = HermesConsoleEngine().execute(
+    result = FoolConsoleEngine().execute(
         f"sessions export {output}",
         confirmed=True,
     )
@@ -386,7 +386,7 @@ def test_sessions_export_all_rejects_single_oversized_session(
     monkeypatch.setattr(SessionDB, "export_all", tracked_export_all)
     output = tmp_path / "all-sessions.jsonl"
 
-    result = HermesConsoleEngine().execute(
+    result = FoolConsoleEngine().execute(
         f"sessions export {output}",
         confirmed=True,
     )
@@ -421,7 +421,7 @@ def test_sessions_export_zero_limit_disables_guard(
     monkeypatch.setattr(fool_state, "resolved_max_export_messages", lambda: 0)
     output = tmp_path / "huge.jsonl"
 
-    result = HermesConsoleEngine().execute(
+    result = FoolConsoleEngine().execute(
         f"sessions export {output} --session-id huge",
         confirmed=True,
     )
@@ -433,7 +433,7 @@ def test_cron_pause_resume_and_run_require_confirmation(_isolate_hermes_home):
     from cron.jobs import create_job, get_job
 
     job = create_job(prompt="say hello", schedule="every 1h", name="alpha")
-    engine = HermesConsoleEngine()
+    engine = FoolConsoleEngine()
 
     pending = engine.execute(f"cron pause {job['id']}")
     assert pending.status == "confirm_required"
@@ -498,7 +498,7 @@ def test_capture_output_preserves_integer_exit_code_message():
 
 
 def test_execute_handler_string_exit_returns_error_not_crash(_isolate_hermes_home):
-    result = HermesConsoleEngine().execute(
+    result = FoolConsoleEngine().execute(
         "auth remove openrouter __no_such_credential__", confirmed=True
     )
 
@@ -553,7 +553,7 @@ def test_console_checkpoints_prune_does_not_reprompt_for_orphans(
 
     monkeypatch.setattr("builtins.input", _unexpected_input)
 
-    result = HermesConsoleEngine().execute("checkpoints prune", confirmed=True)
+    result = FoolConsoleEngine().execute("checkpoints prune", confirmed=True)
 
     assert result.status == "ok"
     assert len(prune_calls) == 1
@@ -580,7 +580,7 @@ def test_console_checkpoints_prune_succeeds_without_a_tty(
 
     monkeypatch.setattr("builtins.input", _eof_input)
 
-    result = HermesConsoleEngine().execute("checkpoints prune", confirmed=True)
+    result = FoolConsoleEngine().execute("checkpoints prune", confirmed=True)
 
     assert result.status == "ok"
     assert "Aborted." not in result.output

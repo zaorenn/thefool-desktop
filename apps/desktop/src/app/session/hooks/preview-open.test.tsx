@@ -54,7 +54,7 @@ describe('open_preview', () => {
     closeRightRail()
     window.localStorage.clear()
 
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'foolDesktop', {
       configurable: true,
       value: { normalizePreviewTarget: vi.fn(async (target: string) => fileTarget(target)) }
     })
@@ -178,7 +178,7 @@ describe('open_preview', () => {
     })
 
     expect($previewTabs.get()).toHaveLength(0)
-    expect(window.hermesDesktop.normalizePreviewTarget).not.toHaveBeenCalled()
+    expect(window.foolDesktop.normalizePreviewTarget).not.toHaveBeenCalled()
   })
 
   it('does not open a preview off the back of a tool result', async () => {

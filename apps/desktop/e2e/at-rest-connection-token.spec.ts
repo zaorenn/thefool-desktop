@@ -144,7 +144,7 @@ const MAX_SCAN_BYTES = 16 * 1024 * 1024
  * one worker at a time and both launches here are sequential; the
  * single-instance lock keys off userData, which is per-sandbox.
  */
-const STABLE_APP_NAME = 'HermesE2EAtRestStorage'
+const STABLE_APP_NAME = 'FoolE2EAtRestStorage'
 
 // ─── Fake gateway ───────────────────────────────────────────────────────
 
@@ -365,7 +365,7 @@ function expectOwnerOnlyMode(filePath: string, why: string): void {
  * hermetic). This is also a real user situation rather than an artificial one:
  * the boot-failure overlay's own recovery affordance is "Connection settings",
  * i.e. pointing the app at a remote gateway is exactly what a user does from
- * this state. BOOT_FAKE_ERROR short-circuits startHermes() *before* remote
+ * this state. BOOT_FAKE_ERROR short-circuits startFool() *before* remote
  * resolution, so no launch ever dials the fake gateway on its own.
  */
 async function launchAgainst(sandbox: Sandbox): Promise<{ app: ElectronApplication; page: Page }> {
@@ -379,7 +379,7 @@ async function launchAgainst(sandbox: Sandbox): Promise<{ app: ElectronApplicati
   // The capability bridge is what we drive; it lands with the preload, well
   // before the app would be "ready" in the boot sense.
   await page.waitForFunction(
-    () => Boolean((window as unknown as { hermesDesktop?: Record<string, unknown> }).hermesDesktop?.saveConnectionConfig),
+    () => Boolean((window as unknown as { foolDesktop?: Record<string, unknown> }).foolDesktop?.saveConnectionConfig),
     undefined,
     { timeout: 60_000 },
   )
@@ -451,7 +451,7 @@ interface SaveOutcome {
 async function saveRemoteToken(page: Page, remoteUrl: string, remoteToken?: string): Promise<SaveOutcome> {
   return page.evaluate(
     async ([url, token]) => {
-      const desktop = (window as unknown as { hermesDesktop: any }).hermesDesktop
+      const desktop = (window as unknown as { foolDesktop: any }).foolDesktop
 
       try {
         const config = await desktop.saveConnectionConfig({
@@ -480,7 +480,7 @@ async function saveRemoteToken(page: Page, remoteUrl: string, remoteToken?: stri
  */
 async function exerciseStoredToken(page: Page, remoteUrl: string): Promise<{ error: null | string }> {
   return page.evaluate(async url => {
-    const desktop = (window as unknown as { hermesDesktop: any }).hermesDesktop
+    const desktop = (window as unknown as { foolDesktop: any }).foolDesktop
 
     try {
       await desktop.testConnectionConfig({ mode: 'remote', remoteUrl: url })
@@ -603,7 +603,7 @@ test.describe('remote gateway session token at rest', () => {
       'the gateway session token leaked into a userData file',
     ).toEqual([])
     expect(
-      scanTreeForSecret(sandbox.hermesHome, needles),
+      scanTreeForSecret(sandbox.foolHome, needles),
       'the gateway session token leaked into a FOOL_HOME file (logs included)',
     ).toEqual([])
 
@@ -628,7 +628,7 @@ test.describe('remote gateway session token at rest', () => {
     ).toBe(userDataDir)
 
     const reread = await second.page.evaluate(async () => {
-      const desktop = (window as unknown as { hermesDesktop: any }).hermesDesktop
+      const desktop = (window as unknown as { foolDesktop: any }).foolDesktop
 
       return desktop.getConnectionConfig()
     })
@@ -713,7 +713,7 @@ test.describe('remote gateway session token at rest', () => {
     app = second.app
 
     const reread = await second.page.evaluate(async () => {
-      const desktop = (window as unknown as { hermesDesktop: any }).hermesDesktop
+      const desktop = (window as unknown as { foolDesktop: any }).foolDesktop
 
       return desktop.getConnectionConfig()
     })
@@ -778,7 +778,7 @@ test.describe('remote gateway session token at rest', () => {
     app = launched.app
 
     const reread = await launched.page.evaluate(async () => {
-      const desktop = (window as unknown as { hermesDesktop: any }).hermesDesktop
+      const desktop = (window as unknown as { foolDesktop: any }).foolDesktop
 
       return desktop.getConnectionConfig()
     })

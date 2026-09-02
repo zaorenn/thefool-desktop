@@ -137,7 +137,7 @@ export function NotchShell() {
   const voice = useNotchVoice({
     onStopWord: () => {
       setSessionActive(false)
-      window.hermesDesktop?.notch?.close?.()
+      window.foolDesktop?.notch?.close?.()
     }
   })
 
@@ -150,7 +150,7 @@ export function NotchShell() {
   const [shortcut, setShortcut] = useState<null | string>(null)
 
   useEffect(() => {
-    void window.hermesDesktop?.notch?.shortcut?.().then(r => setShortcut(r?.shortcut ?? null))
+    void window.foolDesktop?.notch?.shortcut?.().then(r => setShortcut(r?.shortcut ?? null))
   }, [])
   const shellRef = useRef<HTMLDivElement | null>(null)
 
@@ -194,7 +194,7 @@ export function NotchShell() {
     () =>
       onGatewayEvent('wake.detected', () => {
         setSessionActive(true)
-        void window.hermesDesktop?.notch?.open?.()
+        void window.foolDesktop?.notch?.open?.()
       }),
     []
   )
@@ -214,7 +214,7 @@ export function NotchShell() {
     }
 
     const timer = setTimeout(() => {
-      void window.hermesDesktop?.notch?.open?.()
+      void window.foolDesktop?.notch?.open?.()
     }, 150)
 
     return () => clearTimeout(timer)
@@ -491,20 +491,20 @@ export function NotchShell() {
           // unutulur -- bir sonraki acilis temiz bir oturum alsin.
           voiceRef.current.cancel()
           voiceRef.current.endSession()
-          window.hermesDesktop?.notch?.close?.()
+          window.foolDesktop?.notch?.close?.()
 
           return false
         }
 
         // Oturum aciliyor: centigi one getir ve ODAGI al. Odak olmadan sag
         // Ctrl hicbir zaman ulasmaz.
-        void window.hermesDesktop?.notch?.open?.()
+        void window.foolDesktop?.notch?.open?.()
 
         return true
       })
     }
 
-    const stopListenRequest = window.hermesDesktop?.notch?.onListenRequest?.(handleListenRequest)
+    const stopListenRequest = window.foolDesktop?.notch?.onListenRequest?.(handleListenRequest)
 
     // Montajda BEKLEYEN niyeti al.
     //
@@ -512,7 +512,7 @@ export function NotchShell() {
     // mesaj, renderer ``ipcRenderer.on`` cagirmadan once gidiyor ve dusuyor.
     // Kullanicinin gordugu buydu -- ilk Ctrl+Alt+V hicbir sey yapmiyor,
     // ikincisi aciyor. Ustune ac/kapa sayaci bir kayiyordu.
-    void window.hermesDesktop?.notch?.takeListenRequest?.().then(pending => {
+    void window.foolDesktop?.notch?.takeListenRequest?.().then(pending => {
       if (pending) {
         handleListenRequest(pending)
       }
@@ -521,7 +521,7 @@ export function NotchShell() {
     // BASKA penceremizden iletilen tus. Centik odakta olmasa da bas-konus
     // calisiyor -- odaklanmamis bir pencere hicbir tus olayi almiyor ve
     // "bir kez calisip oluyor" hatasi tam olarak buydu.
-    const stopForwarded = window.hermesDesktop?.notch?.onPushToTalk?.(event => {
+    const stopForwarded = window.foolDesktop?.notch?.onPushToTalk?.(event => {
       // İletilen tuş GERÇEK bir ``KeyboardEvent`` DEĞİL: IPC'den düz bir
       // nesne olarak geliyor. ``onDown`` basılı tutuşun başka kısayolları
       // tetiklememesi için ``preventDefault()`` çağırıyor -- ve düz nesnede o

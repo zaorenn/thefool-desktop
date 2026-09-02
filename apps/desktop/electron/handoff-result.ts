@@ -36,15 +36,15 @@ export interface HandoffResult {
   branch: string
 }
 
-export function handoffResultPath(hermesHome: string): string {
-  return path.join(hermesHome, '.fool-update-result.json')
+export function handoffResultPath(foolHome: string): string {
+  return path.join(foolHome, '.fool-update-result.json')
 }
 
 export function readAndConsumeHandoffResult(
-  hermesHome: string,
+  foolHome: string,
   { now = Date.now, maxAgeMs = HANDOFF_RESULT_MAX_AGE_MS }: { now?: () => number; maxAgeMs?: number } = {}
 ): HandoffResult | null {
-  const file = handoffResultPath(hermesHome)
+  const file = handoffResultPath(foolHome)
   let raw: string
 
   try {

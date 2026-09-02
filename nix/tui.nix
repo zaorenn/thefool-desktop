@@ -1,6 +1,6 @@
 # nix/tui.nix — Hermes TUI (Ink/React) compiled with tsc and bundled
-{ hermesNpmLib, ... }:
-hermesNpmLib.buildNpmPackage {
+{ foolNpmLib, ... }:
+foolNpmLib.buildNpmPackage {
   dirs = [
     "ui-tui"
     "apps/shared"

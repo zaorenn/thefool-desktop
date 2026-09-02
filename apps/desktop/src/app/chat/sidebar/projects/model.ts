@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useMemo, useState } from 'react'
 
-import type { HermesGitWorktree } from '@/global'
+import type { FoolGitWorktree } from '@/global'
 import type { SessionInfo } from '@/hermes'
 import { desktopGit } from '@/lib/desktop-git'
 import { mapPool } from '@/lib/pool'
@@ -123,8 +123,8 @@ export function orderProjectsByIds(projects: SidebarProjectTree[], orderIds: str
 export function useRepoWorktreeMap(
   repoPaths: string[],
   enabled: boolean
-): [Record<string, HermesGitWorktree[]>, boolean] {
-  const [map, setMap] = useState<Record<string, HermesGitWorktree[]>>({})
+): [Record<string, FoolGitWorktree[]>, boolean] {
+  const [map, setMap] = useState<Record<string, FoolGitWorktree[]>>({})
   const [loading, setLoading] = useState(false)
   const key = useMemo(() => pathListKey(repoPaths), [repoPaths])
   // Refetch when a worktree is added/removed so a new lane shows immediately.

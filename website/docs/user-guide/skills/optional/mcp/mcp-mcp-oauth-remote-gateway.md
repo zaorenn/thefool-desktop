@@ -135,7 +135,7 @@ are out of the dashboard's scope regardless.
 ## The Workaround
 
 Do the OAuth dance manually, then write the resulting tokens into the exact files
-Hermes' `HermesTokenStorage` would have written, so on `/reload-mcp` Hermes finds
+Hermes' `FoolTokenStorage` would have written, so on `/reload-mcp` Hermes finds
 cached tokens and skips the browser flow entirely.
 
 Run the shell commands below through the `terminal` tool on the gateway host and
@@ -260,7 +260,7 @@ When the user pastes the callback URL:
 
 ### 8. Write tokens in Hermes' exact schema
 
-`tools/mcp_oauth.py::HermesTokenStorage` expects two files under
+`tools/mcp_oauth.py::FoolTokenStorage` expects two files under
 `$FOOL_HOME/mcp-tokens/` (create dir with `0o700`, files with `0o600`):
 
 **`<server_name>.json`** — the `OAuthToken` pydantic model:
@@ -332,7 +332,7 @@ UA** — Cloudflare will 403 you even though Hermes (which uses httpx) will succ
 
 ### 11. Tell the user to run `/reload-mcp`
 
-On reload, Hermes sees `auth: oauth`, calls `HermesTokenStorage.get_tokens()`,
+On reload, Hermes sees `auth: oauth`, calls `FoolTokenStorage.get_tokens()`,
 finds your cached tokens, skips the browser flow, and registers `mcp_<name>_*`
 tools. Refresh happens automatically before `expires_in` elapses.
 

@@ -1,6 +1,6 @@
 import type { BillingBlock } from '@fool/shared'
 import { registryBackendScopeKey } from '@fool/shared'
-import type { HermesSkin } from '@fool/shared/skin'
+import type { FoolSkin } from '@fool/shared/skin'
 import type { QueryClient } from '@tanstack/react-query'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 
@@ -259,7 +259,7 @@ interface GatewayEventDeps {
     runtimeSessionId?: string | null
   ) => Promise<void>
   queryClient: QueryClient
-  refreshHermesConfig: () => Promise<void>
+  refreshFoolConfig: () => Promise<void>
   scheduleSessionsRefresh: () => void
   sessionInterrupted: (sessionId: string) => boolean
   sessionStateByRuntimeIdRef: MutableRefObject<Map<string, ClientSessionState>>
@@ -293,7 +293,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
     finalizeInterimAssistantMessage,
     hydrateFromStoredSession,
     queryClient,
-    refreshHermesConfig,
+    refreshFoolConfig,
     scheduleSessionsRefresh,
     sessionInterrupted,
     sessionStateByRuntimeIdRef,
@@ -305,7 +305,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
 
   // session.info arrives in bursts (agent build ready + turn end + title /
   // MCP / compress edges within the same second). Each used to fire its own
-  // refreshHermesConfig — two REST calls (config + defaults) per event, per
+  // refreshFoolConfig — two REST calls (config + defaults) per event, per
   // turn, including for BACKGROUND sessions whose values the fetch can't even
   // apply. Coalesce to one trailing fetch per burst; the caller gates on
   // `apply` so background traffic doesn't schedule anything.
@@ -317,16 +317,16 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
     }
 
     if (typeof window === 'undefined') {
-      void refreshHermesConfig()
+      void refreshFoolConfig()
 
       return
     }
 
     configRefreshTimerRef.current = window.setTimeout(() => {
       configRefreshTimerRef.current = null
-      void refreshHermesConfig()
+      void refreshFoolConfig()
     }, 300)
-  }, [refreshHermesConfig])
+  }, [refreshFoolConfig])
 
   useEffect(
     () => () => {
@@ -427,7 +427,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
       if (event.type === 'gateway.ready') {
         // Seed the active skin into the desktop theme registry without applying,
         // so a fresh connect never overrides the user's persisted desktop theme.
-        ingestBackendSkin((payload as { skin?: HermesSkin } | undefined)?.skin, { apply: false })
+        ingestBackendSkin((payload as { skin?: FoolSkin } | undefined)?.skin, { apply: false })
         // Backends with the change watcher broadcast pet/cron/sessions change
         // events; consumers demote their legacy polls to slow backstops.
         setChangeEventsAvailable(Boolean((payload as { change_events?: boolean } | undefined)?.change_events))
@@ -437,7 +437,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         // A runtime skin switch (The Fool activating an authored skin, or `/skin`
         // on another surface). Only the active source+profile's change repaints.
         if (fromActiveSource()) {
-          ingestBackendSkin(payload as HermesSkin | undefined, { apply: true })
+          ingestBackendSkin(payload as FoolSkin | undefined, { apply: true })
         }
 
         return
@@ -748,7 +748,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         if (apply) {
           reportInstallMethodWarning(payload?.install_warning)
           // Config refetch is only meaningful for the foreground context —
-          // everything refreshHermesConfig applies is either active-session
+          // everything refreshFoolConfig applies is either active-session
           // guarded or a composer/global pref. Background sessions' heartbeats
           // used to trigger it too (two REST calls each, every turn).
           scheduleConfigRefresh()
@@ -1370,7 +1370,7 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
         const requestId = typeof payload?.request_id === 'string' ? payload.request_id : ''
 
         if (requestId) {
-          const read = window.hermesDesktop?.readWindowBelow
+          const read = window.foolDesktop?.readWindowBelow
 
           const answer = (result: unknown) =>
             $gateway.get()?.request('window.read.respond', {

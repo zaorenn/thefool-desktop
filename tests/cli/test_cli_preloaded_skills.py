@@ -45,7 +45,7 @@ def _make_real_cli(**kwargs):
         with patch.object(cli_mod, "get_tool_definitions", return_value=[]), patch.dict(
             cli_mod.__dict__, {"CLI_CONFIG": clean_config}
         ):
-            return cli_mod.HermesCLI(**kwargs)
+            return cli_mod.FoolCLI(**kwargs)
 
 
 class _DummyCLI:
@@ -69,13 +69,13 @@ class _DummyCLI:
 
 
 def _real_finalize(cli_obj):
-    """Call the real HermesCLI.finalize_preloaded_skills on a dummy object."""
+    """Call the real FoolCLI.finalize_preloaded_skills on a dummy object."""
     return _REAL_FINALIZE(cli_obj)
 
 
 def _capture_real_finalize():
     import cli as cli_mod
-    return cli_mod.HermesCLI.__dict__["finalize_preloaded_skills"]
+    return cli_mod.FoolCLI.__dict__["finalize_preloaded_skills"]
 
 
 _REAL_FINALIZE = _capture_real_finalize()
@@ -90,7 +90,7 @@ def test_main_applies_preloaded_skills_to_system_prompt(monkeypatch):
         created["cli"] = _DummyCLI(**kwargs)
         return created["cli"]
 
-    monkeypatch.setattr(cli_mod, "HermesCLI", fake_cli)
+    monkeypatch.setattr(cli_mod, "FoolCLI", fake_cli)
     monkeypatch.setattr(
         cli_mod,
         "build_preloaded_skills_prompt",
@@ -118,7 +118,7 @@ def test_main_raises_for_unknown_preloaded_skill(monkeypatch):
         created["cli"] = _DummyCLI(**kwargs)
         return created["cli"]
 
-    monkeypatch.setattr(cli_mod, "HermesCLI", fake_cli)
+    monkeypatch.setattr(cli_mod, "FoolCLI", fake_cli)
     monkeypatch.setattr(
         cli_mod,
         "build_preloaded_skills_prompt",

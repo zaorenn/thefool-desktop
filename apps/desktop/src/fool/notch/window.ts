@@ -27,16 +27,16 @@ export function isNotchWindow(): boolean {
 
 /** Kabuk notch'u destekliyor mu (yalnızca masaüstü)? */
 export const canUseNotch = (): boolean =>
-  typeof window !== 'undefined' && typeof window.hermesDesktop?.notch?.open === 'function'
+  typeof window !== 'undefined' && typeof window.foolDesktop?.notch?.open === 'function'
 
 export function openNotch(): void {
-  window.hermesDesktop?.notch?.open?.()
+  window.foolDesktop?.notch?.open?.()
 }
 
 export function closeNotch(): void {
-  window.hermesDesktop?.notch?.close?.()
+  window.foolDesktop?.notch?.close?.()
 }
 
 export const toggleNotch = (): void => {
-  window.hermesDesktop?.notch?.toggle?.()
+  window.foolDesktop?.notch?.toggle?.()
 }

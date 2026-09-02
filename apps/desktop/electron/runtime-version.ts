@@ -11,7 +11,7 @@
  *
  * Sebep: ``ensureRuntime`` üç şey soruyordu --
  *
- *   1. kaynak dosyalar yerinde mi (``isHermesSourceRoot``)
+ *   1. kaynak dosyalar yerinde mi (``isFoolSourceRoot``)
  *   2. Git Bash var mı
  *   3. venv var mı
  *

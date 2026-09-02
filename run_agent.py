@@ -303,7 +303,7 @@ def _routermint_headers() -> dict:
     from fool_cli import __version__ as _HERMES_VERSION
 
     return {
-        "User-Agent": f"HermesAgent/{_HERMES_VERSION}",
+        "User-Agent": f"FoolAgent/{_HERMES_VERSION}",
     }
 
 

@@ -32,7 +32,7 @@ function Harness() {
     activeSessionIdRef,
     hydrateFromStoredSession: vi.fn(async () => undefined),
     queryClient,
-    refreshHermesConfig: vi.fn<() => Promise<void>>(async () => undefined),
+    refreshFoolConfig: vi.fn<() => Promise<void>>(async () => undefined),
     refreshSessions: vi.fn<() => Promise<void>>(async () => undefined),
     sessionStateByRuntimeIdRef,
     updateSessionState: (sessionId, updater) => {

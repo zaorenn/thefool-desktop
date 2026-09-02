@@ -12,14 +12,14 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { getHermesConfigRecord, saveMcpServers } from '@/hermes'
+import { getFoolConfigRecord, saveMcpServers } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { AlertTriangle } from '@/lib/icons'
 import { MCP_DEEPLINK_NAME_RE } from '@/lib/mcp-deeplink'
 import { $mcpInstallRequest } from '@/store/mcp-deeplink-install'
 import { notify, readableError } from '@/store/notifications'
 
-import { setHermesConfigCache } from '../hooks/use-config-record'
+import { setFoolConfigCache } from '../hooks/use-config-record'
 
 type McpServers = Record<string, Record<string, unknown>>
 
@@ -64,7 +64,7 @@ export function McpInstallDeepLinkDialog() {
 
     let cancelled = false
 
-    getHermesConfigRecord()
+    getFoolConfigRecord()
       .then(config => {
         if (!cancelled) {
           setExistingNames(Object.keys(getServers(config)))
@@ -110,7 +110,7 @@ export function McpInstallDeepLinkDialog() {
       // Merge over the FRESHEST server map — saveMcpServers replaces the whole
       // `mcp_servers` document, so saving over a stale snapshot would drop
       // servers added elsewhere since the dialog opened.
-      const current = getServers(await getHermesConfigRecord())
+      const current = getServers(await getFoolConfigRecord())
 
       if (Object.prototype.hasOwnProperty.call(current, trimmedName)) {
         setExistingNames(Object.keys(current))
@@ -121,7 +121,7 @@ export function McpInstallDeepLinkDialog() {
 
       const nextServers = { ...current, [trimmedName]: request.config }
       await saveMcpServers(nextServers)
-      setHermesConfigCache(previous => (previous ? { ...previous, mcp_servers: nextServers } : previous))
+      setFoolConfigCache(previous => (previous ? { ...previous, mcp_servers: nextServers } : previous))
       notify({ kind: 'success', title: m.savedTitle, message: m.savedMessage(trimmedName) })
       $mcpInstallRequest.set(null)
       navigate(`/skills?tab=mcp&server=${encodeURIComponent(trimmedName)}`)

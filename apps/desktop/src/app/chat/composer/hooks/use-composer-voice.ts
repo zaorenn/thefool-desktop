@@ -64,6 +64,7 @@ export function useComposerVoice({
   // A tile's composer speaks ITS transcript, not the primary chat's.
   const { $messages } = useComposerScope()
   const [voiceConversationActive, setVoiceConversationActive] = useState(false)
+
   /**
    * Bu yüzeyin en son okuduğu cevap -- HANGİ OTURUMDA olduğuyla birlikte.
    *
@@ -82,6 +83,7 @@ export function useComposerVoice({
     /** Okunan METİN. Kimlik tek başına yetmiyor -- aşağıdaki nota bakın. */
     text: string
   }>(null)
+
   const ownsWakeIndicatorRef = useRef(false)
   const voiceStartRequest = useStore($voiceConversationStartRequest)
 

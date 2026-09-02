@@ -673,7 +673,7 @@ class SessionManager:
         # construction site self-sufficient.  Bounded by
         # ``mcp_discovery_timeout`` (config.yaml, default ~1.5s) so a dead
         # server can't block — servers that miss the bound are picked up by
-        # the automatic late-refresh (see HermesACPAgent._schedule_mcp_late_refresh).
+        # the automatic late-refresh (see FoolACPAgent._schedule_mcp_late_refresh).
         try:
             from fool_cli.mcp_startup import ensure_mcp_discovery_before_agent_build
 

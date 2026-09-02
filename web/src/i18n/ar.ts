@@ -120,8 +120,8 @@ export const ar = defineLocale({
     starting: "قيد البدء",
     startedInBackground: "بدء في الخلفية — تحقق من السجلات للتقدم",
     stopped: "متوقف",
-    updateHermes: "تحديث The Fool",
-    updatingHermes: "جاري تحديث The Fool…",
+    updateFool: "تحديث The Fool",
+    updatingFool: "جاري تحديث The Fool…",
     waitingForOutput: "في انتظار الناتج…",
   },
 

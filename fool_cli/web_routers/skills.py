@@ -425,7 +425,12 @@ async def get_skills(profile: Optional[str] = None):
                 else "bundled" if s["name"] in bundled_names
                 else "agent"
             )
-        return skills
+        # GORUNEN alanlar markalaniyor, KIMLIK alanlari degil. Bu uc hicbir
+        # markalama gormuyordu ve "Hermes Agent" yazilari arayuze buradan
+        # sizyordu (bkz. ``fool.branding.brand_skill_meta``).
+        from fool.branding import brand_skill_meta
+
+        return brand_skill_meta(skills)
 
     return await asyncio.to_thread(_run)
 

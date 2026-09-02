@@ -14467,6 +14467,26 @@ def _(rid, params: dict) -> dict:
     if len(phrase) < 4:
         return _err(rid, 4021, "phrase is too short — use at least a few syllables")
 
+    # SAĞLAYICI ÖNCE SINANIYOR.
+    #
+    # ``sherpa`` kurulu değilken kaydetmek, çalışan bir uyandırmayı
+    # (``openwakeword``, gömülü model) çalışmayan bir sağlayıcıyla değiştirmek
+    # olurdu: kullanıcı ifadesini yazıyor, "kaydedildi" görüyor ve wake word o
+    # andan itibaren HİÇ tetiklenmiyor -- sessiz ve tam olarak kaçınılması
+    # gereken takas.
+    try:
+        import importlib.util
+
+        if importlib.util.find_spec("sherpa_onnx") is None:
+            return _err(
+                rid,
+                4022,
+                "Custom wake phrases need the sherpa engine: "
+                "pip install sherpa-onnx (the current phrase keeps working)",
+            )
+    except Exception:
+        logger.debug("wake.phrase: sherpa probe failed", exc_info=True)
+
     try:
         from cli import save_config_value
 

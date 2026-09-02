@@ -36,7 +36,12 @@ describe('centik modelin cevabini gosteriyor', () => {
     // Tur bitince tek seferde yazmak, uzun bir cevabin tamamlanmasini
     // beklemek demekti -- kullanici konusma surerken ekranda hicbir sey
     // gormezdi.
-    expect(HOOK).toContain('onSentence: sentence => setReply(sentence)')
+    //
+    // Artik CUMLE bazinda da degil, cumlenin DUYULMUS kismi kadar: kullanici
+    // "alt yazi gecer gibi ... parca parca gozukmeli" dedi ve oran sesin
+    // kendi saatinden geliyor (bkz. ``subtitle.ts``).
+    expect(HOOK).toContain('onSentenceProgress: (sentence, ratio) =>')
+    expect(HOOK).toContain('setReply(spokenSubtitle(sentence, ratio))')
   })
 
   it('TEK satir cizilyor, ikisi birden DEGIL', () => {

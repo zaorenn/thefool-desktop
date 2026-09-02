@@ -137,6 +137,19 @@ export interface VoicePlaybackOptions {
    * başladığı ana ertelenmiş hâli.
    */
   onSentence?: (sentence: string) => void
+  /**
+   * Konuşulan cümlenin NEREYE kadar duyulduğu (0..1).
+   *
+   * İstenen: "modelin söyledikleri eş zamanlı, alt yazı geçer gibi... parça
+   * parça gözükmeli, hem az yer kaplar hem de modelin neyi seslendirdiği
+   * görülür."
+   *
+   * Oran TAHMİN DEĞİL: sesin kendi saatinden (``AudioContext.currentTime``)
+   * ve o cümle için ZAMANLANMIŞ ses uzunluğundan geliyor. Bir cümlenin sesi
+   * birden çok çerçevede gelebildiği için bitiş noktası çerçeve geldikçe
+   * uzuyor; oran da onunla birlikte yeniden ölçekleniyor.
+   */
+  onSentenceProgress?: (sentence: string, ratio: number) => void
   source: VoicePlaybackSource
 }
 
@@ -226,6 +239,10 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
   let context: AudioContext | null = null
   let streamRate = 24_000
   let nextStartAt = 0
+  //: Duyulmakta olan cümle ve sesinin ZAMANLANMIŞ sınırları. Alt yazının
+  //: ilerleyişi buradan hesaplanıyor -- kelime hızı tahmininden değil.
+  let spoken: null | { endsAt: number; startAt: number; text: string } = null
+  let progressFrame = 0
   //: Sunucunun bildirdigi, HENUZ duyulmamis cumle.
   let pendingSentence: null | string = null
   let carry: null | Uint8Array = null
@@ -247,6 +264,15 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
       }
 
       settled = true
+
+      // Alt yazi dongusunu birak: akis bittikten sonra donen bir kare
+      // dongusu, hicbir sey gostermeden pil yakardi.
+      if (progressFrame) {
+        window.cancelAnimationFrame(progressFrame)
+        progressFrame = 0
+      }
+
+      spoken = null
 
       // Yalnizca KENDI tutamacini birak.
       //
@@ -349,6 +375,15 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
 
       pendingSentence = null
       window.setTimeout(() => options.onSentence?.(sentence), delayMs)
+
+      // Alt yazının dayanağı: bu cümlenin sesi NEREDE başlıyor ve şu ana
+      // kadar nereye kadar zamanlanmış. Sonraki çerçeveler geldikçe bitiş
+      // uzuyor (aşağıda), oran da onunla ölçekleniyor.
+      spoken = { endsAt: startAt + buffer.duration, startAt, text: sentence }
+      startProgressLoop()
+    } else if (spoken) {
+      // Aynı cümlenin devamı: sesi uzadı.
+      spoken.endsAt = startAt + buffer.duration
     }
 
     nextStartAt = startAt + buffer.duration
@@ -357,6 +392,42 @@ function openSpeechStream(wsUrl: string, options: VoicePlaybackOptions): SpeechS
       started = true
       setVoicePlaybackState(currentState('speaking', options))
     }
+  }
+
+  /**
+   * Alt yazı döngüsü: konuşulan cümlenin ne kadarının DUYULDUĞUNU bildirir.
+   *
+   * Kare başına bir kez, sesin kendi saatinden. Bir zamanlayıcıyla kelime
+   * saymak sürüklenirdi -- ses hızlanıp yavaşlamıyor ama ağ gecikmesi
+   * cümleler arasına boşluk koyuyor ve tahmin oradan kayardı.
+   */
+  function startProgressLoop(): void {
+    if (progressFrame || !options.onSentenceProgress) {
+      return
+    }
+
+    const tick = () => {
+      progressFrame = 0
+
+      const active = spoken
+
+      if (!active || !context) {
+        return
+      }
+
+      const span = active.endsAt - active.startAt
+
+      const ratio =
+        span > 0 ? (context.currentTime - active.startAt) / span : 1
+
+      options.onSentenceProgress?.(active.text, Math.min(Math.max(ratio, 0), 1))
+
+      if (ratio < 1) {
+        progressFrame = window.requestAnimationFrame(tick)
+      }
+    }
+
+    progressFrame = window.requestAnimationFrame(tick)
   }
 
   ws.onopen = () => {

@@ -44,7 +44,12 @@ vi.mock('@/fool/voice-api', () => ({
 
 vi.mock('@/fool/voice-owner', () => ({ canSpeak: () => true }))
 
-vi.mock('@/store/ambient', () => ({ ownsAmbientCue: vi.fn(async () => true) }))
+vi.mock('@/store/ambient', () => ({
+  ownsAmbientCue: vi.fn(async () => true),
+  // Talep TURU kapsayacak kadar tutuluyor; taklidin de bu disa aktarimi
+  // vermesi gerekiyor, yoksa modul hic yuklenmiyor.
+  SPEECH_CLAIM_TTL_MS: 600_000
+}))
 
 const notifyError = vi.fn()
 

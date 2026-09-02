@@ -13,11 +13,24 @@ const DEDUPE_INTERVAL_MS = 1000
 // can't grow unbounded.
 export function createEventDeduper(intervalMs = DEDUPE_INTERVAL_MS) {
   const lastSeenAt = new Map<string, number>()
+  const holdFor = new Map<string, number>()
 
-  return function isDuplicate(key: string, now = Date.now()): boolean {
+  // Per-claim hold, because one interval cannot serve both callers.
+  //
+  // Measured: a spoken reply was claimed TWICE and the user heard the same
+  // sentences again. The notch claims at the first token; the composer claims
+  // only when the reply COMPLETES — many seconds later. With a single 1s
+  // interval the first claim had long expired, so the second one won too and
+  // both surfaces spoke.
+  //
+  // The 1s default stays right for what it was built for (a notification or
+  // the turn-end sound arriving in N windows at once). Speech needs a claim
+  // that lasts as long as the turn it covers, so the caller says how long.
+  return function isDuplicate(key: string, now = Date.now(), ttlMs?: number): boolean {
     for (const [k, at] of lastSeenAt) {
-      if (now - at >= intervalMs) {
+      if (now - at >= (holdFor.get(k) ?? intervalMs)) {
         lastSeenAt.delete(k)
+        holdFor.delete(k)
       }
     }
 
@@ -26,6 +39,12 @@ export function createEventDeduper(intervalMs = DEDUPE_INTERVAL_MS) {
     }
 
     lastSeenAt.set(key, now)
+
+    if (typeof ttlMs === 'number' && ttlMs > 0) {
+      holdFor.set(key, ttlMs)
+    } else {
+      holdFor.delete(key)
+    }
 
     return false
   }

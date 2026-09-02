@@ -6,6 +6,7 @@ import { waitUntilSettled } from '@/fool/notch/interrupt'
 import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { useI18n } from '@/i18n'
+import { turnSpeechKey } from '@/lib/chat-messages'
 import { startThinkingSound, stopThinkingSound } from '@/lib/thinking-sound'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
 import {
@@ -16,6 +17,7 @@ import {
   stopVoicePlayback
 } from '@/lib/voice-playback'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
+import { ownsAmbientCue, SPEECH_CLAIM_TTL_MS } from '@/store/ambient'
 import { notify, notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 
@@ -556,6 +558,18 @@ export function useVoiceConversation({
         return
       }
       void (async () => {
+        // PENCERELER ARASI talep -- ``canSpeak`` yalnizca BU pencereyi
+        // biliyor (duz bir atom). Konusma kipi hakemin pencereler arasi
+        // koluna hic katilmiyordu: centik acikken ikisi de ayni turu
+        // seslendiriyordu. Ders auto-speak ve centige uygulanmis, buraya
+        // tasinmamisti -- bu depodaki tekrar eden kalibin bir ornegi daha.
+        if (!(await ownsAmbientCue(`speak:${turnSpeechKey($messagesForSpeech.get()) ?? ''}`, SPEECH_CLAIM_TTL_MS))) {
+          awaitingSpokenResponseRef.current = false
+          settleAfterSpeech(false, true)
+
+          return
+        }
+
         const session = await startSpeechStream({ source: 'voice-conversation' })
 
         // The session may resolve after the loop moved on (barge, disable).
@@ -625,7 +639,7 @@ export function useVoiceConversation({
         settleAfterSpeech(bargedRef.current)
       })()
     },
-    [awaitFallbackSpeech, ensureBargeMonitor, feedSpeechSession, settleAfterSpeech]
+    [$messagesForSpeech, awaitFallbackSpeech, ensureBargeMonitor, feedSpeechSession, settleAfterSpeech]
   )
 
   const start = useCallback(async () => {

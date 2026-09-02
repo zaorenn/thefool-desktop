@@ -14743,7 +14743,12 @@ const claimedAmbientCue = createEventDeduper()
 
 // A window asks "do I own this ambient cue (turn-end sound / spoken reply)?".
 // The first caller within the window gets true; peers get false and stay quiet.
-ipcMain.handle('fool:ambient:claim', (_event, key) => !claimedAmbientCue(String(key ?? '')))
+ipcMain.handle('fool:ambient:claim', (_event, key, ttlMs) =>
+  !claimedAmbientCue(
+    String(key ?? ''),
+    Date.now(),
+    typeof ttlMs === 'number' && ttlMs > 0 ? ttlMs : undefined
+  ))
 
 ipcMain.handle('fool:notify', (_event, payload) => {
   if (!Notification.isSupported()) {

@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('fool:window:openSession', sessionId, opts),
   openSessionInTerminal: (sessionId, opts) => ipcRenderer.invoke('fool:window:openInTerminal', sessionId, opts),
   openWindow: () => ipcRenderer.invoke('fool:window:openInstance'),
-  claimAmbientCue: key => ipcRenderer.invoke('fool:ambient:claim', key),
+  claimAmbientCue: (key, ttlMs) => ipcRenderer.invoke('fool:ambient:claim', key, ttlMs),
   wakeIndicator: {
     getState: () => ipcRenderer.invoke('fool:wake-indicator:get'),
     setState: state => ipcRenderer.send('fool:wake-indicator:set', state),

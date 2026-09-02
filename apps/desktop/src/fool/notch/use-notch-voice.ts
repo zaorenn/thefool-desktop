@@ -25,7 +25,7 @@ import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { collectUnspokenTurnSpeech, turnSpeechKey } from '@/lib/chat-messages'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
 import {
   interruptVoicePlayback,
@@ -35,7 +35,7 @@ import {
   takeVoicePlaybackInterrupted
 } from '@/lib/voice-playback'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
-import { ownsAmbientCue } from '@/store/ambient'
+import { ownsAmbientCue, SPEECH_CLAIM_TTL_MS } from '@/store/ambient'
 import { $busy, $messages } from '@/store/session'
 import { $voicePlayback } from '@/store/voice-playback'
 
@@ -61,6 +61,7 @@ import {
 import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
 import { $listenMode } from './listen-mode'
 import { createPttSpeechState, observeLevel } from './ptt-speech'
+import { spokenSubtitle } from './subtitle'
 import {
   createFillerState,
   FILL_AFTER_MS,
@@ -737,7 +738,15 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
       // önce o talep ediyor ve kazanıyor.
       const claimId = pending.id
 
-      void ownsAmbientCue(`speak:${claimId}`)
+      // Talep anahtarı TURU gösteriyor, mesajı değil.
+      //
+      // Ölçülen hata: burası turun İLK asistan mesajının kimliğini, besteci
+      // ise SON mesajınkini kullanıyordu. Bir tur birden çok görünür mesaj
+      // ürettiğinde anahtarlar ayrışıyor, iki talep de kazanıyor ve
+      // kullanıcı aynı cümleleri iki kez duyuyordu.
+      const turnKey = turnSpeechKey(messages) ?? claimId
+
+      void ownsAmbientCue(`speak:${turnKey}`, SPEECH_CLAIM_TTL_MS)
         .then(owns => {
           if (!owns) {
             // Başka bir yüzey bu cevabı üstlendi. Akışı hiç açma: açmak
@@ -760,7 +769,13 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
             // duyulanla ekrandaki hicbir zaman ayni olmuyordu. Geri cagirim
             // cumlenin DUYULMAYA basladigi anda geliyor (bkz.
             // ``lib/voice-playback.ts``), yani ikisi eszamanli akiyor.
-            onSentence: sentence => setReply(sentence),
+            // Cumle DUYULMAYA baslarken bir kez: alt yazi bos sifirdan
+            // acilsin, onceki cumle ekranda asili kalmasin.
+            onSentence: sentence => setReply(spokenSubtitle(sentence, 0)),
+            // Ve duyuldukca ACILSIN. Oran sesin kendi saatinden geliyor,
+            // kelime hizi tahmininden degil.
+            onSentenceProgress: (sentence, ratio) =>
+              setReply(spokenSubtitle(sentence, ratio)),
             source: 'voice-conversation'
           })
         })

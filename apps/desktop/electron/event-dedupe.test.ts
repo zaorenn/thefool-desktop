@@ -35,3 +35,40 @@ test('prunes stale keys so the map cannot grow unbounded', () => {
     assert.equal(isDup(`turnDone:s${i}`, i * 2000), false)
   }
 })
+
+// Olculen hata (kullanicinin bildirdigi "hala 2 kere okuyor cevaplari"): tek
+// bir 1 saniyelik aralik iki cagirani birden karsilayamiyordu. Centik ILK
+// TOKEN'da talep ediyor, besteci ise cevap TAMAMLANINCA -- aradan saniyeler
+// geciyor, ilk talep dusmus oluyor ve ikincisi de kazaniyordu.
+
+test('default interval is still one second (notifications, turn-end sound)', () => {
+  const isDup = createEventDeduper()
+
+  assert.equal(isDup('notify:1', 0), false)
+  assert.equal(isDup('notify:1', 500), true)
+  assert.equal(isDup('notify:1', 1_500), false)
+})
+
+test('a caller can hold a claim for longer (a spoken turn)', () => {
+  const isDup = createEventDeduper()
+
+  assert.equal(isDup('speak:u1', 0, 600_000), false)
+  assert.equal(isDup('speak:u1', 60_000), true)
+})
+
+test('a long hold does not extend other keys', () => {
+  const isDup = createEventDeduper()
+
+  isDup('speak:u1', 0, 600_000)
+
+  assert.equal(isDup('notify:1', 0), false)
+  assert.equal(isDup('notify:1', 2_000), false)
+})
+
+test('the key can be claimed again once its hold expires', () => {
+  const isDup = createEventDeduper()
+
+  isDup('speak:u1', 0, 1_000)
+
+  assert.equal(isDup('speak:u1', 2_000), false)
+})

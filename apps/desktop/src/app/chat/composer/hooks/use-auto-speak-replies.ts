@@ -3,9 +3,10 @@ import { useEffect, useRef } from 'react'
 
 import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
+import { turnSpeechKey } from '@/lib/chat-messages'
 import { planReplySpeech } from '@/lib/reply-speech-plan'
 import { playSpeechText, type SpeechStreamSession, startSpeechStream } from '@/lib/voice-playback'
-import { ownsAmbientCue } from '@/store/ambient'
+import { ownsAmbientCue, SPEECH_CLAIM_TTL_MS } from '@/store/ambient'
 import { notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
 import { $autoSpeakReplies } from '@/store/voice-prefs'
@@ -227,7 +228,12 @@ export function useAutoSpeakReplies({
 
         // Ayni sohbet birkac pencerede acikken cevabi TEK biri seslendirir.
         // Talep ANA SURECTE cozuluyor (``electron/event-dedupe.ts``).
-        void ownsAmbientCue(`speak:${id}`)
+        //
+        // Anahtar TURU gosteriyor, mesaji degil: burasi turun SON mesajinin
+        // kimligini, centik ise ILK mesajinkini kullaniyordu ve bir tur
+        // birden cok gorunur mesaj urettiginde ikisi de kendi talebini
+        // kazanip ayni cevabi iki kez okuyordu.
+        void ownsAmbientCue(`speak:${turnSpeechKey($messages.get()) ?? id}`, SPEECH_CLAIM_TTL_MS)
           .then(owns => {
             if (!owns) {
               rememberDeclined(declinedRef.current, id)

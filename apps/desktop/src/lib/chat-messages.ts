@@ -220,6 +220,40 @@ export interface UnspokenTurnSpeech {
  * join is a sentence boundary for the server's cutter, so a sealed bubble's
  * tail is flushed as soon as the next bubble starts.
  */
+/**
+ * Bu TURU seslendirme talebinin anahtarı -- pencereler arası.
+ *
+ * Ölçülen hata
+ * ------------
+ * İki yüzey de aynı hakeme başvuruyordu ama FARKLI anahtarla:
+ *
+ *   * besteci  ``messages.findLast(assistant).id``  -- turun SON mesajı
+ *   * çentik   ``collectUnspokenTurnSpeech().id``   -- turun İLK mesajı
+ *
+ * Bir tur birden çok görünür asistan mesajı ürettiğinde (ara yorum + final)
+ * anahtarlar ayrışıyor, iki talep de kazanıyor ve iki yüzey de konuşuyor.
+ * Kullanıcının bildirdiği "aynı cümleleri 2 kere okuyor" tam olarak buydu.
+ *
+ * Hakem doğruydu, PAYLAŞILAN şey yanlıştı. Anahtar artık turun kendisini
+ * gösteriyor: son kullanıcı mesajı. Tur boyunca sabit, her yeni turda
+ * değişiyor ve iki yüzey de aynı yerden hesaplıyor.
+ *
+ * Kullanıcı mesajı YOKSA (dışarıdan açılmış bir oturum, ilk mesajı asistanın
+ * yazdığı bir akış) ilk asistan mesajına düşüyor -- ``null`` dönmek, hiç
+ * anahtar üretmeyip iki yüzeyi de serbest bırakmak olurdu.
+ */
+export function turnSpeechKey(messages: ChatMessage[]): null | string {
+  const turnStart = messages.findLastIndex(m => m.role === 'user')
+
+  if (turnStart >= 0) {
+    return messages[turnStart]?.id ?? null
+  }
+
+  const firstReply = messages.find(m => m.role === 'assistant' && !m.hidden)
+
+  return firstReply?.id ?? null
+}
+
 export function collectUnspokenTurnSpeech(
   messages: ChatMessage[],
   lastSpokenId: string | null

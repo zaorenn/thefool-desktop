@@ -5621,8 +5621,14 @@ async def speak_stream_ws(ws: "WebSocket") -> None:
                 if frame.get("text"):
                     if first:
                         first = False
+                        # KIM ve HANGI cevap: iki sentez gorundugunde hangi
+                        # yuzeyin actigini soyleyen tek satir.
+                        _q = ws.query_params if hasattr(ws, "query_params") else {}
                         _log.info(
-                            "tts.speak(stream): head=%r", str(frame["text"])[:60]
+                            "tts.speak(stream): source=%s mid=%s head=%r",
+                            _q.get("source") or "?",
+                            _q.get("mid") or "?",
+                            str(frame["text"])[:60],
                         )
                     text_q.put(str(frame["text"]))
                 if frame.get("stop"):

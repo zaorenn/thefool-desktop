@@ -249,6 +249,8 @@ export function useAutoSpeakReplies({
       }
 
       if (action.kind === 'retire') {
+        // Cevap degisti: eski seridi birakma.
+        setSpokenSubtitle('')
         live?.session?.finish()
         streamRef.current = null
 
@@ -364,6 +366,9 @@ export function useAutoSpeakReplies({
       live.session.finish()
       streamRef.current = null
       markSpoken()
+      // ŞERİDİ temizle: çentik bunu okuyor ve boşalmazsa orada asılı kalır
+      // (durum da ``speaking``de takılırdı -- bkz. ``$mainTurnBusy``).
+      setSpokenSubtitle('')
     }
 
     // Re-check on a reply completing ($messages) and on the prior clip ending

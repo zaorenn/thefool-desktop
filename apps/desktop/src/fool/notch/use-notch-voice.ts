@@ -39,7 +39,7 @@ import { voiceApi } from '../voice-api'
 import { claimVoice, releaseVoice } from '../voice-owner'
 import { $voiceWarm } from '../voice-warm'
 
-import { $spokenSubtitle, $voiceSessionId, requestVoiceSubmit, setNotchVoiceActive, setSpokenSubtitle, waitForVoiceSessionOrOpen } from './active-session'
+import { $mainTurnBusy, $spokenSubtitle, $voiceSessionId, requestVoiceSubmit, setNotchVoiceActive, setSpokenSubtitle, waitForVoiceSessionOrOpen } from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -189,6 +189,9 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // Konuşulan alt yazı ANA PENCEREDEN geliyor (paylaşılan atom): konuşan taraf
   // kim ise şeridi de o yayınlıyor.
   const reply = useStore($spokenSubtitle)
+
+  // Ana penceredeki tur sürüyor mu.
+  const mainBusy = useStore($mainTurnBusy) === '1'
   const [error, setError] = useState<null | string>(null)
   // Geri cagirim ref'te: ``submitAudio`` bagimliligina koymak, cagiran her
   // yeni fonksiyon verdiginde onu yeniden kurardi ve suren bir yakalamayi
@@ -894,6 +897,41 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
    * cevap verirdi. Windows'ta yankı bastırma aynı uygulamanın kendi oynatmasını
    * güvenilir biçimde kesmiyor (bkz. ``hands-free.ts``).
    */
+  /**
+   * ``thinking``den ÇIKIŞ -- artık ana pencereden geliyor.
+   *
+   * Ölçülen hata: seslendirme çentikten alınınca ``speaking`` geçişi de onunla
+   * gitti, ama ``idle``a dönüş hâlâ onu bekliyordu. Çentik ``thinking``de
+   * sonsuza kadar takılı kalıyordu -- kullanıcının bildirdiği "notch takılı
+   * kaldı cevap gelmesine rağmen".
+   *
+   * İki sinyal birden gerekiyor ve ikisi de ana pencereden:
+   *
+   *   * ŞERİT doluyorsa model konuşuyor -> ``speaking``.
+   *   * Tur bitti (``$mainTurnBusy`` düştü) ve şerit boş -> ``idle``.
+   *
+   * Otomatik okuma KAPALIYKEN şerit hiç dolmuyor; o durumda turun bitmesi tek
+   * başına çıkış için yeterli, yoksa ses kapalı olan kullanıcıda çentik
+   * kalıcı olarak takılırdı.
+   */
+  useEffect(() => {
+    if (status !== 'thinking' && status !== 'speaking') {
+      return
+    }
+
+    if (reply) {
+      if (status !== 'speaking') {
+        setStatus('speaking')
+      }
+
+      return
+    }
+
+    if (!mainBusy) {
+      setStatus('idle')
+    }
+  }, [mainBusy, reply, status])
+
   const beginWakeTurn = useCallback(async () => {
     setError(null)
 

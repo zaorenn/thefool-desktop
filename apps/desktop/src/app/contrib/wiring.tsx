@@ -25,6 +25,7 @@ import { $newSessionTabAction, registerPaneCloser } from '@/components/pane-shel
 import { FloatingPet } from '@/components/pet/floating-pet'
 import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { emitGatewayEvent } from '@/contrib/events'
+import { setMainTurnBusy } from '@/fool/notch/active-session'
 import { useVoiceSessionRequests } from '@/fool/notch/use-voice-session-requests'
 import { useVoiceSubmitRequests } from '@/fool/notch/use-voice-submit-requests'
 import { useWakeTurnResume } from '@/fool/notch/use-wake-turn-resume'
@@ -53,6 +54,7 @@ import {
 import { $startWorkSessionRequest, followActiveSessionCwd } from '@/store/projects'
 import {
   $activeSessionId,
+  $busy,
   $connection,
   $currentCwd,
   $freshDraftReady,
@@ -661,6 +663,20 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // duraklatiyor ve masaustu yakalamayi tarayici tarafinda yaptigi icin
   // sunucunun kendi geri acmasi hic kosmuyor -- borcu istemci odemek zorunda.
   useWakeTurnResume()
+
+  // Turun surup surmedigini CENTIGE bildir. Centik bunu kendi basina bilemez:
+  // ``$busy`` duz bir atom, yani pencere basina ve centiginki guvenilir degil.
+  // Bildirmezsek centik ``thinking``de takili kaliyor (gerekce
+  // ``active-session.ts::$mainTurnBusy``).
+  useEffect(() => {
+    if (isNotchWindow()) {
+      return undefined
+    }
+
+    setMainTurnBusy($busy.get())
+
+    return $busy.subscribe((value: unknown) => setMainTurnBusy(Boolean(value)))
+  }, [])
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })

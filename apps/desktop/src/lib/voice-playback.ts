@@ -180,7 +180,7 @@ export function stopVoicePlayback() {
 // instead of after full synthesis + base64 transfer.
 // ---------------------------------------------------------------------------
 
-async function resolveSpeakStreamUrl(): Promise<null | string> {
+async function resolveSpeakStreamUrl(options?: VoicePlaybackOptions): Promise<null | string> {
   const desktop = window.hermesDesktop
 
   if (!desktop?.getConnection) {
@@ -205,6 +205,20 @@ async function resolveSpeakStreamUrl(): Promise<null | string> {
     // config/.env (same seam as /api/pty?profile=).
     if (profile) {
       url.searchParams.set('profile', profile)
+    }
+
+    // KIM konusuyor ve HANGI cevabi -- yalnizca gunluk icin.
+    //
+    // "Ayni cevap iki kez okunuyor" hatasi uc turdur kaynak okuyarak
+    // bulunamadi. Sunucu tarafinda iki sentez gorunuyordu ama hangi yuzeyin
+    // actigi hicbir yerde yazmiyordu, yani gunluk soruyu cevaplamiyordu.
+    // Ucuz ve kalici bir ayirt edici: sorgu parametresi.
+    if (options?.source) {
+      url.searchParams.set('source', options.source)
+    }
+
+    if (options?.messageId) {
+      url.searchParams.set('mid', options.messageId)
     }
 
     return url.toString()
@@ -543,7 +557,7 @@ export async function startSpeechStream(options: VoicePlaybackOptions): Promise<
     return null
   }
 
-  const wsUrl = await resolveSpeakStreamUrl()
+  const wsUrl = await resolveSpeakStreamUrl(options)
 
   if (!wsUrl) {
     // Kayit BIRAKILIYOR: hicbir ses uretilmedi. Bkz. asagidaki gerekce --
@@ -707,7 +721,7 @@ export async function playSpeechText(text: string, options: VoicePlaybackOptions
   try {
     // Streaming first; the POST data-URL path is the fallback for backends
     // without the WS endpoint or providers without a chunked API.
-    const streamUrl = await resolveSpeakStreamUrl()
+    const streamUrl = await resolveSpeakStreamUrl(options)
 
     if (streamUrl && isCurrent()) {
       const outcome = await playSpeechStream(streamUrl, speakableText, options)

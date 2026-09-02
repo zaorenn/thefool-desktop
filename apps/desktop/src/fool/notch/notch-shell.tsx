@@ -33,7 +33,7 @@ import {
   shouldRearmListening
 } from './hands-free'
 import { $listenMode, listenModeHint, toggleListenMode } from './listen-mode'
-import { NotchPet } from './notch-pet'
+import { NotchEdgeWaves, NotchLiquid, useLiquidPhase } from './notch-liquid'
 import { formatPttBindingLabel, parsePttBinding } from './ptt-binding'
 import { $pttCode } from './ptt-store'
 import {
@@ -315,6 +315,9 @@ export function NotchShell() {
    * dinleyen kullanıcı değil -- ve şeritte her piksel metne gidiyor.
    */
   const subtitleMode = Boolean(voice.reply)
+
+  // Acilis/kapanis GECISI -- kendiliginden sonuyor.
+  const liquidPhase = useLiquidPhase(sessionActive)
 
   // Şerit pencerenin enine yayılıyor. Pencere ekran genişliğinde açılıyor
   // (``electron/fool-notch.ts``), ama BURADA ölçülüyor: kullanıcının
@@ -642,17 +645,26 @@ export function NotchShell() {
   }, [pttCode, sessionActive, startWakeTurn])
 
   return (
-    <div className="flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>
+    <div className="relative flex h-screen w-screen flex-col items-center bg-transparent" data-fool-notch>
+      {/* UST KENAR dalgalari -- yalnizca DINLERKEN ve konusma HENUZ
+          algilanmamisken. Konusma algilaninca geri cekiliyorlar. */}
+      <NotchEdgeWaves active={voice.status === 'listening' && !voice.heardSpeech} />
       <motion.div
         animate={{
-          height: subtitleMode ? SUBTITLE_HEIGHT : expanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT,
+          // TEK bir aktif geometri var ve o INCE + UZUN.
+          //
+          // Once iki ayri hal vardi: durum/dugme icin asagi dogru kalin bir
+          // kutu, alt yazi icin ince bir serit. Kullanicinin karari: "asagiya
+          // dogru kalin istemiyorum, ince ve uzun sekilde monitorun ustunde
+          // olsun." Iki ayri sekil ayrica iki ayri animasyon gibi gorunuyordu.
+          height: expanded || subtitleMode ? SUBTITLE_HEIGHT : COLLAPSED_HEIGHT,
           // Genişlik pencereye göre KIRPILMAZ: kullanıcının yakınlaştırma
           // ayarı 110% iken pencere 460 fiziksel piksel ama yalnızca 418 CSS
           // pikseli; sabit 420 px istemek çentiği kenardan kesiyordu.
           opacity: hovered ? 0 : expanded || subtitleMode ? 1 : 0.72,
           // ALT YAZI kipinde ekranın enine yayılıyor: model konuşurken cevabın
           // tamamı tek satıra sığsın diye.
-          width: subtitleMode ? subtitleWidth : expanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH
+          width: expanded || subtitleMode ? subtitleWidth : COLLAPSED_WIDTH
         }}
         // Üst köşeler DÜZ, alt köşeler yuvarlak — ekrana oyulmuş çentik.
         //
@@ -702,7 +714,11 @@ export function NotchShell() {
           ) : expanded ? (
             <motion.div
               animate={{ opacity: 1 }}
-              className="flex h-full flex-col items-center justify-center gap-1 px-5"
+              // TEK SATIR: durum, kip dugmesi ve metin yan yana. Once dikey
+              // yiginlanip serit asagi dogru kalinlasiyordu -- kullanicinin
+              // istemedigi tam olarak buydu ("asagiya dogru kalin istemiyorum,
+              // ince ve uzun sekilde monitorun ustunde olsun").
+              className="flex h-full flex-row items-center justify-center gap-3 px-5"
               exit={{ opacity: 0 }}
               initial={{ opacity: 0 }}
               key="expanded"
@@ -710,8 +726,8 @@ export function NotchShell() {
             >
               <Waveform active={voice.status === 'listening'} level={voice.level} />
 
-              <div className="flex items-center gap-2">
-                <div className="text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="whitespace-nowrap text-[0.7rem] font-medium tracking-wide text-(--ui-text-tertiary)">
                   {voice.status === 'idle' && paused
                     ? pausedLabel(pttLabel)
                     : LABEL[voice.status]}
@@ -797,7 +813,10 @@ export function NotchShell() {
       {/* Masaustundeki pet: cubuktan asagi damliyor ve orada duruyor.
           Centik penceresi 220 px, cubuk 22-92 px -- altta kalan alan saydam
           ve fare olaylarini geciriyor, yani masaustunu hic isgal etmiyor. */}
-      {sessionActive && <NotchPet level={voice.level} status={voice.status} />}
+      {/* Surekli duran top KALDIRILDI: "notchun hemen altinda surekli duran o
+          yuvarlak top cok dikkat dagitici." Top artik bir DURUM gostergesi
+          degil, bir GECIS -- yalnizca acilirken ve kapanirken var. */}
+      <NotchLiquid phase={liquidPhase} />
     </div>
   )
 }

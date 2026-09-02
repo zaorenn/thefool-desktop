@@ -307,3 +307,33 @@ export const $spokenSubtitle = sharedAtom<string>('fool.desktop.voice.subtitle',
 export function setSpokenSubtitle(text: string): void {
   $spokenSubtitle.set(text)
 }
+
+
+/**
+ * Ana penceredeki tur SÜRÜYOR mu — PENCERELER ARASI.
+ *
+ * Ölçülen hata
+ * ------------
+ * Seslendirme çentikten alınıp ana pencereye verildiğinde, çentiğin durum
+ * makinesindeki ``speaking`` geçişi de onunla birlikte gitti. Ama ``idle``a
+ * dönüş hâlâ onu bekliyordu::
+ *
+ *     if (statusRef.current === 'speaking') { setStatus('idle') }
+ *
+ * Sonuç: çentik ``thinking``de sonsuza kadar takılı kalıyor. Kullanıcının
+ * bildirdiği "notch takılı kaldı cevap gelmesine rağmen" birebir bu.
+ *
+ * Çentik turun bittiğini kendi başına bilemez: ``$messages`` ve ``$busy`` düz
+ * atomlar, yani pencere başına ve çentiğinki güvenilir değil -- zaten
+ * seslendirmenin oradan alınma sebebi de buydu. Turu BİLEN taraf ana pencere,
+ * o yüzden bildiren de o.
+ */
+export const $mainTurnBusy = sharedAtom<string>('fool.desktop.voice.turnBusy', '', {
+  decode: raw => raw,
+  encode: value => value
+})
+
+/** Ana penceredeki turun sürüp sürmediğini yaz. */
+export function setMainTurnBusy(busy: boolean): void {
+  $mainTurnBusy.set(busy ? '1' : '')
+}

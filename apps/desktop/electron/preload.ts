@@ -115,6 +115,8 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     // iletmeyi buna gore suzuyor; sabit ``ControlRight`` ile kullanicinin
     // yeniden bagladigi tus odak disinda hic ulasmiyordu.
     setPushToTalk: (code: string) => ipcRenderer.invoke('fool:notch:set-ptt', code),
+    // Uyandirma sozcugu duyuldu: centigi ac ve "wake" niyetini ilet.
+    wake: () => ipcRenderer.invoke('fool:notch:wake'),
     // Tikla-gecir kapisi. Centik VARSAYILAN olarak gecirgen (ekranin ust
     // kenarini yutmamali) ve yalnizca imlec tiklanabilir bir parcanin
     // uzerindeyken katilasiyor.

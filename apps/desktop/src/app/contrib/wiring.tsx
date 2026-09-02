@@ -36,7 +36,6 @@ import { activateWakeIndicator } from '@/lib/wake-indicator'
 import { playWakeSound } from '@/lib/wake-sound'
 import { $billingSettingsRequest } from '@/store/billing-block'
 import { $desktopBoot } from '@/store/boot'
-import { requestVoiceConversationStart } from '@/store/composer'
 import { $cronReviewRequest, setCronFocusJobId } from '@/store/cron'
 import { $pinnedSessionIds, pinSession, restoreWorktree, unpinSession } from '@/store/layout'
 import { $previewTarget } from '@/store/preview'
@@ -746,11 +745,19 @@ export function ContribWiring({ children }: { children: ReactNode }) {
           } else {
             void ensureGatewayProfile(normalizeProfileKey(targetProfile))
           }
-        } else if (payload?.start_new_session !== false) {
-          startFreshSessionDraft()
         }
 
-        requestVoiceConversationStart()
+        // UYANDIRMA CENTIGI aciyor, ana penceredeki konusma kipini DEGIL.
+        //
+        // Eskiden ``startFreshSessionDraft()`` + ``requestVoiceConversationStart()``
+        // vardi: her uyandirma YENI bir sohbet acip konusma kipini ana pencerede
+        // baslatiyordu. Kullanicinin istegi ikisinin de tersi -- "wake word
+        // notchu aktiflestirir" ve mesaj BAKTIGI sohbete gider (centigin kendi
+        // kuraliyla ayni; bkz. ``store/focused-session.ts``).
+        //
+        // Yeni oturum ACILMIYOR: acik sohbet varken uyandirmak, kullanicinin
+        // okudugu konusmayi birakip bos bir sayfaya gecmek olurdu.
+        void window.hermesDesktop?.notch?.wake?.()
 
         return
       }

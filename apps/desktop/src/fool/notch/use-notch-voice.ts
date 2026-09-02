@@ -96,6 +96,9 @@ function rememberDeclined(declined: Set<string>, id: string): void {
 
 export type NotchStatus = 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking'
 
+/** Uyandirma onayi. KISA olmasi sart: dinleme bu ses bitene kadar baslamiyor. */
+export const WAKE_ACK_TEXT = "I'm listening"
+
 /**
  * Ses için beklenecek en uzun süre.
  *
@@ -115,6 +118,8 @@ export interface NotchVoice {
   level: number
   /** Ajanın son cevabı -- notch onu GÖSTERİYOR, sadece okumuyor. */
   reply: string
+  /** Uyandirma turu: onay sesi + tek seferlik sessizlik-bitisli yakalama. */
+  beginWakeTurn: () => Promise<void>
   /** Kullanıcının son söylediği (yazıya dökülmüş) metin. */
   transcript: string
   status: NotchStatus
@@ -1028,8 +1033,53 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
 
   commitRef.current = commit
 
+  /**
+   * UYANDIRMA turu — wake word duyuldu.
+   *
+   * İstenen sıra birebir: "wake word notchu aktifleştirir, TTS 'I'm listening'
+   * diye ses üretir ve bu ses biter bitmez dinlemeye başlar, kullanıcı
+   * söyleyeceklerini bitirdiğinde oluşan o 1 saniyelik sessizliği algıladığında
+   * mesajı gönderir."
+   *
+   * Neden ``begin('auto')``
+   * -----------------------
+   * ``'auto'`` mikrofonu ELLER SERBEST ayarlarıyla açıyor
+   * (``listenOptionsFor`` -> ``HANDS_FREE_VAD``): 1,25 sn sessizlik kaydı
+   * kapatıp turu gönderiyor. "Kullanıcı susana kadar basılı tutulmuş bas-konuş"
+   * tam olarak bu -- yeni bir yakalama yolu yazmaya gerek yok.
+   *
+   * Neden ``$listenMode`` DEĞİŞMİYOR
+   * --------------------------------
+   * Kip ``push-to-talk`` kalıyor ve bu bilinçli. ``shouldRearmListening``
+   * yalnızca kip eller serbestken mikrofonu yeniden açıyor; uyandırma turu ise
+   * TEK SEFERLİK olmalı -- kullanıcının kararı: "sonrasında ya tekrar wake
+   * word ya sağ Ctrl." Kipi çevirseydik tur biter bitmez mikrofon kendiliğinden
+   * açılır ve oda sessiz değilse yanlış tur başlardı.
+   *
+   * Onay sesi BİTMEDEN dinleme başlamıyor: hoparlörden çıkan "I'm listening"
+   * açık bir mikrofona kullanıcı konuşması gibi düşer ve ajan kendi onayına
+   * cevap verirdi. Windows'ta yankı bastırma aynı uygulamanın kendi oynatmasını
+   * güvenilir biçimde kesmiyor (bkz. ``hands-free.ts``).
+   */
+  const beginWakeTurn = useCallback(async () => {
+    setError(null)
+
+    // Onay METNİ seçili TTS motorundan geçiyor: kullanıcı hangi sesi seçtiyse
+    // uyandırma da onunla konuşuyor. Sabit bir ses dosyası, seçilen sesle
+    // alakasız bir "bip" olurdu.
+    try {
+      await playSpeechText(WAKE_ACK_TEXT, { messageId: null, source: 'voice-conversation' })
+    } catch {
+      // Onay DUYULMASA da dinleme başlamalı: kullanıcı wake word'ü söyledi ve
+      // konuşmayı bekliyor. Sesin gelmemesi turu düşürmemeli.
+    }
+
+    begin('auto')
+  }, [begin])
+
   return {
     begin,
+    beginWakeTurn,
     cancel,
     capturing,
     commit,

@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { triggerHaptic } from '@/lib/haptics'
 import { Download, Info, Keyboard, Mic, Play, Volume2, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
+import { $wakeWord, setWakePhrase } from '@/store/wake-word'
 
 import {
   createBindingCapture,
@@ -677,6 +678,77 @@ function PushToTalkRow() {
 }
 
 /**
+ * Uyandırma ifadesi — serbest metin.
+ *
+ * Neden serbest metin çalışabiliyor
+ * ---------------------------------
+ * ``sherpa`` motoru AÇIK SÖZCÜK DAĞARCIKLI: yazılan ifade çalışma anında
+ * tokenize ediliyor, eğitim ve model indirmesi yok. Varsayılan
+ * ``openwakeword`` ise gömülü bir ``.onnx``e bağlı ve orada ``phrase`` yalnızca
+ * kozmetik bir etiket -- yazdığınız ifade hiçbir zaman tanınmazdı. Bu yüzden
+ * ifade yazmak sağlayıcıyı da çeviriyor (ağ geçidi yapıyor).
+ *
+ * KAYDEDİLENE kadar yazılan metin yerel: her tuş vuruşunda dinleyiciyi yeniden
+ * kurmak, kullanıcı ifadeyi yazarken onu defalarca kapatıp açmak olurdu.
+ */
+function WakePhraseRow() {
+  const wake = useStore($wakeWord)
+  const [draft, setDraft] = useState<null | string>(null)
+  const [busy, setBusy] = useState(false)
+
+  const value = draft ?? wake.phrase
+  const dirty = draft !== null && draft.trim() !== wake.phrase.trim()
+
+  const save = useCallback(async () => {
+    const next = (draft ?? '').trim()
+
+    if (!next || busy) {
+      return
+    }
+
+    setBusy(true)
+
+    try {
+      await setWakePhrase(next)
+      setDraft(null)
+    } catch (error) {
+      notifyError(error, 'Could not save the wake phrase')
+    } finally {
+      setBusy(false)
+    }
+  }, [busy, draft])
+
+  return (
+    <ListRow
+      action={
+        <div className="flex items-center gap-2">
+          <input
+            className="h-7 w-44 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-card) px-2 text-[0.78rem] text-(--ui-text-primary) outline-none focus:border-(--theme-primary)"
+            disabled={busy}
+            onChange={event => setDraft(event.target.value)}
+            onKeyDown={event => {
+              if (event.key === 'Enter') {
+                void save()
+              }
+            }}
+            placeholder="hey fool"
+            spellCheck={false}
+            value={value}
+          />
+          {dirty && (
+            <Button disabled={busy} onClick={() => { triggerHaptic(); void save() }} size="sm" variant="outline">
+              {busy ? 'Saving…' : 'Save'}
+            </Button>
+          )}
+        </div>
+      }
+      description="Say this to wake the notch — it answers out loud, then listens until you stop talking. Any phrase works; a few syllables detect more reliably than one word."
+      title="Wake phrase"
+    />
+  )
+}
+
+/**
  * Notch'u acan GLOBAL kisayol.
  *
  * Bas-konus tusundan (yukaridaki satir) FARKLI bir sey ve ikisini
@@ -1068,6 +1140,7 @@ export function VoiceSettings() {
       <SettingsSection icon={Keyboard} title="Voice controls">
         <NotchShortcutRow />
         <PushToTalkRow />
+        <WakePhraseRow />
       </SettingsSection>
 
       <SettingsSection icon={Mic} title="Speech to text">

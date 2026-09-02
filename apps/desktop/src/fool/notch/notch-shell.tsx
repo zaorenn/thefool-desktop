@@ -480,6 +480,21 @@ export function NotchShell() {
       // geriden gelir ve o karede eller serbest mikrofonu zaten acmis olur.
       $listenMode.set('push-to-talk')
 
+      // UYANDIRMA: centik acilir, TTS onay verir, ses biter bitmez dinlenir ve
+      // kullanici susunca (1,25 sn sessizlik) mesaj gider.
+      //
+      // Kip yine ``push-to-talk`` kaliyor -- bilincli. ``shouldRearmListening``
+      // yalnizca eller serbest kipte mikrofonu yeniden aciyor; uyandirma turu
+      // TEK SEFERLIK olmali (kullanicinin karari: "sonrasinda ya tekrar wake
+      // word ya sag Ctrl"). Kipi cevirseydik tur biter bitmez mikrofon
+      // kendiliginden acilir ve oda sessiz degilse yanlis tur baslardi.
+      if (request?.mode === 'wake') {
+        setSessionActive(true)
+        void voiceRef.current.beginWakeTurn()
+
+        return
+      }
+
       setSessionActive(previous => {
         if (previous) {
           // Kapatiliyor: suren bir kayit varsa atilir ve ARKADAS OTURUMU

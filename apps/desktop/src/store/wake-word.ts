@@ -248,6 +248,36 @@ export function applyWakeStopResult(result: WakeStopResponse | null | undefined)
  * Best-effort: a gateway without the wake.* methods leaves the atom at its
  * hidden default.
  */
+/**
+ * Uyandırma ifadesini DEĞİŞTİR.
+ *
+ * Sağlayıcı da ``sherpa``ya çevriliyor (ağ geçidi yapıyor) ve sebebi somut:
+ * varsayılan ``openwakeword`` gömülü bir ``.onnx``e bağlı, yani orada
+ * ``phrase`` yalnızca kozmetik bir etiket -- yazdığınız ifade hiçbir zaman
+ * tanınmazdı. ``sherpa`` açık sözcük dağarcıklı: yazılan ifade çalışma anında
+ * tokenize ediliyor, eğitim yok.
+ *
+ * Dinleyici ağ geçidinde bırakılıyor; burada YENİDEN kuruluyor, yoksa çalışan
+ * dinleyici eski ifadeyi duymaya devam ederdi.
+ */
+export async function setWakePhrase(
+  phrase: string,
+  request: WakeRequester = gatewayRequester
+): Promise<void> {
+  const result = await request<{ phrase?: string; provider?: string }>('wake.phrase', { phrase })
+
+  // Yalnizca IFADE tutuluyor: sağlayıcı bir uygulama ayrıntısı ve arayüzde
+  // gösterilmiyor -- kullanıcı ifadeyi yazıyor, hangi motorun tanıdığı onun
+  // sorunu değil.
+  $wakeWord.set({ ...$wakeWord.get(), phrase: result?.phrase?.trim() || phrase.trim() })
+
+  // Yeni ifadeyle yeniden kur. Dinleyici KAPALIYSA bu bir no-op: kullanıcı
+  // kulağı kapalı tutuyorsa ifade değiştirmek onu açmamalı.
+  if ($wakeWord.get().listening) {
+    await armWakeWord(request)
+  }
+}
+
 export async function armWakeWord(request: WakeRequester = gatewayRequester): Promise<void> {
   try {
     const status = await request<WakeStatusResponse>('wake.status', {

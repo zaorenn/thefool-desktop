@@ -14439,6 +14439,58 @@ def _persist_wake_enabled(enabled: bool) -> bool:
         return False
 
 
+@method("wake.phrase")
+def _(rid, params: dict) -> dict:
+    """Uyandırma ifadesini DEĞİŞTİR — eğitim yok, model indirmesi yok.
+
+    ``sherpa`` motoru AÇIK SÖZCÜK DAĞARCIKLI: yazılan ifade çalışma anında
+    BPE ile tokenize ediliyor ve hemen tanınıyor. Varsayılan ``openwakeword``
+    ise gömülü bir ``.onnx``e bağlı, yani başka bir ifade için model eğitmek
+    gerekiyordu -- kullanıcının "özelleştirilebilsin" isteğinin önündeki tek
+    engel buydu.
+
+    Bu yüzden ifade yazmak SAĞLAYICIYI da çeviriyor. Sessizce ``phrase``
+    yazmak, kullanıcının yazdığı ifadenin hiçbir zaman tanınmaması demekti:
+    ``openwakeword``de o alan yalnızca kozmetik bir etiket.
+
+    Dinleyici YENİDEN kuruluyor: ifade motorun kurulumunda çözümleniyor, yani
+    çalışan bir dinleyici eski ifadeyi duymaya devam ederdi.
+    """
+    phrase = str(params.get("phrase") or "").strip()
+
+    if not phrase:
+        return _err(rid, 4020, "phrase required")
+
+    # Tek kelimelik ifadeler sıradan konuşmada sürekli tetikleniyor. Alt sınır
+    # keyfi değil: sherpa'nın kendi kılavuzu da çok kısa anahtar sözcüklerde
+    # yanlış pozitif uyarısı veriyor.
+    if len(phrase) < 4:
+        return _err(rid, 4021, "phrase is too short — use at least a few syllables")
+
+    try:
+        from cli import save_config_value
+
+        save_config_value("wake_word.phrase", phrase)
+        # AÇIK SÖZCÜK DAĞARCIĞI şart: bkz. yukarıdaki not.
+        save_config_value("wake_word.provider", "sherpa")
+    except Exception as e:
+        logger.warning("wake.phrase: persist failed: %s", e)
+
+        return _err(rid, 5040, f"could not save the wake phrase: {e}")
+
+    # Çalışan dinleyiciyi bırak; çağıran ``wake.start`` ile yenisini kuruyor.
+    try:
+        from tools.wake_word import stop_listening
+
+        stop_listening()
+    except Exception:
+        logger.debug("wake.phrase: listener stop skipped", exc_info=True)
+
+    logger.info("wake.phrase: set to %r (provider=sherpa)", phrase)
+
+    return _ok(rid, {"phrase": phrase, "provider": "sherpa"})
+
+
 @method("wake.start")
 def _(rid, params: dict) -> dict:
     """Arm the wake-word listener for the calling surface ("tui" | "gui").

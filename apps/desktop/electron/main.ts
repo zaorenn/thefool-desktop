@@ -13502,6 +13502,17 @@ ipcMain.handle('fool:notch:set-ptt', async (_event, code) => {
   return { ok: Boolean(wanted) }
 })
 
+// UYANDIRMA: centigi ac ve ona "wake" niyetini ilet.
+//
+// Renderer centigi ``notch.open`` ile acabiliyordu ama NIYET tasiyamiyordu --
+// kisayolun kullandigi teslimat yolu (bekleyen niyet dahil) yalnizca ana
+// surecte. Uyandirma da ayni yolu kullaniyor, ikinci bir kanal acilmadi.
+ipcMain.handle('fool:notch:wake', async () => {
+  fireNotchShortcut('wake')
+
+  return { ok: true }
+})
+
 ipcMain.handle('fool:notch:close', async () => {
   closeNotchWindow()
 
@@ -13573,7 +13584,7 @@ function writeNotchShortcut(accelerator) {
  */
 let pendingNotchIntent: null | { mode?: string } = null
 
-function fireNotchShortcut() {
+function fireNotchShortcut(mode = 'friend') {
   const existed = Boolean(notchWindow && !notchWindow.isDestroyed())
   const win = openNotchWindow()
 
@@ -13585,7 +13596,7 @@ function fireNotchShortcut() {
   // ``friend`` bayragi: kisayol yalnizca centigi acmiyor, ARKADAS turunu de
   // basliyor (kullanicinin istegi). Notch o kaynakla oturum aciyor -- arac
   // yok ama hafiza ajanla ortak.
-  const intent = { mode: 'friend' }
+  const intent = { mode }
 
   // TEK teslimat yolu secilir, ikisi birden DEGIL: hem gonderip hem
   // bekletmek niyetin iki kez islenmesi, yani ac-kapa'nin ayni basista

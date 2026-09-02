@@ -28,7 +28,9 @@ const PRELOAD = readFileSync(join(import.meta.dirname, '../../../electron/preloa
 
 /** ``fireNotchShortcut`` gövdesi. */
 const FIRE = MAIN.slice(
-  MAIN.indexOf('function fireNotchShortcut()'),
+  // Imza artik KIP aliyor (uyandirma 'wake' ile cagiriyor), o yuzden capa
+  // parantezsiz.
+  MAIN.indexOf('function fireNotchShortcut('),
   MAIN.indexOf('ipcMain.handle(\'fool:notch:take-intent\'')
 )
 

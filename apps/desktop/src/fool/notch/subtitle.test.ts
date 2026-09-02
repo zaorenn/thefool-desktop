@@ -73,7 +73,7 @@ describe('serit SABIT kaliyor', () => {
 })
 
 describe('dikisler', () => {
-  const HOOK = read('use-notch-voice.ts')
+  const COMPOSER = read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-auto-speak-replies.ts')
   const PLAYBACK = read('..', '..', 'lib', 'voice-playback.ts')
 
   it('oran SESIN saatinden geliyor', () => {
@@ -94,9 +94,10 @@ describe('dikisler', () => {
     expect(PLAYBACK).toContain('window.cancelAnimationFrame(progressFrame)')
   })
 
-  it('centik alt yaziyi KULLANIYOR', () => {
-    expect(HOOK).toContain('spokenSubtitle(sentence, ratio)')
-    // Yeni cumle sifirdan aciliyor: onceki cumle ekranda asili kalmamali.
-    expect(HOOK).toContain('spokenSubtitle(sentence, 0)')
+  it('alt yaziyi KONUSAN taraf uretiyor', () => {
+    // Centik sentez yapmiyor, yani cumle ilerleyisini de duymuyor. Serit
+    // metnini konusan taraf yayinliyor ve centik onu gosteriyor.
+    expect(COMPOSER).toContain('spokenSubtitle(sentence, ratio)')
+    expect(COMPOSER).toContain('spokenSubtitle(sentence, 0)')
   })
 })

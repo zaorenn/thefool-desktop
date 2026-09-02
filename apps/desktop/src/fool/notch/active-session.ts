@@ -276,3 +276,34 @@ export function setNotchVoiceActive(active: boolean): void {
 export function notchVoiceIsActive(): boolean {
   return $notchVoiceActive.get() === '1'
 }
+
+
+/**
+ * KONUŞULAN alt yazı — PENCERELER ARASI.
+ *
+ * Ölçülen hata
+ * ------------
+ * Çentik hem konuşuyor hem gösteriyordu ve ikisini de KENDİ ``$messages``inden
+ * karar vererek yapıyordu. Ama ``$messages`` düz bir ``atom``, yani PENCERE
+ * BAŞINA: çentik ayrı bir ``BrowserWindow`` ve listesi ana pencerenin bir tur
+ * gerisinde kalıyor.
+ *
+ * Sonucu kullanıcının ekran görüntüsünde: şeritte BİR ÖNCEKİ cevap yazıyor ve
+ * son cevap hiç seslendirilmiyor. Günlükte de doğrulandı -- bütün oturumda tek
+ * bir sentez vardı, o da uyandırma onayı.
+ *
+ * Karar, ``$voiceSubmitWanted`` başlığındakiyle aynı: çentik bir GİRDİ
+ * AYGITI. Gönderimi ana pencere yapıyordu; artık SESLENDİRMEYİ de o yapıyor.
+ * Çentik yalnızca gösteriyor -- konuşulan metni buradan okuyarak.
+ *
+ * Böylece "kim konuşacak" sorusu tamamen ortadan kalkıyor: tek konuşan var.
+ */
+export const $spokenSubtitle = sharedAtom<string>('fool.desktop.voice.subtitle', '', {
+  decode: raw => raw,
+  encode: value => value
+})
+
+/** Konuşulan alt yazıyı yaz (boş dize = şerit temizlensin). */
+export function setSpokenSubtitle(text: string): void {
+  $spokenSubtitle.set(text)
+}

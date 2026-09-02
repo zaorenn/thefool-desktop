@@ -29,51 +29,34 @@ const COMPOSER = readFileSync(
   'utf8'
 )
 
-describe('centik ANA SUREC hakemine katiliyor', () => {
-  it('akisi acmadan once talep ediyor', () => {
-    expect(NOTCH.includes('ownsAmbientCue')).toBe(true)
-    // Talep, akisin ACILMASINDAN once gelmeli -- sonra gelseydi iki sentez
-    // birden baslar, biri iptal edilirdi.
-    expect(NOTCH.indexOf('ownsAmbientCue')).toBeLessThan(NOTCH.indexOf('startSpeechStream('))
+describe('TEK konusan var: ana pencere', () => {
+  it('centik ARTIK sentez yapmiyor', () => {
+    // Mimari degisti ve sebebi olculdu: centik ayri bir ``BrowserWindow`` ve
+    // kendi ``$messages``i ana pencerenin bir tur gerisinde. O listeden "ne
+    // okunacak" karari vermek, seritte ESKI cevabin gorunmesine ve yeni
+    // cevabin hic okunmamasina yol aciyordu (kullanicinin ekran goruntusu +
+    // gunlukte tek bir sentez: yalnizca uyandirma onayi).
+    //
+    // ``active-session.ts``de zaten yazili olan karar sese de uygulandi:
+    // centik bir GIRDI AYGITI. Gonderimi ana pencere yapiyordu, artik
+    // seslendirmeyi de o yapiyor.
+    expect(NOTCH).not.toContain('startSpeechStream(')
   })
 
-  it('besteci ile AYNI anahtar uzayini kullaniyor', () => {
-    // Ayri anahtar yazmak, iki yuzeyin birbirini hic gormemesi olurdu.
-    expect(/ownsAmbientCue\(`speak:\$\{/.test(NOTCH)).toBe(true)
-    expect(/ownsAmbientCue\(`speak:\$\{/.test(COMPOSER)).toBe(true)
+  it('centik yalnizca UYANDIRMA ONAYINI seslendiriyor', () => {
+    // Tek istisna ve bilincli: onay sesi bir CEVAP degil, centigin kendi
+    // geri bildirimi ("I'm listening") ve ana pencerenin haberi olmasi
+    // gereken bir sey degil.
+    expect(NOTCH).toContain('playSpeechText(WAKE_ACK_TEXT')
   })
 
-  it('talep reddedilirse akis HIC acilmiyor', () => {
-    expect(/if \(!owns\) \{[\s\S]{0,400}?return null/.test(NOTCH)).toBe(true)
+  it('hakeme BESTECI basvuruyor ve akistan ONCE', () => {
+    // Ayni sohbet birkac pencerede acikken cevabi TEK biri seslendirmeli.
+    expect(COMPOSER).toContain('ownsAmbientCue')
+    expect(COMPOSER.indexOf('ownsAmbientCue')).toBeLessThan(COMPOSER.indexOf('startSpeechStream('))
   })
 
   it('reddedilen cevap icin tekrar tekrar talep etmiyor', () => {
-    // Reddedilince ``streamRef`` bosaliyor; muhafiz olmasa efekt her token'da
-    // ayni yolu bastan denerdi.
-    expect(NOTCH.includes('declinedRef')).toBe(true)
-    expect(NOTCH.includes('declinedRef.current.has(pending.id)')).toBe(true)
-  })
-
-  it('mesaj kimligi VERILIYOR', () => {
-    // ``claimSpeech(undefined)`` her zaman ``true`` doner: kimlik verilmeden
-    // pencere ICI tekillestirme de baypas ediliyordu.
-    expect(NOTCH.includes('messageId: claimId')).toBe(true)
-  })
-})
-
-describe('sahiplik hakemi kendi KAPSAMINI dogru anlatiyor', () => {
-  const OWNER = readFileSync(join(import.meta.dirname, '../voice-owner.ts'), 'utf8')
-
-  it('pencereler arasi guvenceyi USTLENMIYOR', () => {
-    // Dosya bir zamanlar tasiyamadigi seyi vaat ediyordu.
-    expect(OWNER.includes('ownsAmbientCue')).toBe(true)
-    expect(OWNER.includes('PENCEREYE ÖZEL')).toBe(true)
-  })
-
-  it('olu friend katmani KALKTI', () => {
-    // Friend penceresi kaldirildi; geride centikten YUKSEK oncelikli, hic
-    // talep edilmeyen bir katman kalmisti.
-    expect(OWNER.includes("'friend'")).toBe(false)
-    expect(OWNER.includes('friend: 3')).toBe(false)
+    expect(COMPOSER).toContain('declinedRef')
   })
 })

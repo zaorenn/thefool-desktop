@@ -25,23 +25,26 @@ const read = (name: string) => readFileSync(join(__dirname, name), 'utf8')
 const SHELL = read('notch-shell.tsx')
 const HOOK = read('use-notch-voice.ts')
 
+const COMPOSER = readFileSync(
+  join(__dirname, '..', '..', 'app', 'chat', 'composer', 'hooks', 'use-auto-speak-replies.ts'),
+  'utf8'
+)
+
 describe('centik modelin cevabini gosteriyor', () => {
-  it('kanca cevabi TUTUYOR ve disari veriyor', () => {
-    // Onkosul. Bu koparsa asagidaki cizim testlerinin dayanagi kalmaz.
+  it('cevap PAYLASILAN atomdan geliyor', () => {
+    // Centik kendi ``$messages``inden karar veriyordu ve o liste ana
+    // pencerenin bir tur gerisindeydi: seritte ESKI cevap goruluyordu.
+    // Konusan taraf kim ise serit metnini de o yayinliyor.
     expect(HOOK).toContain('reply: string')
-    expect(HOOK).toContain('setReply')
+    expect(HOOK).toContain('useStore($spokenSubtitle)')
   })
 
   it('cevap KONUSULDUKCA guncelleniyor', () => {
     // Tur bitince tek seferde yazmak, uzun bir cevabin tamamlanmasini
-    // beklemek demekti -- kullanici konusma surerken ekranda hicbir sey
-    // gormezdi.
-    //
-    // Artik CUMLE bazinda da degil, cumlenin DUYULMUS kismi kadar: kullanici
-    // "alt yazi gecer gibi ... parca parca gozukmeli" dedi ve oran sesin
-    // kendi saatinden geliyor (bkz. ``subtitle.ts``).
-    expect(HOOK).toContain('onSentenceProgress: (sentence, ratio) =>')
-    expect(HOOK).toContain('setReply(spokenSubtitle(sentence, ratio))')
+    // beklemek demekti. Serit artik cumlenin DUYULMUS kismi kadar aciliyor ve
+    // yayinlayan taraf KONUSAN taraf: ana pencere.
+    expect(COMPOSER).toContain('onSentenceProgress: (sentence, ratio) =>')
+    expect(COMPOSER).toContain('setSpokenSubtitle(spokenSubtitle(sentence, ratio))')
   })
 
   it('TEK satir cizilyor, ikisi birden DEGIL', () => {
@@ -59,7 +62,7 @@ describe('centik modelin cevabini gosteriyor', () => {
   it('CEVAP varsa cevap kazaniyor', () => {
     // ``reply`` yeni turda temizleniyor, yani sira kendiliginden dogru
     // isliyor: gonderilen metin gorunur, cevap akmaya baslayinca yerini alir.
-    expect(HOOK).toContain("setReply('')")
+    expect(HOOK).toContain("setSpokenSubtitle('')")
     expect(SHELL).toContain('speaking={Boolean(voice.reply)}')
   })
 

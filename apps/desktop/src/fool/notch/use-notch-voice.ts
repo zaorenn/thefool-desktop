@@ -25,25 +25,21 @@ import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
 import { transcribeAudio } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { collectUnspokenTurnSpeech, turnSpeechKey } from '@/lib/chat-messages'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
 import {
   interruptVoicePlayback,
   playSpeechText,
-  type SpeechStreamSession,
-  startSpeechStream,
   takeVoicePlaybackInterrupted
 } from '@/lib/voice-playback'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
-import { ownsAmbientCue, SPEECH_CLAIM_TTL_MS } from '@/store/ambient'
 import { $busy, $messages } from '@/store/session'
 import { $voicePlayback } from '@/store/voice-playback'
 
 import { voiceApi } from '../voice-api'
-import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
+import { claimVoice, releaseVoice } from '../voice-owner'
 import { $voiceWarm } from '../voice-warm'
 
-import { $voiceSessionId, requestVoiceSubmit, setNotchVoiceActive, waitForVoiceSessionOrOpen } from './active-session'
+import { $spokenSubtitle, $voiceSessionId, requestVoiceSubmit, setNotchVoiceActive, setSpokenSubtitle, waitForVoiceSessionOrOpen } from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -61,7 +57,6 @@ import {
 import { interruptThenSubmit, shouldInterruptTurn } from './interrupt'
 import { $listenMode } from './listen-mode'
 import { createPttSpeechState, observeLevel } from './ptt-speech'
-import { spokenSubtitle } from './subtitle'
 import {
   createFillerState,
   FILL_AFTER_MS,
@@ -69,7 +64,6 @@ import {
   shouldFill,
   takeFiller
 } from './thinking-filler'
-import { turnEndAction } from './turn-end'
 
 /**
  * Baska bir yuzeyin ustlendigi cevap kimlikleri icin ust sinir.
@@ -192,7 +186,9 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   const [transcript, setTranscript] = useState('')
   // Ajanin cevabi. Notch artik sohbet yuzeyi: kullanici ne dendigini
   // GORMELI, yalnizca duymak gurultulu bir odada yetmiyor.
-  const [reply, setReply] = useState('')
+  // Konuşulan alt yazı ANA PENCEREDEN geliyor (paylaşılan atom): konuşan taraf
+  // kim ise şeridi de o yayınlıyor.
+  const reply = useStore($spokenSubtitle)
   const [error, setError] = useState<null | string>(null)
   // Geri cagirim ref'te: ``submitAudio`` bagimliligina koymak, cagiran her
   // yeni fonksiyon verdiginde onu yeniden kurardi ve suren bir yakalamayi
@@ -232,14 +228,12 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // (tuş bırakma ile odak kaybı aynı anda gelebilir); ilk gelen kazanır.
   const discardRef = useRef(false)
   // Suren akis oturumu ve o oturuma KADAR gonderilmis karakter sayisi.
-  const streamRef = useRef<{ sent: number; session: SpeechStreamSession | null } | null>(null)
   // Turu kimin kestigi. Tus ve ses ayni anda gelebiliyor; kapisiz birakmak
   // ayni cumleyi modele iki kez gonderiyordu.
   const bargeRef = useRef<BargeGate>(createBargeGate())
   // Baska bir yuzeyin ustlendigi cevaplar. Bu olmadan efekt her token'da
   // yeniden talep ederdi: talep reddedilince ``streamRef`` bosaliyor ve bir
   // sonraki tik ayni yolu bastan denerdi -- saniyede onlarca bosuna IPC.
-  const declinedRef = useRef<Set<string>>(new Set())
   // Bu turun EN GUNCEL konusma metni.
   //
   // Yedek yol bunu okuyor, akisin acilisinda yakalanan ``pending`` nesnesini
@@ -248,13 +242,10 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // cumlesini seslendirmek demekti. Ustelik cevap tamamlaninca
   // ``lastSpokenId`` yaziliyor ve ``collectUnspokenTurnSpeech`` artik ``null``
   // donuyor -- yani metni geri okumanin baska yolu kalmiyor.
-  const turnSpeechRef = useRef<null | { id: string; pending: boolean; text: string }>(null)
   // Akis bu cevap icin HIC ses uretmedi: kimlik burada bekliyor ve cevap
   // TAMAMLANINCA tek seferlik yoldan okunuyor.
-  const fallbackRef = useRef<null | string>(null)
   // Yedek yol metin AKARKEN kurulduysa efektin bir kez daha kosmasi gerekiyor:
   // cevap zaten tamamlanmissa yeni bir ``messages`` tiki gelmeyebilir.
-  const [fallbackTick, setFallbackTick] = useState(0)
   // Araya girme yakalamasi SURUYOR mu? Izleyici, durum 'listening'e dondugu
   // an sokulup atilirsa yakaladigi cumleyi teslim edemeden olur -- yani
   // kullanicinin araya girerken soyledigi sey kaybolur. Bu bayrak izleyiciyi
@@ -428,8 +419,6 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
       // ŞİMDİ araya giriliyor: akış oturumu kapanıyor, ses kesiliyor ve süren
       // tur durduruluyor -- yoksa eski cevabın kalanı yeni turdan sonra
       // konuşulur.
-      streamRef.current?.session?.finish()
-      streamRef.current = null
       // Susturmak ve MODELE SOYLEMEK tek is: bkz. ``interruptVoicePlayback``.
       // Burada yalnizca susturuluyordu, yani centikte sozunu kestiginizde
       // model bunu hic ogrenmiyor ve cumlesini bitirmis gibi devam ediyordu.
@@ -551,8 +540,6 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
       // durdurma ifadesiyken tutuyor, o yuzden "stop the container" gercek
       // bir istek olarak gecmeye devam ediyor.
       if (isVoiceStopCommand(text)) {
-        streamRef.current?.session?.finish()
-        streamRef.current = null
         interruptVoicePlayback()
         void haltTurn().catch(() => undefined)
         releaseBarge(bargeRef.current)
@@ -564,7 +551,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
       }
 
       setTranscript(text)
-      setReply('')
+      setSpokenSubtitle('')
       // Yeni tur: doldurma hakki yenileniyor, sessizlik sayaci sifirlaniyor.
       resetTurn(fillerRef.current)
       speechStartedRef.current = false
@@ -640,33 +627,6 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
     })()
   }, [mic, submitAudio])
 
-  /**
-   * Akış hiç ses üretmedi — metni TEK SEFERLİK yoldan oku.
-   *
-   * Metin ``turnSpeechRef``ten okunuyor: akışın açıldığı andaki kopya bayat
-   * olur. Cevap hâlâ akıyorsa yalnızca işaretleniyor ve efekt tamamlanınca
-   * okuyor.
-   */
-  const armFallback = useCallback((id: string) => {
-    const snapshot = turnSpeechRef.current
-
-    if (!snapshot || snapshot.id !== id) {
-      return
-    }
-
-    if (snapshot.pending) {
-      fallbackRef.current = id
-      setFallbackTick(tick => tick + 1)
-
-      return
-    }
-
-    void playSpeechText(snapshot.text, {
-      messageId: id,
-      source: 'voice-conversation'
-    }).catch(() => undefined)
-  }, [])
-
   // Cevabı AKARKEN seslendir.
   //
   // Neden akış: baloncuğun bitmesini beklemek, uzun bir cevapta kullanıcıyı
@@ -681,195 +641,22 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // ``streamRef`` reaktif bir değerin AYNASI değil: açık bir WebSocket
   // oturumu ve o oturuma kaç karakter gönderildiği. State'e taşımak her
   // token'da yeniden render tetiklerdi.
-  // eslint-disable-next-line no-restricted-syntax -- yukarıdaki gerekçe
-  useEffect(() => {
-    if (status !== 'thinking' && status !== 'speaking') {
-      return
-    }
-
-    // Friend penceresi acikken o konusuyor: notch sessiz kalip yalnizca
-    // DURUMU gosteriyor (bkz. fool/voice-owner.ts). Iki yuzey birden
-    // seslendirmeye kalkinca her biri digerini iptal ediyordu.
-    if (!canSpeak('notch')) {
-      return
-    }
-
-    const pending = collectUnspokenTurnSpeech(messages, lastSpokenId)
-
-    // Akis cumle cumle yaziyorsa ona KARISMA.
-    //
-    // Ikisi birden yazinca blok metin, duyulan cumlenin ustune biniyordu:
-    // ekran once tum cevabi gosterip sonra tek cumleye donuyordu.
-    if (pending?.text && !streamRef.current?.session) {
-      setReply(pending.text)
-    }
-
-    if (!pending || !pending.text.trim()) {
-      return
-    }
-
-    turnSpeechRef.current = { id: pending.id, pending: pending.pending, text: pending.text }
-
-    // YEDEK YOL: akis bu cevap icin hic ses uretmedi ve metin o sirada hala
-    // akiyordu. Cevap tamamlanana kadar bekleniyor -- yarim cevabi okuyup
-    // kalanini hic okumamak, sessiz kalmanin bir baskasi olurdu.
-    if (fallbackRef.current) {
-      if (fallbackRef.current !== pending.id) {
-        fallbackRef.current = null
-      } else {
-        if (pending.pending) {
-          return
-        }
-
-        fallbackRef.current = null
-        setLastSpokenId(pending.id)
-
-        void playSpeechText(pending.text, {
-          messageId: pending.id,
-          source: 'voice-conversation'
-        }).catch(() => undefined)
-
-        if (statusRef.current !== 'listening') {
-          setStatus('idle')
-        }
-
-        return
-      }
-    }
-
-    // Akış oturumu tur başına BİR kez açılıyor.
-    if (!streamRef.current && !declinedRef.current.has(pending.id)) {
-      streamRef.current = { sent: 0, session: null }
-
-      // Bu cevabı seslendirme hakkı ANA SÜREÇTEN alınıyor.
-      //
-      // ``canSpeak`` bu yarışı hiç taşımıyordu: ``$voiceOwner`` düz bir atom
-      // ve çentik AYRI bir ``BrowserWindow``. ``claimVoice('notch')`` yalnızca
-      // çentiğin kendi kopyasına yazıyor, ana penceredeki
-      // ``canSpeak('composer')`` her zaman ``true`` dönüyordu. Yani sahiplik
-      // hakemi tam da var olma sebebi olan durumda -- iki PENCERE arasında --
-      // hiçbir şey yapmıyordu ve kullanıcı aynı cümleyi iki kez duyuyordu.
-      //
-      // ``ownsAmbientCue`` ana süreçte çözülüyor (``electron/event-dedupe.ts``)
-      // ve yarışsız. Besteci zaten onu kullanıyordu; eksik olan çentiğin
-      // katılmasıydı.
-      //
-      // Öncelik bedavaya geliyor: çentik AKARKEN talep ediyor (ilk token'da),
-      // besteci ise ancak cevap TAMAMLANINCA. Yani çentik açıkken her zaman
-      // önce o talep ediyor ve kazanıyor.
-      const claimId = pending.id
-
-      // Talep anahtarı TURU gösteriyor, mesajı değil.
-      //
-      // Ölçülen hata: burası turun İLK asistan mesajının kimliğini, besteci
-      // ise SON mesajınkini kullanıyordu. Bir tur birden çok görünür mesaj
-      // ürettiğinde anahtarlar ayrışıyor, iki talep de kazanıyor ve
-      // kullanıcı aynı cümleleri iki kez duyuyordu.
-      const turnKey = turnSpeechKey(messages) ?? claimId
-
-      void ownsAmbientCue(`speak:${turnKey}`, SPEECH_CLAIM_TTL_MS)
-        .then(owns => {
-          // Onceligi ANA PENCEREYE bildir -- ama yalnizca TALEBI KAZANINCA.
-          //
-          // Once bunu "centik penceresi acik mi" diye yayinlamistim ve sonucu
-          // daha kotu bir hataydi: besteci susuyor, centigin durumu ``idle``
-          // oldugu icin o da konusmuyor ve HICBIR SES cikmiyordu. Centik
-          // yalnizca KENDI turunda konusuyor
-          // (``status === 'thinking' | 'speaking'``), yani pencerenin acik
-          // olmasi konusacagi anlamina gelmiyor.
-          //
-          // Simdi bildirilen sey gercek: "bu turu ben ustlendim".
-          setNotchVoiceActive(owns)
-
-          if (!owns) {
-            // Başka bir yüzey bu cevabı üstlendi. Akışı hiç açma: açmak
-            // "iptal edildi" durumuna düşüp iki sentezi birden başlatırdı.
-            rememberDeclined(declinedRef.current, claimId)
-            streamRef.current = null
-
-            return null
-          }
-
-          // ``messageId`` VERİLİYOR: ``claimSpeech`` onsuz ``undefined`` alıp
-          // her zaman ``true`` dönüyordu, yani pencere İÇİ tekilleştirme de
-          // baypas ediliyordu.
-          return startSpeechStream({
-            messageId: claimId,
-            // Ekranda KONUSULAN cumle dursun, cevabin tamami degil.
-            //
-            // Eskiden ``setReply`` biriken metnin tamamini yaziyordu: uzun bir
-            // cevap centige tek seferde kocaman bir blok olarak dusuyor ve
-            // duyulanla ekrandaki hicbir zaman ayni olmuyordu. Geri cagirim
-            // cumlenin DUYULMAYA basladigi anda geliyor (bkz.
-            // ``lib/voice-playback.ts``), yani ikisi eszamanli akiyor.
-            // Cumle DUYULMAYA baslarken bir kez: alt yazi bos sifirdan
-            // acilsin, onceki cumle ekranda asili kalmasin.
-            onSentence: sentence => setReply(spokenSubtitle(sentence, 0)),
-            // Ve duyuldukca ACILSIN. Oran sesin kendi saatinden geliyor,
-            // kelime hizi tahmininden degil.
-            onSentenceProgress: (sentence, ratio) =>
-              setReply(spokenSubtitle(sentence, ratio)),
-            source: 'voice-conversation'
-          })
-        })
-        .then(session => {
-          if (streamRef.current) {
-            streamRef.current.session = session
-          }
-
-          // Akış yoksa (ağ geçidi desteklemiyorsa) tek seferlik oynatmaya
-          // düşülüyor — ses hiç çıkmamasındansa geç çıkması iyidir. Bu satir
-          // bir YORUM olarak vardi ama karsiligi yazilmamisti: akis ucu
-          // olmayan bir arka uctan hicbir ses cikmiyordu.
-          if (!session) {
-            armFallback(claimId)
-
-            return
-          }
-
-          void session.done.then(outcome => {
-            if (outcome === 'fallback') {
-              armFallback(claimId)
-            }
-          })
-        })
-        .catch(() => undefined)
-    }
-
-    const stream = streamRef.current
-    const session = stream?.session
-
-    if (stream && session && pending.text.length > stream.sent) {
-      // Cevap geldi: sessizlik bitti, doldurma penceresi kapandi.
-      speechStartedRef.current = true
-      session.append(pending.text.slice(stream.sent))
-      stream.sent = pending.text.length
-      setStatus('speaking')
-    }
-
-    // Baloncuk tamamlandı: akışı kapat. Turu bitirmek AYRI bir karar --
-    // metin sesin saniyelerce önünde gidiyor (bkz. ``./turn-end.ts``).
-    if (!pending.pending) {
-      session?.finish()
-      streamRef.current = null
-      setLastSpokenId(pending.id)
-
-      const action = turnEndAction({
-        playbackIdle: $voicePlayback.get().status === 'idle',
-        replyComplete: true,
-        status: statusRef.current
-      })
-
-      if (action === 'end') {
-        setStatus('idle')
-      } else if (action === 'hold-for-audio') {
-        // Ses sürüyor: tur AYAKTA. Aşağıdaki etki, oynatma boşa düştüğü anda
-        // bitiriyor.
-        awaitingPlaybackRef.current = true
-        setStatus('speaking')
-      }
-    }
-  }, [armFallback, fallbackTick, lastSpokenId, messages, status])
+   
+  // SESLENDİRME ARTIK BURADA DEĞİL.
+  //
+  // Çentik hem konuşuyor hem gösteriyordu ve ikisini de KENDİ ``$messages``
+  // listesinden karar vererek yapıyordu. ``$messages`` düz bir ``atom``, yani
+  // PENCERE BAŞINA: çentik ayrı bir ``BrowserWindow`` ve listesi ana
+  // pencerenin bir tur gerisinde kalıyor.
+  //
+  // Ölçüldü: kullanıcının ekranında şeritte BİR ÖNCEKİ cevap yazıyordu ve son
+  // cevap hiç seslendirilmemişti; günlükte bütün oturumda tek bir sentez
+  // vardı, o da uyandırma onayı.
+  //
+  // Karar ``active-session.ts``de yazılı olanın aynısı: çentik bir GİRDİ
+  // AYGITI. Gönderimi ana pencere yapıyordu, artık seslendirmeyi de o yapıyor
+  // ve konuşulan alt yazıyı ``$spokenSubtitle`` ile buraya veriyor. Böylece
+  // "kim konuşacak" sorusu tamamen ortadan kalkıyor -- tek konuşan var.
 
   // Metin bitti, ses sürüyor: turu SESİN sonunda bitir.
   //
@@ -958,7 +745,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // State'e tasimak izleyiciyi her durum degisiminde sokup atardi; o da her
   // seferinde yeni bir ``getUserMedia`` akisi ve sifirlanan gurultu tabani
   // demek.
-  // eslint-disable-next-line no-restricted-syntax -- yukaridaki gerekce
+   
   useEffect(() => {
     if (!monitorActive) {
       return
@@ -978,8 +765,6 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
 
         // Akış oturumu da kapatılmalı, yoksa gelen metin arkada
         // seslendirilmeye devam eder.
-        streamRef.current?.session?.finish()
-        streamRef.current = null
         interruptVoicePlayback()
         // Durdurma HEMEN gidiyor, yakalamanın bitmesi beklenmiyor: kullanıcı
         // konuşurken model saniyelerce üretmeye devam ederdi ve o metin

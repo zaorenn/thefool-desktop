@@ -45,6 +45,7 @@ const code = (source: string) =>
 const AUTO_SPEAK = code(
   read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-auto-speak-replies.ts')
 )
+
 const COMPOSER = read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-composer-voice.ts')
 const SHELL = read('notch-shell.tsx')
 const HOOK = read('use-notch-voice.ts')
@@ -105,38 +106,20 @@ describe('isaretci TOHUMLANIYOR', () => {
   })
 })
 
-describe('oncelik DAR: centigin KENDI turu', () => {
-  it('oncelik TUR durumundan yayinlaniyor, pencereden DEGIL', () => {
-    // Once "centik penceresi acik mi" diye yayinlamistim ve sonucu daha kotu
-    // bir hataydi: besteci susuyor, centigin durumu ``idle`` oldugu icin o da
-    // konusmuyor ve HICBIR SES cikmiyordu. Centik yalnizca KENDI turunda
-    // konusuyor, yani pencerenin acik olmasi konusacagi anlamina gelmiyor.
-    expect(HOOK).toContain("setNotchVoiceActive(status === 'thinking' || status === 'speaking')")
-    expect(SHELL).not.toContain('setNotchVoiceActive(sessionActive)')
+describe('TEK konusan: ana pencere', () => {
+  it('centik sentez YAPMIYOR', () => {
+    // Oncelik bayragi denendi ve daha kotu bir hata uretti: centik acik ama
+    // durumu ``idle`` iken besteci susuyor, centik de konusmuyordu -- hicbir
+    // ses cikmiyordu. Kok sebep bayrak degildi: centik ayri bir pencere ve
+    // kendi ``$messages``i ana pencerenin bir tur gerisinde.
+    expect(HOOK).not.toContain('startSpeechStream(')
   })
 
-  it('centik gidince oncelik BIRAKILIYOR', () => {
-    // Birakmazsak bir kez ustlenilen tur, sonraki butun cevaplari da sessize
-    // alirdi.
-    expect(HOOK).toContain('useEffect(() => () => setNotchVoiceActive(false), [])')
+  it('besteci artik centige YER ACMIYOR', () => {
+    expect(AUTO_SPEAK).not.toContain('notchVoiceIsActive()')
   })
 
-  it('talep KAYBEDILIRSE oncelik geri veriliyor', () => {
-    // Centik talebi kaybettiyse besteci konusmali -- yoksa yine sessizlik.
-    expect(HOOK).toContain('setNotchVoiceActive(owns)')
-  })
-
-  it('besteci oncelige UYUYOR', () => {
-    expect(AUTO_SPEAK).toContain('if (notchVoiceIsActive()) {')
-  })
-
-  it('oncelik YARISI degil, YAZILI kural', () => {
-    // Eskiden hangi yuzeyin once talep ettigi tura gore degisiyordu: besteci
-    // kazandiginda centik akis acmiyor, cumle ilerleyisini duymuyor ve ALT
-    // YAZI hic cikmiyordu.
-    const branch = AUTO_SPEAK.slice(AUTO_SPEAK.indexOf('if (notchVoiceIsActive()) {'))
-
-    expect(branch.slice(0, 300)).toContain('declineCurrent()')
-    expect(branch.slice(0, 300)).toContain('streamRef.current = null')
+  it('serit KONUSAN taraftan yayinlaniyor', () => {
+    expect(AUTO_SPEAK).toContain('setSpokenSubtitle(spokenSubtitle(sentence, ratio))')
   })
 })

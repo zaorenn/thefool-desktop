@@ -1,7 +1,8 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 
-import { notchVoiceIsActive } from '@/fool/notch/active-session'
+import { setSpokenSubtitle } from '@/fool/notch/active-session'
+import { spokenSubtitle } from '@/fool/notch/subtitle'
 import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { turnSpeechKey } from '@/lib/chat-messages'
@@ -157,21 +158,6 @@ export function useAutoSpeakReplies({
         return
       }
 
-      // CENTIK acikken sesin sahibi centiktir.
-      //
-      // Yazili bir oncelik, cunku eskiden bu bir YARISTI: hangi yuzeyin once
-      // talep ettigi tura gore degisiyordu. Besteci kazandiginda centik akis
-      // acmiyor, cumle ilerleyisini hic duymuyor ve ALT YAZI cikmiyordu --
-      // kullanicinin istedigi "eszamanli, alt yazi gecer gibi" tam da o
-      // sinyale bagli.
-      if (notchVoiceIsActive()) {
-        streamRef.current?.session?.finish()
-        streamRef.current = null
-        declineCurrent()
-
-        return
-      }
-
       // ``$voicePlayback`` kontrolu BURADA DEGIL, planlayicida.
       //
       // Akisa gecerken bu satiri oldugu yerde biraktim ve akisi kendi elimle
@@ -294,7 +280,19 @@ export function useAutoSpeakReplies({
               return null
             }
 
-            return startSpeechStream({ messageId: id, source: 'read-aloud' })
+            // ALT YAZIYI YAYINLA: çentik artık konuşmuyor, gösteriyor.
+            //
+            // Çentik ayrı bir ``BrowserWindow`` ve kendi ``$messages``i ana
+            // pencerenin bir tur gerisinde; oradan karar vermek şeritte ESKİ
+            // cevabın görünmesine yol açıyordu. Konuşan taraf kim ise alt
+            // yazıyı da o yayınlıyor (bkz. ``active-session.ts``).
+            return startSpeechStream({
+              messageId: id,
+              onSentence: sentence => setSpokenSubtitle(spokenSubtitle(sentence, 0)),
+              onSentenceProgress: (sentence, ratio) =>
+                setSpokenSubtitle(spokenSubtitle(sentence, ratio)),
+              source: 'read-aloud'
+            })
           })
           .then(session => {
             if (streamRef.current !== entry) {

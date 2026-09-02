@@ -81,16 +81,16 @@ describe('dikisler', () => {
   const NOTCH = read('use-notch-voice.ts')
   const COMPOSER = read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-auto-speak-replies.ts')
 
-  it('iki yuzey de ORTAK anahtari kullaniyor', () => {
-    for (const source of [NOTCH, COMPOSER]) {
-      expect(source).toContain('turnSpeechKey')
-      expect(source).toContain('SPEECH_CLAIM_TTL_MS')
-    }
+  it('TEK konusan hakeme basvuruyor', () => {
+    // Centik artik sentez yapmiyor (ayri pencere, bir tur geriden gelen
+    // ``$messages``). Talep yine gerekli: AYNI sohbet birkac ana pencerede
+    // acik olabilir.
+    expect(COMPOSER).toContain('turnSpeechKey')
+    expect(COMPOSER).toContain('SPEECH_CLAIM_TTL_MS')
+    expect(NOTCH).not.toContain('startSpeechStream(')
   })
 
-  it('eski MESAJ bazli anahtarlar geri gelmedi', () => {
-    // Regresyon geri gelirse burasi duser.
-    expect(NOTCH).not.toContain('ownsAmbientCue(`speak:${claimId}`)')
+  it('eski MESAJ bazli anahtar geri gelmedi', () => {
     expect(COMPOSER).not.toContain('ownsAmbientCue(`speak:${id}`)')
   })
 })

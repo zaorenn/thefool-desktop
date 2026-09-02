@@ -111,6 +111,8 @@ export interface WakeStatusResponse {
 
 export interface WakeStartResponse {
   capture?: string
+  /** Motorun GERCEKTEN dinledigi ifade -- gosterilecek olan bu. */
+  effective_phrase?: string
   enabled_persisted?: boolean
   frame_length?: number
   hint?: string
@@ -215,7 +217,10 @@ export function applyWakeStartResult(result: WakeStartResponse | null | undefine
       listening: true,
       notice: '',
       pending: false,
-      phrase: result.phrase?.trim() || current.phrase
+      // GERCEK ifade kazaniyor. ``phrase`` ham yapilandirma alani ve
+      // dinleyici HER kuruldugunda buradan gecerdi -- yani ekranda duzeltilen
+      // ifade her armda "hey fool"a geri donerdi.
+      phrase: result.effective_phrase?.trim() || result.phrase?.trim() || current.phrase
     })
     void maybeStartClientCapture(result)
 
@@ -282,11 +287,38 @@ export async function setWakePhrase(
   // sorunu değil.
   $wakeWord.set({ ...$wakeWord.get(), phrase: result?.phrase?.trim() || phrase.trim() })
 
-  // Yeni ifadeyle yeniden kur. Dinleyici KAPALIYSA bu bir no-op: kullanıcı
-  // kulağı kapalı tutuyorsa ifade değiştirmek onu açmamalı.
-  if ($wakeWord.get().listening) {
-    await armWakeWord(request)
+  await rearmWakeAfterConfigChange(request)
+}
+
+/**
+ * Yapılandırma değiştikten sonra dinleyiciyi YENİDEN KUR.
+ *
+ * Ölçülen hata
+ * ------------
+ * Kullanıcının bildirdiği: "hey hermes dışındaki hiçbiri çalışmıyor." Motoru
+ * ya da ifadeyi değiştiriyor, ekran yeni değeri gösteriyor, kulak hâlâ ilk
+ * kurulduğu modeli dinliyordu.
+ *
+ * İki katmanı vardı ve ikisi de düzeltildi: ağ geçidi ``stop_listening()``i
+ * sahibini vermeden çağırıyor (``TypeError``, sessizce yutuluyor, dinleyici
+ * hiç durmuyor), ve motor/model değişimi burada YENİDEN KURMAYI hiç
+ * çağırmıyordu.
+ *
+ * Kapı ``enabled``: yapılandırma hakikati. ``listening`` bu anda BAYAT --
+ * ağ geçidi dinleyiciyi az önce bıraktı ve depo bunu henüz duymadı.
+ * Kullanıcı kulağı kapalı tutuyorsa ifade değiştirmek onu AÇMAMALI, o yüzden
+ * kapı kaldırılmıyor, doğru alana taşınıyor.
+ */
+export async function rearmWakeAfterConfigChange(
+  request: WakeRequester = gatewayRequester
+): Promise<void> {
+  const state = $wakeWord.get()
+
+  if (!state.enabled && !state.listening) {
+    return
   }
+
+  await armWakeWord(request)
 }
 
 export async function armWakeWord(request: WakeRequester = gatewayRequester): Promise<void> {

@@ -14518,12 +14518,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 5040, f"could not save the wake phrase: {e}")
 
     # Çalışan dinleyiciyi bırak; çağıran ``wake.start`` ile yenisini kuruyor.
-    try:
-        from tools.wake_word import stop_listening
-
-        stop_listening()
-    except Exception:
-        logger.debug("wake.phrase: listener stop skipped", exc_info=True)
+    _stop_wake_listener("wake.phrase")
 
     logger.info("wake.phrase: set to %r (provider=sherpa)", phrase)
 
@@ -14540,6 +14535,38 @@ def _(rid, params: dict) -> dict:
 #   * "senin manuel kurup çalıştırdığın her bir ayrı şey uygulamadan doğrudan
 #     indirilebilir olmalı" -- paket tanımları ``tools/lazy_deps.py`` içinde
 #     zaten vardı; burası onları arayüze açan yüzey.
+
+
+def _stop_wake_listener(caller: str) -> bool:
+    """Çalışan dinleyiciyi BIRAK -- yapılandırma değiştikten sonra.
+
+    Ölçülen hata
+    ------------
+    Üç çağıran da ``stop_listening()`` diye çağırıyordu. İmza
+    ``def stop_listening(*, owner)`` -- ``owner`` ZORUNLU ve anahtar
+    kelimeli, yani her çağrı ``TypeError`` atıyor ve çevresindeki
+    ``except Exception`` onu yutuyordu. Dinleyici hiçbir zaman durmuyordu.
+
+    Kullanıcının gördüğü: motoru ya da ifadeyi değiştiriyor, ekran yeni
+    değeri gösteriyor ve "hey hermes dışındaki hiçbiri çalışmıyor" -- çünkü
+    kulak hâlâ ilk kurulduğu modeli dinliyordu. Sessiz yutulan bir istisnanın
+    tam olarak gizlediği şey buydu.
+
+    Kira SAHİBE bağlı: ``stop_listening`` yalnızca kirayı tutan taşıyıcı için
+    duruyor, yani başka bir yüzeyin kulağını kazara kapatmıyoruz.
+    """
+    try:
+        from tools.wake_word import stop_listening
+
+        stopped = stop_listening(owner=current_transport() or _stdio_transport)
+    except Exception:
+        logger.warning("%s: listener stop FAILED", caller, exc_info=True)
+
+        return False
+
+    logger.info("%s: listener stopped=%s", caller, stopped)
+
+    return stopped
 
 
 def _effective_phrase_safe(cfg: dict | None = None) -> str:
@@ -14771,12 +14798,7 @@ def _(rid, params: dict) -> dict:
 
     # Calisan dinleyiciyi birak: motor kurulumda cozumleniyor, yani eskisi
     # calismaya devam ederdi. Cagiran ``wake.start`` ile yenisini kuruyor.
-    try:
-        from tools.wake_word import stop_listening
-
-        stop_listening()
-    except Exception:
-        logger.debug("wake.engine: listener stop skipped", exc_info=True)
+    _stop_wake_listener("wake.engine")
 
     try:
         from tools.wake_word import effective_wake_phrase
@@ -14820,12 +14842,7 @@ def _(rid, params: dict) -> dict:
 
         return _err(rid, 5043, f"could not save the wake model: {e}")
 
-    try:
-        from tools.wake_word import stop_listening
-
-        stop_listening()
-    except Exception:
-        logger.debug("wake.model: listener stop skipped", exc_info=True)
+    _stop_wake_listener("wake.model")
 
     try:
         from tools.wake_word import effective_wake_phrase
@@ -15014,13 +15031,23 @@ def _(rid, params: dict) -> dict:
         _wake_owner_transport = transport
         _wake_owner_surface = surface
     frame = detector_frame_info()
+    effective = _effective_phrase_safe()
+    # GUNLUK de gercek ifadeyi yaziyor. Ham alani yazmak, bu hatayi ariyan
+    # bir sonraki kisiyi ayni yalana goturur: gunluk "listening for 'hey
+    # fool'" derken kulak "hey hermes" bekliyordu.
     logger.info(
         "wake.start(%s): listening for %r (%s) capture=%s frame=%s",
-        surface, reqs["phrase"], reqs["provider"], capture_mode, frame.get("frame_length"),
+        surface, effective or reqs["phrase"], reqs["provider"], capture_mode,
+        frame.get("frame_length"),
     )
     return _ok(rid, {
         "started": True,
         "phrase": reqs["phrase"],
+        # Istemci bunu gosteriyor. ``phrase`` alani yanitta KALIYOR (eski
+        # istemciler onu okuyor), ama masaustu artik bunu tercih ediyor --
+        # yoksa dinleyici her kuruldugunda ekrandaki dogru ifade ham alanla
+        # geri ezilirdi.
+        "effective_phrase": effective,
         "provider": reqs["provider"],
         "owner_surface": surface,
         "enabled_persisted": enabled_persisted,

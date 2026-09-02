@@ -177,3 +177,75 @@ class TestKurulum:
         source = inspect.getsource(module._run)
 
         assert "_ensure_sherpa_model" in source
+
+
+class TestDinleyiciYenidenKuruluyor:
+    """Yapılandırma değişince KULAK da değişmeli.
+
+    Ölçülen hata
+    ------------
+    Kullanıcının bildirdiği: "hey hermes dışındaki hiçbiri çalışmıyor."
+    Günlükte motor ve ifade değişimleri görünüyordu ama ardından TEK BİR
+    ``wake.start`` yoktu -- kulak ilk kurulduğu modelde kalmıştı.
+
+    Sebep sessizce yutulan bir istisnaydı: ``stop_listening`` imzası
+    ``def stop_listening(*, owner)`` ve üç çağıran da onu ``stop_listening()``
+    diye çağırıyordu. Her çağrı ``TypeError`` atıyor, çevresindeki
+    ``except Exception`` onu yutuyor ve dinleyici hiç durmuyordu.
+    """
+
+    def test_owner_ZORUNLU_ve_anahtar_kelimeli(self):
+        # Muhafızın dayanağı: imza gevşerse aşağıdaki tarama anlamını yitirir.
+        import inspect
+
+        from tools.wake_word import stop_listening
+
+        owner = inspect.signature(stop_listening).parameters["owner"]
+
+        assert owner.kind is inspect.Parameter.KEYWORD_ONLY
+        assert owner.default is inspect.Parameter.empty
+
+    def test_HICBIR_cagri_sahipsiz_degil(self):
+        """Hatanin kendisi: sahipsiz bir ``stop_listening`` cagrisi.
+
+        METIN taramasi DEGIL, AST: ilk yazimda metin tariyordum ve testin
+        kendi aciklamasindaki ornege takildi. Ayni tuzaga bu depoda daha once
+        de dusuldu -- yorumu ya da docstring'i tarayan bir muhafiz kendi
+        anlatimini hata sanar. AST yalnizca GERCEK cagrilari goruyor.
+        """
+        import ast
+        from pathlib import Path
+
+        tree = ast.parse(Path("tui_gateway/server.py").read_text(encoding="utf-8"))
+        ownerless = [
+            node.lineno
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "stop_listening"
+            and not node.args
+            and not node.keywords
+        ]
+
+        assert not ownerless, "sahipsiz stop_listening cagrilari: %s" % ownerless
+
+    def test_durdurma_hatasi_YUTULMUYOR(self):
+        # Hatayi 90 dakika gizleyen sey buydu: ``logger.debug`` ve devam.
+        import inspect
+
+        import tui_gateway.server as server
+
+        source = inspect.getsource(server._stop_wake_listener)
+
+        assert "logger.warning" in source
+        assert "logger.debug" not in source
+
+    def test_uc_mutasyon_da_ORTAK_yoldan_geciyor(self):
+        # Ayri ayri yazilmis uc durdurma, dersin birinde ogrenilip
+        # digerlerine tasinmamasi icin hazir bir zemindi.
+        from pathlib import Path
+
+        source = Path("tui_gateway/server.py").read_text(encoding="utf-8")
+
+        for caller in ("wake.phrase", "wake.engine", "wake.model"):
+            assert f'_stop_wake_listener("{caller}")' in source, caller

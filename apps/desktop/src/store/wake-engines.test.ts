@@ -27,6 +27,7 @@ import {
   startWakeTest,
   type WakeEngine
 } from './wake-engines'
+import { $wakeWord } from './wake-word'
 
 const engine = (over: Partial<WakeEngine> = {}): WakeEngine => ({
   active: false,
@@ -91,6 +92,53 @@ describe('motor secimi', () => {
 
     expect($wakeEngines.get().effectivePhrase).toBe('merhaba dostum')
     expect($wakeEngines.get().engines[0]?.id).toBe('sherpa')
+  })
+})
+
+describe('dinleyici YENIDEN kuruluyor', () => {
+  it('motor degisince yeniden kurma cagriliyor', async () => {
+    // Olculen hata: kullanicinin bildirdigi "hey hermes disindaki hicbiri
+    // calismiyor". Gunlukte motor degisimleri vardi ama ardindan TEK BIR
+    // ``wake.start`` yoktu -- kulak ilk kuruldugu modelde kalmisti.
+    $wakeWord.set({ ...$wakeWord.get(), enabled: true, listening: true })
+
+    const seen: string[] = []
+
+    const request = vi.fn(async (method: string) => {
+      seen.push(method)
+
+      if (method === 'wake.status') {
+        return { available: true, enabled: true, listening: false }
+      }
+
+      if (method === 'wake.start') {
+        return { started: true }
+      }
+
+      return { effective_phrase: 'merhaba', engines: [] }
+    }) as unknown as Parameters<typeof setWakeEngine>[1]
+
+    await setWakeEngine('sherpa', request)
+
+    expect(seen).toContain('wake.status')
+    expect(seen).toContain('wake.start')
+  })
+
+  it('uyandirma KAPALIYKEN kulak acilmiyor', async () => {
+    // Kullanici kulagi kapali tutuyorsa motor degistirmek onu ACMAMALI.
+    $wakeWord.set({ ...$wakeWord.get(), enabled: false, listening: false })
+
+    const seen: string[] = []
+
+    const request = vi.fn(async (method: string) => {
+      seen.push(method)
+
+      return { effective_phrase: '', engines: [] }
+    }) as unknown as Parameters<typeof setWakeEngine>[1]
+
+    await setWakeEngine('sherpa', request)
+
+    expect(seen).not.toContain('wake.start')
   })
 })
 
@@ -170,6 +218,13 @@ describe('dikisler', () => {
     // kozmetik bir etiket ve tam olarak bu yuzden ekran yalan soyluyordu.
     expect(WAKE).toContain('status?.effective_phrase?.trim()')
     expect(SETTINGS).toContain('engines.effectivePhrase || wake.phrase')
+  })
+
+  it('dinleyici ARMLANIRKEN de gercek ifade yaziliyor', () => {
+    // Ikinci kapi: ``wake.start`` yaniti da ifade tasiyor ve masaustu onu
+    // depoya yaziyor. Ham alani okusaydi ekranda duzeltilen ifade HER armda
+    // "hey fool"a geri donerdi -- ayni hatanin ikinci yolu.
+    expect(WAKE).toContain('result.effective_phrase?.trim()')
   })
 
   it('SABIT dagarcikli motorda serbest metin YOK', () => {

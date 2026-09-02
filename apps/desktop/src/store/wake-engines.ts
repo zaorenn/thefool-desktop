@@ -22,6 +22,7 @@
 import { atom } from 'nanostores'
 
 import { $gateway } from '@/store/gateway'
+import { rearmWakeAfterConfigChange } from '@/store/wake-word'
 
 export interface WakeEnginePhrase {
   model: string
@@ -152,6 +153,11 @@ export async function setWakeEngine(
 
   patch({ effectivePhrase: result?.effective_phrase?.trim() ?? '' })
 
+  // Dinleyici YENIDEN kuruluyor. Motor kurulumda cozumleniyor, yani bu
+  // olmadan yapilandirma degisiyor ama kulak eski motorda kaliyor --
+  // kullanicinin bildirdigi "hey hermes disindaki hicbiri calismiyor" tam
+  // olarak buydu.
+  await rearmWakeAfterConfigChange(request)
   await loadWakeEngines(request)
 }
 
@@ -164,6 +170,7 @@ export async function setWakeModel(
 
   patch({ effectivePhrase: result?.effective_phrase?.trim() ?? '' })
 
+  await rearmWakeAfterConfigChange(request)
   await loadWakeEngines(request)
 }
 

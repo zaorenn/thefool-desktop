@@ -43,7 +43,7 @@ import { voiceApi } from '../voice-api'
 import { canSpeak, claimVoice, releaseVoice } from '../voice-owner'
 import { $voiceWarm } from '../voice-warm'
 
-import { $voiceSessionId, requestVoiceSubmit, waitForVoiceSessionOrOpen } from './active-session'
+import { $voiceSessionId, requestVoiceSubmit, setNotchVoiceActive, waitForVoiceSessionOrOpen } from './active-session'
 import {
   type BargeGate,
   claimBarge,
@@ -163,6 +163,27 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   const { requestGateway } = useGatewayRequest()
 
   const [status, setStatus] = useState<NotchStatus>('idle')
+
+  /**
+   * Bu turu ÇENTİK mi seslendirecek — ana pencereye bildiriliyor.
+   *
+   * ``thinking`` = çentik az önce gönderdi ve cevabı bekliyor, yani o cevabı
+   * KENDİSİ okuyacak. Önceliği daha ilk token gelmeden bildirmek yarışı
+   * ortadan kaldırıyor: besteci çekiliyor, akışı çentik açıyor ve cümle
+   * ilerleyişini duyduğu için ALT YAZI her seferinde çıkıyor.
+   *
+   * Kapsam DAR ve bilerek: "çentik penceresi açık" demek DEĞİL. Öyle
+   * yayınlamıştım ve sonucu daha kötü bir hataydı -- besteci susuyor, çentiğin
+   * durumu ``idle`` olduğu için o da konuşmuyor ve hiçbir ses çıkmıyordu.
+   *
+   * ``idle``de bırakılıyor: bırakmazsak bir kez üstlenilen tur, sonraki bütün
+   * cevapları da sessize alırdı.
+   */
+  useEffect(() => {
+    setNotchVoiceActive(status === 'thinking' || status === 'speaking')
+  }, [status])
+
+  useEffect(() => () => setNotchVoiceActive(false), [])
   // Oynatma geri cagriminin GUNCEL durumu gormesi icin. Kapanis
   // sirasindaki state degeri bayat olur ve yaris kaybedilir.
   const statusRef = useRef<NotchStatus>('idle')
@@ -748,6 +769,18 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
 
       void ownsAmbientCue(`speak:${turnKey}`, SPEECH_CLAIM_TTL_MS)
         .then(owns => {
+          // Onceligi ANA PENCEREYE bildir -- ama yalnizca TALEBI KAZANINCA.
+          //
+          // Once bunu "centik penceresi acik mi" diye yayinlamistim ve sonucu
+          // daha kotu bir hataydi: besteci susuyor, centigin durumu ``idle``
+          // oldugu icin o da konusmuyor ve HICBIR SES cikmiyordu. Centik
+          // yalnizca KENDI turunda konusuyor
+          // (``status === 'thinking' | 'speaking'``), yani pencerenin acik
+          // olmasi konusacagi anlamina gelmiyor.
+          //
+          // Simdi bildirilen sey gercek: "bu turu ben ustlendim".
+          setNotchVoiceActive(owns)
+
           if (!owns) {
             // Başka bir yüzey bu cevabı üstlendi. Akışı hiç açma: açmak
             // "iptal edildi" durumuna düşüp iki sentezi birden başlatırdı.

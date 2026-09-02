@@ -47,6 +47,7 @@ const AUTO_SPEAK = code(
 )
 const COMPOSER = read('..', '..', 'app', 'chat', 'composer', 'hooks', 'use-composer-voice.ts')
 const SHELL = read('notch-shell.tsx')
+const HOOK = read('use-notch-voice.ts')
 
 describe('cekilen yuzey cevabi TUKETIYOR', () => {
   it('konusma kipi acikken cevap isaretleniyor', () => {
@@ -104,11 +105,25 @@ describe('isaretci TOHUMLANIYOR', () => {
   })
 })
 
-describe('centik acikken sesin sahibi CENTIK', () => {
-  it('centik oturum durumunu YAYINLIYOR', () => {
-    expect(SHELL).toContain('setNotchVoiceActive(sessionActive)')
-    // Centik giderse oncelik de gitmeli, yoksa besteci kalici olarak susardi.
-    expect(SHELL).toContain('return () => setNotchVoiceActive(false)')
+describe('oncelik DAR: centigin KENDI turu', () => {
+  it('oncelik TUR durumundan yayinlaniyor, pencereden DEGIL', () => {
+    // Once "centik penceresi acik mi" diye yayinlamistim ve sonucu daha kotu
+    // bir hataydi: besteci susuyor, centigin durumu ``idle`` oldugu icin o da
+    // konusmuyor ve HICBIR SES cikmiyordu. Centik yalnizca KENDI turunda
+    // konusuyor, yani pencerenin acik olmasi konusacagi anlamina gelmiyor.
+    expect(HOOK).toContain("setNotchVoiceActive(status === 'thinking' || status === 'speaking')")
+    expect(SHELL).not.toContain('setNotchVoiceActive(sessionActive)')
+  })
+
+  it('centik gidince oncelik BIRAKILIYOR', () => {
+    // Birakmazsak bir kez ustlenilen tur, sonraki butun cevaplari da sessize
+    // alirdi.
+    expect(HOOK).toContain('useEffect(() => () => setNotchVoiceActive(false), [])')
+  })
+
+  it('talep KAYBEDILIRSE oncelik geri veriliyor', () => {
+    // Centik talebi kaybettiyse besteci konusmali -- yoksa yine sessizlik.
+    expect(HOOK).toContain('setNotchVoiceActive(owns)')
   })
 
   it('besteci oncelige UYUYOR', () => {

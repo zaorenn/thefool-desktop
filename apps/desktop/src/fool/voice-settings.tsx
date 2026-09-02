@@ -725,12 +725,21 @@ function WakeEngineRow() {
       const job = await installWakeEngine(id)
 
       if (job.state === 'failed') {
-        notifyError(new Error(job.error || 'install failed'), 'Could not install the engine')
+        // SEBEBI tasi. Ilk yazimda hem baslik hem govde "Could not install
+        // the engine" yaziyordu ve kullanicinin elinde hicbir sey kalmiyordu
+        // -- oysa arka uc tam olarak neyin cozulemedigini soylemisti
+        // ("no version of pypinyin==0.57.0"). Sebepsiz bir hata, kullaniciyi
+        // ayni dugmeye tekrar basmaktan baska bir seye goturmuyor.
+        notifyError(new Error(job.error || 'the installer gave no reason'), `Could not install ${id}`)
       }
     } catch (error) {
-      notifyError(error, 'Could not install the engine')
+      notifyError(error, `Could not install ${id}`)
     }
   }, [])
+
+  // Basarisiz kurulum EKRANDA da kaliyor: bildirim kapanip gidiyor ve
+  // kullanici sebebi bir daha goremiyordu.
+  const failure = Object.values(state.installs).find(job => job.state === 'failed')
 
   return (
     <ListRow
@@ -777,6 +786,7 @@ function WakeEngineRow() {
         </div>
       }
       description={
+        (failure && `${failure.engine_id}: ${failure.error || 'install failed'}`) ||
         state.notice ||
         'Built-in phrases work offline with no setup. “Custom phrase” recognises anything you type.'
       }

@@ -242,6 +242,18 @@ describe('dikisler', () => {
     expect(SETTINGS).toContain('disabled={!engine.usable')
   })
 
+  it('basarisiz kurulum SEBEBINI soyluyor', () => {
+    // Olculen kiriklik: bildirimde hem baslik hem govde "Could not install
+    // the engine" yaziyordu. Arka uc tam olarak neyin cozulemedigini
+    // soylemisti ("no version of pypinyin==0.57.0") ama kullaniciya
+    // ulasmiyordu -- sebepsiz bir hata, ayni dugmeye tekrar basmaktan baska
+    // bir seye goturmuyor.
+    expect(SETTINGS).toContain('job.error ||')
+    // Ve EKRANDA kaliyor: bildirim kapanip gidince sebep bir daha
+    // gorulemiyordu.
+    expect(SETTINGS).toContain("state.installs).find(job => job.state === 'failed')")
+  })
+
   it('sinama sonucu OLAY olarak baglaniyor', () => {
     expect(WIRING).toContain("event.type === 'wake.test.result'")
     expect(WIRING).toContain('applyWakeTestResult(event.payload)')

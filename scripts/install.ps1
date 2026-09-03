@@ -3296,14 +3296,55 @@ function Copy-ConfigTemplates {
     
     # Create config.yaml
     $configPath = "$FoolHome\config.yaml"
+    $configIsNew = $false
     if (-not (Test-Path $configPath)) {
         $examplePath = "$InstallDir\cli-config.yaml.example"
         if (Test-Path $examplePath) {
             Copy-Item $examplePath $configPath
+            $configIsNew = $true
             Write-Success "Created $configPath from template"
         }
     } else {
         Write-Info "$configPath already exists, keeping it"
+    }
+
+    # Brand skin -- one file themes the CLI, the TUI and the desktop at once.
+    #
+    # It shipped in the repo but nothing ever installed it, so every fresh
+    # machine ran on upstream's amber palette while the banner underneath was
+    # already crimson. The skin was written, selected on the author's machine
+    # by hand, and never reached anyone else.
+    #
+    # Applied only when THIS run created config.yaml. An existing config may
+    # carry a skin the user picked, and overwriting that would be taking a
+    # choice away.
+    $skinSource = "$InstallDir\fool\skins\the-fool.yaml"
+    if (Test-Path $skinSource) {
+        $skinDir = "$FoolHome\skins"
+        if (-not (Test-Path $skinDir)) {
+            New-Item -ItemType Directory -Force -Path $skinDir | Out-Null
+        }
+        Copy-Item $skinSource "$skinDir	he-fool.yaml" -Force
+    }
+
+    # The template already ships `display:` with `skin: default`, so APPENDING
+    # a second `display:` block would create a duplicate YAML key -- and
+    # skipping when a skin line exists (the first attempt) made this a silent
+    # no-op, which is how the skin failed to reach a clean machine in the
+    # first place. Rewrite the value that is already there.
+    if ($configIsNew -and (Test-Path $configPath)) {
+        $configText = Get-Content -Raw -LiteralPath $configPath
+        $updated = [regex]::Replace(
+            $configText, '(?m)^(\s*)skin:\s*default\s*$', '${1}skin: the-fool')
+
+        if ($updated -ne $configText) {
+            # BOM-free on every PowerShell version: PS 5.1's Set-Content -Encoding
+            # UTF8 writes a byte-order mark, and a BOM ahead of a YAML document
+            # is a parse hazard.
+            [System.IO.File]::WriteAllText(
+                $configPath, $updated, (New-Object System.Text.UTF8Encoding($false)))
+            Write-Success "Applied The Fool skin"
+        }
     }
     
     # Create SOUL.md if it doesn't exist (global persona file).
@@ -3468,6 +3509,27 @@ function Install-NodeDeps {
             _Drain-NewLines $logPath ([ref]$shown)
         }
         _Drain-NewLines $logPath ([ref]$shown)
+
+        # WaitForExit BEFORE reading ExitCode.
+        #
+        # Measured on a clean Windows 11 install: npm finished successfully
+        # (its own debug log ended `verbose exit 0 / info ok`) but this
+        # function returned an EMPTY value, so the caller printed
+        # "npm install failed -- exit code " with nothing after it and told
+        # the user to re-run npm by hand.
+        #
+        # `Start-Process -PassThru` hands back a Process object whose
+        # ExitCode is not populated just because HasExited flipped true;
+        # the object has to be waited on (or refreshed) first. HasExited is
+        # already true here, so this returns immediately -- it exists to
+        # populate the field, not to wait.
+        $proc.WaitForExit()
+
+        # A still-null ExitCode would compare unequal to 0 and be reported as
+        # a failure with a blank code -- exactly the bug above. Treat an
+        # unreadable code as a real failure, but with a number that says so.
+        if ($null -eq $proc.ExitCode) { return 125 }
+
         return $proc.ExitCode
     }
 
@@ -3557,7 +3619,7 @@ function Install-NodeDeps {
     # Browser tools
     if (Test-Path "$InstallDir\package.json") {
         Write-Info "Installing Node.js dependencies (browser tools)..."
-        $browserLog = "$env:TEMP\hermes-npm-browser-$(Get-Random).log"
+        $browserLog = "$env:TEMP\fool-npm-browser-$(Get-Random).log"
         $browserNpmOk = _Run-NpmInstall "Browser tools" $InstallDir $browserLog $npmExe
 
         # Install Playwright Chromium (mirrors scripts/install.sh behaviour for
@@ -3666,7 +3728,7 @@ function Install-NodeDeps {
     $tuiDir = "$InstallDir\ui-tui"
     if (Test-Path "$tuiDir\package.json") {
         Write-Info "Installing TUI dependencies..."
-        $tuiLog = "$env:TEMP\hermes-npm-tui-$(Get-Random).log"
+        $tuiLog = "$env:TEMP\fool-npm-tui-$(Get-Random).log"
         [void](_Run-NpmInstall "TUI" $tuiDir $tuiLog $npmExe)
     }
 

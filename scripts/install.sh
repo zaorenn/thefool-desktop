@@ -2027,13 +2027,43 @@ copy_config_templates() {
     configure_browser_env_from_system_browser
 
     # Create config.yaml at ~/.hermes/config.yaml (top level, easy to find)
+    config_is_new=false
     if [ ! -f "$FOOL_HOME/config.yaml" ]; then
         if [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
             cp "$INSTALL_DIR/cli-config.yaml.example" "$FOOL_HOME/config.yaml"
+            config_is_new=true
             log_success "Created ~/.fool/config.yaml from template"
         fi
     else
         log_info "~/.fool/config.yaml already exists, keeping it"
+    fi
+
+    # Brand skin -- one file themes the CLI, the TUI and the desktop at once.
+    #
+    # It shipped in the repo but nothing ever installed it, so every fresh
+    # machine ran on upstream's palette while the banner underneath was
+    # already crimson.
+    #
+    # Applied only when THIS run created config.yaml: an existing config may
+    # carry a skin the user picked, and overwriting that takes a choice away.
+    if [ -f "$INSTALL_DIR/fool/skins/the-fool.yaml" ]; then
+        mkdir -p "$FOOL_HOME/skins"
+        cp "$INSTALL_DIR/fool/skins/the-fool.yaml" "$FOOL_HOME/skins/the-fool.yaml"
+    fi
+
+    # The template already ships `display:` with `skin: default`; appending a
+    # second `display:` block would duplicate a YAML key, and skipping when a
+    # skin line exists made this a silent no-op. Rewrite the existing value.
+    if [ "$config_is_new" = true ] && [ -f "$FOOL_HOME/config.yaml" ]; then
+        if grep -qE '^[[:space:]]*skin:[[:space:]]*default[[:space:]]*$' "$FOOL_HOME/config.yaml"; then
+            _cfg_tmp="$FOOL_HOME/config.yaml.skin.tmp"
+            if sed 's/^\([[:space:]]*\)skin:[[:space:]]*default[[:space:]]*$/skin: the-fool/'                     "$FOOL_HOME/config.yaml" > "$_cfg_tmp"; then
+                mv "$_cfg_tmp" "$FOOL_HOME/config.yaml"
+                log_success "Applied The Fool skin"
+            else
+                rm -f "$_cfg_tmp"
+            fi
+        fi
     fi
 
     # Create SOUL.md if it doesn't exist (global persona file).

@@ -219,3 +219,90 @@ class TestSslPolitikasi_KENDINI_ONARIYOR:
         # hatasini degil.
         assert "one-way" in PS1
         assert "python.org/downloads" in PS1
+
+
+class TestMarkaTemasi_KURULUYOR:
+    """Marka teması her iki kurulumda da yüklenip seçilmeli.
+
+    Ölçülen hata: ``fool/skins/the-fool.yaml`` depoda vardı ama hiçbir kurulum
+    onu kopyalamıyor ve seçmiyordu. Temiz bir makinede TUI upstream'in kehribar
+    paletiyle açılıyordu -- altındaki afiş çoktan crimson olmasına rağmen. Tema
+    yazılmış, geliştiricinin makinesinde elle seçilmiş ve başka kimseye hiç
+    ulaşmamıştı.
+    """
+
+    def test_tema_dosyasi_kopyalaniyor(self):
+        assert "fool/skins/the-fool.yaml" in SH
+        sep = chr(92)
+        assert f"fool{sep}skins{sep}the-fool.yaml" in PS1
+
+    def test_tema_SECILIYOR(self):
+        for script in (PS1, SH):
+            assert "skin: the-fool" in script
+
+    def test_yalnizca_YENI_yapilandirmada(self):
+        # Var olan bir config kullanicinin sectigi bir temayi tasiyor olabilir;
+        # uzerine yazmak onun tercihini elinden almak olurdu.
+        assert "$configIsNew" in PS1
+        assert "config_is_new" in SH
+
+    def test_VAR_OLAN_deger_degistiriliyor_eklenmiyor(self):
+        """Şablonda zaten ``display:`` ve ``skin: default`` var.
+
+        İlk yazımım "skin satırı varsa dokunma" diyordu -- yani temiz bir
+        kurulumda HİÇBİR ŞEY yapmayacaktı: düzeltmenin kendisi sessizce
+        işlevsizdi. Blok eklemek ise ikinci bir ``display:`` anahtarı üretip
+        YAML'i bozardı. Doğrusu var olan değeri yeniden yazmak.
+        """
+        assert "skin:\s*default" in PS1
+        assert "skin:[[:space:]]*default" in SH
+
+    def test_sablon_hala_default_tasiyor(self):
+        # Bu testlerin dayanagi: sablon degisip ``skin: default`` satiri
+        # kalkarsa yukaridaki ikame sessizce hicbir sey yapmaz.
+        template = (REPO_ROOT / "cli-config.yaml.example").read_text(encoding="utf-8")
+
+        assert re.search(r"(?m)^\s*skin:\s*default\s*$", template)
+        assert re.search(r"(?m)^display:", template)
+
+
+class TestKurulumSihirbazi_YEREL_ONCE:
+    """İlk kurulum yerel modelle başlamalı, abonelik girişiyle değil.
+
+    Kullanıcının kararı: "yerel ilk olması lazım; kullanıcı isterse sonradan
+    gerçekten Hermes gibi Nous'a bağlanabilsin."
+
+    Ölçüldü: varsayılan doğrudan Nous Portal OAuth'a gidiyordu ve temiz
+    makinede uç ``400 Bad Request`` döndü -- yerel çalışsın diye kurulan bir
+    uygulama, daha ilk ekranında bir abonelik hatası gösterdi.
+    """
+
+    SETUP = (REPO_ROOT / "fool_cli" / "setup.py").read_text(encoding="utf-8")
+
+    def test_ilk_secenek_YEREL(self):
+        first = self.SETUP.index("Local model (recommended)")
+        portal = self.SETUP.index("Nous Portal - hosted models".replace("-", "—"))
+
+        assert first < portal
+
+    def test_varsayilan_yerel_akisi_cagiriyor(self):
+        assert "if setup_mode == 0:\n            _run_first_time_local_setup(" in self.SETUP
+
+    def test_portal_KALDIRILMADI(self):
+        # Kullanici acikca istedi: isteyen baglanabilmeli.
+        assert "_run_first_time_quick_setup(" in self.SETUP
+        assert "setup_mode == 1" in self.SETUP
+
+    def test_ortak_adimlar_TEK_yerde(self):
+        # Iki yol yalnizca modeli nasil sectiginde ayriliyor; terminal arka ucu
+        # ve varsayilanlar ayri ayri yazilsaydi biri degisip digeri unutulurdu.
+        assert self.SETUP.count("def _finish_first_time_setup(") == 1
+        assert self.SETUP.count("def _offer_messaging_gateway(") == 1
+
+    def test_yerel_bulunamazsa_HATA_degil(self):
+        # Model sunucusu kapaliysa kurulum yine tamamlanmali.
+        block = self.SETUP[self.SETUP.index("def _run_first_time_local_setup"):]
+        block = block[: block.index("def _run_first_time_quick_setup")]
+
+        assert "No local model server answered yet" in block
+        assert "fool portal" in block

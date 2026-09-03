@@ -2960,7 +2960,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your Hermes Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your Fool Agent installation.         │", Colors.MAGENTA
         )
     )
     print(
@@ -3013,20 +3013,33 @@ def run_setup_wizard(args):
         if migration_ran:
             config = load_config()
 
+        # YEREL ONCE.
+        #
+        # Varsayilan eskiden Nous Portal OAuth'tu: yerel calissin diye kurulan
+        # bir uygulamanin ilk sorusu bir abonelik girisi oluyordu. Temiz bir
+        # makinede olculdu -- uc ``400 Bad Request`` dondu ve kurulum daha
+        # baslamadan bir hatayla acildi.
+        #
+        # Portal KALDIRILMADI, sirasi degisti: isteyen ikinci secenekle ya da
+        # sonradan ``fool portal`` ile baglanir.
         setup_mode = prompt_choice(
             "How would you like to set up The Fool?",
             [
-                "Quick Setup (Nous Portal) — free OAuth login, no API keys, model + tools (recommended)",
-                "Full setup — configure every provider, tool & option yourself (bring your own keys)",
-                "Blank Slate — everything off except the bare minimum; opt in to each capability",
+                "Local model (recommended) — use LM Studio, Ollama or any local runner",
+                "Nous Portal — hosted models via OAuth, no API keys",
+                "Full setup — configure every provider, tool & option yourself",
+                "Blank Slate — everything off except the bare minimum",
             ],
             0,
         )
 
         if setup_mode == 0:
+            _run_first_time_local_setup(config, hermes_home, is_existing)
+            return
+        if setup_mode == 1:
             _run_first_time_quick_setup(config, hermes_home, is_existing)
             return
-        if setup_mode == 2:
+        if setup_mode == 3:
             _run_blank_slate_setup(config, hermes_home, is_existing)
             return
 
@@ -3081,6 +3094,108 @@ def run_setup_wizard(args):
     _print_setup_summary(config, hermes_home)
 
 
+def _offer_messaging_gateway() -> None:
+    """Mesajlaşma kurulumunu teklif et ve kapanış mesajını bas.
+
+    Yerel ve Nous yolları burada da aynı; tek yerde durması, birinin
+    değişip diğerinin unutulmasını engelliyor.
+    """
+    from fool_cli.config import load_config
+
+    config = load_config()
+
+    print()
+    gateway_choice = prompt_choice(
+        "Connect a messaging platform? (Telegram, Discord, etc.)",
+        [
+            "Set up messaging now (recommended)",
+            "Skip — set up later with 'fool setup gateway'",
+        ],
+        0,
+    )
+
+    if gateway_choice == 0:
+        setup_gateway(config)
+        save_config(config)
+    else:
+        # Messaging skipped — still install/start the gateway service so cron
+        # jobs run and platforms come alive as soon as tokens are added later
+        # (e.g. via `fool import` from another machine).
+        from fool_cli.gateway import ensure_gateway_service
+        ensure_gateway_service(context="setup")
+
+    print()
+    print_success("Setup complete! You're ready to go.")
+    print()
+    print_info("  Configure all settings:    fool setup")
+    if gateway_choice != 0:
+        print_info("  Connect Telegram/Discord:  fool setup gateway")
+
+
+def _finish_first_time_setup(config: dict) -> None:
+    """İlk kurulumun sağlayıcıdan SONRAKİ ortak adımları.
+
+    Yerel ve Nous yolları yalnızca modeli nasıl seçtiklerinde ayrılıyor;
+    terminal arka ucu ve ajan varsayılanları ikisinde de aynı. Ayrı ayrı
+    yazılsalardı biri değişip diğeri unutulurdu.
+    """
+    # Komutların NEREDE çalışacağı çekirdek bir karar.
+    setup_terminal_backend(config)
+    _apply_default_agent_settings(config)
+    save_config(config)
+
+
+def _run_first_time_local_setup(config: dict, hermes_home, is_existing: bool):
+    """YEREL model ile ilk kurulum -- varsayılan yol.
+
+    Kullanıcının kararı: "yerel ilk olması lazım; kullanıcı isterse sonradan
+    gerçekten Hermes gibi Nous'a bağlanabilsin."
+
+    Önceki varsayılan doğrudan Nous Portal OAuth'a gidiyordu: yerel çalışsın
+    diye kurulan bir uygulamanın ilk sorusu bir abonelik girişi oluyordu, ve
+    internet yoksa ya da uç hata verirse (ölçüldü: ``400 Bad Request``) kurulum
+    daha başlamadan bir hatayla açılıyordu.
+
+    Burada tek bir şey yapılıyor: makinede çalışan bir model sunucusu ara ve
+    bulduğunu yaz. Bulunamazsa bu bir hata değil -- kullanıcı modeli sonra
+    seçer, uygulama yine kurulur.
+    """
+    from fool_cli.config import load_config
+
+    print()
+    print_header("Local model")
+    print_info("Looking for a model server on this machine...")
+
+    detected = None
+    try:
+        from fool.autodetect import config_patch, detect
+
+        detected = detect()
+        if detected is not None:
+            patch = config_patch(detected)
+            model_cfg = dict(config.get("model") or {})
+            model_cfg.update(patch.get("model") or {})
+            config["model"] = model_cfg
+            save_config(config)
+
+            chosen = detected.chosen_model or "(no model loaded)"
+            print_success(f"{detected.runner.label} found -- using {chosen}")
+    except Exception as exc:
+        logger.debug("local autodetect failed during setup: %s", exc)
+
+    if detected is None:
+        print_info("No local model server answered yet.")
+        print_info("Start LM Studio (or Ollama, Jan, llama.cpp) and run: fool model")
+        print_info("Prefer a hosted model? Connect Nous Portal any time: fool portal")
+
+    _refreshed = load_config()
+    config.clear()
+    config.update(_refreshed)
+
+    _finish_first_time_setup(config)
+    _offer_messaging_gateway()
+
+
 def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     """Streamlined first-time setup via Nous Portal: OAuth, model, terminal & messaging.
 
@@ -3120,41 +3235,9 @@ def _run_first_time_quick_setup(config: dict, hermes_home, is_existing: bool):
     config.clear()
     config.update(_refreshed)
 
-    # Step 2: Terminal Backend — where commands run is a core decision
-    setup_terminal_backend(config)
+    _finish_first_time_setup(config)
 
-    # Step 3: Apply defaults for everything else
-    _apply_default_agent_settings(config)
-
-    save_config(config)
-
-    # Step 4: Offer messaging gateway setup
-    print()
-    gateway_choice = prompt_choice(
-        "Connect a messaging platform? (Telegram, Discord, etc.)",
-        [
-            "Set up messaging now (recommended)",
-            "Skip — set up later with 'fool setup gateway'",
-        ],
-        0,
-    )
-
-    if gateway_choice == 0:
-        setup_gateway(config)
-        save_config(config)
-    else:
-        # Messaging skipped — still install/start the gateway service so cron
-        # jobs run and platforms come alive as soon as tokens are added later
-        # (e.g. via `fool import` from another machine).
-        from fool_cli.gateway import ensure_gateway_service
-        ensure_gateway_service(context="setup")
-
-    print()
-    print_success("Setup complete! You're ready to go.")
-    print()
-    print_info("  Configure all settings:    fool setup")
-    if gateway_choice != 0:
-        print_info("  Connect Telegram/Discord:  fool setup gateway")
+    _offer_messaging_gateway()
     print()
 
     _print_setup_summary(config, hermes_home)

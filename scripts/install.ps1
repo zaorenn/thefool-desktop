@@ -4471,29 +4471,44 @@ function Repair-BlockedSslVenv {
     $venvPath = Join-Path $InstallDir "venv"
     $venvPythonExe = Join-Path $venvPath "Scripts\python.exe"
 
+    # Every interpreter this project supports, newest first. The version the
+    # blocked venv was built with is NOT reused: uv downloaded that one, so
+    # asking for it again under only-system finds nothing.
+    #
+    # This ordering matters. winget installs 3.13; pinning the original
+    # request (3.11 on a fresh machine) would fail immediately after a
+    # successful install -- the repair would give up exactly when it had just
+    # fixed the problem.
+    $candidates = @('3.13', '3.12', '3.11')
+
     foreach ($attempt in @('existing', 'winget')) {
         if ($attempt -eq 'winget') {
             if (-not (Install-SignedPython)) { return $false }
+            # winget installed 3.13; try it first and do not waste time on the
+            # versions we already know are absent.
+            $candidates = @('3.13')
         } else {
             Write-Info "Looking for a system Python the policy will accept..."
         }
 
-        Remove-Item -Recurse -Force $venvPath -ErrorAction SilentlyContinue
+        foreach ($version in $candidates) {
+            Remove-Item -Recurse -Force $venvPath -ErrorAction SilentlyContinue
 
-        $prevEAP = $ErrorActionPreference
-        $ErrorActionPreference = "Continue"
-        & $UvCmd venv $venvPath --python $PythonVersion --python-preference only-system 2>&1 | Out-Null
-        $venvCode = $LASTEXITCODE
-        $ErrorActionPreference = $prevEAP
+            $prevEAP = $ErrorActionPreference
+            $ErrorActionPreference = "Continue"
+            & $UvCmd venv $venvPath --python $version --python-preference only-system 2>&1 | Out-Null
+            $venvCode = $LASTEXITCODE
+            $ErrorActionPreference = $prevEAP
 
-        if ($venvCode -ne 0 -or -not (Test-Path -LiteralPath $venvPythonExe -PathType Leaf)) {
-            continue
-        }
+            if ($venvCode -ne 0 -or -not (Test-Path -LiteralPath $venvPythonExe -PathType Leaf)) {
+                continue
+            }
 
-        $probe = Test-PythonSsl -PythonExe $venvPythonExe
-        if ($probe.Ok) {
-            Write-Success "Rebuilt the environment on a signed Python -- SSL works"
-            return $true
+            $probe = Test-PythonSsl -PythonExe $venvPythonExe
+            if ($probe.Ok) {
+                Write-Success "Rebuilt the environment on system Python $version -- SSL works"
+                return $true
+            }
         }
     }
 

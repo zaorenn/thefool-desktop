@@ -196,6 +196,24 @@ class TestSslPolitikasi_KENDINI_ONARIYOR:
         # calisan bir makinede onarimi durdururdu.
         assert "-1978335189" in PS1
 
+    def test_winget_KURDUGU_surumu_deniyor(self):
+        """winget 3.13 kuruyor; onarım 3.11 istemeye devam ederse boşa düşer.
+
+        Bu tam da işe yarayacağı anda kaybedilen bir onarım olurdu: paket
+        kurulur, sonraki adım olmayan bir sürümü ister ve vazgeçilir.
+        """
+        block = PS1[PS1.index("function Repair-BlockedSslVenv"):]
+        block = block[: block.index("function ", 10)] if "function " in block[10:] else block
+
+        assert "$candidates = @('3.13')" in block
+
+    def test_orijinal_surum_TEKRAR_ISTENMIYOR(self):
+        # Engellenen venv'i uv indirmisti; ayni surumu ``only-system`` ile
+        # istemek tanim geregi hicbir sey bulamaz.
+        block = PS1[PS1.index("function Repair-BlockedSslVenv"):]
+
+        assert "--python $PythonVersion --python-preference only-system" not in block
+
     def test_her_ikisi_de_dusesrse_SEBEP_soyleniyor(self):
         # Son care mesaji gercek sebebi adlandirmali, yaniltici derleme
         # hatasini degil.

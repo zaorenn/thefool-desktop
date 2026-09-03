@@ -9,7 +9,7 @@ eksikler içindedir.
 ## 0. Çalışma alanı
 
 ```
-Depo        : C:\thefool-desktop        (git, remote: origin = zaorenn/thefool-desktop)
+Depo        : C:\thefool-desktop        (git, remote: origin = zaorenn/fool-agent)
 Kurulu CLI  : %LOCALAPPDATA%\fool\hermes-agent   (aynı deponun git kopyası)
 Backend venv: %LOCALAPPDATA%\fool\hermes-agent\venv
 Geliştirme  : C:\thefool-desktop\.venv\Scripts\python.exe

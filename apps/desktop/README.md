@@ -1,9 +1,9 @@
 # The Fool Desktop
 
 <p align="center">
-  <a href="https://github.com/zaorenn/thefool-desktop/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
+  <a href="https://github.com/zaorenn/fool-agent/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
   <a href="../../README.md"><img src="https://img.shields.io/badge/Docs-README-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://github.com/zaorenn/thefool-desktop/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/zaorenn/fool-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
 </p>
 
 **The native desktop app for [Fool Agent](../../README.md) — a fork of [Hermes Agent](https://github.com/NousResearch/hermes-agent) by Nous Research.** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
@@ -250,7 +250,7 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\fool\hermes-agent\venv"
 ## Community
 
 - 📖 [Documentation](../../README.md)
-- 🐛 [Issues](https://github.com/zaorenn/thefool-desktop/issues)
+- 🐛 [Issues](https://github.com/zaorenn/fool-agent/issues)
 
 ---
 

@@ -125,8 +125,8 @@ UPDATE_AVAILABLE_NO_COUNT = -1
 
 # FOOL-SEAM: banner-repo
 # Sürüm/güncelleme bağlantıları The Fool deposunu gösterir.
-_UPSTREAM_REPO_URL = "https://github.com/zaorenn/thefool-desktop.git"
-_OFFICIAL_REPO_CANONICAL = "github.com/zaorenn/thefool-desktop"
+_UPSTREAM_REPO_URL = "https://github.com/zaorenn/fool-agent.git"
+_OFFICIAL_REPO_CANONICAL = "github.com/zaorenn/fool-agent"
 
 
 def _canonical_github_remote(url: str | None) -> str:
@@ -561,7 +561,7 @@ def _compute_git_banner_state(repo_dir: Optional[Path] = None) -> Optional[dict]
     return {"upstream": upstream, "local": local, "ahead": max(ahead, 0)}
 
 
-_RELEASE_URL_BASE = "https://github.com/zaorenn/thefool-desktop/releases/tag"
+_RELEASE_URL_BASE = "https://github.com/zaorenn/fool-agent/releases/tag"
 _latest_release_cache: Optional[tuple] = None  # (tag, url) once resolved
 
 

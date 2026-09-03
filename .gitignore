@@ -62,7 +62,7 @@ agent-browser/
 privvy*
 images/
 __pycache__/
-hermes_agent.egg-info/
+*.egg-info/
 wandb/
 testlogs
 playwright-report/
@@ -216,3 +216,6 @@ apps/desktop/.companion-local
 
 # graphify beceresinin bilgi grafigi ciktisi -- makineye ozel, uretilmis.
 graphify-out/
+
+# Local working notes -- not part of the project.
+HANDOFF.md

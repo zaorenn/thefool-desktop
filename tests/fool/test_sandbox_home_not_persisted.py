@@ -173,4 +173,17 @@ def test_eski_ad_hala_OKUNUYOR() -> None:
         line for line in INSTALL.splitlines() if not line.lstrip().startswith("#")
     ]
 
-    assert sum(line.count("'hermes-agent'") for line in code) == 2
+    # SAYIM DEGIL, GERI DUSUS YERLERI.
+    #
+    # Sayim, korumak istedigi kurali degil dosyanin o anki halini tutuyordu:
+    # ilk mesru ucuncu kullanim (eski kurulumu temizleyen yol listesi) testi
+    # dusurdu. Tutulmasi gereken kural, GOC EDEMEMIS bir kurulumun calismaya
+    # devam etmesi -- yani her cozumleme yerinde eski ada bir geri dusus.
+    fallbacks = [
+        line for line in code if "= Join-Path" in line and "'hermes-agent'" in line
+    ]
+
+    assert len(fallbacks) == 2, (
+        "iki cozumleme yerinde de eski ad geri dusus olarak okunmali; "
+        f"bulunan: {fallbacks}"
+    )

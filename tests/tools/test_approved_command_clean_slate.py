@@ -52,7 +52,7 @@ def _shell_path(path) -> str:
 
     Ters bolu bir kabukta KACIS karakteri. Windows'ta ``C:\Users\...``
     yolunu ``touch {sentinel}`` icine gomdugumuzde bash ters bolulari yiyor ve
-    komut ``C:UserssarhenAppData...`` adinda bir dosyayi KABUGUN CALISMA
+    komut ``C:UsersyouAppData...`` adinda bir dosyayi KABUGUN CALISMA
     DIZININDE olusturuyordu -- yani depo kokunde. Olculen sonuc iki yonlu:
     sinav bekledigi dosyayi hic gormuyor (dusuyor) ve her kosuda depoya bir
     coplukdosya birakiyor.

@@ -837,7 +837,7 @@ export const en: Translations = {
       sshErrHostKey:
         'The host key has CHANGED since you last connected. Verify this is expected, then run ssh-keygen -R <host> and reconnect.',
       sshErrNotInstalled:
-        'The Fool is not installed on the remote host. Install it there (curl -fsSL https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh | sh) or set the Fool path.',
+        'The Fool is not installed on the remote host. Install it there (curl -fsSL https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.sh | sh) or set the Fool path.',
       sshErrPlatform:
         'Unsupported remote platform. The Fool Desktop SSH mode supports Linux, macOS, and Windows remote hosts.',
       sshErrTimeout: 'SSH connection timed out. The host may be unreachable or asleep.',

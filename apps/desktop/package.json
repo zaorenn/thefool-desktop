@@ -8,12 +8,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zaorenn/thefool-desktop.git"
+    "url": "git+https://github.com/zaorenn/fool-agent.git"
   },
   "bugs": {
-    "url": "https://github.com/zaorenn/thefool-desktop/issues"
+    "url": "https://github.com/zaorenn/fool-agent/issues"
   },
-  "homepage": "https://github.com/zaorenn/thefool-desktop#readme",
+  "homepage": "https://github.com/zaorenn/fool-agent#readme",
   "type": "module",
   "main": "dist/electron-main.mjs",
   "engines": {

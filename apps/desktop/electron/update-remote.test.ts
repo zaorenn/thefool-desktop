@@ -28,14 +28,14 @@ import {
 } from './update-remote'
 
 test('canonicalGitHubRemote normalizes SSH and HTTPS forms to the same value', () => {
-  assert.equal(canonicalGitHubRemote('git@github.com:Zaorenn/thefool-desktop.git'), OFFICIAL_REPO_CANONICAL)
-  assert.equal(canonicalGitHubRemote('git@github.com:Zaorenn/thefool-desktop'), OFFICIAL_REPO_CANONICAL)
-  assert.equal(canonicalGitHubRemote('ssh://git@github.com/Zaorenn/thefool-desktop.git'), OFFICIAL_REPO_CANONICAL)
-  assert.equal(canonicalGitHubRemote('https://github.com/Zaorenn/thefool-desktop.git'), OFFICIAL_REPO_CANONICAL)
+  assert.equal(canonicalGitHubRemote('git@github.com:Zaorenn/fool-agent.git'), OFFICIAL_REPO_CANONICAL)
+  assert.equal(canonicalGitHubRemote('git@github.com:Zaorenn/fool-agent'), OFFICIAL_REPO_CANONICAL)
+  assert.equal(canonicalGitHubRemote('ssh://git@github.com/Zaorenn/fool-agent.git'), OFFICIAL_REPO_CANONICAL)
+  assert.equal(canonicalGitHubRemote('https://github.com/Zaorenn/fool-agent.git'), OFFICIAL_REPO_CANONICAL)
   // Case-insensitive: an uppercased owner still canonicalizes to the same repo.
-  assert.equal(canonicalGitHubRemote('git@github.com:zaorenn/thefool-desktop.git'), OFFICIAL_REPO_CANONICAL)
+  assert.equal(canonicalGitHubRemote('git@github.com:zaorenn/fool-agent.git'), OFFICIAL_REPO_CANONICAL)
   // Trailing slashes are stripped.
-  assert.equal(canonicalGitHubRemote('https://github.com/Zaorenn/thefool-desktop/'), OFFICIAL_REPO_CANONICAL)
+  assert.equal(canonicalGitHubRemote('https://github.com/Zaorenn/fool-agent/'), OFFICIAL_REPO_CANONICAL)
 })
 
 test('canonicalGitHubRemote is empty for falsy input', () => {
@@ -53,24 +53,24 @@ test('isSshRemote detects scp-like and ssh:// forms only', () => {
 })
 
 test('isOfficialSshRemote is true only for the official repo over SSH', () => {
-  assert.equal(isOfficialSshRemote('git@github.com:Zaorenn/thefool-desktop.git'), true)
-  assert.equal(isOfficialSshRemote('git@github.com:Zaorenn/thefool-desktop'), true)
-  assert.equal(isOfficialSshRemote('ssh://git@github.com/Zaorenn/thefool-desktop.git'), true)
+  assert.equal(isOfficialSshRemote('git@github.com:Zaorenn/fool-agent.git'), true)
+  assert.equal(isOfficialSshRemote('git@github.com:Zaorenn/fool-agent'), true)
+  assert.equal(isOfficialSshRemote('ssh://git@github.com/Zaorenn/fool-agent.git'), true)
   // Case-insensitive owner/repo match.
-  assert.equal(isOfficialSshRemote('git@github.com:zaorenn/thefool-desktop.git'), true)
+  assert.equal(isOfficialSshRemote('git@github.com:zaorenn/fool-agent.git'), true)
 })
 
 test('isOfficialSshRemote does NOT match forks, other hosts, or HTTPS', () => {
   // A fork over SSH belongs to the user — fetching it is their own remote,
   // not the official upstream, so the SSH-avoidance swap must not apply.
-  assert.equal(isOfficialSshRemote('git@github.com:someuser/thefool-desktop.git'), false)
+  assert.equal(isOfficialSshRemote('git@github.com:someuser/fool-agent.git'), false)
   // Same repo name on a different host is not the official repo.
-  assert.equal(isOfficialSshRemote('git@gitlab.com:Zaorenn/thefool-desktop.git'), false)
+  assert.equal(isOfficialSshRemote('git@gitlab.com:Zaorenn/fool-agent.git'), false)
   // The repo we were FORKED FROM is not this repo either.
   assert.equal(isOfficialSshRemote('git@github.com:NousResearch/hermes-agent.git'), false)
   // HTTPS to the official repo never prompts for SSH/FIDO2, so it keeps the
   // normal fetch path — must not be flagged as an official SSH remote.
-  assert.equal(isOfficialSshRemote('https://github.com/Zaorenn/thefool-desktop.git'), false)
+  assert.equal(isOfficialSshRemote('https://github.com/Zaorenn/fool-agent.git'), false)
   assert.equal(isOfficialSshRemote(''), false)
   assert.equal(isOfficialSshRemote(null), false)
 })

@@ -1,16 +1,16 @@
 # The Fool — sürüm ve güncelleme hattı
 
-> **Durum:** depo yayında (`zaorenn/thefool-desktop`) ve `main` itildi.
+> **Durum:** depo yayında (`zaorenn/fool-agent`) ve `main` itildi.
 >
 > **`gh` VARSAYILANI ÖNEMLİ.** Depoda iki uzak sunucu var ve `gh` kendiliğinden
 > `upstream`i (NousResearch/hermes-agent) hedefliyordu — bir `gh release create`
 > komutu doğrudan Nous'un deposuna giderdi. Bir kez sabitlendi:
 >
 > ```bash
-> gh repo set-default zaorenn/thefool-desktop
+> gh repo set-default zaorenn/fool-agent
 > ```
 >
-> Yine de yayın komutlarında `--repo zaorenn/thefool-desktop` yazmak en
+> Yine de yayın komutlarında `--repo zaorenn/fool-agent` yazmak en
 > güvenlisi: varsayılan bir makinede sabitlenmiş olabilir, başkasında değil.
 
 ## Kullanıcılar güncellemeyi nereden alacak
@@ -28,7 +28,7 @@ Upstream'in kendi `publish` bloğu **yoktu** — Nous sürümlerini repo dışı
 
 ## Yayına geçerken sıra
 
-1. **GitHub'da depoyu aç** (`zaorenn/thefool-desktop`).
+1. **GitHub'da depoyu aç** (`zaorenn/fool-agent`).
    İsim değişirse şu üç yeri birlikte güncelle, yoksa güncellemeler kopar:
    - `apps/desktop/package.json` → `build.publish.owner` / `.repo`
    - `fool_cli/update_cmd.py` → `OFFICIAL_REPO_URL(S)`
@@ -38,7 +38,7 @@ Upstream'in kendi `publish` bloğu **yoktu** — Nous sürümlerini repo dışı
 2. **`origin` ekle ve ilk push:**
 
    ```bash
-   git remote add origin https://github.com/zaorenn/thefool-desktop.git
+   git remote add origin https://github.com/zaorenn/fool-agent.git
    ```
 
    > **Blobsuz klon notu:** bu depo `--filter=blob:none` ile klonlandı (tam

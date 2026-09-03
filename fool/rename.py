@@ -117,10 +117,15 @@ PROTECTED: tuple[re.Pattern[str], ...] = (
     re.compile(r"NousResearch/hermes-agent"),
     re.compile(r"github\.com/nousresearch"),
     re.compile(r"hermes-agent(?:-[a-z-]+)?"),   # beceri/paket kimlikleri
-    # GitHub deposunun ADI `thefool-desktop`. Kisaltma kurali (`thefool` ->
-    # `fool`) bunu `fool-desktop` yapip guncelleme/bootstrap adreslerini
-    # olmayan bir depoya yonlendirmisti. Depo adi disaridan sabit.
-    re.compile(r"thefool-desktop"),
+    # GitHub deposunun ADI. Disaridan sabit: guncelleme ve bootstrap adresleri
+    # buna gore kuruluyor, yani bir yeniden adlandirma kurali onu degistirirse
+    # istekler olmayan bir depoya gider.
+    #
+    # Eski ad `thefool-desktop` idi ve kisaltma kurali (`thefool` -> `fool`)
+    # onu `fool-desktop` yapiyordu; koruma o yuzden eklenmisti. Yeni ad hicbir
+    # kuraldan etkilenmiyor, ama kayit DURUYOR: adin korunmasi gerektigi
+    # bilgisi, o an hangi kuralin ona dokundugundan bagimsiz.
+    re.compile(r"fool-agent"),
 )
 
 #: BILESIK tanimlayicilar: ``hermesDesktop``, ``HermesGateway``,

@@ -6,7 +6,7 @@
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -44,9 +44,10 @@ BOLD='\033[1m'
 
 # Configuration
 # FOOL-SEAM: bootstrap-repo
-REPO_URL_SSH="git@github.com:zaorenn/thefool-desktop.git"
-REPO_URL_HTTPS="https://github.com/zaorenn/thefool-desktop.git"
+REPO_URL_SSH="git@github.com:zaorenn/fool-agent.git"
+REPO_URL_HTTPS="https://github.com/zaorenn/fool-agent.git"
 FOOL_HOME="${FOOL_HOME:-$HOME/.fool}"
+PURGE_USER_DATA=false
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
 # explicit directory — if so we never override it.
@@ -146,6 +147,13 @@ while [[ $# -gt 0 ]]; do
             ;;
         --include-desktop|-IncludeDesktop)
             INCLUDE_DESKTOP=true
+            shift
+            ;;
+        # Remove sessions, memory, config and cloned voices along with the
+        # program. Off by default: an upgrade must not destroy what the user
+        # cannot get back.
+        --purge-user-data)
+            PURGE_USER_DATA=true
             shift
             ;;
         --dir)
@@ -565,7 +573,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  irm https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.ps1 | iex"
+            log_info "  irm https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.ps1 | iex"
             exit 1
             ;;
         *)
@@ -3532,11 +3540,104 @@ run_stage_protocol() {
 # Main
 # ============================================================================
 
+# ---------------------------------------------------------------------------
+# Previous-install cleanup
+# ---------------------------------------------------------------------------
+#
+# The project moved to a new repository. An install made from the old one keeps
+# a git clone whose `origin` points at a repository that no longer exists, so
+# updates fail in ways that read like a network problem. Reusing that tree is
+# worse than replacing it.
+#
+# Removed: the program - clone, bundled runtimes, caches, build stamps.
+# Kept:    what cannot be recovered - sessions and memory (state.db), config,
+#          credentials, SOUL.md, cloned voices, skins.
+#
+# Program and data share one root, so deleting the root would wipe a user's
+# history on what is meant to be an upgrade. --purge-user-data opts into that.
+#
+# On a machine that never had the old install this prints nothing: a
+# first-time user should not be shown cleanup they don't need.
+#
+# An existing Hermes Agent install is never touched - separate data directory,
+# and the two are designed to coexist.
+
+# Paths a normal install re-creates. Listed once, used by both the detector
+# and the remover so the two can never disagree about what "the program" is.
+fool_program_paths() {
+    printf '%s\n' \
+        "$1/fool-agent" \
+        "$1/hermes-agent" \
+        "$1/bin" \
+        "$1/cache" \
+        "$1/bootstrap-cache" \
+        "$1/web-ui-build-stamp.json"
+}
+
+has_previous_install() {
+    _root="$1"
+    [ -d "$_root" ] || return 1
+
+    for _p in "$_root/fool-agent" "$_root/hermes-agent" "$_root/bin" \
+              "$_root/cache" "$_root/bootstrap-cache" \
+              "$_root/web-ui-build-stamp.json"; do
+        [ -e "$_p" ] && return 0
+    done
+
+    return 1
+}
+
+stop_fool_processes() {
+    # A running app holds its files open, which can leave a half-removed tree.
+    # Matching on the install path rather than a process name so an unrelated
+    # python or node is never touched.
+    pkill -f "$1/fool-agent" 2>/dev/null || true
+    pkill -f "$1/hermes-agent" 2>/dev/null || true
+    sleep 1
+}
+
+remove_previous_install() {
+    _root="$1"
+
+    has_previous_install "$_root" || return 0
+
+    log_info "Existing installation found - removing it before installing fresh"
+    stop_fool_processes "$_root"
+
+    _failed=""
+    for _p in "$_root/fool-agent" "$_root/hermes-agent" "$_root/bin" \
+              "$_root/cache" "$_root/bootstrap-cache" \
+              "$_root/web-ui-build-stamp.json"; do
+        [ -e "$_p" ] || continue
+        rm -rf "$_p" 2>/dev/null || _failed="$_failed $_p"
+    done
+
+    if [ "${PURGE_USER_DATA:-false}" = true ]; then
+        if rm -rf "$_root" 2>/dev/null; then
+            log_success "Previous installation and all user data removed"
+        else
+            log_warn "Some files under $_root could not be removed"
+        fi
+        return 0
+    fi
+
+    if [ -n "$_failed" ]; then
+        log_warn "These paths could not be removed (close any running instance and re-run):"
+        for _p in $_failed; do log_warn "  $_p"; done
+    else
+        log_success "Previous installation removed"
+    fi
+
+    log_info "Kept your data: sessions, memory, config, voices. Use --purge-user-data to remove those too."
+}
+
+
 main() {
     print_banner
 
     detect_os
     resolve_install_layout
+    remove_previous_install "$FOOL_HOME"
     install_uv
     check_python
     check_git

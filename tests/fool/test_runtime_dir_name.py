@@ -62,9 +62,22 @@ def test_masaustu_yeni_adi_kullaniyor() -> None:
 def test_windows_kurulumu_yeni_adi_kullaniyor() -> None:
     code = _code_lines(INSTALL_PS1, "#")
 
-    assert sum(line.count("'fool-agent'") for line in code) == 2, (
+    # SAYIM DEGIL, COZUMLEME YERLERI.
+    #
+    # Onceki hali "dosyada tam iki kez gecsin" diyordu ve ilk mesru ucuncu
+    # kullanim (eski kurulumu temizleyen yol listesi) testi dusurdu. Sayim,
+    # korumak istedigi seyi degil dosyanin o anki halini tutuyordu.
+    #
+    # Tutulmasi gereken kural su: runtime dizinini HESAPLAYAN her yer once
+    # yeni ada bakmali. Iki hesap yeri var -- parametre varsayilani ve
+    # yeniden hesaplama blogu -- ve ikisi de ayni desenle yaziliyor.
+    resolvers = [
+        line for line in code if "= Join-Path" in line and "'fool-agent'" in line
+    ]
+
+    assert len(resolvers) == 2, (
         "iki hesap yeri de (parametre varsayilani + yeniden hesaplama blogu) "
-        "yeni adi tercih etmeli"
+        f"yeni adi tercih etmeli; bulunan: {resolvers}"
     )
 
 

@@ -5,7 +5,7 @@
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   irm https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.ps1 | iex
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -29,6 +29,9 @@ param(
     # checkout. Reproducible/CI installs that genuinely want an older SHA on an
     # existing tree pass -ForceCommit.
     [switch]$ForceCommit,
+    # Remove sessions, memory, config and cloned voices along with the program.
+    # Off by default: an upgrade must not destroy what the user cannot get back.
+    [switch]$PurgeUserData,
     [string]$Tag = "",
     [string]$FoolHome = $(if ($env:FOOL_HOME) { $env:FOOL_HOME } else { "$env:LOCALAPPDATA\fool" }),
     # Runtime dizini ``fool-agent`` -- ``hermes-agent`` DEGIL.
@@ -399,8 +402,8 @@ $script:ResolvedPathReport = @{
 # ============================================================================
 
 # FOOL-SEAM: bootstrap-repo
-$RepoUrlSsh = "git@github.com:zaorenn/thefool-desktop.git"
-$RepoUrlHttps = "https://github.com/zaorenn/thefool-desktop.git"
+$RepoUrlSsh = "git@github.com:zaorenn/fool-agent.git"
+$RepoUrlHttps = "https://github.com/zaorenn/fool-agent.git"
 $PythonVersion = "3.11"
 # Minor versions the installer accepts when the requested $PythonVersion isn't
 # available, in preference order.  uv discovers both uv-managed and system
@@ -2313,13 +2316,13 @@ function Install-Repository {
                 # for.  GitHub supports archive URLs for commits, tags, and
                 # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/zaorenn/thefool-desktop/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/zaorenn/fool-agent/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/zaorenn/thefool-desktop/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/zaorenn/fool-agent/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/zaorenn/thefool-desktop/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/zaorenn/fool-agent/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
                 $zipPath = "$env:TEMP\hermes-agent-$zipLabel.zip"
@@ -4923,8 +4926,170 @@ function Invoke-Stage {
 # Main
 # ============================================================================
 
+# ----------------------------------------------------------------------------
+# Previous-install cleanup
+# ----------------------------------------------------------------------------
+#
+# The project moved to a new repository. An install made from the old one keeps
+# a git clone whose `origin` points at a repository that no longer exists, so
+# `fool update` and the desktop's self-update both fail in ways that read like
+# a network problem. Reusing that tree is worse than replacing it.
+#
+# What this removes is the PROGRAM: the clone, the bundled runtimes, the
+# caches, the build stamps, and the PATH entries that point into them.
+#
+# What it keeps is everything the user cannot get back -- sessions and memory
+# (`state.db`), `config.yaml`, `auth.json`, `SOUL.md`, cloned voices, skins.
+# Those live in the same root as the program, so a blanket delete of the root
+# would destroy a user's history on what is meant to be an upgrade. Pass
+# -PurgeUserData when a genuinely clean slate is wanted.
+#
+# On a machine that never had the old install this is a no-op and prints
+# nothing: a first-time user should not be shown cleanup they don't need.
+#
+# An existing Hermes Agent install is never touched. It lives under its own
+# data directory, and the two are designed to coexist.
+
+function Get-FoolProgramPaths {
+    param([string]$Root)
+
+    # Everything here is re-created by a normal install. Ordered widest-first
+    # so a failure part-way through still leaves an obviously broken tree
+    # rather than a subtly half-working one.
+    @(
+        (Join-Path $Root 'fool-agent'),      # current runtime clone
+        (Join-Path $Root 'hermes-agent'),    # clone name used before the rename
+        (Join-Path $Root 'bin'),             # bundled python / node / git
+        (Join-Path $Root 'cache'),
+        (Join-Path $Root 'bootstrap-cache'),
+        (Join-Path $Root 'web-ui-build-stamp.json')
+    )
+}
+
+function Test-PreviousFoolInstall {
+    param([string]$Root)
+
+    if (-not (Test-Path $Root)) { return $false }
+
+    foreach ($p in (Get-FoolProgramPaths -Root $Root)) {
+        if (Test-Path $p) { return $true }
+    }
+    return $false
+}
+
+function Stop-FoolProcesses {
+    param([string]$Root)
+
+    # A running desktop app holds its own binaries open; on Windows that turns
+    # the removal below into a partial delete with no error, which is the
+    # hardest kind of leftover to diagnose later.
+    foreach ($name in @('TheFool', 'Fool')) {
+        Get-Process -Name $name -ErrorAction SilentlyContinue |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+
+    # The backend interpreter is only ours if it runs FROM the install root --
+    # matching on the process name alone would kill an unrelated Python.
+    Get-Process -Name 'python', 'pythonw' -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            if ($_.Path -and $_.Path.StartsWith($Root, [StringComparison]::OrdinalIgnoreCase)) {
+                Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+            }
+        } catch {
+            # Path is unreadable for processes we don't own; leave them alone.
+        }
+    }
+
+    Start-Sleep -Milliseconds 800
+}
+
+function Remove-FoolPathEntries {
+    param([string]$Root)
+
+    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    if (-not $userPath) { return }
+
+    $kept = @($userPath -split ';' | Where-Object {
+        $entry = $_.Trim()
+        if (-not $entry) { return $false }
+        -not $entry.StartsWith($Root, [StringComparison]::OrdinalIgnoreCase)
+    })
+
+    $updated = ($kept -join ';')
+    if ($updated -ne $userPath) {
+        [Environment]::SetEnvironmentVariable('Path', $updated, 'User')
+    }
+
+    # Pointer into the tree we just removed. Left behind, it makes the next
+    # install trust a git-bash that isn't there any more.
+    $gitBash = [Environment]::GetEnvironmentVariable('FOOL_GIT_BASH_PATH', 'User')
+    if ($gitBash -and $gitBash.StartsWith($Root, [StringComparison]::OrdinalIgnoreCase)) {
+        [Environment]::SetEnvironmentVariable('FOOL_GIT_BASH_PATH', $null, 'User')
+    }
+}
+
+function Remove-FoolShortcuts {
+    $targets = @(
+        (Join-Path ([Environment]::GetFolderPath('Desktop')) 'The Fool.lnk'),
+        (Join-Path ([Environment]::GetFolderPath('StartMenu')) 'Programs\The Fool.lnk'),
+        (Join-Path ([Environment]::GetFolderPath('ApplicationData')) 'Microsoft\Windows\Start Menu\Programs\The Fool.lnk')
+    )
+    foreach ($t in $targets) {
+        if (Test-Path $t) { Remove-Item -Force -ErrorAction SilentlyContinue $t }
+    }
+}
+
+function Remove-PreviousInstall {
+    param(
+        [string]$Root,
+        [switch]$PurgeUserData
+    )
+
+    if (-not (Test-PreviousFoolInstall -Root $Root)) { return }
+
+    Write-Info "Existing installation found -- removing it before installing fresh"
+
+    Stop-FoolProcesses -Root $Root
+
+    $failed = @()
+    foreach ($p in (Get-FoolProgramPaths -Root $Root)) {
+        if (-not (Test-Path $p)) { continue }
+        try {
+            Remove-Item -Recurse -Force -ErrorAction Stop $p
+        } catch {
+            $failed += $p
+        }
+    }
+
+    Remove-FoolPathEntries -Root $Root
+    Remove-FoolShortcuts
+
+    if ($PurgeUserData) {
+        # Explicitly asked for. Sessions, memory, config, credentials, cloned
+        # voices -- all of it.
+        try {
+            if (Test-Path $Root) { Remove-Item -Recurse -Force -ErrorAction Stop $Root }
+            Write-Success "Previous installation and all user data removed"
+        } catch {
+            Write-Warn "Some files under $Root could not be removed: $($_.Exception.Message)"
+        }
+        return
+    }
+
+    if ($failed.Count -gt 0) {
+        Write-Warn "These paths could not be removed (close any running instance and re-run):"
+        foreach ($p in $failed) { Write-Warn "  $p" }
+    } else {
+        Write-Success "Previous installation removed"
+    }
+
+    Write-Info "Kept your data: sessions, memory, config, voices. Use -PurgeUserData to remove those too."
+}
+
+
 function Invoke-AllStages {
     Step-OutOfInstallDir
+    Remove-PreviousInstall -Root $FoolHome -PurgeUserData:$PurgeUserData
     foreach ($s in $InstallStages) {
         Invoke-Stage -StageDef $s
     }

@@ -227,7 +227,7 @@ async function locateFool(ssh, remoteFoolPath) {
   const err: any = new Error(
     'The Fool is not installed on the remote host (could not find a `fool` executable). ' +
       'Install it on the remote with:  ' +
-      'curl -fsSL https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh | bash  ' +
+      'curl -fsSL https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.sh | bash  ' +
       '— or set the Fool path explicitly in the SSH connection settings.'
   )
 

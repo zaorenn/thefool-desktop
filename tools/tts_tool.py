@@ -838,6 +838,10 @@ def _installed_local_tts() -> set:
         return set()
 
 
+#: ``_get_provider`` bulut kapali + yerel motor yokken uyarisini bir kez bassin.
+_WARNED_CLOUD_BLOCKED = False
+
+
 def _get_provider(tts_config: Dict[str, Any]) -> str:
     """Get the explicitly configured TTS provider, else a LOCAL default.
 
@@ -901,7 +905,26 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
     if cloud_tts_allowed(tts_config):
         return DEFAULT_PROVIDER
 
-    logger.warning("[The Fool] %s", TTS_CLOUD_BLOCKED_MESSAGE)
+    # SUREC BASINA BIR KEZ.
+    #
+    # ``_get_provider`` bir SORGU: "bu yapilandirmada hangi motor konusur?"
+    # Her cagrisinda kullaniciya donuk bir uyari basmak, cevabi degistirmeyen
+    # bir yan etki -- ve cagri sayisi kullanicinin kontrolunde degil.
+    #
+    # Olculdu: tek bir gunde bu satir 445 kez dustu ve hata gunlugunu okunamaz
+    # hale getirdi. Iki ayri hata avinda once bu satirlar gercek bir urun
+    # hatasi sanildi; yani gurultu yalnizca rahatsiz etmiyor, teshisi
+    # aktif olarak yaniltiyor.
+    #
+    # Mesajin kendisi ILK seferde gercekten faydali, o yuzden susturulmuyor --
+    # yalnizca tekrari kesiliyor. Cagiran hala ``"none"`` aliyor ve kullaniciya
+    # ne soyleyecegine kendi karar veriyor (arac zaten ayni metni HATA olarak
+    # donduruyor).
+    global _WARNED_CLOUD_BLOCKED
+    if not _WARNED_CLOUD_BLOCKED:
+        _WARNED_CLOUD_BLOCKED = True
+        logger.warning("[The Fool] %s", TTS_CLOUD_BLOCKED_MESSAGE)
+
     return "none"
 
 

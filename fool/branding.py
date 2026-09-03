@@ -120,7 +120,7 @@ PROTOCOL: Final[str] = "fool"
 
 #: (Henüz yayınlanmadı; yerel çalışırken yalnızca bir yer tutucu.)
 
-REPO_URL: Final[str] = "https://github.com/zaorenn/thefool-desktop"
+REPO_URL: Final[str] = "https://github.com/zaorenn/fool-agent"
 
 
 

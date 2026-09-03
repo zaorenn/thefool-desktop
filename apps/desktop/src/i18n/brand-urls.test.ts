@@ -63,7 +63,7 @@ describe('katalogtaki kurulum adresi GERCEK', () => {
 
   it('bu deponun kendi kurulum betigine isaret ediyor', () => {
     expect(catalogFor('en').settings.gateway.sshErrNotInstalled).toContain(
-      'https://raw.githubusercontent.com/zaorenn/thefool-desktop/main/scripts/install.sh'
+      'https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.sh'
     )
   })
 })

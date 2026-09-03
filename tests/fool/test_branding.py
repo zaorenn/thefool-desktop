@@ -562,7 +562,7 @@ def test_bootstrap_installs_the_fool_not_upstream() -> None:
         text = (REPO_ROOT / rel).read_text(encoding="utf-8", errors="replace")
         if "NousResearch/hermes-agent" in text:
             offenders.append(rel)
-        assert "zaorenn/thefool-desktop" in text, f"{rel}: fork deposu geçmiyor"
+        assert "zaorenn/fool-agent" in text, f"{rel}: fork deposu geçmiyor"
 
     assert not offenders, f"upstream deposunu kuran dosyalar: {offenders}"
 
@@ -784,9 +784,9 @@ def test_update_check_asks_OUR_repo_how_far_behind_you_are() -> None:
 
     host, slug = banner._OFFICIAL_REPO_CANONICAL.split("/", 1)
 
-    assert slug == "zaorenn/thefool-desktop"
+    assert slug == "zaorenn/fool-agent"
     assert f"https://api.{host}/repos/{slug}/compare/" == (
-        f"https://api.github.com/repos/zaorenn/thefool-desktop/compare/"
+        f"https://api.github.com/repos/zaorenn/fool-agent/compare/"
     )
 
 

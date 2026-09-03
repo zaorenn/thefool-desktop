@@ -215,6 +215,12 @@ wake = [
   "onnxruntime==1.27.0",
   "sherpa-onnx==1.13.4",
   "sentencepiece==0.2.2",
+  # sherpa_onnx.text2token imports pypinyin unconditionally -- it pulls the
+  # Chinese path in before it ever looks at tokens_type, so an English BPE
+  # phrase needs it too. Missing here, a desktop install got sherpa without
+  # it and every custom wake phrase refused to arm with
+  # "No module named 'pypinyin'".
+  "pypinyin==0.55.0",
   "pvporcupine==4.0.3",
   "sounddevice==0.5.5",
   "numpy==2.4.3",

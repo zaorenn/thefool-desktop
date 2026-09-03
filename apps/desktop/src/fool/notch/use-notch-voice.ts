@@ -368,6 +368,15 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
     claimVoice('notch')
     setCapturing(false)
     setHeardSpeech(false)
+
+    // ŞERİT DİNLEME BAŞLARKEN temizleniyor, yazıya dökme bitince DEĞİL.
+    //
+    // Ölçülen hata: temizlik ``setTranscript``in yanındaydı, yani ancak
+    // konuşma yazıya dökülünce oluyordu. Kullanıcı sağ Ctrl'ye bastığında
+    // önceki cevabın şeridi hâlâ duruyor: ``subtitleMode`` açık kaldığı için
+    // çentik geniş kalıyor ve dinleme arkaplanı yüzünden küçülmeden kırmızıya
+    // dönüyordu. Kullanıcının bildirdiği birebir buydu.
+    setSpokenSubtitle('')
     setStatus('listening')
 
     // Motoru KULLANICI KONUŞURKEN ısıt.

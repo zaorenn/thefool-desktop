@@ -94,6 +94,28 @@ describe('dikisler', () => {
     expect(PLAYBACK).toContain('window.cancelAnimationFrame(progressFrame)')
   })
 
+  it('DINLEME baslarken serit temizleniyor', () => {
+    // Olculen hata: temizlik ``setTranscript``in yanindaydi, yani ancak
+    // konusma yaziya dokulunce oluyordu. Kullanici sag Ctrl'ye bastiginda
+    // onceki cevabin seridi hala duruyor ve centik, dinleme arkaplani
+    // yuzunden KUCULMEDEN kirmiziya donuyordu.
+    const hook = read('use-notch-voice.ts')
+    const listen = hook.slice(0, hook.indexOf("setStatus('listening')"))
+
+    expect(listen.slice(listen.lastIndexOf('claimVoice'))).toContain("setSpokenSubtitle('')")
+  })
+
+  it('HER konusan yol seridi yayinliyor', () => {
+    // Sizinti yapisal: kural tek yerde uygulaninca ikinci yol sessizce
+    // disarida kaliyor ve o yol konustugunda centikte hicbir sey gorunmuyor.
+    const conversation = read(
+      '..', '..', 'app', 'chat', 'composer', 'hooks', 'use-voice-conversation.ts'
+    )
+
+    expect(conversation).toContain('setSpokenSubtitle(spokenSubtitle(sentence, ratio))')
+    expect(COMPOSER).toContain('setSpokenSubtitle(spokenSubtitle(sentence, ratio))')
+  })
+
   it('alt yaziyi KONUSAN taraf uretiyor', () => {
     // Centik sentez yapmiyor, yani cumle ilerleyisini de duymuyor. Serit
     // metnini konusan taraf yayinliyor ve centik onu gosteriyor.

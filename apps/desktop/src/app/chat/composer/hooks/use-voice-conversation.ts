@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { setSpokenSubtitle } from '@/fool/notch/active-session'
 import { claimBarge, createBargeGate, forceClaimBarge, releaseBarge } from '@/fool/notch/barge-in'
 import { HANDS_FREE_VAD } from '@/fool/notch/hands-free'
 import { waitUntilSettled } from '@/fool/notch/interrupt'
+import { spokenSubtitle } from '@/fool/notch/subtitle'
 import { voiceApi } from '@/fool/voice-api'
 import { canSpeak } from '@/fool/voice-owner'
 import { useI18n } from '@/i18n'
@@ -570,7 +572,18 @@ export function useVoiceConversation({
           return
         }
 
-        const session = await startSpeechStream({ source: 'voice-conversation' })
+        // ŞERİDİ bu yol da yayınlıyor.
+        //
+        // Alt yazıyı yalnızca otomatik okuma yayınlıyordu; konuşan taraf bu
+        // yol olduğunda çentikte hiçbir şey görünmüyordu. Sızıntı yapısal:
+        // "her konuşan, konuştuğunu yazar" kuralı tek yerde uygulanınca
+        // ikinci yol sessizce dışarıda kalıyor.
+        const session = await startSpeechStream({
+          onSentence: sentence => setSpokenSubtitle(spokenSubtitle(sentence, 0)),
+          onSentenceProgress: (sentence, ratio) =>
+            setSpokenSubtitle(spokenSubtitle(sentence, ratio)),
+          source: 'voice-conversation'
+        })
 
         // The session may resolve after the loop moved on (barge, disable).
         if (responseIdRef.current !== responseId) {

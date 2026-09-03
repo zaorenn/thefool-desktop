@@ -898,7 +898,12 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
         preferred_local_tts,
     )
 
-    local = preferred_local_tts(_installed_local_tts())
+    # Yoklama PAHALI (olculdu: ~9 sn -- her motorun ``status()``u calisiyor).
+    # Sonuc bir kez alinip asagida yeniden kullaniliyor; uyarinin icinde
+    # ikinci kez cagirmak ayni bedeli iki katina cikariyordu.
+    installed = _installed_local_tts()
+
+    local = preferred_local_tts(installed)
     if local:
         return local
 
@@ -923,7 +928,27 @@ def _get_provider(tts_config: Dict[str, Any]) -> str:
     global _WARNED_CLOUD_BLOCKED
     if not _WARNED_CLOUD_BLOCKED:
         _WARNED_CLOUD_BLOCKED = True
-        logger.warning("[The Fool] %s", TTS_CLOUD_BLOCKED_MESSAGE)
+
+        # BAGLAM da yaziliyor: hangi profil ve motor yoklamasi ne gordu.
+        #
+        # Eski hali yalnizca "hicbir motor yok" diyordu ve bu, hatanin
+        # nerede oldugunu soylemiyordu. Olculdu: ayni makinede dogrudan
+        # cagrildiginda cozumleme ``chatterbox`` veriyor -- yani sorun
+        # yapilandirmada degil, uyarinin dustugu KAPSAMDA. O kapsami
+        # gunlukten okuyamadigimiz icin sebep bulunamiyordu.
+        try:
+            from fool_cli.profiles import get_active_profile_name
+
+            scope = get_active_profile_name() or "default"
+        except Exception:
+            scope = "?"
+
+        logger.warning(
+            "[The Fool] %s (profile=%s, usable local engines=%d)",
+            TTS_CLOUD_BLOCKED_MESSAGE,
+            scope,
+            len(installed),
+        )
 
     return "none"
 

@@ -235,8 +235,7 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // ayni cumleyi modele iki kez gonderiyordu.
   const bargeRef = useRef<BargeGate>(createBargeGate())
   // Baska bir yuzeyin ustlendigi cevaplar. Bu olmadan efekt her token'da
-  // yeniden talep ederdi: talep reddedilince ``streamRef`` bosaliyor ve bir
-  // sonraki tik ayni yolu bastan denerdi -- saniyede onlarca bosuna IPC.
+  // yeniden talep ederdi -- saniyede onlarca bosuna IPC.
   // Bu turun EN GUNCEL konusma metni.
   //
   // Yedek yol bunu okuyor, akisin acilisinda yakalanan ``pending`` nesnesini
@@ -646,14 +645,6 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   // başlıyor. ``startSpeechStream`` metni parça parça alıp konuşmayı hemen
   // başlatıyor, yani bekleme süresi ortadan kalkıyor.
   //
-  // ``append`` yalnızca YENİ eklenen kısmı alıyor: her seferinde tüm metni
-  // göndermek aynı cümleleri defalarca okuturdu.
-  //
-   
-  // ``streamRef`` reaktif bir değerin AYNASI değil: açık bir WebSocket
-  // oturumu ve o oturuma kaç karakter gönderildiği. State'e taşımak her
-  // token'da yeniden render tetiklerdi.
-   
   // SESLENDİRME ARTIK BURADA DEĞİL.
   //
   // Çentik hem konuşuyor hem gösteriyordu ve ikisini de KENDİ ``$messages``
@@ -752,8 +743,8 @@ export function useNotchVoice({ onStopWord }: NotchVoiceOptions = {}): NotchVoic
   const monitorActive = (handsFree && shouldMonitorBargeIn(status)) || capturing
 
   // Buradaki ref'ler reaktif bir degerin AYNASI degil: ``statusRef`` render
-  // sirasinda yaziliyor (efekt icinde degil) ve ``bargeRef`` / ``streamRef``
-  // birer imperatif tutamac -- kapi durumu ve acik bir WebSocket oturumu.
+  // sirasinda yaziliyor (efekt icinde degil) ve ``bargeRef`` imperatif bir
+  // tutamac -- araya girme kapisinin durumu.
   // State'e tasimak izleyiciyi her durum degisiminde sokup atardi; o da her
   // seferinde yeni bir ``getUserMedia`` akisi ve sifirlanan gurultu tabani
   // demek.

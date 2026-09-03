@@ -141,3 +141,63 @@ class TestDepoAdresi_YENI:
     def test_yeni_depo_adresi_kullaniliyor(self):
         for script in (PS1, SH):
             assert re.search(r"zaorenn/fool-agent", script)
+
+    def test_HATA_yolu_da_kendi_kurulumumuza_isaret_ediyor(self):
+        """Kurulum düşerse kullanıcı BAŞKA bir ürüne yönlendirilmemeli.
+
+        Ölçülen hata: temiz bir makinede kurulum düştü ve mesaj
+        ``hermes-agent.nousresearch.com/install.ps1`` indirmeyi öneriyordu --
+        yani The Fool kurulamayan kullanıcıya Hermes kurduruyordu. Markalama
+        değil, yanlış ürün.
+
+        ``fool.audit`` bunu görmedi: taradığı yüzeyler arasında kurulum
+        betiğinin hata yolu yok.
+        """
+        for script in (PS1, SH):
+            assert "nousresearch.com" not in script
+
+
+class TestSslPolitikasi_KENDINI_ONARIYOR:
+    """Engellenen SSL, kullanıcıya iş çıkarmadan çözülmeli.
+
+    Ölçülen hata (temiz Windows 11 laptop): Akıllı Uygulama Denetimi yeni
+    kurulumlarda varsayılan olarak AÇIK ve ``uv``nin taşınabilir Python'ındaki
+    imzasız ``_ssl.pyd``i engelliyor. HTTPS gerektiren her şey ölüyor -- ama
+    kurulum bunu ALAKASIZ bir paketin (``alibabacloud-tea``) derleme hatası
+    olarak bildiriyordu. İki kişi o hatayı okudu, kimse işletim sistemini
+    düşünmedi.
+
+    Kullanıcıya "git Python kur" demek bu kurulumun tek vaadini bozardı:
+    Python bir ön koşul değil. O yüzden kendi kendini onarıyor.
+    """
+
+    def test_SSL_bagimlilik_kurulumundan_ONCE_sinaniyor(self):
+        # Sonra sinamak, dakikalarca surup yanlis bir hatayla bitmek demekti.
+        assert PS1.index("Test-PythonSsl") < PS1.index("Baseline imports failed")
+
+    def test_politika_engeli_AYIRT_ediliyor(self):
+        # Her ssl hatasi politika engeli degil; ayirt etmeden onarim denemek
+        # gercek sebebi gizlerdi.
+        assert "function Test-SslBlockedByPolicy" in PS1
+        assert "DLL load failed|Application Control|Uygulama Denetimi" in PS1
+
+    def test_ONCE_makinedeki_python_deneniyor(self):
+        # Indirmeden once bakmak: cogu makinede zaten imzali bir Python var.
+        assert "--python-preference only-system" in PS1
+
+    def test_yoksa_IMZALI_python_kuruluyor(self):
+        # winget Windows 11'de hazir geliyor ve kullanici kapsaminda kuruyor,
+        # yani yukseltme istemiyor.
+        assert "winget install --id Python.Python.3.13" in PS1
+        assert "--scope user" in PS1
+
+    def test_zaten_kurulu_hatasi_BASARI_sayiliyor(self):
+        # winget paket zaten varken ayri bir kod donuyor; onu hata saymak
+        # calisan bir makinede onarimi durdururdu.
+        assert "-1978335189" in PS1
+
+    def test_her_ikisi_de_dusesrse_SEBEP_soyleniyor(self):
+        # Son care mesaji gercek sebebi adlandirmali, yaniltici derleme
+        # hatasini degil.
+        assert "one-way" in PS1
+        assert "python.org/downloads" in PS1

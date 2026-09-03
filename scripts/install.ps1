@@ -2608,6 +2608,37 @@ function Install-Venv {
         throw "uv reported success but venv interpreter is missing at $venvPythonExe"
     }
 
+    # SSL gate -- fail fast, and REPAIR.
+    #
+    # Measured on a clean Windows 11 laptop: Smart App Control (on by default
+    # on fresh installs) blocks the unsigned `_ssl.pyd` that ships with uv's
+    # portable CPython. Every HTTPS operation then dies, and the install
+    # surfaced that as a *source build failure* for an unrelated optional
+    # package -- pointing the user at entirely the wrong problem.
+    #
+    # Asking the user to install Python by hand would break this installer's
+    # one promise: that Python is not a prerequisite. So it repairs itself.
+    $sslProbe = Test-PythonSsl -PythonExe $venvPythonExe
+
+    if (-not $sslProbe.Ok) {
+        if (Test-SslBlockedByPolicy -ProbeOutput $sslProbe.Output) {
+            Write-Warn "This machine's application-control policy blocked Python's SSL library."
+            Write-Info "Rebuilding the environment on a signed interpreter..."
+
+            if (-not (Repair-BlockedSslVenv -InstallDir $InstallDir -UvCmd $UvCmd -PythonVersion $PythonVersion)) {
+                Write-Host ""
+                Write-Err "Could not obtain a Python this machine's policy will load."
+                Write-Info "Install Python 3.13 from https://www.python.org/downloads/ and re-run the installer."
+                Write-Info "Alternatively turn Smart App Control off in Windows Security > App & browser control --"
+                Write-Info "note that switch is one-way and cannot be re-enabled without reinstalling Windows."
+                Write-Host ""
+                throw "Python cannot import ssl and no signed interpreter was available"
+            }
+        } else {
+            throw "Python in the new venv cannot import ssl: $($sslProbe.Output)"
+        }
+    }
+
     # The replacement has a working interpreter, but the transaction is only
     # committed after Install-Dependencies' baseline-import gate passes -- the
     # bootstrap runs the stages as separate processes, and every dependency
@@ -4356,6 +4387,120 @@ public static class FoolLnk {
     }
 }
 
+function Test-PythonSsl {
+    # Returns @{ Ok = <bool>; Output = <string> }. HTTPS is load-bearing for
+    # every later step, so this is checked before the long dependency sync
+    # rather than discovered in the middle of it.
+    param([string]$PythonExe)
+
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $out = & $PythonExe -c "import ssl" 2>&1
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = $prevEAP
+
+    return @{ Ok = ($code -eq 0); Output = "$out" }
+}
+
+function Test-SslBlockedByPolicy {
+    # Windows localizes the message, so the policy wording alone is not a
+    # reliable marker. `_ssl` plus a failed import is.
+    param([string]$ProbeOutput)
+
+    return ($ProbeOutput -match "_ssl") -and
+           ($ProbeOutput -match "DLL load failed|Application Control|Uygulama Denetimi")
+}
+
+function Install-SignedPython {
+    # Smart App Control accepts python.org's signed build; it refuses the
+    # unsigned portable interpreter uv downloads. winget ships with Windows 11
+    # and installs per-user, so this needs no elevation.
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Warn "winget is unavailable, cannot install a signed Python automatically"
+        return $false
+    }
+
+    Write-Info "Installing a signed Python 3.13 (python.org, via winget)..."
+
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & winget install --id Python.Python.3.13 --exact --source winget `
+        --accept-package-agreements --accept-source-agreements `
+        --disable-interactivity --scope user 2>&1 | Out-Null
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = $prevEAP
+
+    # winget returns a distinct code when the package is already present; that
+    # is a success for our purposes.
+    if ($code -eq 0 -or $code -eq -1978335189) {
+        Write-Success "Signed Python installed"
+        return $true
+    }
+
+    Write-Warn "winget could not install Python (exit $code)"
+    return $false
+}
+
+function Repair-BlockedSslVenv {
+    <#
+        Rebuild the venv on an interpreter the machine's policy will actually
+        load.
+
+        Measured on a clean Windows 11 laptop: Smart App Control is on by
+        default and blocks the unsigned `_ssl.pyd` in uv's portable CPython.
+        Everything downstream needs HTTPS, so the install died -- but it died
+        reporting a *source build failure* for an unrelated optional package,
+        which sent two people looking in the wrong place.
+
+        Telling the user to go install Python by hand would break this
+        installer's one promise: that Python is not a prerequisite. So it
+        repairs itself, in the cheapest order:
+
+          1. A signed Python already on the machine (no download).
+          2. Otherwise install one through winget, then retry.
+
+        Only if both fail does the user get instructions -- and then they name
+        the real cause instead of the misleading build error.
+    #>
+    param(
+        [string]$InstallDir,
+        [string]$UvCmd,
+        [string]$PythonVersion
+    )
+
+    $venvPath = Join-Path $InstallDir "venv"
+    $venvPythonExe = Join-Path $venvPath "Scripts\python.exe"
+
+    foreach ($attempt in @('existing', 'winget')) {
+        if ($attempt -eq 'winget') {
+            if (-not (Install-SignedPython)) { return $false }
+        } else {
+            Write-Info "Looking for a system Python the policy will accept..."
+        }
+
+        Remove-Item -Recurse -Force $venvPath -ErrorAction SilentlyContinue
+
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        & $UvCmd venv $venvPath --python $PythonVersion --python-preference only-system 2>&1 | Out-Null
+        $venvCode = $LASTEXITCODE
+        $ErrorActionPreference = $prevEAP
+
+        if ($venvCode -ne 0 -or -not (Test-Path -LiteralPath $venvPythonExe -PathType Leaf)) {
+            continue
+        }
+
+        $probe = Test-PythonSsl -PythonExe $venvPythonExe
+        if ($probe.Ok) {
+            Write-Success "Rebuilt the environment on a signed Python -- SSL works"
+            return $true
+        }
+    }
+
+    return $false
+}
+
+
 function New-DesktopShortcuts {
     param([Parameter(Mandatory = $true)][string]$TargetExe)
 
@@ -5244,7 +5389,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  Invoke-WebRequest -Uri 'https://hermes-agent.nousresearch.com/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/zaorenn/fool-agent/main/scripts/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }
